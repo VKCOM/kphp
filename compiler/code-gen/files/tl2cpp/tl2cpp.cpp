@@ -90,14 +90,36 @@ void write_rpc_server_functions(CodeGenerator &W) {
   W << deps << NL;
   W << ExternInclude{G->settings().runtime_headers.get()} << NL;
   FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
+  // PHP typedFetch expects full body with optional TL2 marker and function magic,
+  // otherwise it cannot determine TL version.
+  // C++ rpc_server_typed_fetch expects body after function magic.
+  // So we look ahead both magics, then restore position, call PHP typedFetch,
+  // and if it returns null, skip function magic and call C++ code.
+  // If PHP code throws exception, we do not want to call C++ code.
+  W << "auto start = tl_parse_save_pos();" << NL;
   W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << "int tl_version = function_magic == 0x30324c54 ? 2 : 1; // TL2 marker" << NL;
+  W << "if (tl_version == 2) " << BEGIN;
+  W << "function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << END << NL;
+  W << "(void)tl_parse_restore_pos(start);" << NL;
   W << "switch(function_magic) " << BEGIN;
   for (const auto &f : kphp_functions) {
     W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;
     W << get_php_runtime_type(f, true) << " request;" << NL
       << "request.alloc();" << NL
+      << "CurrentTlQuery::get().set_current_tl_function(f$VK$TL$RpcFunction$$getTLFunctionName(request));" << NL
       << "auto custom_fetcher = f$VK$TL$RpcFunction$$typedFetch(request);" << NL
-      << "if (custom_fetcher.is_null()) " << BEGIN
+      << "CHECK_EXCEPTION(" << NL
+      << "  php_warning(\"Exception when calling typedFetch for function magic: 0x%08x tl_version: %d\", function_magic, tl_version);" << NL
+      << "  return {};" << NL
+      << ")" << NL
+      << "if (custom_fetcher.is_null())" << BEGIN
+      << "if (tl_version == 2)" << BEGIN
+      << "php_warning(\"TL2 request to function with not generated or disabled typedFetch(): 0x%08x tl_version: %d\", function_magic, tl_version);" << NL
+      << "return {};" << NL
+      << END << NL
+      << "(void)f$fetch_int();" << NL
       << "CurrentRpcServerQuery::get().save(" << cpp_tl_struct_name("f_", f->name) << "::rpc_server_typed_fetch(request.get()));" << NL
       << END << "else" << BEGIN
       << "CurrentRpcServerQuery::get().save(make_tl_func_base_simple_wrapper(std::move(custom_fetcher)));" << NL
@@ -106,7 +128,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
       << END << NL;
   }
   W << "default: " << BEGIN
-    << "php_warning(\"Unexpected function magic on fetching request in rpc server: 0x%08x\", function_magic);" << NL
+    << "php_warning(\"Unexpected function magic on fetching request in rpc server: 0x%08x tl_version: %d\", function_magic, tl_version);" << NL
     << "return {};" << NL
     << END << NL;
   W << END << NL;
