@@ -1,9 +1,28 @@
 import os
+import shutil
 import pathlib
 import pytest
 
 from .file_utils import search_k2_bin
 from . import k2_builtin
+from . import testcase
+
+
+def _sync_data(tmp_dir: str, test_parent_dir: pathlib.Path):
+    data_dir = test_parent_dir / "php/data"
+    tmp_data_dir = pathlib.Path(tmp_dir) / "data"
+
+    if data_dir.is_dir():
+        tmp_data_dir.mkdir(parents=True, exist_ok=True)
+        for full_data_file in data_dir.iterdir():
+            full_tmp_file = tmp_data_dir / full_data_file.name
+            if full_tmp_file.exists():
+                continue
+
+            if full_data_file.is_file():
+                shutil.copy(full_data_file, tmp_data_dir)
+            elif full_data_file.is_dir():
+                shutil.copytree(full_data_file, full_tmp_file)
 
 
 @pytest.fixture(autouse=True)
@@ -41,18 +60,53 @@ def skip_kphp_unsupported_test_suite(request):
             pytest.skip("KPHP skipped test")
 
 
-@pytest.fixture(scope='session')
-def k2_builtin_calls(request: pytest.FixtureRequest):
+@pytest.fixture(scope="session")
+def session_tmp_dir(request: pytest.FixtureRequest):
+    return request.config.rootpath.parent / "_tmp"
+
+
+@pytest.fixture(scope="class")
+def class_tmp_dir(request: pytest.FixtureRequest, session_tmp_dir: pathlib.Path):
+    relative_subpath = request.path.parent.relative_to(request.config.rootpath)
+
+    return session_tmp_dir / relative_subpath
+
+
+@pytest.fixture(scope="class")
+def working_dir(class_tmp_dir: pathlib.Path):
+    return class_tmp_dir / "working_dir"
+
+
+@pytest.fixture(scope="class")
+def artifacts_dir(class_tmp_dir: pathlib.Path):
+    return class_tmp_dir / "artifacts"
+
+
+@pytest.fixture(scope="class")
+def tmp_dir_root(request: pytest.FixtureRequest, artifacts_dir: pathlib.Path):
+    test_suite_name = request.path.stem
+    return artifacts_dir / "tmp_{}".format(test_suite_name)
+
+
+@pytest.fixture(scope="class")
+def kphp_server_working_dir(request: pytest.FixtureRequest, tmp_dir_root: pathlib.Path):
+    tmp_dir_root.mkdir(parents=True, exist_ok=True)
+
+    server_working_dir = testcase.make_test_tmp_dir(tmp_dir_root)
+    _sync_data(server_working_dir, request.path.parent)
+    return server_working_dir
+
+
+@pytest.fixture(scope="session")
+def k2_builtin_calls(session_tmp_dir: pathlib.Path):
     builtin_calls = k2_builtin.Calls()
 
     yield builtin_calls
 
-    target_dir = request.config.rootpath.parent / "_tmp"
-
-    target_dir.mkdir(parents=True, exist_ok=True)
+    session_tmp_dir.mkdir(parents=True, exist_ok=True)
 
     filename = "k2_builtin_calls.json"
-    output_path = target_dir / filename
+    output_path = session_tmp_dir / filename
     
     with open(output_path, "w", encoding="utf-8") as f:
         builtin_calls.dump(f)
