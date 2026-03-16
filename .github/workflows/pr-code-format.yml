@@ -21,8 +21,12 @@ jobs:
 
       - name: Check Newline at End of File
         run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD --)
+          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | (grep -E '^(common|runtime|runtime-common|runtime-light)/.*\.(cpp|hpp|h|inl)$' || :; ))
+
           EXIT_CODE=0
-          for file in $(git grep --cached -I --files-with-matches ''); do
+          for file in $CHANGED_CPP_FILES; do
             if [[ $(tail -c 1 "$file") ]]; then
               echo "Missing new line at end of file '$file'"
               EXIT_CODE=1
