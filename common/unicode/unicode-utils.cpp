@@ -4,7 +4,10 @@
 
 #include "common/unicode/unicode-utils.h"
 
+#include <algorithm>
 #include <assert.h>
+#include <cstddef>
+#include <iterator>
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,7 +16,7 @@
 #include "common/unicode/utf8-utils.h"
 
 /* Search generated ranges for specified character */
-static int binary_search_ranges(const int* ranges, int r, int code) {
+static int binary_search_ranges(const int* ranges, int r, int code, void (*assertf)(bool)) {
   if ((unsigned int)code > 0x10ffff) {
     return 0;
   }
@@ -43,152 +46,158 @@ static int binary_search_ranges(const int* ranges, int r, int code) {
   case 2:
     return ((code - 1) | 1);
   default:
-    assert(0);
-    exit(1);
+    if (assertf != nullptr) {
+      assertf(false);
+    }
   }
+  return 0;
 }
 
 /* Convert character to upper case */
-int unicode_toupper(int code) {
+int unicode_toupper(int code, void (*assertf)(bool)) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_upper_table[code];
   } else {
-    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code);
+    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code, assertf);
   }
 }
 
 /* Convert character to lower case */
-int unicode_tolower(int code) {
+int unicode_tolower(int code, void (*assertf)(bool)) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_lower_table[code];
   } else {
-    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code);
+    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code, assertf);
   }
 }
+
+inline constexpr int32_t WHITESPACE_CODE_POINT{static_cast<int32_t>(' ')};
+inline constexpr int32_t PLUS_CODE_POINT{static_cast<int32_t>('+')};
 
 /* Prepares unicode 0-terminated string input for search,
    leaving only digits and letters with diacritics.
    Length of string can decrease.
    Returns length of result. */
-int prepare_search_string(int* input) {
-  int i;
-  int* output = input;
-  for (i = 0; input[i]; i++) {
-    int c = input[i], new_c;
-    if ((unsigned int)c < (unsigned int)TABLE_SIZE) {
-      new_c = prepare_table[c];
+size_t prepare_search_string(int32_t* code_points, void (*assertf)(bool)) noexcept {
+  size_t output_size{};
+  for (size_t i{}; code_points[i] != 0; ++i) {
+    int32_t c{code_points[i]};
+    int32_t new_c{};
+    if (static_cast<size_t>(c) < static_cast<size_t>(TABLE_SIZE)) {
+      new_c = static_cast<int32_t>(prepare_table[c]);
     } else {
-      new_c = binary_search_ranges(prepare_table_ranges, prepare_table_ranges_size, c);
+      new_c = binary_search_ranges(prepare_table_ranges, prepare_table_ranges_size, c, assertf);
     }
-    if (new_c) {
-      if (new_c != 0x20 || (output > input && output[-1] != 0x20)) {
-        *output++ = new_c;
+    if (new_c != 0) {
+      // we forbid 2 whitespaces after each other and starting whitespace
+      if (new_c != WHITESPACE_CODE_POINT || (output_size > 0 && code_points[output_size - 1] != WHITESPACE_CODE_POINT)) {
+        code_points[output_size++] = new_c;
       }
     }
   }
-  if (output > input && output[-1] == 0x20) {
-    output--;
+  if (output_size > 0 && code_points[output_size - 1] == WHITESPACE_CODE_POINT) {
+    // throw out terminating whitespace
+    --output_size;
   }
-  *output = 0;
-  return output - input;
+  code_points[output_size] = 0;
+  return output_size;
 }
 
-#define MAX_NAME_SIZE 65536
-static char prep_buf[4 * MAX_NAME_SIZE + 4];
-int prep_ibuf[MAX_NAME_SIZE + 4];
-static int prep_ibuf_res[MAX_NAME_SIZE + 4];
-static int* words_ibuf[MAX_NAME_SIZE + 4];
+inline size_t prepare_str_unicode(int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, void (*assertf)(bool)) noexcept {
+  size_t code_points_length = prepare_search_string(code_points, assertf);
+  code_points[code_points_length] = WHITESPACE_CODE_POINT;
 
-int stricmp_void(const void* x, const void* y) {
-  const int* s1 = *(const int**)x;
-  const int* s2 = *(const int**)y;
-  while (*s1 == *s2 && *s1 != ' ')
-    s1++, s2++;
-  return *s1 - *s2;
-}
-
-int* prepare_str_unicode(const int* x) {
-  int* v = prep_ibuf;
-
-  int n;
-  if (v != x) {
-    for (n = 0; x[n]; n++) {
-      v[n] = x[n];
+  size_t words_count{};
+  size_t i{};
+  // looking for the beginnings of the words
+  while (i < code_points_length) {
+    word_start_indices[words_count++] = i;
+    while (i < code_points_length && code_points[i] != WHITESPACE_CODE_POINT) {
+      ++i;
     }
-    v[n] = 0;
+    ++i;
   }
 
-  n = prepare_search_string(v);
-  v[n] = ' ';
-
-  int i = 0, k = 0;
-  while (i < n) {
-    words_ibuf[k++] = v + i;
-    while (v[i] && v[i] != ' ') {
-      i++;
+  auto word_less_cmp{[&code_points](size_t x, size_t y) noexcept -> bool {
+    while (code_points[x] != WHITESPACE_CODE_POINT && code_points[x] == code_points[y]) {
+      ++x;
+      ++y;
     }
-    i++;
-  }
+    if (code_points[x] == WHITESPACE_CODE_POINT) {
+      return code_points[y] != WHITESPACE_CODE_POINT;
+    }
+    if (code_points[y] == WHITESPACE_CODE_POINT) {
+      return false;
+    }
+    return code_points[x] < code_points[y];
+  }};
 
-  qsort(words_ibuf, (size_t)k, sizeof(int*), stricmp_void);
+  std::sort(word_start_indices, std::next(word_start_indices, words_count), word_less_cmp);
 
-  int j = 0;
-  for (i = 0; i < k; i++) {
-    if (j == 0 || stricmp_void(&words_ibuf[j - 1], &words_ibuf[i])) {
-      words_ibuf[j++] = words_ibuf[i];
+  size_t uniq_words_count{};
+  for (i = 0; i < words_count; ++i) {
+    // drop duplicates
+    if (uniq_words_count == 0 || word_less_cmp(word_start_indices[uniq_words_count - 1], word_start_indices[i])) {
+      word_start_indices[uniq_words_count++] = word_start_indices[i];
     } else {
-      words_ibuf[j - 1] = words_ibuf[i];
+      word_start_indices[uniq_words_count - 1] = word_start_indices[i];
     }
   }
-  k = j;
 
-  int* res = prep_ibuf_res;
-  for (i = 0; i < k; i++) {
-    int* tmp = words_ibuf[i];
-    while (*tmp != ' ') {
-      *res++ = *tmp++;
+  size_t result_size{};
+  // output words with '+' separator
+  for (i = 0; i < uniq_words_count; ++i) {
+    size_t ind{word_start_indices[i]};
+    while (code_points[ind] != WHITESPACE_CODE_POINT) {
+      prepared_code_points[result_size++] = code_points[ind++];
     }
-    *res++ = '+';
+    prepared_code_points[result_size++] = PLUS_CODE_POINT;
   }
-  *res++ = 0;
+  prepared_code_points[result_size++] = 0;
 
-  assert(res - prep_ibuf_res < MAX_NAME_SIZE);
-  return prep_ibuf_res;
+  assertf(result_size < MAX_NAME_SIZE);
+  return result_size;
 }
 
-const char* clean_str_unicode(const int* xx) {
-  assert(xx != NULL);
+inline size_t clean_str_unicode(int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::byte* utf8_result,
+                                void (*assertf)(bool)) noexcept {
+  prepare_str_unicode(code_points, word_start_indices, prepared_code_points, assertf);
 
-  int* v = prepare_str_unicode(xx);
-  int l = put_string_utf8(v, prep_buf);
-  assert(l < sizeof(prep_buf));
+  auto length{static_cast<size_t>(put_string_utf8(prepared_code_points, reinterpret_cast<char*>(utf8_result)))};
+  assertf(length < MAX_NAME_BYTES_SIZE);
 
-  char *s = prep_buf, *x = prep_buf;
-  int skip;
-
-  while (*x != 0) {
-    skip = !strncmp(x, "amp+", 4) || !strncmp(x, "gt+", 3) || !strncmp(x, "lt+", 3) || !strncmp(x, "quot+", 5) || !strncmp(x, "ft+", 3) ||
-           !strncmp(x, "feat+", 5) ||
-           (((x[0] == '1' && x[1] == '9') || (x[0] == '2' && x[1] == '0')) && ('0' <= x[2] && x[2] <= '9') && ('0' <= x[3] && x[3] <= '9') && x[4] == '+') ||
-           !strncmp(x, "092+", 4) || !strncmp(x, "33+", 3) || !strncmp(x, "34+", 3) || !strncmp(x, "36+", 3) || !strncmp(x, "39+", 3) ||
-           !strncmp(x, "60+", 3) || !strncmp(x, "62+", 3) || !strncmp(x, "8232+", 5) || !strncmp(x, "8233+", 5);
+  size_t i{};
+  size_t result_size{};
+  while (i < length) {
+    char* c{reinterpret_cast<char*>(std::addressof(utf8_result[i]))};
+    bool skip{!strncmp(c, "amp+", 4) || !strncmp(c, "gt+", 3) || !strncmp(c, "lt+", 3) || !strncmp(c, "quot+", 5) || !strncmp(c, "ft+", 3) ||
+              !strncmp(c, "feat+", 5) ||
+              (((c[0] == '1' && c[1] == '9') || (c[0] == '2' && c[1] == '0')) && ('0' <= c[2] && c[2] <= '9') && ('0' <= c[3] && c[3] <= '9') && c[4] == '+') ||
+              !strncmp(c, "092+", 4) || !strncmp(c, "33+", 3) || !strncmp(c, "34+", 3) || !strncmp(c, "36+", 3) || !strncmp(c, "39+", 3) ||
+              !strncmp(c, "60+", 3) || !strncmp(c, "62+", 3) || !strncmp(c, "8232+", 5) || !strncmp(c, "8233+", 5)};
     do {
-      *s = *x;
       if (!skip) {
-        s++;
+        utf8_result[result_size] = utf8_result[i];
+        ++result_size;
       }
-    } while (*x++ != '+');
+    } while (utf8_result[i++] != static_cast<std::byte>('+'));
   }
-  *s = 0;
+  utf8_result[result_size] = static_cast<std::byte>(0);
 
-  return prep_buf;
+  return result_size;
 }
 
-const char* clean_str(const char* x) {
-  if (x == NULL || strlen(x) >= MAX_NAME_SIZE) {
-    return x;
+size_t clean_str(const char* x, int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::byte* utf8_result,
+                 void (*assertf)(bool)) {
+  size_t x_len{strlen(x)};
+  if (assertf == nullptr || x == NULL || x_len >= MAX_NAME_SIZE) {
+    for (size_t i = 0; i < x_len; ++i) {
+      utf8_result[i] = static_cast<std::byte>(x[i]);
+    }
+    utf8_result[x_len] = static_cast<std::byte>(0);
+    return x_len;
   }
 
-  html_string_to_utf8(x, prep_ibuf);
-  return clean_str_unicode(prep_ibuf);
+  html_string_to_utf8(x, code_points);
+  return clean_str_unicode(code_points, word_start_indices, prepared_code_points, utf8_result, assertf);
 }

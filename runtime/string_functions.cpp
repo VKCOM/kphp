@@ -34,11 +34,7 @@ Optional<string> f$setlocale(int64_t category, const string& locale) noexcept {
 }
 
 string f$prepare_search_query(const string& query) noexcept {
-  const char* s = clean_str(query.c_str());
-  if (s == nullptr) {
-    s = "";
-  }
-  return string(s);
+  return prepare_search_query_impl_::prepare_search_query(query, [](bool condition) noexcept { assert(condition); });
 }
 
 // Based on `getcsv` from `streams`

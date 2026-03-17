@@ -130,7 +130,7 @@ int64_t f$mb_strlen(const string& str, const string& encoding) noexcept {
   return mb_UTF8_strlen(str.c_str());
 }
 
-string f$mb_strtolower(const string& str, const string& encoding) noexcept {
+string mb_strtolower_impl(const string& str, void (*assertf)(bool), const string& encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error("encoding \"%s\" doesn't supported in mb_strtolower", encoding.c_str());
@@ -184,7 +184,7 @@ string f$mb_strtolower(const string& str, const string& encoding) noexcept {
     int ch = 0;
     while ((p = get_char_utf8(&ch, s)) > 0) {
       s += p;
-      res_len += put_char_utf8(unicode_tolower(ch), &res[res_len]);
+      res_len += put_char_utf8(unicode_tolower(ch, assertf), &res[res_len]);
     }
     if (p < 0) {
       php_warning("Incorrect UTF-8 string \"%s\" in function mb_strtolower", str.c_str());
@@ -195,7 +195,7 @@ string f$mb_strtolower(const string& str, const string& encoding) noexcept {
   }
 }
 
-string f$mb_strtoupper(const string& str, const string& encoding) noexcept {
+string mb_strtoupper_impl(const string& str, void (*assertf)(bool), const string& encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error("encoding \"%s\" doesn't supported in mb_strtoupper", encoding.c_str());
@@ -254,7 +254,7 @@ string f$mb_strtoupper(const string& str, const string& encoding) noexcept {
     int ch = 0;
     while ((p = get_char_utf8(&ch, s)) > 0) {
       s += p;
-      res_len += put_char_utf8(unicode_toupper(ch), &res[res_len]);
+      res_len += put_char_utf8(unicode_toupper(ch, assertf), &res[res_len]);
     }
     if (p < 0) {
       php_warning("Incorrect UTF-8 string \"%s\" in function mb_strtoupper", str.c_str());
@@ -307,9 +307,9 @@ Optional<int64_t> f$mb_strpos(const string& haystack, const string& needle, int6
   return false;
 }
 
-Optional<int64_t> f$mb_stripos(const string& haystack, const string& needle, int64_t offset, const string& encoding) noexcept {
+Optional<int64_t> mb_stripos_impl(const string& haystack, const string& needle, void (*assertf)(bool), int64_t offset, const string& encoding) noexcept {
   if (const int encoding_num = check_strpos_agrs("mb_stripos", needle, offset, encoding)) {
-    return mp_strpos_impl(f$mb_strtolower(haystack, encoding), f$mb_strtolower(needle, encoding), offset, encoding_num);
+    return mp_strpos_impl(mb_strtolower_impl(haystack, assertf, encoding), mb_strtolower_impl(needle, assertf, encoding), offset, encoding_num);
   }
   return false;
 }
