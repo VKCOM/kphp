@@ -92,12 +92,6 @@ class WebServer(Engine):
     def _process_json_log(self, log_record):
         return log_record
 
-    def get_log(self):
-        if (self._json_log_file is not None):
-            return list(map(json.dumps, self.get_json_log()))
-
-        return super(WebServer, self).get_log()
-
     def get_json_log(self):
         self._read_new_json_logs()
         return self._json_logs
