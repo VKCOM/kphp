@@ -8,6 +8,7 @@
 #include <format>
 #include <functional>
 #include <optional>
+#include <ranges>
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
@@ -52,8 +53,6 @@ class contextual_tags final : vk::not_copyable {
     }
   };
 
-  static constexpr std::string_view BACKTRACE_KEY = "trace";
-
   kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator, extra_tags_hash, extra_tags_equal> extra_tags;
 
 public:
@@ -61,12 +60,8 @@ public:
     return extra_tags.size();
   }
 
-  auto begin() const noexcept {
-    return extra_tags.begin();
-  }
-
-  auto end() const noexcept {
-    return extra_tags.end();
+  auto values() const noexcept {
+    return std::views::all(extra_tags);
   }
 
   void add_extra_tag(std::string_view key, std::string_view value) noexcept;
@@ -75,6 +70,20 @@ public:
 
   static std::optional<std::reference_wrapper<contextual_tags>> try_get() noexcept;
 };
+
+inline void contextual_tags::add_extra_tag(std::string_view key, std::string_view value) noexcept {
+  if (auto it{extra_tags.find(key)}; it == extra_tags.end()) {
+    extra_tags.emplace(key, value);
+  } else {
+    it->second = value;
+  }
+}
+
+inline void contextual_tags::remove_extra_tag(std::string_view key) noexcept {
+  if (auto it{extra_tags.find(key)}; it != extra_tags.end()) {
+    extra_tags.erase(it);
+  }
+}
 
 inline void contextual_tags::clear_extra_tags() noexcept {
   extra_tags.clear();
