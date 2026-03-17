@@ -357,6 +357,7 @@ if __name__ == "__main__":
         "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
+            K2_KPHP_TRACKED_BUILTINS_LIST=K2_KPHP_TRACKED_BUILTINS_LIST,
             kphp_runner=kphp_test_runner,
             cxx_name=args.cxx_name,
             k2_bin=args.k2_bin,
@@ -443,6 +444,7 @@ if __name__ == "__main__":
             kphp_polyfills_repo=kphp_polyfills_repo,
             cxx_name=args.cxx_name,
             k2_bin=args.k2_bin,
+            K2_KPHP_TRACKED_BUILTINS_LIST=K2_KPHP_TRACKED_BUILTINS_LIST,
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
             base_tempdir=os.path.expanduser(
@@ -495,6 +497,7 @@ if __name__ == "__main__":
                 kphp_polyfills_repo=kphp_polyfills_repo,
                 cxx_name=args.cxx_name,
                 k2_bin=args.k2_bin,
+                K2_KPHP_TRACKED_BUILTINS_LIST=K2_KPHP_TRACKED_BUILTINS_LIST,
                 tests_dir=" ".join([
                     os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_client/"),
                     os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),
