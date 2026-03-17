@@ -337,12 +337,11 @@ string f$html_entity_decode(const string& str, int64_t flags, const string& enco
         if (str[i + 1] == '#') {
           uint_fast8_t code{};
           if (auto [ptr, ec] = std::from_chars(std::next(str.c_str(), i + 2), std::next(str.c_str(), j), code);
-              ec == std::errc{} && ptr == std::next(str.c_str(), j) && code >= 0x20 && code <= 0x7E) {
-            if (code != '\'' || (flags & StringLibConstants::ENT_QUOTES)) {
-              i += 5;
-              *p++ = static_cast<char>(code);
-              continue;
-            }
+              ec == std::errc{} && ptr == std::next(str.c_str(), j) && code >= 0x20 && code <= 0x7E &&
+              (code != '\'' || (flags & StringLibConstants::ENT_QUOTES))) {
+            i = j;
+            *p++ = static_cast<char>(code);
+            continue;
           }
         } else {
           if (!(flags & StringLibConstants::ENT_NOQUOTES) && j == i + 5) {
