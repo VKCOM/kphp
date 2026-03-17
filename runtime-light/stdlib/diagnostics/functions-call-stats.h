@@ -6,4 +6,4 @@
 
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-#define DUMP_BUILTIN_CALL_STATS(builtin_name, builtin_call) (kphp::log::debug("built-in called: " builtin_name), builtin_call)
+#define DUMP_BUILTIN_CALL_STATS(builtin_name, builtin_call) (kphp::log::debug("std function called: " builtin_name), builtin_call)
