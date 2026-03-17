@@ -83,3 +83,9 @@ class K2Server(WebServer):
         # remove trace
         log_record.pop("trace", "")
         return log_record
+
+    def get_log(self):
+        if self._is_json_log_enabled():
+            return list(map(json.dumps, self.get_json_log()))
+
+        return super(K2Server, self).get_log()
