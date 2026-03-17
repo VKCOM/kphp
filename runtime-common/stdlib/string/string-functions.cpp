@@ -5,6 +5,7 @@
 #include "runtime-common/stdlib/string/string-functions.h"
 
 #include <cctype>
+#include <charconv>
 #include <cstdint>
 #include <functional>
 #include <iterator>
@@ -333,61 +334,66 @@ string f$html_entity_decode(const string& str, int64_t flags, const string& enco
         j++;
       }
       if (j < len) {
-        if ((flags & StringLibConstants::ENT_QUOTES) && j == i + 5) {
-          if (str[i + 1] == '#' && str[i + 2] == '0' && str[i + 3] == '3' && str[i + 4] == '9') {
-            i += 5;
-            *p++ = '\'';
-            continue;
+        if (str[i + 1] == '#') {
+          uint_fast8_t code{};
+          if (auto [ptr, ec] = std::from_chars(std::next(str.c_str(), i + 2), std::next(str.c_str(), j), code);
+              ec == std::errc{} && ptr == std::next(str.c_str(), j) && code >= 0x20 && code <= 0x7E) {
+            if (code != '\'' || (flags & StringLibConstants::ENT_QUOTES)) {
+              i += 5;
+              *p++ = static_cast<char>(code);
+              continue;
+            }
           }
-        }
-        if (!(flags & StringLibConstants::ENT_NOQUOTES) && j == i + 5) {
-          if (str[i + 1] == 'q' && str[i + 2] == 'u' && str[i + 3] == 'o' && str[i + 4] == 't') {
-            i += 5;
-            *p++ = '\"';
-            continue;
+        } else {
+          if (!(flags & StringLibConstants::ENT_NOQUOTES) && j == i + 5) {
+            if (str[i + 1] == 'q' && str[i + 2] == 'u' && str[i + 3] == 'o' && str[i + 4] == 't') {
+              i += 5;
+              *p++ = '\"';
+              continue;
+            }
           }
-        }
 
-        int l = 0;
-        int r = entities_size;
-        while (l + 1 < r) {
-          int m = (l + r) >> 1;
-          if (strncmp(str.c_str() + i + 1, ent_to_num_s[m], j - i - 1) < 0) {
-            r = m;
-          } else {
-            l = m;
-          }
-        }
-        if (strncmp(str.c_str() + i + 1, ent_to_num_s[l], j - i - 1) == 0) {
-          int num = ent_to_num_i[l];
-          i = j;
-          if (utf8) {
-            if (num < 128) {
-              *p++ = static_cast<char>(num);
-            } else if (num < 0x800) {
-              *p++ = static_cast<char>(0xc0 + (num >> 6));
-              *p++ = static_cast<char>(0x80 + (num & 63));
+          int l = 0;
+          int r = entities_size;
+          while (l + 1 < r) {
+            int m = (l + r) >> 1;
+            if (strncmp(str.c_str() + i + 1, ent_to_num_s[m], j - i - 1) < 0) {
+              r = m;
             } else {
-              *p++ = static_cast<char>(0xe0 + (num >> 12));
-              *p++ = static_cast<char>(0x80 + ((num >> 6) & 63));
-              *p++ = static_cast<char>(0x80 + (num & 63));
+              l = m;
             }
-          } else {
-            if (num < 128) {
-              *p++ = static_cast<char>(num);
-            } else {
-              *p++ = '&';
-              *p++ = '#';
-              if (num >= 1000) {
-                *p++ = static_cast<char>(num / 1000 % 10 + '0');
+          }
+          if (strncmp(str.c_str() + i + 1, ent_to_num_s[l], j - i - 1) == 0) {
+            int num = ent_to_num_i[l];
+            i = j;
+            if (utf8) {
+              if (num < 128) {
+                *p++ = static_cast<char>(num);
+              } else if (num < 0x800) {
+                *p++ = static_cast<char>(0xc0 + (num >> 6));
+                *p++ = static_cast<char>(0x80 + (num & 63));
+              } else {
+                *p++ = static_cast<char>(0xe0 + (num >> 12));
+                *p++ = static_cast<char>(0x80 + ((num >> 6) & 63));
+                *p++ = static_cast<char>(0x80 + (num & 63));
               }
-              *p++ = static_cast<char>(num / 100 % 10 + '0');
-              *p++ = static_cast<char>(num / 10 % 10 + '0');
-              *p++ = static_cast<char>(num % 10 + '0');
-              *p++ = ';';
+            } else {
+              if (num < 128) {
+                *p++ = static_cast<char>(num);
+              } else {
+                *p++ = '&';
+                *p++ = '#';
+                if (num >= 1000) {
+                  *p++ = static_cast<char>(num / 1000 % 10 + '0');
+                }
+                *p++ = static_cast<char>(num / 100 % 10 + '0');
+                *p++ = static_cast<char>(num / 10 % 10 + '0');
+                *p++ = static_cast<char>(num % 10 + '0');
+                *p++ = ';';
+              }
             }
+            continue;
           }
-          continue;
         }
       }
     }
