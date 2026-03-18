@@ -41,7 +41,7 @@ static std::vector<std::string> collect_php_class_names(const std::string &filep
     }
 
     // handle block comments: /* ... */
-    // (simplified: track opening/closing markers; won't handle nested /* or // inside strings)
+    // (simplified: track opening/closing markers; won't handle nested or in-string occurrences)
     if (in_block_comment) {
       auto end = line.find("*/");
       if (end == std::string::npos) {
@@ -53,16 +53,22 @@ static std::vector<std::string> collect_php_class_names(const std::string &filep
     {
       auto bc = line.find("/*");
       if (bc != std::string::npos) {
-        in_block_comment = true;
-        line = line.substr(0, bc);
+        auto bc_end = line.find("*/", bc + 2);
+        if (bc_end != std::string::npos) {
+          // single-line block comment: strip /* ... */ and keep the rest
+          line = line.substr(0, bc) + line.substr(bc_end + 2);
+        } else {
+          in_block_comment = true;
+          line = line.substr(0, bc);
+        }
       }
     }
 
-    // strip line comments //
+    // strip line comments: // and # (take whichever comes first)
     {
-      auto lc = line.find("//");
-      if (lc != std::string::npos) {
-        line = line.substr(0, lc);
+      size_t pos = std::min(line.find("//"), line.find('#'));
+      if (pos != std::string::npos) {
+        line = line.substr(0, pos);
       }
     }
 
