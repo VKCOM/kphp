@@ -55,7 +55,7 @@ class BaseTestCase(TestCase):
         request.cls.kphp_build_working_dir = str(kphp_build_working_dir)
         request.cls.web_server_working_dir = str(kphp_server_working_dir)
         request.cls.artifacts_dir = str(artifacts_dir)
-        request.cls.test_dir = str(request.path.parent)
+        request.cls.test_dir = str(pathlib.Path(request.module.__file__).parent)
 
     @pytest.fixture(scope="class", autouse=True)
     def _base_setup(self, request: pytest.FixtureRequest, setup_tmp_folder):
