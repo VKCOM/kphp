@@ -13,128 +13,53 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/composer-json-data.h"
 #include "compiler/kphp_assert.h"
+#include "compiler/lexer.h"
+#include "compiler/token.h"
 
 
 static bool file_exists(const std::string &filename) {
   return access(filename.c_str(), F_OK) == 0;
 };
 
-// Scans a single PHP file and returns all fully-qualified class names declared in it.
-// Uses '/' as the namespace separator (the same convention used by the rest of this file).
-// Only handles declarations at file scope (the overwhelming majority of autoloaded code).
-// Not a full PHP parser — heuristic-based, but correct for typical autoloaded PHP.
+// Scans a single PHP file using KPHP's own lexer and returns all fully-qualified
+// class names declared in it.  Uses '/' as the namespace separator (the same
+// convention used by the rest of this file).
+//
+// Requires lexer_init() to have been called beforehand (guaranteed by the
+// compiler pipeline: lexer_init() runs before init_composer_class_loader()).
 static std::vector<std::string> collect_php_class_names(const std::string &filepath) {
   std::ifstream f(filepath, std::ios::binary);
   if (!f) {
     return {};
   }
+  std::string content{std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()};
+
+  std::vector<Token> tokens = php_text_to_tokens(content);
 
   std::vector<std::string> result;
   std::string ns_prefix;  // e.g. "Foo/Bar/" or ""
-  bool in_block_comment = false;
 
-  std::string line;
-  while (std::getline(f, line)) {
-    // strip trailing \r
-    if (!line.empty() && line.back() == '\r') {
-      line.pop_back();
-    }
+  for (size_t i = 0; i < tokens.size(); ++i) {
+    const auto type = tokens[i].type();
 
-    // handle block comments: /* ... */
-    // (simplified: track opening/closing markers; won't handle nested or in-string occurrences)
-    if (in_block_comment) {
-      auto end = line.find("*/");
-      if (end == std::string::npos) {
-        continue;
-      }
-      in_block_comment = false;
-      line = line.substr(end + 2);
-    }
-    {
-      auto bc = line.find("/*");
-      if (bc != std::string::npos) {
-        auto bc_end = line.find("*/", bc + 2);
-        if (bc_end != std::string::npos) {
-          // single-line block comment: strip /* ... */ and keep the rest
-          line = line.substr(0, bc) + line.substr(bc_end + 2);
-        } else {
-          in_block_comment = true;
-          line = line.substr(0, bc);
-        }
-      }
-    }
-
-    // strip line comments: // and # (take whichever comes first)
-    {
-      size_t pos = std::min(line.find("//"), line.find('#'));
-      if (pos != std::string::npos) {
-        line = line.substr(0, pos);
-      }
-    }
-
-    // trim leading whitespace
-    size_t start = line.find_first_not_of(" \t");
-    if (start == std::string::npos) {
-      continue;
-    }
-    const char *p = line.c_str() + start;
-
-    // detect "namespace" keyword
-    // matches: "namespace Foo\Bar\Baz;" or "namespace Foo\Bar\Baz {"
-    if (strncmp(p, "namespace", 9) == 0 && (p[9] == ' ' || p[9] == '\t')) {
-      const char *ns = p + 9;
-      while (*ns == ' ' || *ns == '\t') ++ns;
-      const char *ns_end = ns;
-      while (*ns_end && *ns_end != ';' && *ns_end != '{' && *ns_end != ' ' && *ns_end != '\t' && *ns_end != '\r') {
-        ++ns_end;
-      }
-      ns_prefix = std::string(ns, ns_end);
-      std::replace(ns_prefix.begin(), ns_prefix.end(), '\\', '/');
-      if (!ns_prefix.empty() && ns_prefix.back() != '/') {
-        ns_prefix += '/';
-      }
+    // track namespace declarations: "namespace Foo\Bar;"
+    if (type == tok_namespace && i + 1 < tokens.size() && tokens[i + 1].type() == tok_func_name) {
+      std::string ns = static_cast<std::string>(tokens[i + 1].str_val);
+      std::replace(ns.begin(), ns.end(), '\\', '/');
+      ns_prefix = ns + "/";
+      ++i;
       continue;
     }
 
-    // detect class/interface/trait/enum declarations
-    // Recognised prefixes (checked in specificity order to avoid spurious matches):
-    //   "abstract class ", "final class ", "readonly class ",
-    //   "class ", "interface ", "trait ", "enum "
-    struct KwEntry { const char *kw; size_t len; };
-    static const KwEntry kws[] = {
-      {"abstract class ", 15},
-      {"final class ",    12},
-      {"readonly class ", 15},
-      {"class ",          6},
-      {"interface ",      10},
-      {"trait ",          6},
-      {"enum ",           5},
-    };
-    for (const auto &e : kws) {
-      const char *found = strstr(p, e.kw);
-      if (!found) {
-        continue;
+    // detect class/interface/trait declarations
+    // the lexer produces: tok_class / tok_interface / tok_trait
+    // optionally preceded by tok_abstract or tok_final (which we can just skip)
+    if (type == tok_class || type == tok_interface || type == tok_trait) {
+      if (i + 1 < tokens.size() && tokens[i + 1].type() == tok_func_name) {
+        result.push_back(ns_prefix + static_cast<std::string>(tokens[i + 1].str_val));
+        ++i;
       }
-      // everything before the keyword must be whitespace (guards against "base class" in strings etc.)
-      bool prefix_ok = true;
-      for (const char *c = p; c < found; ++c) {
-        if (*c != ' ' && *c != '\t') {
-          prefix_ok = false;
-          break;
-        }
-      }
-      if (!prefix_ok) {
-        continue;
-      }
-      // extract the identifier that follows the keyword
-      const char *name = found + e.len;
-      while (*name == ' ' || *name == '\t') ++name;
-      const char *name_end = name;
-      while (*name_end && (isalnum(*name_end) || *name_end == '_')) ++name_end;
-      if (name_end > name) {
-        result.push_back(ns_prefix + std::string(name, name_end));
-      }
-      break;
+      continue;
     }
   }
 
