@@ -1,6 +1,7 @@
 import os
 import shutil
 import pathlib
+import sys
 import pytest
 
 from .file_utils import search_k2_bin
@@ -117,5 +118,6 @@ def std_function_invocations(session_tmp_dir: pathlib.Path):
     filename = "std_function_invocations.json"
     output_path = session_tmp_dir / filename
     
+    function_invocations.dump(sys.stderr)
     with open(output_path, "w", encoding="utf-8") as f:
         function_invocations.dump(f)

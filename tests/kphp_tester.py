@@ -424,6 +424,7 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
         std_function_invocations_filename = "std_function_invocations.json"
         std_function_invocations_output_path = TMP_DIR / std_function_invocations_filename
 
+        std_function_invocations.dump(sys.stderr)
         with open(std_function_invocations_output_path, "w", encoding="utf-8") as f:
             std_function_invocations.dump(f)
 
