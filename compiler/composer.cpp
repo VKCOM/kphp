@@ -4,6 +4,9 @@
 
 #include "compiler/composer.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include "common/algorithms/contains.h"
 #include "common/wrappers/fmt_format.h"
 
@@ -15,6 +18,156 @@
 static bool file_exists(const std::string &filename) {
   return access(filename.c_str(), F_OK) == 0;
 };
+
+// Scans a single PHP file and returns all fully-qualified class names declared in it.
+// Uses '/' as the namespace separator (the same convention used by the rest of this file).
+// Only handles declarations at file scope (the overwhelming majority of autoloaded code).
+// Not a full PHP parser — heuristic-based, but correct for typical autoloaded PHP.
+static std::vector<std::string> collect_php_class_names(const std::string &filepath) {
+  std::ifstream f(filepath, std::ios::binary);
+  if (!f) {
+    return {};
+  }
+
+  std::vector<std::string> result;
+  std::string ns_prefix;  // e.g. "Foo/Bar/" or ""
+  bool in_block_comment = false;
+
+  std::string line;
+  while (std::getline(f, line)) {
+    // strip trailing \r
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+
+    // handle block comments: /* ... */
+    // (simplified: track opening/closing markers; won't handle nested /* or // inside strings)
+    if (in_block_comment) {
+      auto end = line.find("*/");
+      if (end == std::string::npos) {
+        continue;
+      }
+      in_block_comment = false;
+      line = line.substr(end + 2);
+    }
+    {
+      auto bc = line.find("/*");
+      if (bc != std::string::npos) {
+        in_block_comment = true;
+        line = line.substr(0, bc);
+      }
+    }
+
+    // strip line comments //
+    {
+      auto lc = line.find("//");
+      if (lc != std::string::npos) {
+        line = line.substr(0, lc);
+      }
+    }
+
+    // trim leading whitespace
+    size_t start = line.find_first_not_of(" \t");
+    if (start == std::string::npos) {
+      continue;
+    }
+    const char *p = line.c_str() + start;
+
+    // detect "namespace" keyword
+    // matches: "namespace Foo\Bar\Baz;" or "namespace Foo\Bar\Baz {"
+    if (strncmp(p, "namespace", 9) == 0 && (p[9] == ' ' || p[9] == '\t')) {
+      const char *ns = p + 9;
+      while (*ns == ' ' || *ns == '\t') ++ns;
+      const char *ns_end = ns;
+      while (*ns_end && *ns_end != ';' && *ns_end != '{' && *ns_end != ' ' && *ns_end != '\t' && *ns_end != '\r') {
+        ++ns_end;
+      }
+      ns_prefix = std::string(ns, ns_end);
+      std::replace(ns_prefix.begin(), ns_prefix.end(), '\\', '/');
+      if (!ns_prefix.empty() && ns_prefix.back() != '/') {
+        ns_prefix += '/';
+      }
+      continue;
+    }
+
+    // detect class/interface/trait/enum declarations
+    // Recognised prefixes (checked in specificity order to avoid spurious matches):
+    //   "abstract class ", "final class ", "readonly class ",
+    //   "class ", "interface ", "trait ", "enum "
+    struct KwEntry { const char *kw; size_t len; };
+    static const KwEntry kws[] = {
+      {"abstract class ", 15},
+      {"final class ",    12},
+      {"readonly class ", 15},
+      {"class ",          6},
+      {"interface ",      10},
+      {"trait ",          6},
+      {"enum ",           5},
+    };
+    for (const auto &e : kws) {
+      const char *found = strstr(p, e.kw);
+      if (!found) {
+        continue;
+      }
+      // everything before the keyword must be whitespace (guards against "base class" in strings etc.)
+      bool prefix_ok = true;
+      for (const char *c = p; c < found; ++c) {
+        if (*c != ' ' && *c != '\t') {
+          prefix_ok = false;
+          break;
+        }
+      }
+      if (!prefix_ok) {
+        continue;
+      }
+      // extract the identifier that follows the keyword
+      const char *name = found + e.len;
+      while (*name == ' ' || *name == '\t') ++name;
+      const char *name_end = name;
+      while (*name_end && (isalnum(*name_end) || *name_end == '_')) ++name_end;
+      if (name_end > name) {
+        result.push_back(ns_prefix + std::string(name, name_end));
+      }
+      break;
+    }
+  }
+
+  return result;
+}
+
+// Scans 'path' (a directory or a single .php file) for PHP class declarations
+// and inserts the found class_name→file_path pairs into 'out'.
+// Class names use '/' as the namespace separator.
+static void scan_classmap_path(const std::string &path,
+                                std::unordered_map<std::string, std::string> &out) {
+  namespace fs = std::filesystem;
+
+  std::error_code ec;
+  fs::path fsp{path};
+
+  if (fs::is_regular_file(fsp, ec) && fsp.extension() == ".php") {
+    for (const auto &cls : collect_php_class_names(path)) {
+      out.emplace(cls, path);
+    }
+    return;
+  }
+
+  if (fs::is_directory(fsp, ec)) {
+    const auto opts = fs::directory_options::skip_permission_denied;
+    for (const auto &entry : fs::recursive_directory_iterator(fsp, opts, ec)) {
+      if (!entry.is_regular_file()) {
+        continue;
+      }
+      if (entry.path().extension() != ".php") {
+        continue;
+      }
+      const std::string file_path = entry.path().string();
+      for (const auto &cls : collect_php_class_names(file_path)) {
+        out.emplace(cls, file_path);
+      }
+    }
+  }
+}
 
 std::string ComposerAutoloader::psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore) {
   std::string prefix = class_name;
@@ -102,6 +255,14 @@ std::string ComposerAutoloader::psr0_lookup(const std::string &class_name) const
   return file;
 }
 
+std::string ComposerAutoloader::classmap_lookup(const std::string &class_name) const {
+  auto it = autoload_classmap_.find(class_name);
+  if (it != autoload_classmap_.end() && file_exists(it->second)) {
+    return it->second;
+  }
+  return "";
+}
+
 void ComposerAutoloader::set_use_dev(bool v) {
   use_dev_ = v;
 }
@@ -153,6 +314,11 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   //       "file.php",
   //       <...>
   //     ],
+  //     "classmap": [
+  //       "src/",        // directory to scan for class declarations
+  //       "lib/Foo.php", // single file
+  //       <...>
+  //     ],
   //   }
   //   "autoload-dev": {
   //     "psr-4": {
@@ -165,6 +331,10 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   //     },
   //     "files": [
   //       "file.php",
+  //       <...>
+  //     ],
+  //     "classmap": [
+  //       "src/",
   //       <...>
   //     ],
   //   }
@@ -204,6 +374,12 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
     if (!autoload_psr4.is_dev || use_dev) {
       auto &at_prefix = autoload_psr4_[autoload_psr4.prefix];
       at_prefix.insert(at_prefix.end(), autoload_psr4.dirs.begin(), autoload_psr4.dirs.end());
+    }
+  }
+
+  for (const auto &classmap_entry : composer_json->autoload_classmap) {
+    if (!classmap_entry.is_dev || use_dev) {
+      scan_classmap_path(classmap_entry.path, autoload_classmap_);
     }
   }
 
