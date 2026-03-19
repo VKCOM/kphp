@@ -1,6 +1,7 @@
 import os
 import shutil
 import pathlib
+import uuid
 import pytest
 
 from .file_utils import search_k2_bin
@@ -112,10 +113,11 @@ def std_function_invocations(session_tmp_dir: pathlib.Path):
 
     yield function_invocations
 
-    session_tmp_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = session_tmp_dir / "artifacts"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = "std_function_invocations.json"
-    output_path = session_tmp_dir / filename
+    filename = f"{uuid.uuid4()}.json"
+    output_path = output_dir / filename
     
     with open(output_path, "w", encoding="utf-8") as f:
         function_invocations.dump(f)

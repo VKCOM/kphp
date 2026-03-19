@@ -174,6 +174,8 @@ class Engine:
 
         if not self._ignore_log_errors:
             self._assert_no_errors()
+        else:
+            self._read_new_logs()
         self._log_file_read_fd.close()
         self._log_file_write_fd.close()
         self._stats_receiver.stop()

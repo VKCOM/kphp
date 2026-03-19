@@ -153,10 +153,7 @@ class WebServerAutoTestCase(BaseTestCase):
 
     @pytest.fixture(scope="class", autouse=True)
     def web_server_std_functions_updater(self, request, std_function_invocations):
-        yield
-        if std_function_invocations:
-            for line in request.cls.web_server.get_log():
-                std_function_invocations.update(line.encode())
+        request.cls.std_function_invocations = std_function_invocations
 
     @classmethod
     def custom_setup(cls):
@@ -219,6 +216,9 @@ class WebServerAutoTestCase(BaseTestCase):
     @classmethod
     def custom_teardown(cls):
         cls.web_server.stop()
+        if cls.std_function_invocations:
+            for line in cls.web_server._engine_logs:
+                cls.std_function_invocations.update(line.encode())
         cls.extra_class_teardown()
         if not cls.should_use_k2():
             try:
@@ -233,6 +233,9 @@ class WebServerAutoTestCase(BaseTestCase):
         pass
 
     def custom_teardown_method(self, method):
+        if self.std_function_invocations:
+            for line in self.web_server._engine_logs:
+                self.std_function_invocations.update(line.encode())
         self.web_server._engine_logs = []
 
     @classmethod
