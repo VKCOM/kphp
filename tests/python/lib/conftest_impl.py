@@ -115,7 +115,7 @@ def std_function_invocations(session_tmp_dir: pathlib.Path):
     session_tmp_dir.mkdir(parents=True, exist_ok=True)
 
     filename = "std_function_invocations.json"
-    output_path = session_tmp_dir / filename
+    output_path = session_tmp_dir / "artifacts" / filename
     
     with open(output_path, "w", encoding="utf-8") as f:
         function_invocations.dump(f)
