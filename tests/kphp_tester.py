@@ -402,8 +402,8 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             "tag" if len(test_tags) == 1 else "tags"))
         sys.exit(1)
 
-    if "K2_KPHP_TRACKED_BUILTINS_LIST" in os.environ:
-        std_function_invocations = std_function.Invocations()
+    if "KPHP_TRACKED_BUILTINS_LIST" in os.environ:
+        std_function_invocations = std_function.Invocations(os.environ["KPHP_TRACKED_BUILTINS_LIST"])
     else:
         std_function_invocations = None
 
