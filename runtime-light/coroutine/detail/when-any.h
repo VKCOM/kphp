@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -249,12 +250,17 @@ private:
   };
 
   struct when_any_task_promise_void : public when_any_task_promise_common {
-    auto yield_value() const noexcept {
+  private:
+    std::optional<kphp::coro::void_value> m_result;
+
+  public:
+    auto yield_value(kphp::coro::void_value&& return_value) noexcept {
+      m_result.emplace(return_value);
       return when_any_task_promise_common::final_suspend();
     }
 
-    constexpr auto result() const noexcept -> std::optional<kphp::coro::void_value> {
-      return std::optional<kphp::coro::void_value>{std::in_place};
+    auto result() noexcept -> std::optional<kphp::coro::void_value> {
+      return m_result;
     }
 
     constexpr auto return_void() const noexcept -> void {}
@@ -296,6 +302,7 @@ template<kphp::coro::concepts::awaitable awaitable_type>
 auto make_when_any_task(awaitable_type awaitable) noexcept -> when_any_task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
     co_await std::move(awaitable);
+    co_yield kphp::coro::void_value{};
   } else {
     co_yield co_await std::move(awaitable);
   }
