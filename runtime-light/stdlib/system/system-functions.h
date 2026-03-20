@@ -32,24 +32,31 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
 namespace kphp::posix::impl {
 
-constexpr std::string_view NAME_PWUID_KEY = "name";
-constexpr std::string_view PASSWD_PWUID_KEY = "passwd";
-constexpr std::string_view UID_PWUID_KEY = "uid";
-constexpr std::string_view GID_PWUID_KEY = "gid";
-constexpr std::string_view GECOS_PWUID_KEY = "gecos";
-constexpr std::string_view DIR_PWUID_KEY = "dir";
-constexpr std::string_view SHELL_PWUID_KEY = "shell";
+inline constexpr std::string_view NAME_PWUID_KEY = "name";
+inline constexpr std::string_view PASSWD_PWUID_KEY = "passwd";
+inline constexpr std::string_view UID_PWUID_KEY = "uid";
+inline constexpr std::string_view GID_PWUID_KEY = "gid";
+inline constexpr std::string_view GECOS_PWUID_KEY = "gecos";
+inline constexpr std::string_view DIR_PWUID_KEY = "dir";
+inline constexpr std::string_view SHELL_PWUID_KEY = "shell";
 
 } // namespace kphp::posix::impl
 
 namespace kphp::system {
+
+inline auto exit(int32_t exit_code) noexcept -> kphp::coro::task<> {
+  co_await InstanceState::get().run_instance_epilogue();
+  k2::exit(exit_code);
+}
 
 template<std::invocable<std::span<std::byte>> output_handler_type = std::identity>
 auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) noexcept -> std::expected<int32_t, int32_t> {
@@ -77,6 +84,23 @@ auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) 
 }
 
 } // namespace kphp::system
+
+inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchronous
+  int64_t exit_code{};
+  if (v.is_string()) {
+    OutputInstanceState::get().output_buffers.current_buffer().get() << v;
+  } else if (v.is_int()) {
+    int64_t v_code{v.to_int()};
+    exit_code = v_code >= 0 && v_code <= 254 ? v_code : 1; // valid PHP exit codes: [0..254]
+  } else {
+    exit_code = 1;
+  }
+  co_await kphp::forks::id_managed(kphp::system::exit(static_cast<int32_t>(exit_code)));
+}
+
+inline kphp::coro::task<> f$die(mixed v = 0) noexcept {
+  co_await f$exit(std::move(v));
+}
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
