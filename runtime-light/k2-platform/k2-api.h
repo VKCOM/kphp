@@ -46,6 +46,8 @@ inline constexpr int32_t errno_eshutdown = ESHUTDOWN;
 inline constexpr int32_t errno_ecanceled = ECANCELED;
 inline constexpr int32_t errno_erange = ERANGE;
 inline constexpr int32_t errno_enoent = ENOENT;
+inline constexpr int32_t errno_eopnotsupp = EOPNOTSUPP;
+inline constexpr int32_t errno_einprogress = EINPROGRESS;
 
 using descriptor = uint64_t;
 inline constexpr k2::descriptor INVALID_PLATFORM_DESCRIPTOR = 0;
