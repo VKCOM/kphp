@@ -9,7 +9,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
-struct tl_func_base : ScriptAllocatorManaged {
+struct tl_func_base : kphp::memory::script_allocator_managed {
   virtual mixed fetch() = 0;
 
   virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
