@@ -6,8 +6,11 @@
 
 #include <concepts>
 #include <coroutine>
+#include <memory>
 #include <utility>
 
+#include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator-managed.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -15,10 +18,14 @@
 namespace kphp::coro {
 
 class event {
-  // 1) nullptr => not set
-  // 2) awaiter* => linked list of awaiters waiting for the event to trigger
-  // 3) this => The event is triggered and all awaiters are resumed
-  void* m_state{};
+  struct state_handle : kphp::memory::script_allocator_managed, vk::not_copyable {
+    // 1) nullptr => not set
+    // 2) awaiter* => linked list of awaiters waiting for the event to trigger
+    // 3) this => The event is triggered and all awaiters are resumed
+    void* m_state{};
+  };
+
+  std::unique_ptr<state_handle> m_handle;
 
   struct awaiter {
     event& m_event;
@@ -55,6 +62,26 @@ class event {
   };
 
 public:
+  event() noexcept {
+    m_handle = std::make_unique<state_handle>();
+    kphp::log::assertion(m_handle != nullptr);
+  }
+
+  event(event&& other) noexcept
+      : m_handle(std::move(other.m_handle)) {}
+
+  event& operator=(event&& other) noexcept {
+    if (this != std::addressof(other)) {
+      m_handle = std::move(other.m_handle);
+    }
+    return *this;
+  }
+
+  ~event() = default;
+
+  event(const event&) = delete;
+  event& operator=(const event&) = delete;
+
   auto set() noexcept -> void;
 
   auto unset() noexcept -> void;
@@ -72,7 +99,7 @@ inline auto event::awaiter::cancel_awaiter() noexcept -> void {
     m_prev->m_next = m_next;
   } else {
     // we are the head of the awaiters list, so we need to update the head
-    m_event.m_state = m_next;
+    m_event.m_handle->m_state = m_next;
   }
   m_next = nullptr;
   m_prev = nullptr;
@@ -90,7 +117,7 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
   m_suspended = true;
   m_awaiting_coroutine = awaiting_coroutine;
 
-  m_next = static_cast<event::awaiter*>(m_event.m_state);
+  m_next = static_cast<event::awaiter*>(m_event.m_handle->m_state);
 
   // ensure that the event isn't triggered
   kphp::log::assertion(reinterpret_cast<event*>(m_next) != std::addressof(m_event));
@@ -98,7 +125,7 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
   if (m_next != nullptr) {
     m_next->m_prev = this;
   }
-  m_event.m_state = this;
+  m_event.m_handle->m_state = this;
 }
 
 inline auto event::awaiter::await_resume() noexcept -> void {
@@ -110,7 +137,7 @@ inline auto event::awaiter::await_resume() noexcept -> void {
 }
 
 inline auto event::set() noexcept -> void {
-  void* prev_value{std::exchange(m_state, this)};
+  void* prev_value{std::exchange(m_handle->m_state, this)};
   if (prev_value == this || prev_value == nullptr) [[unlikely]] {
     return;
   }
@@ -123,13 +150,13 @@ inline auto event::set() noexcept -> void {
 }
 
 inline auto event::unset() noexcept -> void {
-  if (m_state == this) {
-    m_state = nullptr;
+  if (m_handle->m_state == this) {
+    m_handle->m_state = nullptr;
   }
 }
 
 inline auto event::is_set() const noexcept -> bool {
-  return m_state == this;
+  return m_handle->m_state == this;
 }
 
 inline auto event::operator co_await() noexcept {
