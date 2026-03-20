@@ -24,6 +24,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/multipart/multipart.h"
@@ -32,8 +33,10 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
+#include "runtime-light/stdlib/system/system-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
 #include "runtime-light/streams/stream.h"
+#include "runtime-light/streams/watcher.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
@@ -241,7 +244,29 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  http_server_instance_st.request_stream = std::move(request_stream);
+
+  {
+    http_server_instance_st.opt_connection.emplace(std::move(request_stream));
+
+    auto expected_user_abort_watcher{kphp::component::watcher::create(http_server_instance_st.opt_connection->descriptor())};
+    if (!expected_user_abort_watcher) [[unlikely]] {
+      kphp::log::error("failed to create user abort watcher: error code -> {}", expected_user_abort_watcher.error());
+    }
+
+    static constexpr auto user_abort_watcher{[] noexcept -> kphp::coro::task<> {
+      auto& http_server_instance_st{HttpServerInstanceState::get()};
+      http_server_instance_st.opt_connection.reset();
+      http_server_instance_st.opt_user_abort_watcher.reset();
+      if (http_server_instance_st.ignore_user_abort_level == 0) {
+        co_await kphp::system::exit(1);
+      }
+    }};
+
+    http_server_instance_st.opt_user_abort_watcher.emplace(*std::move(expected_user_abort_watcher));
+    if (auto expected{http_server_instance_st.opt_user_abort_watcher->watch(user_abort_watcher)}; !expected) [[unlikely]] {
+      kphp::log::error("failed to setup user abort watcher: error code -> {}", expected.error());
+    }
+  }
 
   // determine HTTP method
   if (invoke_http.method.value == GET_METHOD) {
@@ -379,6 +404,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  http_server_instance_st.opt_user_abort_watcher.reset();
 
   string response_body{};
   tl::HttpResponse http_response{};
@@ -419,15 +445,18 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::sending_body: {
+    if (!http_server_instance_st.opt_connection) [[unlikely]] {
+      if (http_server_instance_st.ignore_user_abort_level > 0) {
+        co_return kphp::log::warning("HTTP connection closed");
+      }
+      kphp::log::error("HTTP connection closed");
+    }
+
     tl::storer tls{http_response.footprint()};
     http_response.store(tls);
 
-    if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
-      kphp::log::error("can't send HTTP response since there is no available stream");
-    }
-    auto& request_stream{*http_server_instance_st.request_stream};
-    if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
-      kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
+    if (auto expected{co_await kphp::component::send_response(*http_server_instance_st.opt_connection, tls.view())}; !expected) [[unlikely]] {
+      kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
     }
     http_server_instance_st.response_state = kphp::http::response_state::completed;
     [[fallthrough]];

@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
@@ -41,6 +42,7 @@
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
+#include "runtime-light/streams/watcher.h"
 
 /**
  * Supported kinds of KPHP images:

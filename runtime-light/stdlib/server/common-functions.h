@@ -1,0 +1,35 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2026 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include <cstdint>
+
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/system/system-functions.h"
+
+inline auto f$ignore_user_abort(Optional<bool> enable) noexcept -> kphp::coro::task<int64_t> {
+  if (InstanceState::get().instance_kind() != instance_kind::http_server) {
+    kphp::log::warning("called stub f$ignore_user_abort");
+    co_return 0;
+  }
+
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  if (enable.is_null()) {
+    co_return http_server_instance_st.ignore_user_abort_level;
+  } else if (enable.val()) {
+    co_return http_server_instance_st.ignore_user_abort_level++;
+  } else {
+    const auto prev{http_server_instance_st.ignore_user_abort_level > 0 ? http_server_instance_st.ignore_user_abort_level-- : 0};
+
+    if (http_server_instance_st.ignore_user_abort_level == 0 && !http_server_instance_st.opt_connection) {
+      co_await kphp::system::exit(1);
+    }
+    co_return prev;
+  }
+}
