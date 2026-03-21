@@ -11,6 +11,7 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-functions.h"
 
 inline auto f$ignore_user_abort(Optional<bool> enable) noexcept -> kphp::coro::task<int64_t> {
@@ -31,7 +32,7 @@ inline auto f$ignore_user_abort(Optional<bool> enable) noexcept -> kphp::coro::t
     http_server_instance_st.connection->decrease_ignore_abort_level();
 
     if (http_server_instance_st.connection->get_ignore_abort_level() == 0 && http_server_instance_st.connection->is_aborted()) {
-      co_await kphp::system::exit(1);
+      co_await kphp::forks::id_managed(kphp::system::exit(1));
     }
     co_return prev;
   }
