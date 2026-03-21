@@ -64,7 +64,6 @@ inline auto connection::from_stream(kphp::component::stream&& stream) noexcept -
   }
 
   auto watcher{*std::move(expected_watcher)};
-  // watcher.watch(std::forward<on_close_handler_type>(h));
   return connection{std::move(stream), std::move(watcher)};
 }
 
@@ -98,4 +97,5 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
 inline auto connection::unregister_abort_handler() noexcept -> void {
   m_watcher.unwatch();
 }
+
 } // namespace kphp::component

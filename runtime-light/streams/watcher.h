@@ -73,10 +73,12 @@ public:
   static auto create(k2::descriptor descriptor) noexcept -> std::expected<watcher, int32_t>;
 
   template<std::invocable on_event_handler_type>
-  auto watch(on_event_handler_type&& f) noexcept -> std::expected<void, int32_t>;
+  auto watch(on_event_handler_type&& h) noexcept -> std::expected<void, int32_t>;
 
   auto unwatch() noexcept -> void;
 };
+
+// ================================================================================================
 
 inline auto watcher::create(k2::descriptor descriptor) noexcept -> std::expected<watcher, int32_t> {
   if (descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
@@ -86,7 +88,7 @@ inline auto watcher::create(k2::descriptor descriptor) noexcept -> std::expected
 }
 
 template<std::invocable on_event_handler_type>
-auto watcher::watch(on_event_handler_type&& f) noexcept -> std::expected<void, int32_t> {
+auto watcher::watch(on_event_handler_type&& h) noexcept -> std::expected<void, int32_t> {
   if (m_shared_state.is_null()) [[unlikely]] {
     return std::unexpected{k2::errno_eshutdown};
   }
@@ -100,7 +102,7 @@ auto watcher::watch(on_event_handler_type&& f) noexcept -> std::expected<void, i
     return std::unexpected{stream_status.libc_errno};
   }
 
-  static constexpr auto watcher{[](k2::descriptor descriptor, class_instance<shared_state> state, on_event_handler_type f) noexcept -> kphp::coro::task<> {
+  static constexpr auto watcher{[](k2::descriptor descriptor, class_instance<shared_state> state, on_event_handler_type h) noexcept -> kphp::coro::task<> {
     kphp::log::assertion(!state.is_null() && state.get()->m_unwatch_event.has_value());
     const auto finalizer{vk::finally([state] noexcept { state.get()->m_unwatch_event.reset(); })};
 
@@ -123,15 +125,15 @@ auto watcher::watch(on_event_handler_type&& f) noexcept -> std::expected<void, i
     const auto v{co_await kphp::coro::when_any(descriptor_awaiter(descriptor), unwatch_awaiter(std::move(state)))};
     if (std::holds_alternative<std::monostate>(v)) {
       if constexpr (kphp::coro::is_async_function_v<on_event_handler_type>) {
-        co_await std::invoke(std::move(f));
+        co_await std::invoke(std::move(h));
       } else {
-        std::invoke(std::move(f));
+        std::invoke(std::move(h));
       }
     }
   }};
 
   m_shared_state.get()->m_unwatch_event.emplace();
-  if (!kphp::coro::io_scheduler::get().spawn(watcher(m_descriptor, m_shared_state, std::forward<on_event_handler_type>(f)))) {
+  if (!kphp::coro::io_scheduler::get().spawn(watcher(m_descriptor, m_shared_state, std::forward<on_event_handler_type>(h)))) {
     m_shared_state.get()->m_unwatch_event.reset();
     return std::unexpected{k2::errno_ebusy};
   }
