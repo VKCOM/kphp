@@ -20,14 +20,17 @@ inline auto f$ignore_user_abort(Optional<bool> enable) noexcept -> kphp::coro::t
   }
 
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  kphp::log::assertion(http_server_instance_st.connection.has_value());
   if (enable.is_null()) {
-    co_return http_server_instance_st.ignore_user_abort_level;
+    co_return http_server_instance_st.connection->get_ignore_abort_level();
   } else if (enable.val()) {
-    co_return http_server_instance_st.ignore_user_abort_level++;
+    http_server_instance_st.connection->increase_ignore_abort_level();
+    co_return http_server_instance_st.connection->get_ignore_abort_level();
   } else {
-    const auto prev{http_server_instance_st.ignore_user_abort_level > 0 ? http_server_instance_st.ignore_user_abort_level-- : 0};
+    const auto prev{http_server_instance_st.connection->get_ignore_abort_level()};
+    http_server_instance_st.connection->decrease_ignore_abort_level();
 
-    if (http_server_instance_st.ignore_user_abort_level == 0 && !http_server_instance_st.opt_connection) {
+    if (http_server_instance_st.connection->get_ignore_abort_level() == 0 && http_server_instance_st.connection->is_aborted()) {
       co_await kphp::system::exit(1);
     }
     co_return prev;

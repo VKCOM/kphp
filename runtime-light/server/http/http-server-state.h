@@ -16,8 +16,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/streams/stream.h"
-#include "runtime-light/streams/watcher.h"
+#include "runtime-light/streams/connection.h"
 
 namespace kphp::http {
 
@@ -59,9 +58,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   static constexpr auto ENCODING_GZIP = static_cast<uint32_t>(1U << 0U);
   static constexpr auto ENCODING_DEFLATE = static_cast<uint32_t>(1U << 1U);
 
-  std::optional<kphp::component::stream> opt_connection;
-  std::optional<kphp::component::watcher> opt_user_abort_watcher;
-  uint32_t ignore_user_abort_level{};
+  std::optional<kphp::component::connection> connection;
 
   std::optional<string> opt_raw_post_data;
 
