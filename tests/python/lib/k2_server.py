@@ -30,6 +30,8 @@ class K2Server(WebServer):
                          "--linking": self._linking_file}
 
         os.environ["RUNTIME_CONFIG_PATH"] = os.path.join(working_dir, "data/runtime_configuration.json")
+        if "RUST_LOG" not in os.environ:
+            os.environ["RUST_LOG"] = "Debug"
 
         if options:
             self.update_options(options)
@@ -81,3 +83,9 @@ class K2Server(WebServer):
         # remove trace
         log_record.pop("trace", "")
         return log_record
+
+    def get_log(self):
+        if self._is_json_log_enabled():
+            return list(map(json.dumps, self.get_json_log()))
+
+        return super(K2Server, self).get_log()

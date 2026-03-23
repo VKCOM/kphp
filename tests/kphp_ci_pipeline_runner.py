@@ -4,6 +4,8 @@ import curses
 import math
 import multiprocessing
 import os
+import pathlib
+import shlex
 import signal
 import subprocess
 import sys
@@ -11,6 +13,10 @@ from enum import Enum
 
 from python.lib.colors import cyan, green, red, yellow
 from python.lib.nocc_for_kphp_tester import nocc_env
+
+
+K2_KPHP_TRACKED_BUILTINS_LIST_PATH = pathlib.Path(__file__).parent / "k2_kphp_tracked_builtins_list.txt"
+K2_KPHP_TRACKED_BUILTINS_LIST = K2_KPHP_TRACKED_BUILTINS_LIST_PATH.read_text()
 
 
 class TestStatus(Enum):
@@ -348,9 +354,11 @@ if __name__ == "__main__":
         name="k2-kphp-tests",
         description="run k2-kphp tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+        "KPHP_TRACKED_BUILTINS_LIST={K2_KPHP_TRACKED_BUILTINS_LIST} "
         "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
+            K2_KPHP_TRACKED_BUILTINS_LIST=shlex.quote(K2_KPHP_TRACKED_BUILTINS_LIST),
             kphp_runner=kphp_test_runner,
             cxx_name=args.cxx_name,
             k2_bin=args.k2_bin,
@@ -427,10 +435,17 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="k2-functional-tests",
         description="run k2-kphp functional tests with cxx={}".format(args.cxx_name),
-        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} KPHP_CXX={cxx_name} K2_BIN={k2_bin} K2_MONITORING_ABORT_HANGING_GLOBAL_TASK=false K2_MONITORING_ABORT_HANGING_REQUEST_TASK=false python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+        "KPHP_CXX={cxx_name} "
+        "K2_BIN={k2_bin} "
+        "K2_MONITORING_ABORT_HANGING_GLOBAL_TASK=false "
+        "K2_MONITORING_ABORT_HANGING_REQUEST_TASK=false "
+        "KPHP_TRACKED_BUILTINS_LIST={K2_KPHP_TRACKED_BUILTINS_LIST} "
+        "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             cxx_name=args.cxx_name,
             k2_bin=args.k2_bin,
+            K2_KPHP_TRACKED_BUILTINS_LIST=shlex.quote(K2_KPHP_TRACKED_BUILTINS_LIST),
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
             base_tempdir=os.path.expanduser(
@@ -474,6 +489,7 @@ if __name__ == "__main__":
             "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
             "KPHP_CXX={cxx_name} "
             "K2_BIN={k2_bin} "
+            "KPHP_TRACKED_BUILTINS_LIST={K2_KPHP_TRACKED_BUILTINS_LIST} "
             "python3 -m pytest --tb=native -n{jobs} {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
@@ -482,6 +498,7 @@ if __name__ == "__main__":
                 kphp_polyfills_repo=kphp_polyfills_repo,
                 cxx_name=args.cxx_name,
                 k2_bin=args.k2_bin,
+                K2_KPHP_TRACKED_BUILTINS_LIST=shlex.quote(K2_KPHP_TRACKED_BUILTINS_LIST),
                 tests_dir=" ".join([
                     os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_client/"),
                     os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),

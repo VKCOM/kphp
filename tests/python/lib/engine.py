@@ -1,5 +1,6 @@
 import atexit
 import os
+import typing
 
 import psutil
 import re
@@ -44,7 +45,7 @@ class Engine:
         self._engine_process = None
         self._log_file_write_fd = None
         self._log_file_read_fd = None
-        self._engine_logs = []
+        self._engine_logs: typing.List[str] = []
         self._binlog_path = None
         self._ignore_log_errors = False
         if options:
@@ -173,6 +174,8 @@ class Engine:
 
         if not self._ignore_log_errors:
             self._assert_no_errors()
+        else:
+            self._read_new_logs()
         self._log_file_read_fd.close()
         self._log_file_write_fd.close()
         self._stats_receiver.stop()

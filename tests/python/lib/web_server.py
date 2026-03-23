@@ -92,6 +92,10 @@ class WebServer(Engine):
     def _process_json_log(self, log_record):
         return log_record
 
+    def get_json_log(self):
+        self._read_new_json_logs()
+        return self._json_logs
+
     def assert_json_log(self, expect, message="Can't wait expected json log", timeout=60):
         """
         Check kphp server json log
