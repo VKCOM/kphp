@@ -259,6 +259,7 @@ if __name__ == "__main__":
     kphp_test_runner = make_relpath(runner_dir, "kphp_tester.py")
     functional_tests_dir = make_relpath(runner_dir, "python/tests")
     zend_test_list = make_relpath(runner_dir, "zend-test-list")
+    k2_zend_test_list = make_relpath(runner_dir, "k2_zend-test-list")
     kphp_repo_root = os.path.join(runner_dir, os.path.pardir)
     kphp_repo_root = os.path.relpath(kphp_repo_root, os.getcwd())
 
@@ -379,6 +380,20 @@ if __name__ == "__main__":
                 use_nocc_option=use_nocc_option,
             ),
             skip=args.steps and "zend-tests" not in args.steps,
+        )
+
+        runner.add_test_group(
+            name="k2-zend-tests",
+            description="run k2-php tests from zend repo",
+            cmd="{kphp_runner} -j{jobs} -d {zend_repo} --from-list {zend_tests} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
+                jobs=n_cpu,
+                kphp_runner=kphp_test_runner,
+                zend_repo=args.zend_repo,
+                zend_tests=k2_zend_test_list,
+                cxx_name=args.cxx_name,
+                k2_bin=args.k2_bin,
+            ),
+            skip=not args.k2_bin or (args.steps and "zend-tests" not in args.steps),
         )
 
     tl2php_bin = os.path.join(kphp_repo_root, "objs/bin/tl2php")
