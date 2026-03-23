@@ -77,6 +77,7 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   kphp::log::assertion(maybe_confdata_value.fetch(tlf));
 
   if (!maybe_confdata_value.opt_value) { // no such key
+    kphp::log::warning("key isn't found: {}", confdata_get.key.value);
     co_return mixed{};
   }
 
@@ -119,6 +120,11 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   tl::fetcher tlf{response};
   tl::Dictionary<tl::confdataValue> dict_confdata_value{};
   kphp::log::assertion(dict_confdata_value.fetch(tlf));
+
+  if (dict_confdata_value.size() == 0) {
+    kphp::log::warning("wildcard doesn't match any key: {}", confdata_get_wildcard.wildcard.value);
+    co_return array<mixed>{};
+  }
 
   array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
   std::ranges::for_each(dict_confdata_value, [&result, wildcard_size = wildcard_view.size()](const auto& dict_field) noexcept {
