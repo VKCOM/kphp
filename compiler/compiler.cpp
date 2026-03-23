@@ -389,7 +389,7 @@ bool compiler_execute(CompilerSettings *settings) {
     std::cerr << "Compile stats:" << std::endl;
     G->stats.write_to(std::cerr);
     if (G->is_output_mode_k2()) {
-      std::cout << "Image version: " << image_version << std::endl;
+      std::cerr << "Image version: " << image_version << std::endl;
     }
   }
   if (!compilation_metrics_file.empty()) {
