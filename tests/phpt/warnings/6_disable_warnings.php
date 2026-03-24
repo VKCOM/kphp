@@ -1,4 +1,4 @@
-@kphp_runtime_should_not_warn ok k2_skip
+@kphp_runtime_should_not_warn ok
 <?php
 
 function should_warn() {

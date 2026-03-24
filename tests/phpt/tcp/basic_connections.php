@@ -1,4 +1,5 @@
 @ok k2_skip tcp_server:48091
+k2_skip: call to unsupported function : fgetc
 <?php
 
 function test_simple_connection($address, $request) {

@@ -1,4 +1,5 @@
 @ok k2_skip
+k2_skip: call to unsupported function : flush
 <?php
 
 echo "Zero";

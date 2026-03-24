@@ -1,4 +1,5 @@
 @ok k2_skip tcp_server:48092
+k2_skip: Unknown function stream_set_blocking
 <?php
 
 function test_non_blocking_connection($address, $request) {

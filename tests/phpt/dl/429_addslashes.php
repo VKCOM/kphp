@@ -1,4 +1,5 @@
 @ok k2_skip
+k2_skip: stripcslashes is not supported
 <?php
   for ($i = 0; $i < 256; $i++)
     $s_full .= chr ($i);

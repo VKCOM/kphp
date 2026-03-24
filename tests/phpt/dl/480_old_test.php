@@ -1,4 +1,5 @@
 @ok benchmark k2_skip
+k2_skip: gethostbynamel is not supported
 <?php
   header('WWW-Authenticate: Negotiate');
   header('WWW-Authenticate: NTLM', false);

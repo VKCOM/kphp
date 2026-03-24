@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function substr_replace_test1() {
