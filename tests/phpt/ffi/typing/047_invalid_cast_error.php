@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /FFI::cast\(\): line 1: syntax error/
 <?php
 

@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /class B must be serializable as it is used in field A::b/
 <?php
 require_once 'kphp_tester_include.php';

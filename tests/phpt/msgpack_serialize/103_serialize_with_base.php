@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Class A and all its ancestors must be @kphp-serializable if there are instance fields. Class Base is not./
 <?php
 

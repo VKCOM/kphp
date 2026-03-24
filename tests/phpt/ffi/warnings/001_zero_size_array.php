@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn k2_skip
+@kphp_runtime_should_warn 
 /zero array size/
 <?
 

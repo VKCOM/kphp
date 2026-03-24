@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Can not store instance of non-serializable class Y with instance_cache_store call/
 <?php
 

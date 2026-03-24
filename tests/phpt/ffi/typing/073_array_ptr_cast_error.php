@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /only pointers can be cast to arrays \(got uint64_t\)/
 <?php
 

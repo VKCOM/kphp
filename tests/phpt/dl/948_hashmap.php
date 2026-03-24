@@ -1,4 +1,4 @@
-@ok benchmar k2_skip
+@ok benchmar 
 <?php
 
 function test_base_str ($keys, $n) {

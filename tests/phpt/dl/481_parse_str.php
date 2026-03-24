@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
   $array = array (array ('bar[' => array()), 'foo', array ('bar[' => array()), array ('bar[' => array()));
   $query = http_build_query ($array);

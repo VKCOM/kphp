@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Called to_array_debug\(\) with CData/
 <?php
 

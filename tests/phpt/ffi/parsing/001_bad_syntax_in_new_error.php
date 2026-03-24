@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /ffi->new\(\): line 1: syntax error, unexpected INT_CONSTANT/
 <?php
 

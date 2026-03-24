@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <?php
 $max = 127000000;
 $result = "";

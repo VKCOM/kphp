@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /return FFI\\CData_int32\* from function/
 /declared as @return FFI\\CData_int32\*\*/
 <?php

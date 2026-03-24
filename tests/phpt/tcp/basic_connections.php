@@ -1,4 +1,4 @@
-@ok k2_skip tcp_server:48091
+@ok  tcp_server:48091
 <?php
 
 function test_simple_connection($address, $request) {

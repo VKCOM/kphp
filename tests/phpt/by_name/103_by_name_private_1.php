@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Can't access private static field count/
 /Can't access private static method A::sm/
 /Can't access private method A::__construct/

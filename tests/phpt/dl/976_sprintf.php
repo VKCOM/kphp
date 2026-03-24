@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 
 printf ("-<a>-%d-<b>-%s-<c>-%f\n", 1, "123", 0.2);

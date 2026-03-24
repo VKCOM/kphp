@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /It is forbidden to call resumable functions inside foreach with reference by var A::\$static_var_x with non local scope visibility/
 <?php
 

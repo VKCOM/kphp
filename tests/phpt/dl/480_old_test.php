@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <?php
   header('WWW-Authenticate: Negotiate');
   header('WWW-Authenticate: NTLM', false);
@@ -234,9 +234,9 @@
   var_dump (1e-3);
 
 
-  var_dump ('высоком качестве');
-  var_dump (iconv('WINDOWS-1251', 'UTF-8', 'высоком качестве'));
-  var_dump (rawurlencode(iconv('WINDOWS-1251', 'UTF-8', 'высоком качестве')));
+  var_dump ('пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ');
+  var_dump (iconv('WINDOWS-1251', 'UTF-8', 'пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ'));
+  var_dump (rawurlencode(iconv('WINDOWS-1251', 'UTF-8', 'пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ')));
 
 //  $ip = gethostbynamel ('vk.com');
 //  sort ($ip);

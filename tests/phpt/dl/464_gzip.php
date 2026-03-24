@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 #ifndef KPHP
 if(!function_exists('gzdecode')){

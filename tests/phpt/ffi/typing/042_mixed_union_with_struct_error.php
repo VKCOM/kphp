@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Mismatched union/struct tag for ffi_cdata<example, Foo>/
 <?php
 

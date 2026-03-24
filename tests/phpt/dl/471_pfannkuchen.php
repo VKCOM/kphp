@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <? /* The Computer Language Benchmarks Game
    http://shootout.alioth.debian.org/
    

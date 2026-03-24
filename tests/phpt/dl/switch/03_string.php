@@ -1,4 +1,4 @@
-@benchmark ok k2_skip
+@benchmark ok 
 <?
 ob_start();
 function f($s) {

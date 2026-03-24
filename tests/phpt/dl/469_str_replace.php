@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <?php
 /**
  * @param string $value
@@ -97,11 +97,11 @@ $text = 'asdfas {user} {friends}  sadfasdf';
 $text = str_replace(array('{user}', '{friends}'), array('', "asdasd"), $text);
 var_dump ($text);
 
-$text = 'Ульянка {user} вступила в группу';
+$text = 'пїЅпїЅпїЅпїЅпїЅпїЅпїЅ {user} пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ';
 $text = str_replace(array('{user}', '{friends}'), array('', "asdasd"), $text);
 var_dump ($text);
 
-$text = 'Ульянка {user}{user}{user}{user} вступила в группу';
+$text = 'пїЅпїЅпїЅпїЅпїЅпїЅпїЅ {user}{user}{user}{user} пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ';
 $text = str_replace(array('{user}', '{friends}'), array('', "asdasd"), $text);
 var_dump ($text);
 

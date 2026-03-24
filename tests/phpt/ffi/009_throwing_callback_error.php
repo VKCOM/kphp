@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /FFI callback should not throw/
 /Throw chain: function\(\) -> throwing/
 <?php

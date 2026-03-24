@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 
 fputcsv(STDOUT, array(0, 1, 2, 3, "a", '"b"', "x\tz"));//, ":q", "y");

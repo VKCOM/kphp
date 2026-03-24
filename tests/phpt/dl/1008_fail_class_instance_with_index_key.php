@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 <?php
 class A { 
     public $x = 20; 

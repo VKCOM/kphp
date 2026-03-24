@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /pass FFI\\CData_int64 to argument \$x of expect_int32/
 /declared as @param FFI\\CData_int32/
 <?php

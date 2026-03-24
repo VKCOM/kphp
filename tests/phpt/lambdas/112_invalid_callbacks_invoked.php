@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Invalid \(\)-invocation of a non-lambda/
 /Invalid callback passed, could not detect a class or its method/
 <?php

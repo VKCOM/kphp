@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 
 $s1 = <<<_STR

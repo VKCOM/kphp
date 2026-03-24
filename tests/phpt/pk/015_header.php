@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 
 header('X-TEST-1: value1');

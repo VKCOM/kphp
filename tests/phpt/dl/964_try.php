@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 /**
  * @param string $desc
@@ -29,7 +29,7 @@ try {
  */
 function inverse($x) {
     if (!$x) {
-        throw new Exception('Деление на ноль', 123);
+        throw new Exception('пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ', 123);
     }
     else return 1/$x;
 }
@@ -38,7 +38,7 @@ try {
     echo inverse(5) . "\n";
     echo inverse(0) . "\n";
 } catch (Exception $e) {
-    echo 'Выброшено исключение: ',  $e->getMessage(), "\n";
+    echo 'пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: ',  $e->getMessage(), "\n";
     echo "code = ", $e->getCode(), "\n";
     echo "file = ", basename($e->getFile()), "\n";
     echo "line = ", $e->getLine(), "\n";
@@ -47,7 +47,7 @@ try {
     $debug .= 'CODE_'.$e->getCode().' '.$e->getMessage()."\n";
 }
 
-// Продолжение выполнения
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 echo 'Hello World'."\n";
 
 //echo inverse(0) . "\n";

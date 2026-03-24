@@ -1,6 +1,6 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <?php
-$str = "мама мыла раму!!! asfmklasdfasdgbsfbvdf buydfbdvbdfb vdfv dfv";
+$str = "пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ!!! asfmklasdfasdgbsfbvdf buydfbdvbdfb vdfv dfv";
 
 for ($i = 0; $i < 1000000; $i++) {
   $str_utf = vk_win_to_utf8($str);
@@ -18,7 +18,7 @@ echo 'Plain    : ', iconv("UTF-8", "cp1251", $text), PHP_EOL;
 
 var_dump (setlocale (LC_ALL, "en_US.utf8"));
 
-$text = "This is the Euro symbol '€'.";
+$text = "This is the Euro symbol 'пїЅ'.";
 
 echo 'Original : ', $text, PHP_EOL;
 #ifndef KPHP

@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=0
 /use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable/
 <?php

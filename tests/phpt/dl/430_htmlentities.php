@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <?php
   for ($i = 32; $i < 128; $i++)
     $s .= chr ($i);

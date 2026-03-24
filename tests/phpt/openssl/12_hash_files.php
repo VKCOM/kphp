@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark 
 <?php
 #ifndef KPHP
   function crc32_file ($x) {

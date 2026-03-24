@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /return string\|false\|null from getHtml/
 /\$result is string\|false\|null/
 /str_replace returns string\|false\|null/

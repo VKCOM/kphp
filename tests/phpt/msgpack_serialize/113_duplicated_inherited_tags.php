@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /kphp-serialized-field: field with number 1 found in both classes A and B/
 <?php
 

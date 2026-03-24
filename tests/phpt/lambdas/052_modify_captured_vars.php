@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok 
 <?php
 
 // earlier, modification of used vars inside lambdas was prohibited

@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /\$matches is declared but never written; please, provide a default value/
 <?php
 

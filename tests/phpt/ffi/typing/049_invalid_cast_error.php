@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /pass int to argument \$cdata of FFI::cast/
 /declared as @param FFI\\CData/
 <?php

@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail 
 /Callbacks passed to builtin functions must not be resumable./
 <?php
 
