@@ -259,7 +259,7 @@ if __name__ == "__main__":
     kphp_test_runner = make_relpath(runner_dir, "kphp_tester.py")
     functional_tests_dir = make_relpath(runner_dir, "python/tests")
     zend_test_list = make_relpath(runner_dir, "zend-test-list")
-    k2_zend_test_list = make_relpath(runner_dir, "k2_zend-test-list")
+    k2_zend_test_list = make_relpath(runner_dir, "k2-zend-test-list")
     kphp_repo_root = os.path.join(runner_dir, os.path.pardir)
     kphp_repo_root = os.path.relpath(kphp_repo_root, os.getcwd())
 
@@ -393,7 +393,7 @@ if __name__ == "__main__":
                 cxx_name=args.cxx_name,
                 k2_bin=args.k2_bin,
             ),
-            skip=not args.k2_bin or (args.steps and "zend-tests" not in args.steps),
+            skip=not args.k2_bin or (args.steps and "k2-zend-tests" not in args.steps),
         )
 
     tl2php_bin = os.path.join(kphp_repo_root, "objs/bin/tl2php")
