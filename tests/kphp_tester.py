@@ -538,7 +538,7 @@ def parse_args():
 def main():
     args = parse_args()
     if not os.path.exists(args.tests_dir):
-        print("Can't find tests dir '{}'".format(args.test_list))
+        print("Can't find tests dir '{}'".format(args.tests_dir))
         sys.exit(1)
 
     if args.test_list and not os.path.exists(args.test_list):
