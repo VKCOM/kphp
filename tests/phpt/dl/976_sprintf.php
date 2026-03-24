@@ -1,4 +1,5 @@
 @ok k2_skip
+k2_skip: Unknown function vprintf
 <?php
 
 printf ("-<a>-%d-<b>-%s-<c>-%f\n", 1, "123", 0.2);

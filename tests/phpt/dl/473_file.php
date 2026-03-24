@@ -1,4 +1,5 @@
 @ok k2_skip
+k2_skip: Unknown function clearstatcache
 <?php
   var_dump (dirname ('..'));
   var_dump (dirname ('phpt/'));

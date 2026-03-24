@@ -1,4 +1,5 @@
 @ok fixme k2_skip
+k2_skip: call to unsupported function : strftime
 <?php
 
 function test() {

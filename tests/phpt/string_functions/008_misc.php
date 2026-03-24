@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function extend_test_suite($tests) {

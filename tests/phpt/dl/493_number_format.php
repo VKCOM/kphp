@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 #var_dump(number_format(1e80, 0, '', ' '));
