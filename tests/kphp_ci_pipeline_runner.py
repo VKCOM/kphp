@@ -385,8 +385,10 @@ if __name__ == "__main__":
         runner.add_test_group(
             name="k2-zend-tests",
             description="run k2-php tests from zend repo",
-            cmd="{kphp_runner} -j{jobs} -d {zend_repo} --from-list {zend_tests} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
+            cmd="KPHP_TRACKED_BUILTINS_LIST={K2_KPHP_TRACKED_BUILTINS_LIST} "
+            "{kphp_runner} -j{jobs} -d {zend_repo} --from-list {zend_tests} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
                 jobs=n_cpu,
+                K2_KPHP_TRACKED_BUILTINS_LIST=shlex.quote(K2_KPHP_TRACKED_BUILTINS_LIST),
                 kphp_runner=kphp_test_runner,
                 zend_repo=args.zend_repo,
                 zend_tests=k2_zend_test_list,
