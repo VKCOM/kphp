@@ -1,9 +1,14 @@
-@ok k2_skip
+@ok
 <?php
   ob_start();
   echo "1:blah\n";
   ob_start();
-  echo "2:blah";
+  echo "2:blah\n";
+  ob_start();
+  echo "3:blah\n";
+  ob_clean();
+  var_dump(ob_get_clean());
+  var_dump("0");
   var_dump(ob_get_clean());
   var_dump("0");
   var_dump(ob_get_clean());
