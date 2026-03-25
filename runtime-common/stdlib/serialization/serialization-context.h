@@ -8,10 +8,20 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 #include "common/mixin/not_copyable.h"
+#include "common/php-functions.h"
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/core/reference-counter/reference-counter-functions.h"
+
+namespace kphp::serde::details {
+
+inline constexpr std::string_view JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE{"json_encode buffer overflow"};
+
+} // namespace kphp::serde::details
 
 struct SerializationLibContext final : private vk::not_copyable {
   string last_json_processor_error;
@@ -33,4 +43,16 @@ struct SerializationLibContext final : private vk::not_copyable {
   }
 
   static SerializationLibContext& get() noexcept;
+};
+
+struct SerializationLibConstants final : private vk::not_copyable {
+  string JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE{kphp::serde::details::JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE.data(),
+                                                       kphp::serde::details::JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE.size()};
+
+  SerializationLibConstants() noexcept {
+    php_assert((kphp::core::set_reference_counter_recursive(JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE, ExtraRefCnt::for_global_const),
+                kphp::core::is_reference_counter_recursive(JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE, ExtraRefCnt::for_global_const)));
+  }
+
+  static const SerializationLibConstants& get() noexcept;
 };

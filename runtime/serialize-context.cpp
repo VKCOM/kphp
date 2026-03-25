@@ -9,3 +9,9 @@ static SerializationLibContext serialize_lib_context{};
 SerializationLibContext& SerializationLibContext::get() noexcept {
   return serialize_lib_context;
 }
+
+const static SerializationLibConstants serialize_lib_constants{};
+
+const SerializationLibConstants& SerializationLibConstants::get() noexcept {
+  return serialize_lib_constants;
+}

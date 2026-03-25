@@ -7,3 +7,4 @@
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 
 using SerializationInstanceState = SerializationLibContext;
+using SerializationImageState = SerializationLibConstants;
