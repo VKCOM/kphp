@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <ranges>
 #include <span>
 #include <string_view>
@@ -78,11 +79,13 @@ std::expected<size_t, int32_t> write_temporary_file(std::string_view tmp_name, s
 
   auto written_res{(*file_res).write(content)};
   if (!written_res.has_value()) {
+    std::ignore = k2::unlink(tmp_name);
     return std::unexpected{UPLOAD_ERR_CANT_WRITE};
   }
 
   size_t file_size{*written_res};
   if (file_size < content.size()) {
+    std::ignore = k2::unlink(tmp_name);
     return std::unexpected{UPLOAD_ERR_PARTIAL};
   }
   return file_size;
@@ -108,9 +111,12 @@ void process_file_multipart(const kphp::http::multipart::details::part& part, ar
   kphp::log::assertion(part.filename_attribute.has_value());
 
   auto tmp_name_opt{generate_temporary_name()};
-  kphp::log::assertion(tmp_name_opt.has_value());
+  if (!tmp_name_opt.has_value()) {
+    kphp::log::error("cannot generate unique name for multipart temporary file");
+  }
   auto tmp_name{*tmp_name_opt};
-  auto write_res{write_temporary_file(tmp_name, {reinterpret_cast<const std::byte*>(part.body.data()), part.body.size()})};
+  const auto body_bytes_span{as_bytes(std::span<const char>(part.body.data(), part.body.size()))};
+  auto write_res{write_temporary_file(tmp_name, body_bytes_span)};
 
   if (write_res.has_value() || write_res.error() != UPLOAD_ERR_NO_FILE) {
     HttpServerInstanceState::get().multipart_temporary_files.insert(*tmp_name_opt);

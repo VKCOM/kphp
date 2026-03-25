@@ -5,7 +5,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <locale>
 #include <optional>
@@ -166,8 +165,9 @@ private:
         body(body) {}
 };
 
-inline auto parse_multipart_parts(std::string_view body, std::string_view boundary) noexcept {
-  return std::views::split(body, std::views::join(std::array{std::string_view{"--"}, boundary})) |
+template<typename Delim>
+auto parse_multipart_parts(std::string_view body, Delim&& delim) noexcept {
+  return std::views::split(body, std::forward<Delim>(delim)) |
          std::views::filter([](auto raw_part) noexcept { return !std::string_view(raw_part).empty(); }) |
          std::views::transform([](auto raw_part) noexcept -> std::optional<part> { return part::parse(trim_crlf(std::string_view(raw_part))); }) |
          std::views::take_while([](auto part_opt) noexcept { return part_opt.has_value(); }) | std::views::transform([](auto part_opt) { return *part_opt; });
