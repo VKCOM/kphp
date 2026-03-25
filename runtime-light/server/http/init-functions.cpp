@@ -349,12 +349,12 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 
   // ==================================
   // prepare some response headers
-
   auto& static_SB{RuntimeContext::get().static_SB};
   // add connection kind header
   const auto connection_kind{http_server_instance_st.connection_kind == connection_kind::keep_alive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
   static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
   kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
+
   kphp::log::info("http server initialized with: "
                   "server addr -> {}, "
                   "server port -> {}, "
