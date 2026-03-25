@@ -19,6 +19,7 @@ namespace kphp::http::multipart {
 
 namespace details {
 constexpr std::string_view MULTIPART_BOUNDARY_EQ = "boundary=";
+constexpr size_t BOUNDARY_MAX_SIZE = 70;
 
 inline std::optional<std::string_view> extract_boundary(std::string_view content_type) noexcept {
   const size_t boundary_start{content_type.find(details::MULTIPART_BOUNDARY_EQ)};
@@ -38,7 +39,7 @@ inline std::optional<std::string_view> extract_boundary(std::string_view content
     boundary_view.remove_suffix(1);
   }
 
-  if (boundary_view.empty()) {
+  if (boundary_view.empty() || boundary_view.size() > BOUNDARY_MAX_SIZE) {
     return std::nullopt;
   }
   return boundary_view;
