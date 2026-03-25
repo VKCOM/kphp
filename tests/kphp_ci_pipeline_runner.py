@@ -438,8 +438,8 @@ if __name__ == "__main__":
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
         "KPHP_CXX={cxx_name} "
         "K2_BIN={k2_bin} "
-        "K2_MONITORING_ABORT_HANGING_GLOBAL_TASK=false "
-        "K2_MONITORING_ABORT_HANGING_REQUEST_TASK=false "
+        "K2_MONITORING_REQUEST_TASK_HARD_TIMEOUT=30 "
+        "K2_MONITORING_GLOBAL_TASK_HARD_TIMEOUT=30 "
         "KPHP_TRACKED_BUILTINS_LIST={K2_KPHP_TRACKED_BUILTINS_LIST} "
         "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,

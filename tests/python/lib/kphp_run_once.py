@@ -156,7 +156,7 @@ class KphpRunOnce(KphpBuilder):
 
         k2_node_bin = self.k2_bin
 
-        cmd = [k2_node_bin, "run-once", "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto", "--instance-cache"] + args
+        cmd = [k2_node_bin, "run-once", "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto", "--instance-cache", "--task-hard-timeout", "30"] + args
 
         env = os.environ.copy()
         if "RUST_LOG" not in env:
