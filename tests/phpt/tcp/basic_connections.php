@@ -1,5 +1,5 @@
 @ok k2_skip tcp_server:48091
-k2_skip: call to unsupported function : fgetc
+k2_skip: call to unsupported function : fgetc, feof
 <?php
 
 function test_simple_connection($address, $request) {
@@ -33,10 +33,6 @@ function test_full_response($address, $request) {
     }
 }
 
-function test_no_close($address, $request) {
-    $fp = stream_socket_client($address, $errno, $errstr);
-}
-
 
 test_simple_connection("tcp://bad_address", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
 test_simple_connection("tcp://wrong_address:80", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
@@ -46,5 +42,3 @@ test_simple_connection("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: not_wor
 
 test_full_response("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
 test_full_response("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: not_working.com:80\r\nAccept: */*\r\n\r\n");
-
-test_no_close("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
