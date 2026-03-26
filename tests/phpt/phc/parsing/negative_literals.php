@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   var_dump(- - 0x7ffffffd);
   var_dump(- -0x7ffffffe);

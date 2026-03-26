@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark
 <?php
   $start = 1;
   $finish = 350000;

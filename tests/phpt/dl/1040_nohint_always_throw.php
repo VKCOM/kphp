@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /\$i = getInt\(2\);/
 /Using result of void function getInt/
 /echo \$i, "\\n ";/

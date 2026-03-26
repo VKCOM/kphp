@@ -1,4 +1,4 @@
-@ok non-idempotent k2_skip
+@ok non-idempotent
 <?php
 
 require_once 'kphp_tester_include.php';

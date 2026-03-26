@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   for ($i = -300; $i <= 300; $i++) {
     if ($i) {

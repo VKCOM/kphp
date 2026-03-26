@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   fwrite (STDERR, "begin\n");
   $x = "asdasd";

@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /header_register_callback should not throw exceptions/
 <?php
 

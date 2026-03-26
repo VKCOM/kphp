@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   $is_kphp = true;
 #ifndef KPHP

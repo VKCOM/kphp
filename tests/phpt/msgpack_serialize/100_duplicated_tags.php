@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /kphp-serialized-field: 1 is already in use/
 <?php
 

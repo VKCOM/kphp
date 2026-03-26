@@ -1,4 +1,4 @@
-@ok callback k2_skip
+@ok callback
 <?php
 
 /**
