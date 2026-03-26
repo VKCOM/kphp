@@ -29,6 +29,7 @@
 
 struct ImageState final : private vk::not_copyable {
   AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
+  RuntimeContext runtime_context;
 
   uint32_t pid{k2::getpid()};
   uid_t uid{k2::getuid()};
@@ -50,6 +51,8 @@ struct ImageState final : private vk::not_copyable {
   RpcImageState rpc_image_state;
 
   ImageState() noexcept {
+    runtime_context.init();
+
     if (const int64_t sysconf_max_buffer_size{k2::sysconf(_SC_GETPW_R_SIZE_MAX)}; sysconf_max_buffer_size != -1) {
       passwd_max_buffer_size.emplace(sysconf_max_buffer_size);
     }

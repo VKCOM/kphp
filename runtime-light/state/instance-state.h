@@ -67,6 +67,7 @@ struct InstanceState final : vk::not_copyable {
   // In the second case clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful!
   InstanceState() noexcept {
+    runtime_context.init();
     kml_instance_state.init(ComponentState::get().kml_component_state.max_buffer_size());
   }
 
@@ -89,16 +90,17 @@ struct InstanceState final : vk::not_copyable {
   }
 
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
-  kphp::log::contextual_tags instance_tags;
 
+  kphp::log::contextual_tags instance_tags;
   kphp::coro::io_scheduler io_scheduler;
+
+  RuntimeContext runtime_context;
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
   RpcQueueInstanceState rpc_queue_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
-  RuntimeContext runtime_context;
   CLIInstanceInstance cli_instance_instate;
   OutputInstanceState output_instance_state;
   RpcClientInstanceState rpc_client_instance_state;
