@@ -3,7 +3,9 @@
 
 function test_no_error() {
   $mh = curl_multi_init();
-  var_dump(curl_multi_errno($mh));
+  $errno = curl_multi_errno($mh);
+  var_dump($errno);
+  var_dump(curl_multi_strerror($errno));
   curl_multi_close($mh);
 }
 
