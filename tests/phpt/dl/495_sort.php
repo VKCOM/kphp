@@ -44,6 +44,8 @@ for ($i = 0; $i < $n; $i++) {
   $to_sort[rand(0, 1000000000)] = rand(0, 1000000000);
 }
 
+shuffle ($to_sort);
+
 asort ($to_sort);
 
 krsort ($to_sort);

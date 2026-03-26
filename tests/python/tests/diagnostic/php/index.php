@@ -76,7 +76,7 @@ function forkable() {
     return wait($f);
 }
 
-function main() {
+function test_backtrace() {
     foreach (json_decode(file_get_contents('php://input')) as $action) {
         switch ($action["op"]) {
             case "check_main_trace":
@@ -106,6 +106,62 @@ function main() {
                 echo "unknown operation";
                 return;
         }
+    }
+}
+
+function make_custom_exception() {
+    return err('TEST', 'London is the capital of Great Britain');
+}
+
+function check_exception(Exception $e) {
+    if ($e->getFile() != 'index.php')
+        return 'expected "index.php" but "' . $e->getFile() . '" found';
+
+    if ($e->getLine() != 113)
+        return 'expected 113 but ' . $e->getLine() . ' found';
+
+    if ($e->getCode() != 0)
+        return 'expected 0 but ' . $e->getCode() . ' found';
+
+    if ($e->getMessage() != 'ERR_TEST: London is the capital of Great Britain')
+        return 'expected "ERR_TEST: London is the capital of Great Britain" but "' . $e->getMessage() . '" found';
+
+    return 'ok';
+}
+
+function test_err() {
+    foreach (json_decode(file_get_contents('php://input')) as $action) {
+        switch ($action["op"]) {
+            case "just_make":
+                $e = make_custom_exception();
+                $res = check_exception($e);
+                echo $res;
+                break;
+            case "throw_catch":
+                try {
+                    throw make_custom_exception();
+                } catch (Exception $e) {
+                    $res = check_exception($e);
+                }
+                echo $res;
+                break;
+            default:
+                echo "unknown operation";
+                return;
+        }
+    }
+}
+
+function main() {
+    switch ($_SERVER["PHP_SELF"]) {
+        case "/test_backtrace":
+            test_backtrace();
+            break;
+        case "/test_err":
+            test_err();
+            break;
+        default:
+            critical_error("unknown test");
     }
 }
 
