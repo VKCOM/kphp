@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 
@@ -283,3 +284,22 @@ enum class CURLPIPE : uint8_t {
 };
 
 } // namespace kphp::web::curl
+
+namespace kphp::web::curl::details {
+
+inline constexpr std::string_view CURLME_CALL_MULTI_PERFORM{"Please call curl_multi_perform() soon"};
+inline constexpr std::string_view CURLME_OK{"No error"};
+inline constexpr std::string_view CURLME_BAD_HANDLE{"Invalid multi handle"};
+inline constexpr std::string_view CURLME_BAD_EASY_HANDLE{"Invalid easy handle"};
+inline constexpr std::string_view CURLME_OUT_OF_MEMORY{"Out of memory"};
+inline constexpr std::string_view CURLME_INTERNAL_ERROR{"Internal error"};
+inline constexpr std::string_view CURLME_BAD_SOCKET{"Invalid socket argument"};
+inline constexpr std::string_view CURLME_UNKNOWN_OPTION{"Unknown option"};
+inline constexpr std::string_view CURLME_ADDED_ALREADY{"The easy handle is already added to a multi handle"};
+inline constexpr std::string_view CURLME_RECURSIVE_API_CALL{"API function called from within callback"};
+inline constexpr std::string_view CURLME_WAKEUP_FAILURE{"Wakeup is unavailable or failed"};
+inline constexpr std::string_view CURLME_BAD_FUNCTION_ARGUMENT{"A libcurl function was given a bad argument"};
+inline constexpr std::string_view CURLME_ABORTED_BY_CALLBACK{"Operation was aborted by an application callback"};
+inline constexpr std::string_view CURLME_UNRECOVERABLE_POLL{"Unrecoverable error in select/poll"};
+
+} // namespace kphp::web::curl::details

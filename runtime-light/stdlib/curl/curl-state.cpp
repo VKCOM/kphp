@@ -4,8 +4,13 @@
 
 #include "runtime-light/stdlib/curl/curl-state.h"
 
+#include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
 CurlInstanceState& CurlInstanceState::get() noexcept {
   return InstanceState::get().curl_instance_state;
+}
+
+const CurlImageState& CurlImageState::get() noexcept {
+  return ImageState::get().curl_image_state;
 }

@@ -46,7 +46,7 @@ inline auto f$curl_multi_add_handle(kphp::web::curl::multi_type multi_id, kphp::
 
   auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_add(kphp::web::composite_transfer{multi_id}, kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
-    multi_ctx.set_errno(res.error().code, res.error().description);
+    multi_ctx.set_errno(res.error().code);
     kphp::web::curl::print_error("could not add a curl easy handler into multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
@@ -67,7 +67,7 @@ inline auto f$curl_multi_remove_handle(kphp::web::curl::multi_type multi_id,
   auto res{
       co_await kphp::forks::id_managed(kphp::web::composite_transfer_remove(kphp::web::composite_transfer{multi_id}, kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
-    multi_ctx.set_errno(res.error().code, res.error().description);
+    multi_ctx.set_errno(res.error().code);
     kphp::web::curl::print_error("could not remove a curl easy handler from multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
@@ -100,7 +100,7 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
       return true;
     }
     default:
-      multi_ctx.set_errno(kphp::web::curl::CURLME::UNKNOWN_OPTION, "a libcurl function was given an incorrect PROXYTYPE kind");
+      multi_ctx.set_errno(kphp::web::curl::CURLME::UNKNOWN_OPTION);
       return false;
     }
   }
@@ -130,7 +130,7 @@ inline auto f$curl_multi_exec(kphp::web::curl::multi_type multi_id, int64_t& sti
   auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_perform(kphp::web::composite_transfer{multi_id}))};
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
   if (!res.has_value()) [[unlikely]] {
-    multi_ctx.set_errno(res.error().code, res.error().description);
+    multi_ctx.set_errno(res.error().code);
     kphp::web::curl::print_error("could not execute curl multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
@@ -148,7 +148,7 @@ inline auto f$curl_multi_getcontent(kphp::web::curl::easy_type easy_id) noexcept
   if (easy_ctx.return_transfer) {
     auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_get_response(kphp::web::simple_transfer{easy_id}))};
     if (!res.has_value()) [[unlikely]] {
-      easy_ctx.set_errno(res.error().code, res.error().description);
+      easy_ctx.set_errno(res.error().code);
       kphp::web::curl::print_error("could not get response of curl easy handle", std::move(res.error()));
       co_return false;
     }
@@ -165,7 +165,7 @@ inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept ->
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
   auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_close(kphp::web::composite_transfer{multi_id}))};
   if (!res.has_value()) [[unlikely]] {
-    multi_ctx.set_errno(res.error().code, res.error().description);
+    multi_ctx.set_errno(res.error().code);
     kphp::web::curl::print_error("could not close curl multi handle", std::move(res.error()));
     co_return;
   }
@@ -175,48 +175,34 @@ inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept ->
 
 inline auto f$curl_multi_strerror(int64_t error_num) noexcept -> Optional<string> {
   switch (static_cast<kphp::web::curl::CURLME>(error_num)) {
-  case kphp::web::curl::CURLME::CALL_MULTI_PERFORM: {
-    return string{"Please call curl_multi_perform() soon"};
-  }
-  case kphp::web::curl::CURLME::OK: {
-    return string{"No error"};
-  }
-  case kphp::web::curl::CURLME::BAD_HANDLE: {
-    return string{"Invalid multi handle"};
-  }
-  case kphp::web::curl::CURLME::BAD_EASY_HANDLE: {
-    return string{"Invalid easy handle"};
-  }
-  case kphp::web::curl::CURLME::OUT_OF_MEMORY: {
-    return string{"Out of memory"};
-  }
-  case kphp::web::curl::CURLME::INTERNAL_ERROR: {
-    return string{"Internal error"};
-  }
-  case kphp::web::curl::CURLME::BAD_SOCKET: {
-    return string{"Invalid socket argument"};
-  }
-  case kphp::web::curl::CURLME::UNKNOWN_OPTION: {
-    return string{"Unknown option"};
-  }
-  case kphp::web::curl::CURLME::ADDED_ALREADY: {
-    return string{"The easy handle is already added to a multi handle"};
-  }
-  case kphp::web::curl::CURLME::RECURSIVE_API_CALL: {
-    return string{"API function called from within callback"};
-  }
-  case kphp::web::curl::CURLME::WAKEUP_FAILURE: {
-    return string{"Wakeup is unavailable or failed"};
-  }
-  case kphp::web::curl::CURLME::BAD_FUNCTION_ARGUMENT: {
-    return string{"A libcurl function was given a bad argument"};
-  }
-  case kphp::web::curl::CURLME::ABORTED_BY_CALLBACK: {
-    return string{"Operation was aborted by an application callback"};
-  }
-  case kphp::web::curl::CURLME::UNRECOVERABLE_POLL: {
-    return string{"Unrecoverable error in select/poll"};
-  }
+  case kphp::web::curl::CURLME::CALL_MULTI_PERFORM:
+    return CurlImageState::get().CURLME_CALL_MULTI_PERFORM;
+  case kphp::web::curl::CURLME::OK:
+    return CurlImageState::get().CURLME_OK;
+  case kphp::web::curl::CURLME::BAD_HANDLE:
+    return CurlImageState::get().CURLME_BAD_HANDLE;
+  case kphp::web::curl::CURLME::BAD_EASY_HANDLE:
+    return CurlImageState::get().CURLME_BAD_EASY_HANDLE;
+  case kphp::web::curl::CURLME::OUT_OF_MEMORY:
+    return CurlImageState::get().CURLME_OUT_OF_MEMORY;
+  case kphp::web::curl::CURLME::INTERNAL_ERROR:
+    return CurlImageState::get().CURLME_INTERNAL_ERROR;
+  case kphp::web::curl::CURLME::BAD_SOCKET:
+    return CurlImageState::get().CURLME_BAD_SOCKET;
+  case kphp::web::curl::CURLME::UNKNOWN_OPTION:
+    return CurlImageState::get().CURLME_UNKNOWN_OPTION;
+  case kphp::web::curl::CURLME::ADDED_ALREADY:
+    return CurlImageState::get().CURLME_ADDED_ALREADY;
+  case kphp::web::curl::CURLME::RECURSIVE_API_CALL:
+    return CurlImageState::get().CURLME_RECURSIVE_API_CALL;
+  case kphp::web::curl::CURLME::WAKEUP_FAILURE:
+    return CurlImageState::get().CURLME_WAKEUP_FAILURE;
+  case kphp::web::curl::CURLME::BAD_FUNCTION_ARGUMENT:
+    return CurlImageState::get().CURLME_BAD_FUNCTION_ARGUMENT;
+  case kphp::web::curl::CURLME::ABORTED_BY_CALLBACK:
+    return CurlImageState::get().CURLME_ABORTED_BY_CALLBACK;
+  case kphp::web::curl::CURLME::UNRECOVERABLE_POLL:
+    return CurlImageState::get().CURLME_UNRECOVERABLE_POLL;
   default:
     return {};
   }
@@ -240,7 +226,7 @@ inline auto f$curl_multi_select(kphp::web::curl::multi_type multi_id, double tim
   auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_wait_updates(
       kphp::web::composite_transfer{multi_id}, std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{timeout})))};
   if (!res.has_value()) [[unlikely]] {
-    multi_ctx.set_errno(res.error().code, res.error().description);
+    multi_ctx.set_errno(res.error().code);
     kphp::web::curl::print_error("could not select curl multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }

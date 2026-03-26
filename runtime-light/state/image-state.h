@@ -18,6 +18,7 @@
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
@@ -46,6 +47,7 @@ struct ImageState final : private vk::not_copyable {
   TimeImageState time_image_state;
   MathImageState math_image_state;
   RpcImageState rpc_image_state;
+  CurlImageState curl_image_state;
 
   ImageState() noexcept {
     if (const int64_t sysconf_max_buffer_size{k2::sysconf(_SC_GETPW_R_SIZE_MAX)}; sysconf_max_buffer_size != -1) {
