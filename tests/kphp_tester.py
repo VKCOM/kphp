@@ -10,6 +10,7 @@ import sys
 from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
 import typing
+import uuid
 
 from python.lib.colors import red, green, yellow, blue, cyan
 from python.lib.file_utils import search_php_bin
@@ -422,7 +423,7 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
         std_function_invocations_output_dir = TMP_DIR / "artifacts"
         std_function_invocations_output_dir.mkdir(parents=True, exist_ok=True)
 
-        std_function_invocations_filename = "std_function_invocations.json"
+        std_function_invocations_filename = f"{uuid.uuid4()}.json"
         std_function_invocations_output_path = std_function_invocations_output_dir / std_function_invocations_filename
 
         with open(std_function_invocations_output_path, "w", encoding="utf-8") as f:
