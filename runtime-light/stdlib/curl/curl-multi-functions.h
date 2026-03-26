@@ -173,18 +173,53 @@ inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept ->
   co_return;
 }
 
-inline auto f$curl_multi_strerror(kphp::web::curl::multi_type multi_id) noexcept -> Optional<string> {
-  auto& curl_state{CurlInstanceState::get()};
-  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
+inline auto f$curl_multi_strerror(int64_t error_num) noexcept -> Optional<string> {
+  switch (static_cast<kphp::web::curl::CURLME>(error_num)) {
+  case kphp::web::curl::CURLME::CALL_MULTI_PERFORM: {
+    return string{"Please call curl_multi_perform() soon"};
+  }
+  case kphp::web::curl::CURLME::OK: {
+    return string{"No error"};
+  }
+  case kphp::web::curl::CURLME::BAD_HANDLE: {
+    return string{"Invalid multi handle"};
+  }
+  case kphp::web::curl::CURLME::BAD_EASY_HANDLE: {
+    return string{"Invalid easy handle"};
+  }
+  case kphp::web::curl::CURLME::OUT_OF_MEMORY: {
+    return string{"Out of memory"};
+  }
+  case kphp::web::curl::CURLME::INTERNAL_ERROR: {
+    return string{"Internal error"};
+  }
+  case kphp::web::curl::CURLME::BAD_SOCKET: {
+    return string{"Invalid socket argument"};
+  }
+  case kphp::web::curl::CURLME::UNKNOWN_OPTION: {
+    return string{"Unknown option"};
+  }
+  case kphp::web::curl::CURLME::ADDED_ALREADY: {
+    return string{"The easy handle is already added to a multi handle"};
+  }
+  case kphp::web::curl::CURLME::RECURSIVE_API_CALL: {
+    return string{"API function called from within callback"};
+  }
+  case kphp::web::curl::CURLME::WAKEUP_FAILURE: {
+    return string{"Wakeup is unavailable or failed"};
+  }
+  case kphp::web::curl::CURLME::BAD_FUNCTION_ARGUMENT: {
+    return string{"A libcurl function was given a bad argument"};
+  }
+  case kphp::web::curl::CURLME::ABORTED_BY_CALLBACK: {
+    return string{"Operation was aborted by an application callback"};
+  }
+  case kphp::web::curl::CURLME::UNRECOVERABLE_POLL: {
+    return string{"Unrecoverable error in select/poll"};
+  }
+  default:
     return {};
   }
-  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
-  if (multi_ctx.error_code != static_cast<int64_t>(kphp::web::curl::CURLME::OK)) [[likely]] {
-    const auto* const desc_data{reinterpret_cast<const char*>(multi_ctx.error_description.data())};
-    const auto desc_size{static_cast<string::size_type>(multi_ctx.error_description.size())};
-    return string{desc_data, desc_size};
-  }
-  return {};
 }
 
 inline auto f$curl_multi_errno(kphp::web::curl::multi_type multi_id) noexcept -> Optional<int64_t> {
