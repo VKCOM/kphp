@@ -38,6 +38,7 @@ namespace headers {
 
 inline constexpr std::string_view HOST = "host";
 inline constexpr std::string_view COOKIE = "cookie";
+inline constexpr std::string_view SERVER = "server";
 inline constexpr std::string_view LOCATION = "location";
 inline constexpr std::string_view SET_COOKIE = "set-cookie";
 inline constexpr std::string_view CONNECTION = "connection";

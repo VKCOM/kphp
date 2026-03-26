@@ -58,7 +58,6 @@ constexpr std::string_view CONNECTION_CLOSE = "close";
 constexpr std::string_view CONNECTION_KEEP_ALIVE = "keep-alive";
 constexpr std::string_view ENCODING_GZIP = "gzip";
 constexpr std::string_view ENCODING_DEFLATE = "deflate";
-constexpr std::string_view CONTENT_TYPE_TEXT_WIN1251 = "text/html; charset=windows-1251";
 constexpr std::string_view CONTENT_TYPE_APP_FORM_URLENCODED = "application/x-www-form-urlencoded";
 constexpr std::string_view CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data";
 
@@ -350,15 +349,12 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 
   // ==================================
   // prepare some response headers
-
-  // add content-type header
   auto& static_SB{RuntimeContext::get().static_SB};
-  static_SB.clean() << headers::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
-  kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
   // add connection kind header
   const auto connection_kind{http_server_instance_st.connection_kind == connection_kind::keep_alive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
   static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
   kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
+
   kphp::log::info("http server initialized with: "
                   "server addr -> {}, "
                   "server port -> {}, "

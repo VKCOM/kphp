@@ -21,6 +21,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/cli/init-functions.h"
+#include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/state/component-state.h"
@@ -148,6 +149,15 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
     superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
+  }
+
+  if constexpr (kind == image_kind::cli || kind == image_kind::server) {
+    // TODO set these headers in CLI and HTTP modes only
+    static constexpr std::string_view DEFAULT_SERVER_NAME{"nginx/0.3.33"};
+    static constexpr std::string_view DEFAULT_CONTENT_TYPE{"text/html; charset=windows-1251"};
+
+    http_server_instance_state.add_header(kphp::http::headers::SERVER, DEFAULT_SERVER_NAME, false);
+    http_server_instance_state.add_header(kphp::http::headers::CONTENT_TYPE, DEFAULT_CONTENT_TYPE, false);
   }
 
   // specific initialization
