@@ -7,7 +7,7 @@ prepend(
   curl/curl-state.cpp
   web-transfer-lib/web-state.cpp
   diagnostics/backtrace.cpp
-  diagnostics/contextual-logger.cpp
+  diagnostics/contextual-tags.cpp
   diagnostics/error-handling-state.cpp
   diagnostics/php-assert.cpp
   file/file-system-state.cpp

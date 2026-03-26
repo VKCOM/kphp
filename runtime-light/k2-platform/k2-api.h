@@ -261,9 +261,9 @@ inline k2::UpdateStatus take_update(k2::descriptor* descriptor) noexcept {
 
 using LogTaggedEntry = ::LogKeyValuePair;
 
-inline void log(size_t level, std::string_view msg, std::optional<std::span<LogTaggedEntry>> tags) noexcept {
-  const auto tags_count{tags.value_or(std::span<LogTaggedEntry>{}).size()};
-  const auto* tags_data{tags.value_or(std::span<LogTaggedEntry>{}).data()};
+inline void log(size_t level, std::string_view msg, std::span<LogTaggedEntry> tags) noexcept {
+  const auto tags_count{tags.size()};
+  const auto* tags_data{tags.data()};
   k2_log(level, msg.size(), msg.data(), tags_count, tags_data);
 }
 
