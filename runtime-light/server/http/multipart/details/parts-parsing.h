@@ -17,7 +17,7 @@
 
 namespace kphp::http::multipart::details {
 
-constexpr std::string_view HEADER_CONTENT_DISPOSITION_FORM_DATA = "form-data;";
+inline constexpr std::string_view HEADER_CONTENT_DISPOSITION_FORM_DATA = "form-data;";
 
 inline std::string_view trim_crlf(std::string_view sv) noexcept {
   if (sv.starts_with('\r')) {
