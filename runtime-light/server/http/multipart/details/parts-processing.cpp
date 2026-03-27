@@ -130,8 +130,8 @@ void add_file_to_array(array<mixed>& files, std::string_view name_attribute, arr
 namespace kphp::http::multipart::details {
 
 void process_post_multipart(const kphp::http::multipart::details::part& part, array<mixed>& post) noexcept {
-  const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
-  const string body{part.body.data(), static_cast<string::size_type>(part.body.size())};
+  string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
+  string body{part.body.data(), static_cast<string::size_type>(part.body.size())};
   if (part.content_type.has_value() && !std::ranges::search(*part.content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
     auto post_value{post.get_value(name)};
     f$parse_str(body, post_value);
@@ -143,16 +143,16 @@ void process_post_multipart(const kphp::http::multipart::details::part& part, ar
 
 void process_file_multipart(const kphp::http::multipart::details::part& part, array<mixed>& files) noexcept {
   kphp::log::assertion(part.filename_attribute.has_value());
-  const auto tmp_name{*(generate_temporary_name().or_else([]() {                  // NOLINT
+  auto tmp_name{*(generate_temporary_name().or_else([]() {                        // NOLINT
     kphp::log::error("cannot generate unique name for multipart temporary file"); // no return
     return std::optional<kphp::stl::string<kphp::memory::script_allocator>>{};
   }))};
-  const auto body_bytes_span{std::as_bytes(std::span<const char>(part.body.data(), part.body.size()))};
+  auto body_bytes_span{std::as_bytes(std::span<const char>(part.body.data(), part.body.size()))};
   auto write_res{write_temporary_file(tmp_name, body_bytes_span)};
   if (write_res.has_value()) {
     HttpServerInstanceState::get().multipart_temporary_files.insert(tmp_name);
   }
-  const auto content_type{part.content_type.value_or(DEFAULT_CONTENT_TYPE)};
+  auto content_type{part.content_type.value_or(DEFAULT_CONTENT_TYPE)};
   auto file{build_file_array(*part.filename_attribute, tmp_name, content_type, write_res)};
   add_file_to_array(files, part.name_attribute, std::move(file));
 }

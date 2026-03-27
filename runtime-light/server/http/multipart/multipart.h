@@ -49,12 +49,12 @@ inline std::expected<std::string_view, std::string_view> extract_boundary(std::s
 
 inline std::expected<void, std::string_view> process_multipart_content_type(std::string_view content_type, std::string_view body,
                                                                             PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  const auto boundary_res{details::extract_boundary(content_type)};
+  auto boundary_res{details::extract_boundary(content_type)};
   if (!boundary_res.has_value()) {
     return std::unexpected{boundary_res.error()};
   }
-  const auto boundary_parts{std::array{std::string_view{"--"}, *boundary_res}};
-  const auto delim{std::views::join(boundary_parts)};
+  auto boundary_parts{std::array{std::string_view{"--"}, *boundary_res}};
+  auto delim{std::views::join(boundary_parts)};
   for (const auto& part : details::parse_multipart_parts(body, delim)) {
     if (part.filename_attribute.has_value()) {
       details::process_file_multipart(part, superglobals.v$_FILES.as_array());
