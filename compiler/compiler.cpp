@@ -377,6 +377,7 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   const std::string compilation_metrics_file = G->settings().compilation_metrics_file.get();
+  const std::string image_version = G->settings().build_timestamp.get();
   G->finish();
   auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();
@@ -387,6 +388,9 @@ bool compiler_execute(CompilerSettings *settings) {
     std::cerr << std::endl;
     std::cerr << "Compile stats:" << std::endl;
     G->stats.write_to(std::cerr);
+    if (G->is_output_mode_k2()) {
+      std::cerr << "Image version: " << image_version << std::endl;
+    }
   }
   if (!compilation_metrics_file.empty()) {
     G->stats.profiler_stats = std::move(profiler_stats);
