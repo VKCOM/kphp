@@ -436,6 +436,7 @@ kphp::coro::task<> finalize_server() noexcept {
     for (const auto& temporary_file : http_server_instance_st.multipart_temporary_files) {
       std::ignore = k2::unlink(temporary_file);
     }
+    http_server_instance_st.multipart_temporary_files.clear();
     co_return;
   }
 }
