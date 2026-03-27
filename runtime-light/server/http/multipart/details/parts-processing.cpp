@@ -120,7 +120,7 @@ void process_file_multipart(const kphp::http::multipart::details::part& part, ar
   const auto body_bytes_span{std::as_bytes(std::span<const char>(part.body.data(), part.body.size()))};
   auto write_res{write_temporary_file(tmp_name, body_bytes_span)};
 
-  if (write_res.has_value() || write_res.error() != UPLOAD_ERR_NO_FILE) {
+  if (write_res.has_value()) {
     HttpServerInstanceState::get().multipart_temporary_files.insert(*tmp_name_opt);
   }
 
