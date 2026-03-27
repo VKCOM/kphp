@@ -45,21 +45,19 @@ constexpr int32_t UPLOAD_ERR_CANT_WRITE = 7;
 // constexpr int32_t UPLOAD_ERR_NO_TMP_DIR = 6; // todo support check tmp dir
 // constexpr int32_t UPLOAD_ERR_EXTENSION = 8; // unused in kphp
 
+inline constexpr std::string_view LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+inline constexpr int64_t GENERATE_ATTEMPTS = 4;
+inline constexpr int64_t SYMBOLS_COUNT = 6;
+
+char random_letter() noexcept {
+  int64_t pos{f$mt_rand(0, LETTERS.size() - 1)};
+  return LETTERS[pos];
+}
+
 std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_temporary_name() noexcept {
-  static constexpr std::string_view LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  static constexpr auto random_letter{[]() noexcept {
-    int64_t pos{f$mt_rand(0, LETTERS.size() - 1)};
-    return LETTERS[pos];
-  }};
-  static constexpr int64_t GENERATE_ATTEMPTS = 4;
-  static constexpr int64_t SYMBOLS_COUNT = 6;
-
   // todo rework with k2::tempnam or mkstemp
-  const auto& component_st{ComponentState::get()};
-  auto tmp_dir_env{component_st.env.get_value(string{"TMPDIR"})};
-
+  auto tmp_dir_env{ComponentState::get().env.get_value(string{"TMPDIR"})};
   std::string_view tmp_path{tmp_dir_env.is_string() ? std::string_view{tmp_dir_env.as_string().c_str(), tmp_dir_env.as_string().size()} : P_tmpdir};
-
   for (int64_t attempt{}; attempt < GENERATE_ATTEMPTS; ++attempt) {
     kphp::stl::string<kphp::memory::script_allocator> tmp_name{tmp_path.data(), tmp_path.size()};
     tmp_name.push_back('/');
