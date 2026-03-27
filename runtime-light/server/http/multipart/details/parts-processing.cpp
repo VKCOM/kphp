@@ -143,7 +143,7 @@ void process_post_multipart(const kphp::http::multipart::details::part& part, ar
 
 void process_file_multipart(const kphp::http::multipart::details::part& part, array<mixed>& files) noexcept {
   kphp::log::assertion(part.filename_attribute.has_value());
-  const auto tmp_name{*(generate_temporary_name().or_else([]() { // NOLINT
+  const auto tmp_name{*(generate_temporary_name().or_else([]() {                  // NOLINT
     kphp::log::error("cannot generate unique name for multipart temporary file"); // no return
     return std::optional<kphp::stl::string<kphp::memory::script_allocator>>{};
   }))};
