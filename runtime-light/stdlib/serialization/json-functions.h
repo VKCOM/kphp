@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include "common/containers/final_action.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/diagnostics/exception-types.h"
+#include "runtime-light/stdlib/serialization/serialization-state.h"
 
 inline void f$set_json_log_on_timeout_mode([[maybe_unused]] bool enabled) noexcept {}
 
@@ -15,13 +18,13 @@ string f$vk_json_encode_safe(const T& v, bool simple_encode = true) noexcept {
   auto& rt_ctx{RuntimeContext::get()};
   rt_ctx.static_SB.clean();
   rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
-  impl_::JsonEncoder(0, simple_encode).encode(v, RuntimeContext::get().static_SB);
+  const auto finalizer{vk::finally([&rt_ctx] noexcept { rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF; })};
+
+  impl_::JsonEncoder(0, simple_encode).encode(v, rt_ctx.static_SB);
   if (rt_ctx.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) [[unlikely]] {
     rt_ctx.static_SB.clean();
-    rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    kphp::log::error("vk_json_encode_safe tried to throw exception but it unsupported in runtime light");
+    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(SerializationImageState::get().JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE));
     return {};
   }
-  rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
   return rt_ctx.static_SB.str();
 }
