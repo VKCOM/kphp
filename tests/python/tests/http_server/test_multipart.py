@@ -6,6 +6,131 @@ from python.lib.testcase import WebServerAutoTestCase
 
 class TestMultipartContentType(WebServerAutoTestCase):
 
+    def test_multipart_quoted_boundary(self):
+        """Test that quoted boundary in Content-Type header is handled correctly."""
+        boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="name"\r\n'
+                '\r\n'
+                'John\r\n'
+                f'--{boundary}--\r\n'
+                ).encode('utf-8')
+
+        # Boundary is quoted in Content-Type header
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary="{boundary}"',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=quoted_boundary',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'name : John') != -1)
+
+    def test_multipart_boundary_with_charset(self):
+        """Test that boundary with additional params (charset) is parsed correctly."""
+        boundary = '------------------------d74496d66958873e'
+
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="data"\r\n'
+                '\r\n'
+                'test value\r\n'
+                f'--{boundary}--\r\n'
+                ).encode('utf-8')
+
+        # Boundary with charset after it
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary={boundary}; charset=UTF-8',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=boundary_with_charset',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'data : test value') != -1)
+
+    def test_multipart_empty_value(self):
+        """Test that empty form field values are handled correctly."""
+        boundary = '------------------------d74496d66958873e'
+
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="empty_field"\r\n'
+                '\r\n'
+                '\r\n'  # Empty value
+                f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="non_empty"\r\n'
+                '\r\n'
+                'value\r\n'
+                f'--{boundary}--\r\n'
+                ).encode('utf-8')
+
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=empty_value',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'empty_field :') != -1)
+        self.assertTrue(response.content.find(b'non_empty : value') != -1)
+
+    def test_multipart_special_chars_in_name(self):
+        """Test form field names with special characters."""
+        boundary = '------------------------d74496d66958873e'
+
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="name_with_underscore"\r\n'
+                '\r\n'
+                'value1\r\n'
+                f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="name-with-dash"\r\n'
+                '\r\n'
+                'value2\r\n'
+                f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="name.with.dots"\r\n'
+                '\r\n'
+                'value3\r\n'
+                f'--{boundary}--\r\n'
+                ).encode('utf-8')
+
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=special_chars_in_name',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'value1') != -1)
+        self.assertTrue(response.content.find(b'value2') != -1)
+        self.assertTrue(response.content.find(b'value3') != -1)
+
     def test_multipart_name_attributes(self):
         boundary = "------------------------d74496d66958873e"
 
@@ -179,6 +304,125 @@ class TestMultipartContentType(WebServerAutoTestCase):
         )
 
         self.assertEqual(200, response.status_code)
+
+        tmp_files_after_script = os.listdir("/tmp/")
+        # check that script delete tmp files at the end
+        self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
+
+    def test_multipart_mixed_files_and_fields(self):
+        """Test mixing files and regular form fields in the same request."""
+        tmp_files = os.listdir("/tmp/")
+        boundary = '------------------------d74496d66958873e'
+
+        file_bytes = b'File content here\n'
+
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="text_field"\r\n'
+                '\r\n'
+                'text value\r\n'
+                f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="upload"; filename="test.txt"\r\n'
+                'Content-Type: text/plain\r\n'
+                '\r\n'
+                ).encode('utf-8') + file_bytes + (
+                   f'\r\n--{boundary}\r\n'
+                   'Content-Disposition: form-data; name="another_field"\r\n'
+                   '\r\n'
+                   'another value\r\n'
+                   f'--{boundary}--\r\n'
+               ).encode('utf-8')
+
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=mixed_files_and_fields',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'text : text value') != -1)
+        self.assertTrue(response.content.find(b'filename : test.txt') != -1)
+        self.assertTrue(response.content.find(b'another : another value') != -1)
+
+        tmp_files_after_script = os.listdir("/tmp/")
+        # check that script delete tmp files at the end
+        self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
+
+    def test_multipart_file_without_content_type(self):
+        """Test file upload without explicit Content-Type header."""
+        tmp_files = os.listdir("/tmp/")
+        boundary = '------------------------d74496d66958873e'
+
+        file_bytes = b'File without content type\n'
+
+        # No Content-Type header for the file part
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="file"; filename="no_type.txt"\r\n'
+                '\r\n'
+                ).encode('utf-8') + file_bytes + (
+                   f'\r\n--{boundary}--\r\n'
+               ).encode('utf-8')
+
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=file_without_content_type',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'filename : no_type.txt') != -1)
+        # Should default to text/plain
+        self.assertTrue(response.content.find(b'type : text/plain') != -1)
+
+        tmp_files_after_script = os.listdir("/tmp/")
+        # check that script delete tmp files at the end
+        self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
+
+    def test_multipart_binary_file(self):
+        """Test uploading binary file content."""
+        tmp_files = os.listdir("/tmp/")
+        boundary = '------------------------d74496d66958873e'
+
+        # Binary content with null bytes
+        file_bytes = b'\x00\x01\x02\x03\xff\xfe\xfd\xfc'
+
+        data = (f'--{boundary}\r\n'
+                'Content-Disposition: form-data; name="binary"; filename="data.bin"\r\n'
+                'Content-Type: application/octet-stream\r\n'
+                '\r\n'
+                ).encode('utf-8') + file_bytes + (
+                   f'\r\n--{boundary}--\r\n'
+               ).encode('utf-8')
+
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri='/test_multipart?type=binary_file',
+            method='POST',
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b'size : 8') != -1)
+        self.assertTrue(response.content.find(b'filename : data.bin') != -1)
 
         tmp_files_after_script = os.listdir("/tmp/")
         # check that script delete tmp files at the end
