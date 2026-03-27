@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <expected>
@@ -25,25 +26,21 @@ inline constexpr std::string_view ERROR_EMPTY_BOUNDARY = "boundary is empty in m
 inline constexpr std::string_view ERROR_BOUNDARY_TOO_LONG = "boundary exceeds max size in multipart content type";
 
 inline std::expected<std::string_view, std::string_view> extract_boundary(std::string_view content_type) noexcept {
-  const size_t boundary_start{content_type.find(details::MULTIPART_BOUNDARY_EQ)};
-  if (boundary_start == std::string_view::npos) {
-    return std::unexpected{ERROR_NO_BOUNDARY};
+  auto boundary_match{std::ranges::search(content_type, details::MULTIPART_BOUNDARY_EQ)};
+  if (boundary_match.empty()) {
+    return std::unexpected{details::ERROR_NO_BOUNDARY};
   }
-  size_t boundary_end{content_type.find(';', boundary_start)};
-  if (boundary_end == std::string_view::npos) {
-    boundary_end = content_type.size();
-  }
-  std::string_view boundary_view{
-      content_type.substr(boundary_start + details::MULTIPART_BOUNDARY_EQ.size(), boundary_end - boundary_start - details::MULTIPART_BOUNDARY_EQ.size())};
+  auto after{std::string_view{boundary_match.end(), content_type.end()}};
+  auto boundary_view{std::string_view{after.begin(), std::ranges::find(after, ';')}};
   if (boundary_view.starts_with('"') && boundary_view.ends_with('"') && boundary_view.size() > 1) {
     boundary_view.remove_prefix(1);
     boundary_view.remove_suffix(1);
   }
   if (boundary_view.empty()) {
-    return std::unexpected{ERROR_EMPTY_BOUNDARY};
+    return std::unexpected{details::ERROR_EMPTY_BOUNDARY};
   }
   if (boundary_view.size() > BOUNDARY_MAX_SIZE) {
-    return std::unexpected{ERROR_BOUNDARY_TOO_LONG};
+    return std::unexpected{details::ERROR_BOUNDARY_TOO_LONG};
   }
   return boundary_view;
 }

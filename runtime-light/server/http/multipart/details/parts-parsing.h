@@ -82,7 +82,7 @@ struct part_attribute {
       return std::nullopt;
     }
 
-    if (value_view.starts_with('"') && value_view.ends_with('"')) {
+    if (value_view.starts_with('"') && value_view.ends_with('"') && value_view.size() > 1) {
       value_view.remove_suffix(1);
       value_view.remove_prefix(1);
     }
