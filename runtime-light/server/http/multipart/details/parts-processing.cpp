@@ -13,7 +13,9 @@
 #include <span>
 #include <string_view>
 #include <unistd.h>
+#include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -115,7 +117,7 @@ void process_file_multipart(const kphp::http::multipart::details::part& part, ar
     kphp::log::error("cannot generate unique name for multipart temporary file");
   }
   auto tmp_name{*tmp_name_opt};
-  const auto body_bytes_span{as_bytes(std::span<const char>(part.body.data(), part.body.size()))};
+  const auto body_bytes_span{std::as_bytes(std::span<const char>(part.body.data(), part.body.size()))};
   auto write_res{write_temporary_file(tmp_name, body_bytes_span)};
 
   if (write_res.has_value() || write_res.error() != UPLOAD_ERR_NO_FILE) {
