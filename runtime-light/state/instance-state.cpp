@@ -59,6 +59,7 @@ consteval std::string_view resolve_sapi_name() noexcept {
 // === initialization =============================================================================
 
 void InstanceState::init_script_execution() noexcept {
+  runtime_context.init();
   kphp::coro::task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
