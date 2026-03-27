@@ -237,6 +237,71 @@ if (isset($_SERVER["JOB_ID"])) {
             });
             break;
     }
+} else if ($_SERVER["PHP_SELF"] === "/test_multipart") {
+    switch($_GET["type"]) {
+        case "simple_names_attributes":
+            echo "name : " . $_POST["name"] . "\n";
+            echo "role : " . $_POST["role"] . "\n";
+            break;
+        case "quoted_boundary":
+            echo "name : " . $_POST["name"] . "\n";
+            break;
+        case "boundary_with_charset":
+            echo "data : " . $_POST["data"] . "\n";
+            break;
+        case "empty_value":
+            echo "empty_field : " . $_POST["empty_field"] . "\n";
+            echo "non_empty : " . $_POST["non_empty"] . "\n";
+            break;
+        case "special_chars_in_name":
+            echo "underscore : " . $_POST["name_with_underscore"] . "\n";
+            echo "dash : " . $_POST["name-with-dash"] . "\n";
+            echo "dots : " . $_POST["name.with.dots"] . "\n";
+            break;
+        case "simple_file_attribute":
+            echo "filename : " . $_FILES["file"]['name'] . "\n";
+            $tmp_name = $_FILES["file"]['tmp_name'];
+            $file_first_line = file($tmp_name)[0];
+            echo "content : " . $file_first_line;
+            break;
+        case "file_array_attribute":
+            $files = $_FILES["files"];
+            $first_file = $files["tmp_name"][0];
+            $file_first_line = file($first_file)[0];
+            echo "content-1 : " . $file_first_line;
+
+            $second_file = $files["tmp_name"][1];
+            $file_first_line = file($second_file)[0];
+            echo "content-2 : " . $file_first_line;
+            break;
+        case "mixed_files_and_fields":
+            echo "text : " . $_POST["text_field"] . "\n";
+            echo "filename : " . $_FILES["upload"]['name'] . "\n";
+            echo "another : " . $_POST["another_field"] . "\n";
+            break;
+        case "file_without_content_type":
+            echo "filename : " . $_FILES["file"]['name'] . "\n";
+            echo "type : " . $_FILES["file"]['type'] . "\n";
+            break;
+        case "binary_file":
+            echo "filename : " . $_FILES["binary"]['name'] . "\n";
+            echo "size : " . $_FILES["binary"]['size'] . "\n";
+            break;
+        case "name_urlencoded_attribute":
+            echo $_POST["form"]['name'] . "\n";
+            echo $_POST["form"]['note'] . "\n";
+            break;
+        case "non_terminating_boundary":
+            echo "name : " . $_POST["name"] . "\n";
+            break;
+        case "superglobal_modify":
+            $_FILES = ["file" => ["tmp_name" => "not_exists.txt"]];
+            break;
+        default:
+            echo "ERROR";
+            return;
+    }
+    echo "OK";
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */

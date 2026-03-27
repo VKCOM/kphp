@@ -26,6 +26,7 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/server/http/multipart/multipart.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -324,12 +325,15 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      kphp::log::error("unsupported content-type: {}", CONTENT_TYPE_MULTIPART_FORM_DATA);
+      std::string_view body_view{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
+      auto process_multipart_res{kphp::http::multipart::process_multipart_content_type(content_type, body_view, superglobals)};
+      if (!process_multipart_res.has_value()) {
+        kphp::log::warning("{}", process_multipart_res.error());
+      }
     } else {
       string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     }
-
     server.set_value(string{CONTENT_TYPE.data(), CONTENT_TYPE.size()}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});
     break;
   }
@@ -429,6 +433,10 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
+    for (const auto& temporary_file : http_server_instance_st.multipart_temporary_files) {
+      std::ignore = k2::unlink(temporary_file);
+    }
+    http_server_instance_st.multipart_temporary_files.clear();
     co_return;
   }
 }
