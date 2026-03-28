@@ -29,7 +29,7 @@ function rpc_fetch_responses(array $query_ids): array {
  * @kphp-required
  */
 function shutdown_function() {
-    fwrite(STDERR, "shutdown_function was called\n");
+    fwrite(fopen("php://stderr", "w"), "shutdown_function was called\n");
 }
 
 function assert($flag) {
@@ -56,7 +56,7 @@ class ResumableWorker implements I {
         foreach ($responses as $resp) {
             assert($resp);
         }
-        fwrite(STDERR, $output);
+        fwrite(fopen("php://stderr", "w"), $output);
     }
 }
 
@@ -319,6 +319,8 @@ if (isset($_SERVER["JOB_ID"])) {
      default:
         echo "ERROR"; return;
     }
+
+    $stderr = fopen("php://stderr", "w");
     switch($_GET["level"]) {
      case "no_ignore":
         $worker->work($msg);
@@ -326,14 +328,14 @@ if (isset($_SERVER["JOB_ID"])) {
      case "ignore":
         ignore_user_abort(true);
         $worker->work($msg);
-        fwrite(STDERR, "test_ignore_user_abort/finish_ignore_" . $_GET["type"] . "\n");
+        fwrite($stderr, "test_ignore_user_abort/finish_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
         break;
      case "multi_ignore":
         ignore_user_abort(true);
         $worker->work($msg);
         $worker->work($msg);
-        fwrite(STDERR, "test_ignore_user_abort/finish_multi_ignore_" . $_GET["type"] . "\n");
+        fwrite($stderr, "test_ignore_user_abort/finish_multi_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
         break;
      case "nested_ignore":
@@ -341,7 +343,7 @@ if (isset($_SERVER["JOB_ID"])) {
         ignore_user_abort(true);
         $worker->work($msg);
         ignore_user_abort(false);
-        fwrite(STDERR, "test_ignore_user_abort/finish_nested_ignore_" . $_GET["type"] . "\n");
+        fwrite($stderr, "test_ignore_user_abort/finish_nested_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
      default:
         echo "ERROR"; return;

@@ -16,7 +16,7 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
             pass
 
     """
-    Changing the name leads to different tests run order and for some reason it helps to get rid of ASAN warning. 
+    Changing the name leads to different tests run order and for some reason it helps to get rid of ASAN warning.
     As we decided that the previous ASAN warning was false-positive, this kind of fix might be acceptable for us.
     Old name was - "test_user_abort_rpc_work"
     """
@@ -88,3 +88,46 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
         self.web_server.assert_log(["test_ignore_user_abort/finish_resumable_work_" + "nested_ignore"], timeout=5)
         self.web_server.assert_log(["test_ignore_user_abort/finish_nested_ignore_" + "resumable"], timeout=5)
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
+
+@pytest.mark.kphp_skip
+class TestIgnoreUserAbortK2(WebServerAutoTestCase):
+
+    def _send_request(self, uri="/", timeout=0.05):
+        try:
+            self.web_server.http_request(uri=uri, timeout=timeout)
+        except Exception:
+            pass
+
+    def test_user_abort_resumable_work(self):
+        self._send_request(uri='/test_ignore_user_abort?type=resumable&level=no_ignore')
+        self.web_server.assert_log(['(.*)hyper\\:\\:Error\\(IncompleteMessage\\)(.*)'], timeout=10)
+        error = False
+        try:
+            self.web_server.assert_log(["test_ignore_user_abort/finish_resumable_work_" + "no_ignore"], timeout=10)
+        except Exception:
+            error = True
+        self.assertTrue(error)
+
+    def test_ignore_user_abort_resumable_work(self):
+        self._send_request(uri='/test_ignore_user_abort?type=resumable&level=ignore')
+        self.web_server.assert_log(['(.*)hyper\\:\\:Error\\(IncompleteMessage\\)(.*)'], timeout=10)
+        self.web_server.assert_log(['(.*)HTTP connection closed(.*)'], timeout=10)
+        self.web_server.assert_log(["test_ignore_user_abort/finish_resumable_work_" + "ignore"], timeout=10)
+        self.web_server.assert_log(["test_ignore_user_abort/finish_ignore_" + "resumable"], timeout=10)
+        self.web_server.assert_log(["shutdown_function was called"], timeout=10)
+
+    def test_nested_ignore_user_abort_resumable_work(self):
+        self._send_request(uri='/test_ignore_user_abort?type=resumable&level=nested_ignore')
+        self.web_server.assert_log(['(.*)hyper\\:\\:Error\\(IncompleteMessage\\)(.*)'], timeout=10)
+        self.web_server.assert_log(['(.*)HTTP connection closed(.*)'], timeout=10)
+        self.web_server.assert_log(["test_ignore_user_abort/finish_resumable_work_" + "nested_ignore"], timeout=10)
+        self.web_server.assert_log(["test_ignore_user_abort/finish_nested_ignore_" + "resumable"], timeout=10)
+        self.web_server.assert_log(["shutdown_function was called"], timeout=10)
+
+    def test_multi_ignore_user_abort_resumable_work(self):
+        self._send_request(uri='/test_ignore_user_abort?type=resumable&level=multi_ignore')
+        self.web_server.assert_log(['(.*)hyper\\:\\:Error\\(IncompleteMessage\\)(.*)'], timeout=10)
+        self.web_server.assert_log(['(.*)HTTP connection closed(.*)'], timeout=10)
+        self.web_server.assert_log(["test_ignore_user_abort/finish_resumable_work_" + "multi_ignore"], timeout=10)
+        self.web_server.assert_log(["test_ignore_user_abort/finish_multi_ignore_" + "resumable"], timeout=10)
+        self.web_server.assert_log(["shutdown_function was called"], timeout=10)

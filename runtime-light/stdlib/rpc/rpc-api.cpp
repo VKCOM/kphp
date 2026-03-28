@@ -345,7 +345,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   }};
 
   static constexpr auto ignore_answer_awaiter_coroutine{
-      [](kphp::component::stream stream, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<void> {
+      [](kphp::component::stream stream, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> {
         auto fetch_task{kphp::component::fetch_response(stream, [](std::span<const std::byte>) noexcept {})};
         std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout);
       }};
