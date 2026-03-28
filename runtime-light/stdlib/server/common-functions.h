@@ -16,8 +16,7 @@
 
 inline auto f$ignore_user_abort(Optional<bool> enable) noexcept -> kphp::coro::task<int64_t> {
   if (InstanceState::get().instance_kind() != instance_kind::http_server) {
-    kphp::log::warning("called stub f$ignore_user_abort");
-    co_return 0;
+    kphp::log::error("called stub f$ignore_user_abort");
   }
 
   auto& http_server_instance_st{HttpServerInstanceState::get()};
