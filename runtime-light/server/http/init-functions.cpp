@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
+#include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
@@ -403,6 +404,17 @@ kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
   kphp::log::assertion(http_server_instance_st.connection.has_value());
   http_server_instance_st.connection->unregister_abort_handler();
+
+  const auto finalizer{vk::finally([&http_server_instance_st] noexcept {
+    // TODO pay attention when adding flush
+    std::ranges::for_each(http_server_instance_st.multipart_temporary_files, [](const auto& multipart_filename) noexcept {
+      if (const auto expected{k2::unlink(multipart_filename)}; !expected) {
+        kphp::log::warning("failed to unlink multipart temporary file: error code -> {}", expected.error());
+      }
+    });
+    http_server_instance_st.multipart_temporary_files.clear();
+  })};
+
   if (http_server_instance_st.connection->is_aborted()) {
     co_return kphp::log::info("HTTP connection closed");
   }
@@ -456,10 +468,6 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
-    for (const auto& temporary_file : http_server_instance_st.multipart_temporary_files) {
-      std::ignore = k2::unlink(temporary_file);
-    }
-    http_server_instance_st.multipart_temporary_files.clear();
     co_return;
   }
 }
