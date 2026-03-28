@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
