@@ -82,7 +82,8 @@ for ($i = -1; $i < 30; $i++) {
 }
 
 $res = [];
-while ($t = wait_queue_next ($q)) {
+while (!wait_queue_empty($q)) {
+  $t = wait_queue_next ($q);
   $res[] = wait($t);
 }
 sort ($res);
