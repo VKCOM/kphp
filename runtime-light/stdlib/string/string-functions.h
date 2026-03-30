@@ -24,5 +24,5 @@ inline Optional<string> f$setlocale(int64_t category, const string& locale) noex
   if (!opt_locale_name.has_value()) [[unlikely]] {
     return false;
   }
-  return opt_locale_name->data();
+  return string{opt_locale_name->data(), static_cast<string::size_type>(opt_locale_name->size())};
 }
