@@ -5,8 +5,8 @@ from urllib.parse import urlencode
 from python.lib.testcase import WebServerAutoTestCase
 
 def get_multipart_temp_files():
-    """Get files that look like multipart temp files (6 random alphanumeric chars in /tmp/)."""
-    pattern = re.compile(r'^[a-zA-Z0-9]{6}$')
+    """Get files that look like multipart temp files (6 random alphanumeric chars in /tmp/, optionally with tmp. prefix)."""
+    pattern = re.compile(r'^(tmp\.)?[a-zA-Z0-9]{6}$')
     return set(f for f in os.listdir("/tmp/") if pattern.match(f) and os.path.isfile(f"/tmp/{f}"))
 
 
