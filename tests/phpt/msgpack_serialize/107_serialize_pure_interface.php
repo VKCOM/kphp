@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Called instance_serialize\(\) for class IntA, but it's not marked with @kphp-serializable/
 <?php
 

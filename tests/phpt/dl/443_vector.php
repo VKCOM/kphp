@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark
 <?php
   $a = array();
   for ($i = 0; $i < 250000; $i++) {

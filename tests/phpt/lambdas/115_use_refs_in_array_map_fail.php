@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /You can't pass callbacks with &references to built-in functions/
 <?php
 

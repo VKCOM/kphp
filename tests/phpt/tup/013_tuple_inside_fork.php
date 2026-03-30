@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 #ifndef KPHP
 require_once 'kphp_tester_include.php';

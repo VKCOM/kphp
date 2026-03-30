@@ -1,5 +1,5 @@
-@benchmark ok k2_skip
-<?
+@benchmark ok
+<?php
 ob_start();
 function f($s) {
   switch ($s) {

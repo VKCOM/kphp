@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Can not store polymorphic type AbstractClass with mutable derived class ConcreteB/
 <?php
 

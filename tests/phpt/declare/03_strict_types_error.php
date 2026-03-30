@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 KPHP_SHOW_ALL_TYPE_ERRORS=1
 /pass int to argument \$str1 of strcmp/
 /but it's declared as @param string/

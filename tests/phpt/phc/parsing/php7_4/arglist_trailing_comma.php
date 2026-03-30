@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // See https://wiki.php.net/rfc/trailing-comma-function-calls
