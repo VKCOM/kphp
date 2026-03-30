@@ -8,13 +8,15 @@
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
 
-class ScriptAllocatorManaged {
+namespace kphp::memory {
+
+class script_allocator_managed {
 public:
   static void* operator new(size_t size) noexcept {
     return RuntimeAllocator::get().alloc_script_memory(size);
   }
 
-  static void* operator new(size_t, void* ptr) noexcept {
+  static void* operator new(size_t /*unused*/, void* ptr) noexcept {
     return ptr;
   }
 
@@ -27,5 +29,7 @@ public:
   static void operator delete[](void* ptr) = delete;
 
 protected:
-  ~ScriptAllocatorManaged() = default;
+  ~script_allocator_managed() = default;
 };
+
+} // namespace kphp::memory

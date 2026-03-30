@@ -19,11 +19,13 @@
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
+#include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/multipart/multipart.h"
@@ -32,7 +34,9 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
+#include "runtime-light/stdlib/system/system-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
+#include "runtime-light/streams/connection.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -241,7 +245,26 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  http_server_instance_st.request_stream = std::move(request_stream);
+
+  {
+    auto expected_connection{kphp::component::connection::from_stream(std::move(request_stream))};
+    if (!expected_connection) [[unlikely]] {
+      kphp::log::error("failed to create HTTP connection: error code -> {}", expected_connection.error());
+    }
+
+    static constexpr auto user_abort_handler{[] noexcept -> kphp::coro::task<> {
+      auto& http_server_instance_st{HttpServerInstanceState::get()};
+      kphp::log::assertion(http_server_instance_st.connection.has_value());
+      if (http_server_instance_st.connection->get_ignore_abort_level() == 0) {
+        co_await kphp::system::exit(1);
+      }
+    }};
+
+    http_server_instance_st.connection = *std::move(expected_connection);
+    if (auto expected{http_server_instance_st.connection->register_abort_handler(user_abort_handler)}; !expected) [[unlikely]] {
+      kphp::log::error("failed to register user abort handler: error code -> {}", expected.error());
+    }
+  }
 
   // determine HTTP method
   if (invoke_http.method.value == GET_METHOD) {
@@ -379,6 +402,22 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  kphp::log::assertion(http_server_instance_st.connection.has_value());
+  http_server_instance_st.connection->unregister_abort_handler();
+
+  const auto finalizer{vk::finally([&http_server_instance_st] noexcept {
+    // TODO pay attention when adding flush
+    std::ranges::for_each(http_server_instance_st.multipart_temporary_files, [](const auto& multipart_filename) noexcept {
+      if (const auto expected{k2::unlink(multipart_filename)}; !expected) {
+        kphp::log::warning("failed to unlink multipart temporary file: error code -> {}", expected.error());
+      }
+    });
+    http_server_instance_st.multipart_temporary_files.clear();
+  })};
+
+  if (http_server_instance_st.connection->is_aborted()) {
+    co_return kphp::log::info("HTTP connection closed");
+  }
 
   string response_body{};
   tl::HttpResponse http_response{};
@@ -422,21 +461,13 @@ kphp::coro::task<> finalize_server() noexcept {
     tl::storer tls{http_response.footprint()};
     http_response.store(tls);
 
-    if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
-      kphp::log::error("can't send HTTP response since there is no available stream");
-    }
-    auto& request_stream{*http_server_instance_st.request_stream};
-    if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
-      kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
+    if (auto expected{co_await kphp::component::send_response(http_server_instance_st.connection->get_stream(), tls.view())}; !expected) [[unlikely]] {
+      kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
     }
     http_server_instance_st.response_state = kphp::http::response_state::completed;
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
-    for (const auto& temporary_file : http_server_instance_st.multipart_temporary_files) {
-      std::ignore = k2::unlink(temporary_file);
-    }
-    http_server_instance_st.multipart_temporary_files.clear();
     co_return;
   }
 }

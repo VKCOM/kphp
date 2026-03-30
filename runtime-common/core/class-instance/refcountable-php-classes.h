@@ -9,7 +9,7 @@
 
 #include "runtime-common/core/allocator/script-allocator-managed.h"
 
-class abstract_refcountable_php_interface : public ScriptAllocatorManaged {
+class abstract_refcountable_php_interface : public kphp::memory::script_allocator_managed {
 public:
   abstract_refcountable_php_interface() __attribute__((always_inline)) = default;
   virtual ~abstract_refcountable_php_interface() noexcept __attribute__((always_inline)) = default;
@@ -98,7 +98,7 @@ private:
 };
 
 template<class Derived>
-class refcountable_php_classes : public ScriptAllocatorManaged {
+class refcountable_php_classes : public kphp::memory::script_allocator_managed {
 public:
   void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {

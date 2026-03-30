@@ -11,7 +11,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
-class RpcRequestResult : public ScriptAllocatorManaged {
+class RpcRequestResult : public kphp::memory::script_allocator_managed {
 public:
   const bool is_typed{};
 

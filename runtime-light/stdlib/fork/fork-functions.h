@@ -26,6 +26,23 @@
 
 namespace kphp::forks {
 
+class scoped_id_managed {
+  ForkInstanceState& state{ForkInstanceState::get()};
+  int64_t fork_id{state.current_id};
+
+public:
+  scoped_id_managed() noexcept = default;
+
+  ~scoped_id_managed() {
+    state.current_id = fork_id;
+  }
+
+  scoped_id_managed(const scoped_id_managed&) = delete;
+  scoped_id_managed(scoped_id_managed&&) = delete;
+  scoped_id_managed& operator=(const scoped_id_managed&) = delete;
+  scoped_id_managed& operator=(scoped_id_managed&&) = delete;
+};
+
 template<kphp::coro::concepts::awaitable awaitable_type>
 auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   auto& fork_instance_st{ForkInstanceState::get()};

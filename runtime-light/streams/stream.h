@@ -59,6 +59,7 @@ public:
 
   auto descriptor() const noexcept -> k2::descriptor;
   auto reset(k2::descriptor descriptor) noexcept -> void;
+  auto status() const noexcept -> k2::StreamStatus;
 
   auto read(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>>;
   template<std::invocable<std::span<const std::byte>> F>
@@ -107,6 +108,10 @@ auto stream::accept(duration_type timeout) noexcept -> kphp::coro::task<std::opt
   co_return stream{descriptor};
 }
 
+inline auto stream::descriptor() const noexcept -> k2::descriptor {
+  return m_descriptor;
+}
+
 inline auto stream::reset(k2::descriptor descriptor) noexcept -> void {
   if (descriptor == m_descriptor) [[unlikely]] {
     return;
@@ -114,8 +119,10 @@ inline auto stream::reset(k2::descriptor descriptor) noexcept -> void {
   k2::free_descriptor(std::exchange(m_descriptor, descriptor));
 }
 
-inline auto stream::descriptor() const noexcept -> k2::descriptor {
-  return m_descriptor;
+inline auto stream::status() const noexcept -> k2::StreamStatus {
+  k2::StreamStatus stream_status{};
+  k2::stream_status(descriptor(), std::addressof(stream_status));
+  return stream_status;
 }
 
 inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {

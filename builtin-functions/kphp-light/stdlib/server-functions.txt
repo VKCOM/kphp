@@ -10,6 +10,9 @@ function kphp_get_runtime_config() ::: mixed;
 
 function register_shutdown_function (callable():void $callback) ::: void;
 
+/** @kphp-extern-func-info interruptible */
+function ignore_user_abort ($enable ::: ?bool = null) ::: int;
+
 // === URL ========================================================================================
 
 define('PHP_URL_SCHEME', 0);
@@ -125,8 +128,6 @@ define('LC_MESSAGES', 5);
 
 function debug_backtrace() ::: string[][];
 
-/** @kphp-extern-func-info stub generation-required */
-function ignore_user_abort ($enable ::: ?bool = null) ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function flush() ::: void;
 
