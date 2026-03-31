@@ -1,5 +1,7 @@
 import typing
 
+import pytest
+
 from python.lib.testcase import WebServerAutoTestCase
 
 
@@ -57,9 +59,18 @@ class TestTlPrimitives(WebServerAutoTestCase):
             _assert_fetch_string('abc'),
         )
 
-    def test_rpc_clean(self):
+    @pytest.mark.kphp_skip
+    def test_rpc_clean_k2(self):
         self.call(
             _assert_rpc_parse('\x12\x34\x56\x78', True),
             _assert_rpc_clean(True),
             _assert_fetch_int(0x777, expected_exception=True),
+        )
+
+    @pytest.mark.k2_skip
+    def test_rpc_clean_kphp(self):
+        self.call(
+            _assert_rpc_parse('\x12\x34\x56\x78', True),
+            _assert_rpc_clean(True),
+            _assert_fetch_int(0x78563412, expected_exception=False),
         )

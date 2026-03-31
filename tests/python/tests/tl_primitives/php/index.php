@@ -6,33 +6,39 @@ foreach ($operations as $op) {
   try {
     switch ($op['kind']) {
       case 'rpc_parse':
-        if (rpc_parse($op['new_rpc_data']) != $op['expected']) {
-          critical_error('error');
+        $res = rpc_parse($op['new_rpc_data']);
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
       case 'rpc_clean':
-        if (rpc_clean() != $op['expected']) {
-          critical_error('error');
+        $res = rpc_clean();
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
       case 'fetch_int':
-        if (fetch_int() != $op['expected']) {
-          critical_error('error');
+        $res = fetch_int();
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
       case 'fetch_long':
-        if (fetch_long() != $op['expected']) {
-          critical_error('error');
+        $res = fetch_long();
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
       case 'fetch_double':
-        if (fetch_double() != $op['expected']) {
-          critical_error('error');
+        $res = fetch_double();
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
       case 'fetch_string':
-        if (fetch_string() != $op['expected']) {
-          critical_error('error');
+        $res = fetch_string();
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
       default:
