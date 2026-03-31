@@ -1,7 +1,13 @@
 import os
+import re
 from urllib.parse import urlencode
 
 from python.lib.testcase import WebServerAutoTestCase
+
+def get_multipart_temp_files():
+    """Get files that look like multipart temp files (6 random alphanumeric chars in /tmp/, optionally with tmp. prefix)."""
+    pattern = re.compile(r'^(tmp\.)?[a-zA-Z0-9]{6}$')
+    return set(f for f in os.listdir("/tmp/") if pattern.match(f) and os.path.isfile(f"/tmp/{f}"))
 
 
 class TestMultipartContentType(WebServerAutoTestCase):
@@ -190,7 +196,7 @@ class TestMultipartContentType(WebServerAutoTestCase):
 
     def test_multipart_filename_attribute(self):
 
-        tmp_files = os.listdir("/tmp/")
+        tmp_files = get_multipart_temp_files()
         boundary = "------------------------d74496d66958873e"
 
         file_bytes = b"Hello from test.txt\nSecond line\n"
@@ -221,12 +227,12 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertTrue(response.content.find(b"filename : test.txt") != -1)
         self.assertTrue(response.content.find(b"Hello from test.txt") != -1)
 
-        tmp_files_after_script = os.listdir("/tmp/")
+        tmp_files_after_script = get_multipart_temp_files()
         # check that script delete tmp files at the end
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_filename_array_attribute(self):
-        tmp_files = os.listdir("/tmp/")
+        tmp_files = get_multipart_temp_files()
 
         boundary = "------------------------d74496d66958873e"
 
@@ -270,13 +276,13 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertTrue(response.content.find(b"Hello from a.txt") != -1)
         self.assertTrue(response.content.find(b"Hello from b.txt") != -1)
 
-        tmp_files_after_script = os.listdir("/tmp/")
+        tmp_files_after_script = get_multipart_temp_files()
         # check that script delete tmp files at the end
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_superglobal_modify(self):
 
-        tmp_files = os.listdir("/tmp/")
+        tmp_files = get_multipart_temp_files()
         boundary = "------------------------d74496d66958873e"
 
         file_bytes = b"Hello from test.txt\nSecond line\n"
@@ -305,13 +311,13 @@ class TestMultipartContentType(WebServerAutoTestCase):
 
         self.assertEqual(200, response.status_code)
 
-        tmp_files_after_script = os.listdir("/tmp/")
+        tmp_files_after_script = get_multipart_temp_files()
         # check that script delete tmp files at the end
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_mixed_files_and_fields(self):
         """Test mixing files and regular form fields in the same request."""
-        tmp_files = os.listdir("/tmp/")
+        tmp_files = get_multipart_temp_files()
         boundary = '------------------------d74496d66958873e'
 
         file_bytes = b'File content here\n'
@@ -350,13 +356,13 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertTrue(response.content.find(b'filename : test.txt') != -1)
         self.assertTrue(response.content.find(b'another : another value') != -1)
 
-        tmp_files_after_script = os.listdir("/tmp/")
+        tmp_files_after_script = get_multipart_temp_files()
         # check that script delete tmp files at the end
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_file_without_content_type(self):
         """Test file upload without explicit Content-Type header."""
-        tmp_files = os.listdir("/tmp/")
+        tmp_files = get_multipart_temp_files()
         boundary = '------------------------d74496d66958873e'
 
         file_bytes = b'File without content type\n'
@@ -387,13 +393,13 @@ class TestMultipartContentType(WebServerAutoTestCase):
         # Should default to text/plain
         self.assertTrue(response.content.find(b'type : text/plain') != -1)
 
-        tmp_files_after_script = os.listdir("/tmp/")
+        tmp_files_after_script = get_multipart_temp_files()
         # check that script delete tmp files at the end
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_binary_file(self):
         """Test uploading binary file content."""
-        tmp_files = os.listdir("/tmp/")
+        tmp_files = get_multipart_temp_files()
         boundary = '------------------------d74496d66958873e'
 
         # Binary content with null bytes
@@ -424,7 +430,7 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertTrue(response.content.find(b'size : 8') != -1)
         self.assertTrue(response.content.find(b'filename : data.bin') != -1)
 
-        tmp_files_after_script = os.listdir("/tmp/")
+        tmp_files_after_script = get_multipart_temp_files()
         # check that script delete tmp files at the end
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
