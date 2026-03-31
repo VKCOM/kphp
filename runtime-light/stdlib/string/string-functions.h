@@ -17,7 +17,7 @@ inline string f$prepare_search_query(const string& query) noexcept {
 
 inline Optional<string> f$setlocale(int64_t category, const string& locale) noexcept {
   const int32_t i32category{static_cast<int32_t>(category)};
-  if ((locale.size() != 1 || locale[0] != '0') && k2::uselocale(i32category, {locale.c_str(), locale.size()}) != k2::errno_ok) {
+  if (const std::string_view sv_locale{locale.c_str(), locale.size()}; sv_locale != "0" && k2::uselocale(i32category, sv_locale) != k2::errno_ok) {
     return false;
   }
   const auto opt_locale_name{k2::current_locale_name(i32category)};
