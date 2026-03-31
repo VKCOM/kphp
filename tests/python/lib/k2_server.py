@@ -64,6 +64,7 @@ class K2Server(WebServer):
         log_record.pop("time", "")
         log_record.pop("thread_id", "")
         log_record.pop("component_name", "")
+        log_record.pop("component_version", "")
         log_record.pop("level", "")
         log_record.pop("target", "")
         log_record.pop("instance_id", "")
