@@ -332,9 +332,6 @@ inline struct tm* localtime_r(const time_t* timer, struct tm* result) noexcept {
 }
 
 inline int32_t uselocale(int32_t category, std::string_view locale) noexcept {
-  if (locale == "0") {
-    return k2::errno_ok;
-  }
   return k2_uselocale(category, locale.data());
 }
 
