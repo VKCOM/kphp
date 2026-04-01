@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function test_auto_memory_defragmentation() {
@@ -17,7 +17,10 @@ function test_auto_memory_defragmentation() {
 #endif
   var_dump(memory_get_detailed_stats()["defragmentation_calls"]);
 
-  $n *= 10;
+  $n *= 2;
+#ifndef K2
+  $n *= 5;
+#endif
   $a = "a";
   $b = "b";
   for ($i = 1; $i < $n; ++$i) {
