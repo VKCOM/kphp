@@ -121,7 +121,7 @@ public:
   VertexPtr get_class(const PhpDocComment *phpdoc, ClassType class_type);
   void parse_extends_implements();
 
-  static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
+  static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs, bool is_null_safe = false);
 
 private:
   const TypeHint *get_typehint();
