@@ -233,6 +233,15 @@ class Engine:
                 expected_str = json.dumps(obj=expected_msgs, indent=2)
                 raise RuntimeError("{}; Missed messages: {}".format(message, expected_str))
 
+    def assert_no_log(self, unexpect, message="Got unexpected log", timeout=60):
+        try:
+            self.assert_log(expect=unexpect, timeout=timeout)
+        except Exception:
+            pass
+        else:
+            raise RuntimeError("{}; Unexpected message: {}".format(message, unexpect))
+
+
     def get_stats(self, prefix="", timeout=60):
         """
         Получить последнюю стату движка
