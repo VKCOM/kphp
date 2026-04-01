@@ -28,8 +28,9 @@ Optional<string> f$iconv(const string& input_encoding, const string& output_enco
     char* input_buf{const_cast<char*>(input_str.c_str())};
     char* output_buf{output_str.buffer()};
     size_t res{};
-    if (k2::iconv(std::addressof(res), cd, std::addressof(input_buf), std::addressof(input_len), std::addressof(output_buf), std::addressof(output_len)) ==
-        k2::errno_ok) {
+    if (auto iconv_result{
+            k2::iconv(std::addressof(res), cd, std::addressof(input_buf), std::addressof(input_len), std::addressof(output_buf), std::addressof(output_len))};
+        iconv_result == k2::errno_ok || iconv_result != k2::errno_e2big) {
       output_str.shrink(static_cast<string::size_type>(output_buf - output_str.c_str()));
       return output_str;
     }
