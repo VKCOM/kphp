@@ -33,13 +33,14 @@ class TestShutdownFunctionsTimeouts(WebServerAutoTestCase):
             json=[
                 {"op": "register_shutdown_function", "msg": "shutdown_simple"},
                 {"op": "register_shutdown_function", "msg": "shutdown_send_rpc"},
-                {"op": "sleep", "duration": 1.5},
-                {"op": "resumable_long_work", "duration": 0.2},
-                {"op": "critical_error"},
+                {"op": "long_work", "duration": 1.3},
+                {"op": "resumable_long_work", "duration": 0.2}, # must not to be started, should invokes shutdown functions
+                {"op": "critical_error"}, # unfortunately, may produces a lot of flaky
             ])
         self.assertEqual(resp.text, "ERROR")
         self.assertEqual(resp.status_code, 500)
-        self.web_server.assert_log(["execute simple shutdown", "try send rpc from shutdown"], timeout=5)
+        self.web_server.assert_no_log(unexpect=["finish resumable_long_work"], timeout=10) # consider it is unreachable
+        self.web_server.assert_log(["execute simple shutdown", "try send rpc from shutdown"], timeout=10)
 
     def test_timeout_reset_at_shutdown_function(self):
         # test that the timeout timer resets, giving the shutdown functions a chance to complete
@@ -52,21 +53,6 @@ class TestShutdownFunctionsTimeouts(WebServerAutoTestCase):
         self.assertEqual(resp.text, "ok")
         self.assertEqual(resp.status_code, 200)
         self.web_server.assert_log(["shutdown function managed to finish"], timeout=5)
-
-    def test_timeout_shutdown_exit(self):
-        # test that if we're doing an exit(0) in shutdown handler *after* the timeout
-        # that request will still end up in error state with 500 status code
-        resp = self.web_server.http_post(
-            json=[
-                {"op": "register_shutdown_function", "msg": "shutdown_with_exit"},
-                {"op": "long_work", "duration": 1.5}
-            ])
-        self.assertEqual(resp.text, "ERROR")
-        self.assertEqual(resp.status_code, 500)
-        self.web_server.assert_log([
-            "Critical error during script execution: timeout exit",
-            "running shutdown handler 1"
-        ], timeout=5)
 
     def test_timeout_after_timeout_at_shutdown_function(self):
         # test that we do set up a second timeout for the shutdown functions
@@ -151,3 +137,29 @@ class TestShutdownFunctionsTimeouts(WebServerAutoTestCase):
     #     self.assertEqual(resp.status_code, 500)
     #     self.web_server.assert_log(["Critical error during script execution: timeout",
     #                                  "shutdown function managed to finish"], timeout=5)
+
+
+@pytest.mark.k2_skip_suite
+class TestShutdownFunctionsWithLongHardTimeout(WebServerAutoTestCase):
+    @classmethod
+    def extra_class_setup(cls):
+        cls.web_server.update_options({
+            "--time-limit": 1,
+            "--hard-time-limit": 5,
+            "--verbosity-resumable=2": True,
+        })
+
+    def test_timeout_shutdown_exit(self):
+        # test that if we're doing an exit(0) in shutdown handler *after* the timeout
+        # that request will still end up in error state with 500 status code
+        resp = self.web_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_with_exit"},
+                {"op": "long_work", "duration": 1.5}
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.web_server.assert_log([
+            "Critical error during script execution: timeout exit",
+            "running shutdown handler 1"
+        ], timeout=5)
