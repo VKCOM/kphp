@@ -17,6 +17,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <sys/stat.h>
+
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
@@ -25,6 +27,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/stream.h"
 
@@ -146,7 +149,29 @@ inline auto file::pread(std::span<std::byte> buf, uint64_t offset) noexcept -> s
 }
 
 inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
-  return std::unexpected{m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR ? k2::errno_efault : k2::errno_enodev};
+  struct stat stat_buf {};
+
+  return k2::fstat(m_descriptor, std::addressof(stat_buf)).and_then([&stat_buf, this] noexcept -> std::expected<string, int32_t> {
+    if (!S_ISREG(stat_buf.st_mode)) {
+      kphp::log::warning("regular file expected");
+      return std::unexpected{k2::errno_efault};
+    }
+
+    const size_t size{static_cast<size_t>(stat_buf.st_size)};
+    if (size > string::max_size()) {
+      kphp::log::warning("file is too large");
+      return std::unexpected{k2::errno_efault};
+    }
+
+    string file_content{static_cast<string::size_type>(size), false};
+    return read({reinterpret_cast<std::byte*>(file_content.buffer()), file_content.size()})
+        .and_then([size, &file_content](size_t read_result) noexcept -> std::expected<string, int32_t> {
+          if (read_result < size) {
+            return std::unexpected{k2::errno_efault};
+          }
+          return file_content;
+        });
+  });
 }
 
 inline auto file::flush() noexcept -> std::expected<void, int32_t> {

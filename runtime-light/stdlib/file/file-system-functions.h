@@ -16,9 +16,7 @@
 #include <unistd.h>
 #include <utility>
 
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/coroutine/task.h"
@@ -204,40 +202,22 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 }
 
 inline Optional<array<string>> f$file(const string& name) noexcept {
-  struct stat stat_buf {};
-
   auto expected_file{kphp::fs::file::open(name.c_str(), "r")};
   if (!expected_file.has_value()) {
     return false;
   }
-  if (!k2::stat({name.c_str(), name.size()}, std::addressof(stat_buf)).has_value()) {
-    return false;
-  }
-  if (!S_ISREG(stat_buf.st_mode)) {
-    kphp::log::warning("regular file expected as first argument in function file, \"{}\" is given", name.c_str());
-    return false;
-  }
 
-  const size_t size{static_cast<size_t>(stat_buf.st_size)};
-  if (size > string::max_size()) {
-    kphp::log::warning("file \"{}\" is too large", name.c_str());
+  auto expected_file_content{std::move(*expected_file).get_contents()};
+  if (!expected_file_content.has_value()) {
     return false;
   }
-
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> file_content;
-  file_content.resize(size);
-  {
-    auto file{std::move(*expected_file)};
-    if (auto expected_read_result{file.read(file_content)}; !expected_read_result.has_value() || *expected_read_result < size) {
-      return false;
-    }
-  }
+  auto file_content{std::move(*expected_file_content)};
 
   array<string> result;
   int32_t prev{-1};
-  for (size_t i{0}; i < size; i++) {
-    if (static_cast<char>(file_content[i]) == '\n' || i + 1 == size) {
-      result.push_back(string{reinterpret_cast<char*>(file_content.data()) + prev + 1, static_cast<string::size_type>(i - prev)});
+  for (size_t i{0}; i < file_content.size(); i++) {
+    if (static_cast<char>(file_content[i]) == '\n' || i + 1 == file_content.size()) {
+      result.push_back(string{file_content.buffer() + prev + 1, static_cast<string::size_type>(i - prev)});
       prev = i;
     }
   }
