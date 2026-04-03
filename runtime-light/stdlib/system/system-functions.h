@@ -181,7 +181,7 @@ inline Optional<array<mixed>> f$posix_getpwuid(int64_t user_id) noexcept {
 
   array<mixed> result{array_size{7, false}};
   result.set_value(string{kphp::posix::impl::NAME_PWUID_KEY.data(), kphp::posix::impl::NAME_PWUID_KEY.size()}, string{pwd.pw_name});
-  result.set_value(string{kphp::posix::impl::PASSWD_PWUID_KEY.data(), kphp::posix::impl::NAME_PWUID_KEY.size()}, string{pwd.pw_passwd});
+  result.set_value(string{kphp::posix::impl::PASSWD_PWUID_KEY.data(), kphp::posix::impl::PASSWD_PWUID_KEY.size()}, string{pwd.pw_passwd});
   result.set_value(string{kphp::posix::impl::UID_PWUID_KEY.data(), kphp::posix::impl::UID_PWUID_KEY.size()}, static_cast<int64_t>(pwd.pw_uid));
   result.set_value(string{kphp::posix::impl::GID_PWUID_KEY.data(), kphp::posix::impl::GID_PWUID_KEY.size()}, static_cast<int64_t>(pwd.pw_gid));
   result.set_value(string{kphp::posix::impl::GECOS_PWUID_KEY.data(), kphp::posix::impl::GECOS_PWUID_KEY.size()}, string{pwd.pw_gecos});
