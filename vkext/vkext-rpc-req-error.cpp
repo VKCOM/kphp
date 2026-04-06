@@ -68,15 +68,13 @@ void tl::RpcReqError::tl_fetch() {
 }
 
 void RpcError::try_fetch() {
-  int op = tl_lookup_int();
+  int op = tl_parse_int();
   if (op == TL_REQ_RESULT_HEADER) {
-    (void)tl_parse_int(); // skip op
     flags = tl_parse_int();
     header.emplace().tl_fetch(flags);
-    op = tl_lookup_int();
+    op = tl_parse_int();
   }
   if (op == TL_RPC_REQ_ERROR) {
-    (void)tl_parse_int(); // skip op
     error.emplace().tl_fetch();
   }
 }
