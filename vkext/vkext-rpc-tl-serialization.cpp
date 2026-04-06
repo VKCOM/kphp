@@ -532,7 +532,7 @@ static zval *create_php_instance(const char *class_name) {
   return ci;
 }
 
-static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header = nullptr, int extra_flags = 0);
+static zval *make_query_result_or_error(zval *r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header = nullptr, int extra_flags = 0);
 
 /**
  * This function extracts ORIGINAL tl name from given php class name.
@@ -1034,7 +1034,7 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
   return reinterpret_cast<tl_tree *>(res);
 }
 
-zval **fetch_function(struct tl_tree *T) {
+zval *fetch_function(struct tl_tree *T) {
   ADD_CNT(fetch_function)
   START_TIMER(fetch_function)
 #ifdef VLOG
@@ -1057,10 +1057,10 @@ zval **fetch_function(struct tl_tree *T) {
   vkext_rpc::RpcError rpc_error;
   rpc_error.try_fetch();
   if (rpc_error.error.has_value()) {
-    *_arr = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
+    zval *ret = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
     DEC_REF (T);
     END_TIMER(fetch_function)
-    return _arr;
+    return ret;
   }
   tl_parse_restore_pos(pos);
 
@@ -1078,13 +1078,12 @@ zval **fetch_function(struct tl_tree *T) {
       VK_ALLOC_INIT_ZVAL(*_arr);
       ZVAL_BOOL (*_arr, 1);
     }
-    return _arr;
+    return *_arr;
   } else {
     if (*_arr) {
       zval_dtor (*_arr);
     }
-    *_arr = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
-    return _arr;
+    return make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
   }
 }
 
@@ -1123,10 +1122,10 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
   return q;
 }
 
-zval **vk_rpc_tl_query_result_one_impl(struct tl_tree *T) {
+zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T) {
   tl_parse_init();
   START_TIMER (tmp);
-  zval **r = fetch_function(T);
+  zval *r = fetch_function(T);
   //fprintf(stderr, "~~~~ after fetch:\n");
   //php_debug_zval_dump(*r, 1);
   END_TIMER (tmp);
@@ -1352,9 +1351,9 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
   return res;
 }
 
-static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header, int extra_flags) {
+static zval *make_query_result_or_error(zval *r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header, int extra_flags) {
   if (r) {
-    return *r;
+    return r;
   }
   zval *_err;
   switch (typed_mode) {
