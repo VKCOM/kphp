@@ -1088,12 +1088,16 @@ zval *fetch_function(struct tl_tree *T) {
 }
 
 void _extra_dec_ref(struct rpc_query *q) {
-  if (q->extra) {
-    total_tl_working--;
+  if (!q->extra_free) {
+    return;
   }
-  DEC_REF (q->extra);
-  q->extra = 0;
   q->extra_free = 0;
+  total_tl_working--;
+  if (q->extra) {
+    DEC_REF (q->extra);
+    q->extra = 0;
+  }
+  zval_ptr_dtor(&q->fetcher);
 }
 
 struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double timeout, VK_ZVAL_API_P arr, int ignore_answer) {
@@ -1117,12 +1121,13 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
   }
   assert (!ignore_answer);
   q->extra = res;
+  ZVAL_NULL(&q->fetcher);
   q->extra_free = _extra_dec_ref;
   total_tl_working++;
   return q;
 }
 
-zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T) {
+zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T, zval *fetcher) {
   tl_parse_init();
   START_TIMER (tmp);
   zval *r = fetch_function(T);
@@ -1403,13 +1408,22 @@ void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) 
     }
     struct rpc_query *q = rpc_query_get(qid);
     tl_tree *T = reinterpret_cast<tl_tree *>(q->extra);
+    zval fetcher;
+    ZVAL_COPY(&fetcher, &q->fetcher);
     tl_current_function_name = q->fun_name;
-    INC_REF (T);
+    if (T) {
+      INC_REF (T);
+    }
 
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
+      // TODO - most likely. leak here (of both T and fetcher).
+      // But it is difficult to simulate this situation, so
+      // we decided to keep leak to avoid double delete in case we
+      // failed to completely understand this code.
       continue;
     }
-    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, &fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+    zval_ptr_dtor(&fetcher);
     vk_add_index_zval_nod (*r, qid, res);
   }
 }
@@ -1440,14 +1454,19 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   double timeout = (argc < 2) ? q->timeout : precise_now + parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   END_TIMER (parse);
   auto *T = reinterpret_cast<tl_tree *>(q->extra);
-  INC_REF (T);
+  zval fetcher;
+  ZVAL_COPY(&fetcher, &q->fetcher);
+  if (T) {
+    INC_REF (T);
+  }
   if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
     zval *r = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
     RETVAL_ZVAL(r, false, true);
     efree(r);
     return;
   }
-  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, &fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+  zval_ptr_dtor(&fetcher);
   RETVAL_ZVAL(r, false, true);
   efree(r);
 }
