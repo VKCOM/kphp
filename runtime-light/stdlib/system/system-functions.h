@@ -105,6 +105,7 @@ inline kphp::coro::task<> f$die(mixed v = 0) noexcept {
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
   kphp::log::warning("called stub register_kphp_on_oom_callback");
+  return true;
 }
 
 template<typename F>
