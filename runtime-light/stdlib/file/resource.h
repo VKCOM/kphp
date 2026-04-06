@@ -27,7 +27,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/stream.h"
 
@@ -155,13 +154,11 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
     return std::unexpected{expected.error()};
   }
   if (!S_ISREG(stat_buf.st_mode)) {
-    kphp::log::warning("regular file expected");
     return std::unexpected{k2::errno_efault};
   }
 
   const size_t size{static_cast<size_t>(stat_buf.st_size)};
   if (size > string::max_size()) {
-    kphp::log::warning("file is too large");
     return std::unexpected{k2::errno_efault};
   }
 

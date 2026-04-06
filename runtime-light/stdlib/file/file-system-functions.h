@@ -209,6 +209,7 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
 
   auto expected_file_content{std::move(*expected_file).get_contents()};
   if (!expected_file_content.has_value()) {
+    kphp::log::warning("file::get_contents returned code {}", expected_file_content.error());
     return false;
   }
   auto file_content{std::move(*expected_file_content)};
