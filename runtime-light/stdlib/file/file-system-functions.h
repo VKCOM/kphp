@@ -202,7 +202,7 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 }
 
 inline Optional<array<string>> f$file(const string& name) noexcept {
-  auto expected_file{kphp::fs::file::open(name.c_str(), "r")};
+  auto expected_file{kphp::fs::file::open({name.c_str(), name.size()}, "r")};
   if (!expected_file.has_value()) {
     return false;
   }
