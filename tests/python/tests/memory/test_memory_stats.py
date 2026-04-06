@@ -8,11 +8,12 @@ class TestMemoryUsage(WebServerAutoTestCase):
         response = self.web_server.http_post(f"/{test_case}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.text,
-            "".join(
-                f"int({memory_usage})\n"
-                for memory_usage in [expected_usage, expected_usage_after_unset, expected_peak_usage]
-            ),
+            response.json(),
+            {
+                "usage": expected_usage,
+                "usage_after_unset": expected_usage_after_unset,
+                "peak_usage": expected_peak_usage,
+            },
         )
 
     def test_memory_usage(self):
