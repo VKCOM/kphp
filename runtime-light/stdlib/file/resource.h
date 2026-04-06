@@ -163,7 +163,7 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
   }
 
   string file_content{static_cast<string::size_type>(size), false};
-  auto expected_read_result{read({reinterpret_cast<std::byte*>(file_content.buffer()), file_content.size()})};
+  auto expected_read_result{read(std::as_writable_bytes(std::span{file_content.buffer(), file_content.size()}))};
   if (!expected_read_result.has_value()) {
     return std::unexpected{expected_read_result.error()};
   }
