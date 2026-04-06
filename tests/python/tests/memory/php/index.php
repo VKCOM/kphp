@@ -2,52 +2,53 @@
 
 $res = [];
 
-function memory_work() {
-  $a = "a";
+$a = "";
 
-  $n = 1e6;
-  for ($i = 1; $i < $n; ++$i) {
+function memory_work($n) {
+  global $a;
+
+  for ($i = 1; $i <= $n; ++$i) {
     $a .= "a";
   }
-
-  return $a;
 }
 
 function test_memory_usage() {
-  global $res;
+  global $res, $a;
 
   $base_usage = memory_get_usage(false);
 
-  $a = memory_work();
+  memory_work(1e6);
 
   $usage = memory_get_usage(false) - $base_usage;
-  
-  unset($a);
 
-  $usage_after_unset = memory_get_usage(false) - $base_usage;
+  $a = "";
+
+  $usage_after_cleaning = memory_get_usage(false) - $base_usage;
   $peak_usage = memory_get_peak_usage(false) - $base_usage;
 
   $res["usage"] = $usage;
-  $res["usage_after_unset"] = $usage_after_unset;
+  $res["usage_after_cleaning"] = $usage_after_cleaning;
   $res["peak_usage"] = $peak_usage;
 }
 
 function test_total_memory_usage() {
-  global $res;
+  global $res, $a;
+
+  memory_work(2048); # memory usage for small pieces depends on runtime
 
   $base_usage = memory_get_total_usage();
 
-  $a = memory_work();
+  memory_work(1e6);
 
   $usage = memory_get_total_usage() - $base_usage;
-  
-  unset($a);
 
-  $usage_after_unset = memory_get_total_usage() - $base_usage;
+  $a = "";
+
+  $usage_after_cleaning = memory_get_total_usage() - $base_usage;
   $peak_usage = memory_get_peak_usage(true) - $base_usage;
 
   $res["usage"] = $usage;
-  $res["usage_after_unset"] = $usage_after_unset;
+  $res["usage_after_cleaning"] = $usage_after_cleaning;
   $res["peak_usage"] = $peak_usage;
 }
 
