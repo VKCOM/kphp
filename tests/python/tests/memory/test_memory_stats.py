@@ -29,7 +29,7 @@ class TestMemoryUsage(WebServerAutoTestCase):
     def test_total_memory_usage(self):
         self._template(
             "test_total_memory_usage",
-            expected_usage=(self.EXPECTED_LAST_ALLOCATION_SIZE << 1) - (self.PAGE_SIZE << 1),
-            expected_usage_after_cleaning=self.EXPECTED_LAST_ALLOCATION_SIZE - (self.PAGE_SIZE << 1),
-            expected_peak_usage=(self.EXPECTED_LAST_ALLOCATION_SIZE << 1) - (self.PAGE_SIZE << 1),
+            expected_usage=(self.EXPECTED_LAST_ALLOCATION_SIZE << 1) - (self.PAGE_SIZE << 1),           # 8192 + 16384 + ... + 2**20
+            expected_usage_after_cleaning=self.EXPECTED_LAST_ALLOCATION_SIZE - (self.PAGE_SIZE << 1),   # 8192 + 16384 + ... + 2**19
+            expected_peak_usage=(self.EXPECTED_LAST_ALLOCATION_SIZE << 1) - (self.PAGE_SIZE << 1),      # 8192 + 16384 + ... + 2**20
         )
