@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -18,6 +19,8 @@ class ConfdataInstanceState final : private vk::not_copyable {
   kphp::stl::unordered_map<string, array<mixed>, kphp::memory::script_allocator, hasher_type> m_wildcard_cache;
 
 public:
+  uint64_t time_ns{};
+
   ConfdataInstanceState() noexcept = default;
 
   auto& key_cache() noexcept {

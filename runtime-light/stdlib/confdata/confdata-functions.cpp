@@ -6,10 +6,12 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <span>
 #include <string_view>
 #include <utility>
 
+#include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
@@ -52,10 +54,19 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
     co_return mixed{};
   }
 
-  auto& confdata_key_cache{ConfdataInstanceState::get().key_cache()};
+  auto& confdata_instance_st{ConfdataInstanceState::get()};
+  auto& confdata_key_cache{confdata_instance_st.key_cache()};
   if (auto it{confdata_key_cache.find(key)}; it != confdata_key_cache.end()) {
     co_return it->second;
   }
+
+  k2::SystemTime start_time{};
+  k2::system_time(std::addressof(start_time));
+  const auto finalizer{vk::finally([&start_time, &confdata_instance_st] noexcept {
+    k2::SystemTime end_time{};
+    k2::system_time(std::addressof(end_time));
+    confdata_instance_st.time_ns += (end_time.since_epoch_ns - start_time.since_epoch_ns);
+  })};
 
   tl::ConfdataGet confdata_get{.key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{confdata_get.footprint()};
@@ -93,10 +104,19 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
     co_return array<mixed>{};
   }
 
-  auto& confdata_wildcard_cache{ConfdataInstanceState::get().wildcard_cache()};
+  auto& confdata_instance_st{ConfdataInstanceState::get()};
+  auto& confdata_wildcard_cache{confdata_instance_st.wildcard_cache()};
   if (auto it{confdata_wildcard_cache.find(wildcard)}; it != confdata_wildcard_cache.end()) {
     co_return it->second;
   }
+
+  k2::SystemTime start_time{};
+  k2::system_time(std::addressof(start_time));
+  const auto finalizer{vk::finally([&start_time, &confdata_instance_st] noexcept {
+    k2::SystemTime end_time{};
+    k2::system_time(std::addressof(end_time));
+    confdata_instance_st.time_ns += (end_time.since_epoch_ns - start_time.since_epoch_ns);
+  })};
 
   const std::string_view wildcard_view{wildcard.c_str(), wildcard.size()};
 

@@ -4,6 +4,7 @@
 
 #include "runtime-light/state/instance-state.h"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -134,6 +135,12 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
 
 template<image_kind kind>
 kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
+  {
+    k2::SystemTime start_time{};
+    k2::system_time(std::addressof(start_time));
+    start_time_ns = start_time.since_epoch_ns;
+  }
+
   static_assert(kind != image_kind::invalid);
   image_kind_ = kind;
 
@@ -244,4 +251,13 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   while (!ignore_answer_request_await_set.empty()) {
     co_await ignore_answer_request_await_set.next();
   }
+
+  k2::SystemTime end_time{};
+  k2::system_time(std::addressof(end_time));
+
+  // TEMPORARY: log instance-cache and confdata timings
+  kphp::log::info("instance stats (approximately): confdata -> {}ms, instance cache -> {}ms, instance time -> {}ms",
+                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds{confdata_instance_state.time_ns}).count(),
+                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds{instance_cache_instance_state.time_ns}).count(),
+                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds{end_time.since_epoch_ns - start_time_ns}).count());
 }

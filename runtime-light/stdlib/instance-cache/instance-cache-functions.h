@@ -46,6 +46,15 @@ kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance,
     ttl = 0;
   }
 
+  auto& instance_cache_st{InstanceCacheInstanceState::get()};
+  k2::SystemTime start_time{};
+  k2::system_time(std::addressof(start_time));
+  const auto finalizer{vk::finally([&start_time, &instance_cache_st] noexcept {
+    k2::SystemTime end_time{};
+    k2::system_time(std::addressof(end_time));
+    instance_cache_st.time_ns += (end_time.since_epoch_ns - start_time.since_epoch_ns);
+  })};
+
   auto serialized_instance{f$instance_serialize(instance)};
   if (!serialized_instance.has_value()) [[unlikely]] {
     kphp::log::warning("can't serialize instance: key -> {}", key.c_str());
@@ -78,11 +87,20 @@ kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance,
 
 template<typename InstanceType>
 kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, string key, bool /*even_if_expired*/ = false) noexcept {
-  auto& request_cache{InstanceCacheInstanceState::get().request_cache};
+  auto& instance_cache_st{InstanceCacheInstanceState::get()};
+  auto& request_cache{instance_cache_st.request_cache};
   if (auto it{request_cache.find(key)}; it != request_cache.end()) {
     auto cached_instance{from_mixed<InstanceType>(it->second, {})};
     co_return std::move(cached_instance);
   }
+
+  k2::SystemTime start_time{};
+  k2::system_time(std::addressof(start_time));
+  const auto finalizer{vk::finally([&start_time, &instance_cache_st] noexcept {
+    k2::SystemTime end_time{};
+    k2::system_time(std::addressof(end_time));
+    instance_cache_st.time_ns += (end_time.since_epoch_ns - start_time.since_epoch_ns);
+  })};
 
   tl::CacheFetch cache_fetch{.key = tl::string{.value = {key.c_str(), key.size()}}};
   tl::storer tls{cache_fetch.footprint()};
