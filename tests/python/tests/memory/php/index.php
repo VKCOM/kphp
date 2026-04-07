@@ -17,7 +17,7 @@ function test_memory_usage() {
 
   $base_usage = memory_get_usage(false);
 
-  memory_work(1e6);
+  memory_work(1e6);  # 1 MB allocation expected
 
   $usage = memory_get_usage(false) - $base_usage;
 
@@ -34,11 +34,11 @@ function test_memory_usage() {
 function test_total_memory_usage() {
   global $res, $a;
 
-  memory_work(2048); # memory usage for small pieces depends on runtime
+  memory_work(2048);  # memory usage for small pieces depends on runtime
 
   $base_usage = memory_get_total_usage();
 
-  memory_work(1e6);
+  memory_work(1e6);  # 1 MB allocation expected
 
   $usage = memory_get_total_usage() - $base_usage;
 
