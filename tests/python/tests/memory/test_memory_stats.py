@@ -3,7 +3,7 @@ from python.lib.testcase import WebServerAutoTestCase
 
 class TestMemoryUsage(WebServerAutoTestCase):
     PAGE_SIZE = 4096
-    EXPECTED_LAST_ALLOCATION_SIZE = 2**20
+    EXPECTED_LAST_ALLOCATION_SIZE = 2**20   # 1 MB
 
     def _template(self, test_case: str, expected_usage: int, expected_usage_after_cleaning: int, expected_peak_usage: int):
         response = self.web_server.http_post(f"/{test_case}")
