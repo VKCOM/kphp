@@ -2,8 +2,8 @@ from python.lib.testcase import WebServerAutoTestCase
 
 
 class TestMemoryUsage(WebServerAutoTestCase):
-    LOG_PAGE_SIZE = 12                      # log_2(4096)
-    LOG_EXPECTED_LAST_ALLOCATION_SIZE = 20  # ceil(log_2(1e6))
+    PAGE_SIZE = 4096
+    EXPECTED_LAST_ALLOCATION_SIZE = 2**20
 
     def _template(self, test_case: str, expected_usage: int, expected_usage_after_cleaning: int, expected_peak_usage: int):
         response = self.web_server.http_post(f"/{test_case}")
@@ -20,22 +20,16 @@ class TestMemoryUsage(WebServerAutoTestCase):
     def test_memory_usage(self):
         self._template(
             "test_memory_usage",
-            expected_usage=2**self.LOG_EXPECTED_LAST_ALLOCATION_SIZE,
+            expected_usage=self.EXPECTED_LAST_ALLOCATION_SIZE,
             expected_usage_after_cleaning=0,
-            expected_peak_usage=2**self.LOG_EXPECTED_LAST_ALLOCATION_SIZE + # last allocation size
-            2**(self.LOG_EXPECTED_LAST_ALLOCATION_SIZE - 1)                 # prev allocation size
+            expected_peak_usage=self.EXPECTED_LAST_ALLOCATION_SIZE +    # last allocation size
+            self.EXPECTED_LAST_ALLOCATION_SIZE // 2                     # prev allocation size
         )
 
     def test_total_memory_usage(self):
         self._template(
             "test_total_memory_usage",
-            expected_usage=sum(
-                2**n for n in range(self.LOG_PAGE_SIZE + 1, self.LOG_EXPECTED_LAST_ALLOCATION_SIZE + 1)
-            ),
-            expected_usage_after_cleaning=sum(
-                2**n for n in range(self.LOG_PAGE_SIZE + 1, self.LOG_EXPECTED_LAST_ALLOCATION_SIZE)
-            ),
-            expected_peak_usage=sum(
-                2**n for n in range(self.LOG_PAGE_SIZE + 1, self.LOG_EXPECTED_LAST_ALLOCATION_SIZE + 1)
-            ),
+            expected_usage=(self.EXPECTED_LAST_ALLOCATION_SIZE << 1) - (self.PAGE_SIZE << 1),
+            expected_usage_after_cleaning=self.EXPECTED_LAST_ALLOCATION_SIZE - (self.PAGE_SIZE << 1),
+            expected_peak_usage=(self.EXPECTED_LAST_ALLOCATION_SIZE << 1) - (self.PAGE_SIZE << 1),
         )
