@@ -161,9 +161,13 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (h_name == kphp::http::headers::CONNECTION) {
-      if (h_value == CONNECTION_KEEP_ALIVE) [[likely]] {
+      auto iequals{[](std::string_view s1, std::string_view s2) noexcept {
+        return std::ranges::equal(s1, s2, [](char a, char b) { return std::tolower(a, std::locale::classic()) == std::tolower(b, std::locale::classic()); });
+      }};
+
+      if (iequals(h_value, CONNECTION_KEEP_ALIVE)) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::keep_alive;
-      } else if (h_value == CONNECTION_CLOSE) [[likely]] {
+      } else if (iequals(h_value, CONNECTION_CLOSE)) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::close;
       } else {
         kphp::log::error("unexpected connection header: {}", h_value);
