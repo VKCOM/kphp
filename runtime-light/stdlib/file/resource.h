@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <sys/mman.h>
 #include <sys/stat.h>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -27,6 +28,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/stream.h"
 
@@ -44,6 +46,71 @@ inline constexpr std::string_view INPUT_NAME = "php://input";
 
 inline constexpr std::string_view TCP_SCHEME_PREFIX = "tcp://";
 inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
+
+// ================================================================================================
+
+class mmap {
+  k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  void* m_addr{nullptr};
+  size_t m_length{};
+
+  mmap(k2::descriptor descriptor, void* addr, size_t length) noexcept
+      : m_descriptor{descriptor},
+        m_addr{addr},
+        m_length{length} {}
+
+public:
+  mmap(mmap&& other) noexcept
+      : m_descriptor{std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)},
+        m_addr{std::exchange(other.m_addr, nullptr)},
+        m_length{std::exchange(other.m_length, {})} {}
+
+  mmap& operator=(mmap&& other) noexcept {
+    if (this != std::addressof(other)) {
+      std::ignore = close();
+      m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+      m_addr = std::exchange(other.m_addr, nullptr);
+      m_length = std::exchange(other.m_length, {});
+    }
+    return *this;
+  }
+
+  ~mmap() {
+    std::ignore = close();
+  }
+
+  mmap(const mmap&) = delete;
+  mmap& operator=(const mmap&) = delete;
+
+  static auto create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t>;
+
+  auto get_contents() noexcept -> string;
+  auto close() noexcept -> std::expected<void, int32_t>;
+};
+
+inline auto mmap::create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t> {
+  k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  auto* addr{k2::mmap(std::addressof(descriptor), nullptr, length, prot, flags, fd, offset)};
+  if (addr == MAP_FAILED) [[unlikely]] {
+    return std::unexpected{k2::errno_efault};
+  }
+  return mmap{descriptor, addr, length};
+}
+
+inline auto mmap::get_contents() noexcept -> string {
+  std::ignore = k2::madvise(m_addr, m_length, MADV_SEQUENTIAL);
+  string content{static_cast<string::size_type>(m_length), false};
+  std::memcpy(content.buffer(), m_addr, m_length);
+  return content;
+}
+
+inline auto mmap::close() noexcept -> std::expected<void, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  k2::free_descriptor(std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
+  return {};
+}
 
 // ================================================================================================
 
@@ -154,23 +221,15 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
     return std::unexpected{expected.error()};
   }
   if (!S_ISREG(stat_buf.st_mode)) {
-    return std::unexpected{k2::errno_efault};
+    return std::unexpected{k2::errno_einval};
   }
 
   const size_t size{static_cast<size_t>(stat_buf.st_size)};
   if (size > string::max_size()) {
-    return std::unexpected{k2::errno_efault};
+    return std::unexpected{k2::errno_enomem};
   }
 
-  string file_content{static_cast<string::size_type>(size), false};
-  auto expected_read_result{read(std::as_writable_bytes(std::span{file_content.buffer(), file_content.size()}))};
-  if (!expected_read_result.has_value()) {
-    return std::unexpected{expected_read_result.error()};
-  }
-  if (*expected_read_result < size) {
-    return std::unexpected{k2::errno_efault};
-  }
-  return file_content;
+  return kphp::fs::mmap::create(size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_descriptor, 0).transform(&kphp::fs::mmap::get_contents);
 }
 
 inline auto file::flush() noexcept -> std::expected<void, int32_t> {
