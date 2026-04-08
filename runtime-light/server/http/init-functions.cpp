@@ -162,7 +162,8 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
       }
     } else if (h_name == kphp::http::headers::CONNECTION) {
       auto iequals{[](std::string_view s1, std::string_view s2) noexcept {
-        return std::ranges::equal(s1, s2, [](char a, char b) { return std::tolower(a, std::locale::classic()) == std::tolower(b, std::locale::classic()); });
+        return std::ranges::equal(s1, s2,
+                                  [](char a, char b) noexcept { return std::tolower(a, std::locale::classic()) == std::tolower(b, std::locale::classic()); });
       }};
 
       if (iequals(h_value, CONNECTION_KEEP_ALIVE)) [[likely]] {
