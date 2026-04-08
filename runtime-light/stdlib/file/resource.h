@@ -51,26 +51,22 @@ inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
 
 class mmap {
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-  void* m_addr{nullptr};
-  size_t m_length{};
+  std::span<const std::byte> m_data;
 
   mmap(k2::descriptor descriptor, void* addr, size_t length) noexcept
       : m_descriptor{descriptor},
-        m_addr{addr},
-        m_length{length} {}
+        m_data{reinterpret_cast<const std::byte*>(addr), length} {}
 
 public:
   mmap(mmap&& other) noexcept
       : m_descriptor{std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)},
-        m_addr{std::exchange(other.m_addr, nullptr)},
-        m_length{std::exchange(other.m_length, {})} {}
+        m_data{std::exchange(other.m_data, {})} {}
 
   mmap& operator=(mmap&& other) noexcept {
     if (this != std::addressof(other)) {
       std::ignore = close();
       m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
-      m_addr = std::exchange(other.m_addr, nullptr);
-      m_length = std::exchange(other.m_length, {});
+      m_data = std::exchange(other.m_data, {});
     }
     return *this;
   }
@@ -84,7 +80,7 @@ public:
 
   static auto create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t>;
 
-  auto get_contents() noexcept -> string;
+  auto data() noexcept -> std::span<const std::byte>;
   auto close() noexcept -> std::expected<void, int32_t>;
 };
 
@@ -97,11 +93,8 @@ inline auto mmap::create(size_t length, int32_t prot, int32_t flags, k2::descrip
   return mmap{descriptor, addr, length};
 }
 
-inline auto mmap::get_contents() noexcept -> string {
-  std::ignore = k2::madvise(m_addr, m_length, MADV_SEQUENTIAL);
-  string content{static_cast<string::size_type>(m_length), false};
-  std::memcpy(content.buffer(), m_addr, m_length);
-  return content;
+inline auto mmap::data() noexcept -> std::span<const std::byte> {
+  return m_data;
 }
 
 inline auto mmap::close() noexcept -> std::expected<void, int32_t> {
@@ -229,7 +222,14 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
     return std::unexpected{k2::errno_enomem};
   }
 
-  return kphp::fs::mmap::create(size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_descriptor, 0).transform(&kphp::fs::mmap::get_contents);
+  auto expected_mmap{kphp::fs::mmap::create(size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_descriptor, 0)};
+  if (!expected_mmap.has_value()) {
+    return std::unexpected{expected_mmap.error()};
+  }
+
+  auto data{expected_mmap->data()};
+  std::ignore = k2::madvise(reinterpret_cast<void*>(const_cast<std::byte*>(data.data())), data.size(), MADV_SEQUENTIAL);
+  return string{reinterpret_cast<const char*>(data.data()), static_cast<string::size_type>(data.size())};
 }
 
 inline auto file::flush() noexcept -> std::expected<void, int32_t> {
