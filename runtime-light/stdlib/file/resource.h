@@ -13,12 +13,11 @@
 #include <memory>
 #include <span>
 #include <string_view>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <tuple>
 #include <type_traits>
 #include <utility>
-
-#include <sys/mman.h>
-#include <sys/stat.h>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
@@ -50,22 +49,26 @@ inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
 
 class mmap {
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-  std::span<const std::byte> m_data;
+  void* m_addr{nullptr};
+  size_t m_length{};
 
   mmap(k2::descriptor descriptor, void* addr, size_t length) noexcept
       : m_descriptor{descriptor},
-        m_data{reinterpret_cast<const std::byte*>(addr), length} {}
+        m_addr{addr},
+        m_length{length} {}
 
 public:
   mmap(mmap&& other) noexcept
       : m_descriptor{std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)},
-        m_data{std::exchange(other.m_data, {})} {}
+        m_addr{std::exchange(other.m_addr, nullptr)},
+        m_length{std::exchange(other.m_length, {})} {}
 
   mmap& operator=(mmap&& other) noexcept {
     if (this != std::addressof(other)) {
       std::ignore = close();
       m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
-      m_data = std::exchange(other.m_data, {});
+      m_addr = std::exchange(other.m_addr, nullptr);
+      m_length = std::exchange(other.m_length, {});
     }
     return *this;
   }
@@ -79,6 +82,7 @@ public:
 
   static auto create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t>;
 
+  auto madvise(int32_t advise) const noexcept -> std::expected<void, int32_t>;
   auto data() const noexcept -> std::span<const std::byte>;
   auto close() noexcept -> std::expected<void, int32_t>;
 };
@@ -89,12 +93,15 @@ inline auto mmap::create(size_t length, int32_t prot, int32_t flags, k2::descrip
   if (addr == MAP_FAILED) [[unlikely]] {
     return std::unexpected{k2::errno_efault};
   }
-  std::ignore = k2::madvise(addr, length, MADV_SEQUENTIAL);
   return mmap{descriptor, addr, length};
 }
 
+inline auto mmap::madvise(int32_t advise) const noexcept -> std::expected<void, int32_t> {
+  return k2::madvise(m_addr, m_length, advise);
+}
+
 inline auto mmap::data() const noexcept -> std::span<const std::byte> {
-  return m_data;
+  return {reinterpret_cast<const std::byte*>(m_addr), m_length};
 }
 
 inline auto mmap::close() noexcept -> std::expected<void, int32_t> {
@@ -227,7 +234,9 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
     return std::unexpected{expected_mmap.error()};
   }
 
-  auto data{expected_mmap->data()};
+  auto& mmap{*expected_mmap};
+  std::ignore = mmap.madvise(MADV_SEQUENTIAL);
+  auto data{mmap.data()};
   return string{reinterpret_cast<const char*>(data.data()), static_cast<string::size_type>(data.size())};
 }
 
