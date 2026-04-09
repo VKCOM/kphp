@@ -28,7 +28,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/stream.h"
 
@@ -80,7 +79,7 @@ public:
 
   static auto create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t>;
 
-  auto data() noexcept -> std::span<const std::byte>;
+  auto data() const noexcept -> std::span<const std::byte>;
   auto close() noexcept -> std::expected<void, int32_t>;
 };
 
@@ -90,10 +89,11 @@ inline auto mmap::create(size_t length, int32_t prot, int32_t flags, k2::descrip
   if (addr == MAP_FAILED) [[unlikely]] {
     return std::unexpected{k2::errno_efault};
   }
+  std::ignore = k2::madvise(addr, length, MADV_SEQUENTIAL);
   return mmap{descriptor, addr, length};
 }
 
-inline auto mmap::data() noexcept -> std::span<const std::byte> {
+inline auto mmap::data() const noexcept -> std::span<const std::byte> {
   return m_data;
 }
 
@@ -219,7 +219,7 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
 
   const size_t size{static_cast<size_t>(stat_buf.st_size)};
   if (size > string::max_size()) {
-    return std::unexpected{k2::errno_enomem};
+    return std::unexpected{k2::errno_erange};
   }
 
   auto expected_mmap{kphp::fs::mmap::create(size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_descriptor, 0)};
@@ -228,7 +228,6 @@ inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
   }
 
   auto data{expected_mmap->data()};
-  std::ignore = k2::madvise(reinterpret_cast<void*>(const_cast<std::byte*>(data.data())), data.size(), MADV_SEQUENTIAL);
   return string{reinterpret_cast<const char*>(data.data()), static_cast<string::size_type>(data.size())};
 }
 

@@ -213,12 +213,13 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
     return false;
   }
   auto file_content{std::move(*expected_file_content)};
+  const size_t size{file_content.size()};
 
   array<string> result;
   int32_t prev{-1};
-  for (size_t i{0}; i < file_content.size(); i++) {
-    if (static_cast<char>(file_content[i]) == '\n' || i + 1 == file_content.size()) {
-      result.push_back(string{file_content.buffer() + prev + 1, static_cast<string::size_type>(i - prev)});
+  for (size_t i{0}; i < size; i++) {
+    if (file_content[i] == '\n' || i + 1 == size) {
+      result.push_back(file_content.substr(prev + 1, static_cast<string::size_type>(i - prev)));
       prev = i;
     }
   }
