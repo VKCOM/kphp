@@ -221,12 +221,6 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   }
   shutdown_state_ = shutdown_state::finished;
 
-  // Stop session with internal Web component
-  if (auto& web_state{WebInstanceState::get()}; web_state.session.has_value()) {
-    web_state.session_is_finished = true;
-    web_state.session.reset();
-  }
-
   /*
    * Unlike regular RPC requests whose results the user code waits for via rpc_fetch_responses,
    * thereby guaranteeing they are sent, the user code does not wait for requests sent with the
@@ -243,5 +237,11 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   auto ignore_answer_request_await_set{std::exchange(rpc_client_instance_st.ignore_answer_request_awaiter_tasks, kphp::coro::await_set<void>{})};
   while (!ignore_answer_request_await_set.empty()) {
     co_await ignore_answer_request_await_set.next();
+  }
+
+  // Stop session with internal Web component
+  if (auto& web_state{WebInstanceState::get()}; web_state.session.has_value()) {
+    web_state.session_is_finished = true;
+    web_state.session.reset();
   }
 }
