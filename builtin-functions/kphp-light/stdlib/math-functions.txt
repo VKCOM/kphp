@@ -166,6 +166,8 @@ function lcg_value() ::: float;
 
 function random_bytes($length ::: int) ::: string | false;
 
+function random_int($l ::: int, $r ::: int) ::: int | false;
+
 /** @kphp-extern-func-info interruptible */
 function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
@@ -185,5 +187,3 @@ define('PHP_ROUND_HALF_DOWN', 123423144);
 define('PHP_ROUND_HALF_EVEN', 123423145);
 define('PHP_ROUND_HALF_ODD', 123423146);
 
-/** @kphp-extern-func-info stub generation-required */
-function random_int($l ::: int, $r ::: int) ::: int | false;
