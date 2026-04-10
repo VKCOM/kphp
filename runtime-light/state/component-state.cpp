@@ -10,10 +10,10 @@
 #include <memory>
 #include <span>
 #include <string_view>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <utility>
 
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -42,36 +42,34 @@ void ComponentState::parse_kml_arg(std::string_view kml_dir) noexcept {
 }
 
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
-  auto expected_canonicalized_path{k2::canonicalize(value_view)};
-  if (!expected_canonicalized_path) [[unlikely]] {
-    return kphp::log::warning("error canonicalizing runtime-config path: error_code -> {}, path -> '{}'", expected_canonicalized_path.error(), value_view);
+  auto canonicalized_path{k2::canonicalize(value_view)};
+  if (!canonicalized_path) [[unlikely]] {
+    kphp::log::error("error canonicalizing runtime-config path: error_code -> {}, path -> {}", canonicalized_path.error(), value_view);
   }
 
-  const auto [runtime_config_path, runtime_config_path_size]{*std::move(expected_canonicalized_path)};
-  auto expected_runtime_config_file{kphp::fs::file::open({runtime_config_path.get(), runtime_config_path_size}, "r")};
-  if (!expected_runtime_config_file) [[unlikely]] {
-    return kphp::log::warning("error opening runtime-config: error code -> {}", expected_runtime_config_file.error());
+  const auto [runtime_config_path, runtime_config_path_size]{*std::move(canonicalized_path)};
+  auto runtime_config_file{kphp::fs::file::open({runtime_config_path.get(), runtime_config_path_size}, "r")};
+  if (!runtime_config_file) [[unlikely]] {
+    kphp::log::error("error opening runtime-config: error code -> {}, path -> {}", runtime_config_file.error(), value_view);
   }
 
   struct stat stat {};
-  if (auto expected_stat_result{k2::stat({runtime_config_path.get(), runtime_config_path_size}, std::addressof(stat))}; !expected_stat_result.has_value())
-      [[unlikely]] {
-    return kphp::log::warning("error getting runtime-config stat: error code -> {}", expected_stat_result.error());
+  if (auto stat_result{k2::fstat(runtime_config_file->descriptor(), std::addressof(stat))}; !stat_result.has_value()) [[unlikely]] {
+    kphp::log::error("error getting runtime-config stat: error code -> {}, path -> {}", stat_result.error(), value_view);
   }
 
-  const auto runtime_config_mem{std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>{
-      reinterpret_cast<char*>(kphp::memory::script::alloc(static_cast<size_t>(stat.st_size))), kphp::memory::script::free}};
-  kphp::log::assertion(runtime_config_mem != nullptr);
-  auto runtime_config_buf{std::span<char>{runtime_config_mem.get(), static_cast<size_t>(stat.st_size)}};
-  if (auto expected_read{(*expected_runtime_config_file).read(std::as_writable_bytes(runtime_config_buf))}; !expected_read || *expected_read != stat.st_size)
-      [[unlikely]] {
-    return kphp::log::warning("error reading runtime-config: error code -> {}, read bytes -> {}", expected_read.error_or(k2::errno_ok),
-                              expected_read.value_or(0));
+  auto mmap{kphp::fs::mmap::create(stat.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, runtime_config_file->descriptor(), 0)};
+  if (!mmap) [[unlikely]] {
+    kphp::log::error("error mmaping runtime-config: error code -> {}, path -> {}", mmap.error(), value_view);
   }
 
-  auto opt_config{json_decode({runtime_config_buf.data(), runtime_config_buf.size()})};
+  if (auto madvise_result{mmap->madvise(MADV_SEQUENTIAL)}; !madvise_result) [[unlikely]] {
+    kphp::log::warning("error performing madvise on runtime-config's mmap: error code -> {}", madvise_result.error());
+  }
+
+  auto opt_config{json_decode({reinterpret_cast<const char*>(mmap->data().data()), mmap->data().size()})};
   if (!opt_config) [[unlikely]] {
-    return kphp::log::warning("error decoding runtime-config");
+    kphp::log::error("error decoding runtime-config: path -> {}", value_view);
   }
   runtime_config = *std::move(opt_config);
 }
