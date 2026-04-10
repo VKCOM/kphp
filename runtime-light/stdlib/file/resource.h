@@ -13,6 +13,8 @@
 #include <memory>
 #include <span>
 #include <string_view>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -42,6 +44,73 @@ inline constexpr std::string_view INPUT_NAME = "php://input";
 
 inline constexpr std::string_view TCP_SCHEME_PREFIX = "tcp://";
 inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
+
+// ================================================================================================
+
+class mmap {
+  k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  void* m_addr{nullptr};
+  size_t m_length{};
+
+  mmap(k2::descriptor descriptor, void* addr, size_t length) noexcept
+      : m_descriptor{descriptor},
+        m_addr{addr},
+        m_length{length} {}
+
+public:
+  mmap(mmap&& other) noexcept
+      : m_descriptor{std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)},
+        m_addr{std::exchange(other.m_addr, nullptr)},
+        m_length{std::exchange(other.m_length, {})} {}
+
+  mmap& operator=(mmap&& other) noexcept {
+    if (this != std::addressof(other)) {
+      std::ignore = close();
+      m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+      m_addr = std::exchange(other.m_addr, nullptr);
+      m_length = std::exchange(other.m_length, {});
+    }
+    return *this;
+  }
+
+  ~mmap() {
+    std::ignore = close();
+  }
+
+  mmap(const mmap&) = delete;
+  mmap& operator=(const mmap&) = delete;
+
+  static auto create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t>;
+
+  auto madvise(int32_t advise) noexcept -> std::expected<void, int32_t>;
+  auto data() const noexcept -> std::span<const std::byte>;
+  auto close() noexcept -> std::expected<void, int32_t>;
+};
+
+inline auto mmap::create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t> {
+  k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  auto* addr{k2::mmap(std::addressof(descriptor), nullptr, length, prot, flags, fd, offset)};
+  if (addr == MAP_FAILED) [[unlikely]] {
+    return std::unexpected{k2::errno_efault};
+  }
+  return mmap{descriptor, addr, length};
+}
+
+inline auto mmap::madvise(int32_t advise) noexcept -> std::expected<void, int32_t> {
+  return k2::madvise(m_addr, m_length, advise);
+}
+
+inline auto mmap::data() const noexcept -> std::span<const std::byte> {
+  return {reinterpret_cast<const std::byte*>(m_addr), m_length};
+}
+
+inline auto mmap::close() noexcept -> std::expected<void, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  k2::free_descriptor(std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
+  return {};
+}
 
 // ================================================================================================
 
@@ -146,7 +215,29 @@ inline auto file::pread(std::span<std::byte> buf, uint64_t offset) noexcept -> s
 }
 
 inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
-  return std::unexpected{m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR ? k2::errno_efault : k2::errno_enodev};
+  struct stat stat_buf {};
+
+  if (auto expected{k2::fstat(m_descriptor, std::addressof(stat_buf))}; !expected.has_value()) {
+    return std::unexpected{expected.error()};
+  }
+  if (!S_ISREG(stat_buf.st_mode)) {
+    return std::unexpected{k2::errno_einval};
+  }
+
+  const size_t size{static_cast<size_t>(stat_buf.st_size)};
+  if (size > string::max_size()) {
+    return std::unexpected{k2::errno_erange};
+  }
+
+  auto expected_mmap{kphp::fs::mmap::create(size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_descriptor, 0)};
+  if (!expected_mmap.has_value()) {
+    return std::unexpected{expected_mmap.error()};
+  }
+
+  auto& mmap{*expected_mmap};
+  std::ignore = mmap.madvise(MADV_SEQUENTIAL);
+  auto data{mmap.data()};
+  return string{reinterpret_cast<const char*>(data.data()), static_cast<string::size_type>(data.size())};
 }
 
 inline auto file::flush() noexcept -> std::expected<void, int32_t> {
