@@ -8,7 +8,9 @@ from python.lib.testcase import KphpCompilerAutoTestCase
 
 class TestLibs(KphpCompilerAutoTestCase):
     def test_raw_php_libs(self):
-        self.build_and_compare_with_php("php/lib_user.php")
+        self.build_and_compare_with_php("php/lib_user.php", kphp_env={
+            "KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0" if self.should_use_k2() else "1",
+        })
 
     def test_compiled_libs(self):
         lib_build_env = {
@@ -29,6 +31,7 @@ class TestLibs(KphpCompilerAutoTestCase):
         kphp_runner = self.build_and_compare_with_php("php/lib_user.php", kphp_env={
             "KPHP_INCLUDE_DIR": self.web_server_working_dir,
             "KPHP_VERBOSITY": "3",
+            "KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0" if self.should_use_k2() else "1",
         })
         with open(kphp_runner.kphp_build_stderr_artifact.file, "rb") as f:
             build_log = f.read()
