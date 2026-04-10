@@ -82,7 +82,7 @@ public:
 
   static auto create(size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept -> std::expected<mmap, int32_t>;
 
-  auto madvise(int32_t advise) const noexcept -> std::expected<void, int32_t>;
+  auto madvise(int32_t advise) noexcept -> std::expected<void, int32_t>;
   auto data() const noexcept -> std::span<const std::byte>;
   auto close() noexcept -> std::expected<void, int32_t>;
 };
@@ -96,7 +96,7 @@ inline auto mmap::create(size_t length, int32_t prot, int32_t flags, k2::descrip
   return mmap{descriptor, addr, length};
 }
 
-inline auto mmap::madvise(int32_t advise) const noexcept -> std::expected<void, int32_t> {
+inline auto mmap::madvise(int32_t advise) noexcept -> std::expected<void, int32_t> {
   return k2::madvise(m_addr, m_length, advise);
 }
 
