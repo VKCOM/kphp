@@ -2411,6 +2411,8 @@ static void free_interface_lib() {
     }
     uploaded_files_last_query_num--;
   }
+  OnKphpWarningCallback::get().reset();
+  vk::singleton<OomHandler>::get().reset();
   dl::leave_critical_section();
 }
 
@@ -2432,16 +2434,12 @@ static void free_runtime_libs() {
   free_udp_lib();
   free_tcp_lib();
   free_timelib();
-  OnKphpWarningCallback::get().reset();
   kphp_tracing::free_tracing_lib();
   free_slot_factories();
   runtime_builtins_stats::reset_request_stats();
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
-
-  free_confdata_functions_lib();
-  free_instance_cache_lib();
   free_kphp_backtrace();
 
   free_use_updated_gmmktime();
@@ -2455,8 +2453,14 @@ static void free_runtime_libs() {
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
   vk::singleton<curl_async::CurlAdaptor>::get().reset();
-  vk::singleton<OomHandler>::get().reset();
   hard_reset_var(SerializationLibContext::get().last_json_processor_error);
+
+  // Confdata and InstanceCache MUST be freed at the very end
+  // They call force_destroy() on runtime primitives inside, which forcibly sets refcnt to zero
+  // It may lead to double free if someone tries to destroy such primitives after it
+  // (e.g. in case of destroying saved callbacks capturing objects from InstanceCache or Confdata)
+  free_confdata_functions_lib();
+  free_instance_cache_lib();
 }
 
 void global_init_runtime_libs() {
