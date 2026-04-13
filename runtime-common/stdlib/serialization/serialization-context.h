@@ -15,7 +15,6 @@
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/core/reference-counter/reference-counter-functions.h"
 
 namespace kphp::serde::details {
 
@@ -50,8 +49,8 @@ struct SerializationLibConstants final : private vk::not_copyable {
                                                        kphp::serde::details::JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE.size()};
 
   SerializationLibConstants() noexcept {
-    php_assert((kphp::core::set_reference_counter_recursive(JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE, ExtraRefCnt::for_global_const),
-                kphp::core::is_reference_counter_recursive(JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE, ExtraRefCnt::for_global_const)));
+    php_assert((JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE.set_reference_counter_to(ExtraRefCnt::for_global_const),
+                JSON_ENCODE_BUFFER_OVERFLOW_EXCEPTION_MESSAGE.is_reference_counter(ExtraRefCnt::for_global_const)));
   }
 
   static const SerializationLibConstants& get() noexcept;
