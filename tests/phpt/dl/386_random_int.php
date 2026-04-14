@@ -2,6 +2,15 @@
 <?php
 
 function test_random_int() {
+  $x = random_int(-1, 0);
+  var_dump($x >= -1 && $x <= 0);
+
+  $x = random_int(-1, 1);
+  var_dump($x >= -1 && $x <= 1);
+
+  $x = random_int(0, 1);
+  var_dump($x >= 0 && $x <= 1);
+
   $x = random_int(100, 500);
   var_dump($x >= 100 && $x <= 500);
 

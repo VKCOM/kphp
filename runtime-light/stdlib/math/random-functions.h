@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -25,6 +26,7 @@
 #include "runtime-common/stdlib/math/random-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/system/system-functions.h"
 
@@ -155,6 +157,48 @@ inline Optional<string> f$random_bytes(int64_t length) noexcept {
   }
 
   return str;
+}
+
+inline Optional<int64_t> f$random_int(int64_t min, int64_t max) noexcept {
+  if (min > max) [[unlikely]] {
+    kphp::log::warning("argument #1 ($min) must be less than or equal to argument #2 ($max)");
+    return false;
+  }
+
+  if (min == max) {
+    return min;
+  }
+
+  auto umax{static_cast<uint64_t>(max) - static_cast<uint64_t>(min)};
+
+  uint64_t trial{};
+  if (random_impl_::secure_rand_buf(std::addressof(trial), sizeof(trial)) == -1) [[unlikely]] {
+    kphp::log::warning("source of randomness cannot be found");
+    return false;
+  }
+
+  // special case where no modulus is required
+  if (umax == std::numeric_limits<uint64_t>::max()) {
+    return static_cast<int64_t>(trial);
+  }
+
+  ++umax; // increment the max so the range is inclusive of max
+
+  // powers of two are not biased
+  if (!std::has_single_bit(umax)) {
+    // ceiling under which UINT64_MAX % max == 0
+    const auto limit{std::numeric_limits<uint64_t>::max() - (std::numeric_limits<uint64_t>::max() % umax) - 1};
+
+    // discard numbers over the limit to avoid modulo bias
+    while (trial > limit) {
+      if (random_impl_::secure_rand_buf(std::addressof(trial), sizeof(trial)) == -1) [[unlikely]] {
+        kphp::log::warning("source of randomness cannot be found");
+        return false;
+      }
+    }
+  }
+
+  return min + static_cast<int64_t>(trial % umax);
 }
 
 inline kphp::coro::task<string> f$uniqid(string prefix = string{}, bool more_entropy = false) noexcept {
