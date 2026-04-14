@@ -74,8 +74,22 @@ void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexc
   runtime_config = *std::move(opt_config);
 }
 
-void ComponentState::parse_cluster_name(std::string_view value_view) noexcept {
+void ComponentState::parse_cluster_name_arg(std::string_view value_view) noexcept {
   cluster_name = string{value_view.data(), static_cast<string::size_type>(value_view.size())};
+}
+
+void ComponentState::parse_exit_after_response_arg(std::string_view value_view) noexcept {
+  if (!k2::describe()->is_oneshot) [[unlikely]] {
+    return kphp::log::warning("unexpected use of {} argument: it's only supported for oneshot images", EXIT_AFTER_RESPONSE_ARG);
+  }
+
+  if (value_view == "true") {
+    exit_after_response = true;
+  } else if (value_view == "false") {
+    exit_after_response = false;
+  } else {
+    kphp::log::warning("unexpected value for {} argument: {}", EXIT_AFTER_RESPONSE_ARG, value_view);
+  }
 }
 
 void ComponentState::parse_args() noexcept {
@@ -88,10 +102,12 @@ void ComponentState::parse_args() noexcept {
       parse_ini_arg(key_view, value_view);
     } else if (key_view == KML_DIR_ARG) {
       parse_kml_arg(value_view);
-    } else if (key_view == RUNTIME_CONFIG_ARG) [[likely]] {
+    } else if (key_view == RUNTIME_CONFIG_ARG) {
       parse_runtime_config_arg(value_view);
-    } else if (key_view == CLUSTER_NAME_ARG) [[likely]] {
-      parse_cluster_name(value_view);
+    } else if (key_view == CLUSTER_NAME_ARG) {
+      parse_cluster_name_arg(value_view);
+    } else if (key_view == EXIT_AFTER_RESPONSE_ARG) {
+      parse_exit_after_response_arg(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
