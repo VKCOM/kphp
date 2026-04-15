@@ -29,6 +29,7 @@ struct ComponentState final : private vk::not_copyable {
   mixed runtime_config;
   string cluster_name{DEFAULT_CLUSTER_NAME.data(), DEFAULT_CLUSTER_NAME.size()};
   bool exit_after_response{};
+  uint64_t initial_instance_memory_size{INIT_INSTANCE_ALLOCATOR_SIZE};
 
   ComponentState() noexcept {
     parse_env();
@@ -59,7 +60,9 @@ private:
   static constexpr std::string_view CLUSTER_NAME_ARG = "cluster-name";
   static constexpr std::string_view DEFAULT_CLUSTER_NAME = "default";
   static constexpr std::string_view EXIT_AFTER_RESPONSE_ARG = "exit-after-response";
+  static constexpr std::string_view INITIAL_INSTANCE_MEMORY_SIZE = "initial-instance-memory-size";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U); // 64MB
 
   void parse_env() noexcept;
 
@@ -74,4 +77,6 @@ private:
   void parse_cluster_name_arg(std::string_view) noexcept;
 
   void parse_exit_after_response_arg(std::string_view) noexcept;
+
+  void parse_initial_instance_memory_size(std::string_view) noexcept;
 };

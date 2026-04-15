@@ -4,6 +4,7 @@
 
 #include "runtime-light/state/component-state.h"
 
+#include <charconv>
 #include <cstddef>
 #include <cstring>
 #include <iterator>
@@ -92,6 +93,21 @@ void ComponentState::parse_exit_after_response_arg(std::string_view value_view) 
   }
 }
 
+void ComponentState::parse_initial_instance_memory_size(std::string_view value_view) noexcept {
+    if (value_view.empty()) {
+      return;
+    }
+
+    const auto* begin{value_view.data()};
+    const auto* end{std::next(value_view.data(), value_view.size())};
+
+    const auto [ptr, err_code]{std::from_chars(begin, end, /* out paremeter */initial_instance_memory_size)};
+    if (err_code != std::errc{} || ptr == end) {
+      kphp::log::error("couldn't parse initial instance memory size, got {}", value_view);
+    }
+}
+
+
 void ComponentState::parse_args() noexcept {
   for (auto i = 0; i < argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -108,6 +124,8 @@ void ComponentState::parse_args() noexcept {
       parse_cluster_name_arg(value_view);
     } else if (key_view == EXIT_AFTER_RESPONSE_ARG) {
       parse_exit_after_response_arg(value_view);
+    } else if (key_view == INITIAL_INSTANCE_MEMORY_SIZE) {
+      parse_initial_instance_memory_size(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
