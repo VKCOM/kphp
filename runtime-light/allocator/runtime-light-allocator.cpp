@@ -10,25 +10,12 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-namespace {
-// TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);
-constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(1024U * 1024U); // extra mem size should be greater than max chunk block size
-constexpr auto EXTRA_MEMORY_MULTIPLIER = 2;
-
-void request_extra_memory(size_t requested_size) noexcept {
-  const size_t extra_mem_size{std::max(MIN_EXTRA_MEM_SIZE, EXTRA_MEMORY_MULTIPLIER * requested_size)};
-  auto& allocator{RuntimeAllocator::get()};
-  auto* extra_mem{allocator.alloc_global_memory(extra_mem_size)};
-  allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
-}
-
-} // namespace
-
 RuntimeAllocator& RuntimeAllocator::get() noexcept {
   return AllocatorState::get_mutable().allocator;
 }
 
-RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t oom_handling_mem_size) {
+RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size)
+    : min_extra_mem_size(min_extra_mem_size) {
   kphp::log::debug("create runtime allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
                    oom_handling_mem_size);
   void* buffer{alloc_global_memory(script_mem_size)};
@@ -57,7 +44,7 @@ void* RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate(size)};
   if (mem == nullptr) [[unlikely]] {
-    request_extra_memory(size);
+    request_extra_memory(size, min_extra_mem_size);
     mem = memory_resource.allocate(size);
     kphp::log::assertion(mem != nullptr);
   }
@@ -68,7 +55,7 @@ void* RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate0(size)};
   if (mem == nullptr) [[unlikely]] {
-    request_extra_memory(size);
+    request_extra_memory(size, min_extra_mem_size);
     mem = memory_resource.allocate0(size);
     kphp::log::assertion(mem != nullptr);
   }
@@ -79,7 +66,7 @@ void* RuntimeAllocator::realloc_script_memory(void* old_mem, size_t new_size, si
   kphp::log::assertion(new_size > old_size);
   void* new_mem{memory_resource.reallocate(old_mem, new_size, old_size)};
   if (new_mem == nullptr) [[unlikely]] {
-    request_extra_memory(new_size * 2);
+    request_extra_memory(new_size * 2, min_extra_mem_size);
     new_mem = memory_resource.reallocate(old_mem, new_size, old_size);
     kphp::log::assertion(new_mem != nullptr);
   }
@@ -112,4 +99,12 @@ void* RuntimeAllocator::realloc_global_memory(void* old_mem, size_t new_size, si
 
 void RuntimeAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept {
   k2::free(mem);
+}
+
+void RuntimeAllocator::request_extra_memory(size_t requested_size, size_t min_extra_mem_size, size_t extra_mem_multiplier) noexcept {
+  const size_t extra_mem_size{std::max(min_extra_mem_size, extra_mem_multiplier * requested_size)};
+  kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
+  auto& allocator{RuntimeAllocator::get()};
+  auto* extra_mem{allocator.alloc_global_memory(extra_mem_size)};
+  allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
