@@ -133,6 +133,7 @@ private:
       }
     }
   }
+
 public:
   static constexpr size_t MAX_CHUNK_BLOCK_SIZE{static_cast<size_t>(16U * 1024U)};
 

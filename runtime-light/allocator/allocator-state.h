@@ -11,9 +11,8 @@
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-// TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);
-// extra mem size should be greater than max chunk block size due to free_chunks_ size depends on max chunk block size
-constexpr auto MIN_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(64 * 1024U * 1024U);
+constexpr auto MIN_EXTRA_MEMORY_POOL_SIZE{static_cast<size_t>(64 * 1024U * 1024U)};
+
 class AllocatorState final : private vk::not_copyable {
   uint32_t m_libc_alloc_allowed{};
 

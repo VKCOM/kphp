@@ -114,7 +114,7 @@ void RuntimeAllocator::request_extra_memory(size_t requested_size, size_t min_ex
   kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
 
   auto& allocator{RuntimeAllocator::get()};
-  auto* extra_mem{allocator.alloc_global_memory(extra_mem_size )};
+  auto* extra_mem{allocator.alloc_global_memory(extra_mem_size)};
   kphp::log::assertion(extra_mem != nullptr);
   allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }

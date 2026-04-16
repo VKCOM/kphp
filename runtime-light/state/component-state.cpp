@@ -26,13 +26,11 @@
 namespace {
 
 std::optional<uint64_t> parse_uint64(std::string_view value_view) noexcept {
-  if (value_view.empty()) {
+  // Num of symbols in max u64 (18_446_744_073_709_551_615) is 20
+  if (value_view.empty() || value_view.size() > 20) {
     return std::nullopt;
   }
-  // Num of symbols in max u64 (18_446_744_073_709_551_615)
-  if (value_view.size() > 20) {
-    return std::nullopt;
-  }
+
   const auto* begin{value_view.data()};
   const auto* end{std::next(value_view.data(), value_view.size())};
 
