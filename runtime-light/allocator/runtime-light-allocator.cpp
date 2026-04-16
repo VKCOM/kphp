@@ -102,9 +102,19 @@ void RuntimeAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept
 }
 
 void RuntimeAllocator::request_extra_memory(size_t requested_size, size_t min_extra_mem_size, size_t extra_mem_multiplier) noexcept {
-  const size_t extra_mem_size{std::max(min_extra_mem_size, extra_mem_multiplier * requested_size)};
+  // Extra mem size have to be greater than max chunk block
+  min_extra_mem_size = std::max(min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE);
+
+  // If the requested size is greater than or equal to half of min_extra_mem_size, it’s more efficient to allocate a multiple of the requested size.
+  size_t extra_mem_size{std::max(min_extra_mem_size, extra_mem_multiplier * requested_size)};
+
+  // Take into account internal layout of `memory_resource::extra_memory_pool`
+  extra_mem_size += sizeof(memory_resource::extra_memory_pool);
+
   kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
+
   auto& allocator{RuntimeAllocator::get()};
-  auto* extra_mem{allocator.alloc_global_memory(extra_mem_size)};
+  auto* extra_mem{allocator.alloc_global_memory(extra_mem_size )};
+  kphp::log::assertion(extra_mem != nullptr);
   allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
