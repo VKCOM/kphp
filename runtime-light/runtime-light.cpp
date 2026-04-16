@@ -17,7 +17,7 @@
 VISIBILITY_DEFAULT ImageState* k2_create_image() {
   kphp::log::debug("start image state creation, requested {} bytes", sizeof(ImageState));
   auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
-  kphp::log::assertion(image_state_ptr != nullptr); // Not enough memory for instance state
+  kphp::log::assertion(image_state_ptr != nullptr); // Not enough memory for image state
   kphp::log::debug("finish image state creation");
   return image_state_ptr;
 }

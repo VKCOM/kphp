@@ -154,7 +154,7 @@ void ComponentState::parse_args() noexcept {
       parse_exit_after_response_arg(value_view);
     } else if (key_view == INITIAL_INSTANCE_MEMORY_SIZE) {
       parse_initial_instance_memory_size(value_view);
-    } if (key_view == MIN_INSTANCE_EXTRA_MEMORY_SIZE) {
+    } else if (key_view == MIN_INSTANCE_EXTRA_MEMORY_SIZE) {
       parse_min_instance_extra_memory_size(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
