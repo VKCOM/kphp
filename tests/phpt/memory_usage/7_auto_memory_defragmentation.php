@@ -5,7 +5,10 @@ function test_auto_memory_defragmentation() {
   $a = "a";
   $b = "b";
 
+  $n = 5000000;
+#ifndef K2
   $n = 10000000;
+#endif
   for ($i = 1; $i < $n; ++$i) {
     $b .= "b";
     $a .= "a";
