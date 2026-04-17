@@ -29,7 +29,7 @@
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
 
 struct ImageState final : private vk::not_copyable {
-  AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, MIN_EXTRA_MEMORY_POOL_SIZE, 0};
+  AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE, 0};
 
   uint32_t pid{k2::getpid()};
   uid_t uid{k2::getuid()};
