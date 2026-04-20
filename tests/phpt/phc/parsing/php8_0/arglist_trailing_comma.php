@@ -1,4 +1,4 @@
-@ok
+@ok php8
 <?php
 
 // See https://wiki.php.net/rfc/trailing-comma-function-calls
