@@ -4,14 +4,18 @@
 
 #include "runtime-light/state/component-state.h"
 
+#include <charconv>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <system_error>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
@@ -19,6 +23,24 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/resource.h"
+
+namespace {
+
+std::optional<uint64_t> parse_uint64(std::string_view value_view) noexcept {
+  // Num of symbols in max u64 (18_446_744_073_709_551_615) is 20
+  if (value_view.empty() || value_view.size() > 20) {
+    return std::nullopt;
+  }
+
+  uint64_t res{};
+  if (const auto [ptr, err_code]{std::from_chars(value_view.begin(), value_view.end(), /* out paremeter */ res)};
+      err_code != std::errc{} || ptr != value_view.end()) {
+    return std::nullopt;
+  }
+  return res;
+}
+
+} // namespace
 
 void ComponentState::parse_env() noexcept {
   for (auto i = 0; i < envc; ++i) {
@@ -92,6 +114,24 @@ void ComponentState::parse_exit_after_response_arg(std::string_view value_view) 
   }
 }
 
+void ComponentState::parse_initial_instance_memory_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse initial instance memory size, got {}", value_view);
+  }
+  initial_instance_memory_size = *parsed;
+  kphp::log::info("set initial instance memory size to {} bytes", initial_instance_memory_size);
+}
+
+void ComponentState::parse_min_instance_extra_memory_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse min instance extra memory size, got {}", value_view);
+  }
+  min_instance_extra_memory_size = *parsed;
+  kphp::log::info("set min instance extra memory size to {} bytes", min_instance_extra_memory_size);
+}
+
 void ComponentState::parse_args() noexcept {
   for (auto i = 0; i < argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -108,6 +148,10 @@ void ComponentState::parse_args() noexcept {
       parse_cluster_name_arg(value_view);
     } else if (key_view == EXIT_AFTER_RESPONSE_ARG) {
       parse_exit_after_response_arg(value_view);
+    } else if (key_view == INITIAL_INSTANCE_MEMORY_SIZE_ARG) {
+      parse_initial_instance_memory_size_arg(value_view);
+    } else if (key_view == MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG) {
+      parse_min_instance_extra_memory_size_arg(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
