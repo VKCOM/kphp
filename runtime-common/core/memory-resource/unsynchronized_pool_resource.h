@@ -30,7 +30,7 @@ public:
   void* allocate(size_t size) noexcept {
     void* mem = nullptr;
     const auto aligned_size = details::align_for_chunk(size);
-    if (aligned_size < MAX_CHUNK_BLOCK_SIZE_) {
+    if (aligned_size < MAX_CHUNK_BLOCK_SIZE) {
       mem = try_allocate_small_piece(aligned_size);
       if (!mem) {
         mem = allocate_small_piece_from_fallback_resource(aligned_size);
@@ -123,7 +123,7 @@ private:
   void put_memory_back(void* mem, size_t size) noexcept {
     const bool from_extra_pool = (extra_memory_head_ != &extra_memory_tail_) && is_memory_from_extra_pool(mem, size);
     if (from_extra_pool || !monotonic_buffer_resource::put_memory_back(mem, size)) {
-      if (size < MAX_CHUNK_BLOCK_SIZE_) {
+      if (size < MAX_CHUNK_BLOCK_SIZE) {
         size_t chunk_id = details::get_chunk_id(size);
         free_chunks_[chunk_id].put_mem(mem);
         ++stats_.small_memory_pieces;
@@ -134,6 +134,10 @@ private:
     }
   }
 
+public:
+  static constexpr size_t MAX_CHUNK_BLOCK_SIZE{static_cast<size_t>(16U * 1024U)};
+
+private:
   details::memory_chunk_tree huge_pieces_;
   monotonic_buffer_resource fallback_resource_;
   size_t oom_handling_memory_size_{0};
@@ -141,8 +145,7 @@ private:
   extra_memory_pool* extra_memory_head_{nullptr};
   extra_memory_pool extra_memory_tail_{sizeof(extra_memory_pool)};
 
-  static constexpr size_t MAX_CHUNK_BLOCK_SIZE_{static_cast<size_t>(16U * 1024U)};
-  std::array<details::memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE_)> free_chunks_;
+  std::array<details::memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE)> free_chunks_;
 };
 
 } // namespace memory_resource
