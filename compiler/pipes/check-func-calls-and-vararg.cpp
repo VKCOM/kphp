@@ -41,7 +41,6 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
   std::vector<VertexPtr> flattened_call_args;
   flattened_call_args.reserve(call->args().size());
   VertexRange f_params = f_called->get_params();
-  VertexRange call_args = call->args();
 
   // at first, convert f(1, ...[2, ...[3]], ...$all, ...[5]) to f(1,2,3,...$all,5)
   std::function<void(VertexPtr)> flatten_call_varg = [&flattened_call_args, &flatten_call_varg](VertexPtr inner) {
@@ -95,7 +94,7 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
     }
 
     if (auto unpack_as_varg = ith_call_arg.try_as<op_varg>()) {
-      if (i_call_arg == call_args.size() - 1 && i_func_param == f_params.size() - 1 && variadic_args_passed.empty()) {
+      if (i_call_arg == flattened_call_args.size() - 1 && i_func_param == f_params.size() - 1 && variadic_args_passed.empty()) {
         // variadic just have been forwarded, e.g. f(...$args) transformed to f($args) without any array_merge
         variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
         is_just_single_arg_forwarded = true;
