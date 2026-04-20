@@ -165,68 +165,6 @@ std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(info& re
  */
 kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> collect_group_names(const pcre2::regex& re) noexcept;
 
-template<std::invocable<array<string>> F>
-kphp::coro::task<std::optional<string>> replace_callback(info& regex_info, const pcre2::regex& re,
-                                                         const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& group_names,
-                                                         F callback, uint64_t limit) noexcept {
-  regex_info.replace_count = 0;
-
-  if (limit == 0) {
-    co_return regex_info.subject;
-  }
-
-  auto& regex_state{RegexInstanceState::get()};
-  if (!regex_state.match_context) [[unlikely]] {
-    co_return std::nullopt;
-  }
-
-  size_t last_pos{};
-  string output_str{};
-
-  pcre2::matcher pcre2_matcher{
-      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex_info.match_options};
-  while (regex_info.replace_count < limit) {
-    auto expected_opt_match_view{pcre2_matcher.next()};
-
-    if (!expected_opt_match_view.has_value()) [[unlikely]] {
-      log::warning("can't replace with callback by pcre2 regex due to match error: {}", expected_opt_match_view.error());
-      co_return std::nullopt;
-    }
-    auto opt_match_view{*expected_opt_match_view};
-    if (!opt_match_view.has_value()) {
-      break;
-    }
-
-    auto& match_view{*opt_match_view};
-
-    output_str.append(std::next(regex_info.subject.c_str(), last_pos), match_view.match_start() - last_pos);
-
-    last_pos = match_view.match_end();
-
-    // retrieve the named groups count
-    uint32_t named_groups_count{re.name_count()};
-
-    array<string> matches{array_size{static_cast<int64_t>(match_view.size() + named_groups_count), named_groups_count == 0}};
-    for (auto [key, value] : match_results_wrapper{match_view, group_names, re.capture_count(), re.name_count(), trailing_unmatch::skip, false, false}) {
-      matches.set_value(key, value.to_string());
-    }
-    string replacement{};
-    if constexpr (kphp::coro::is_async_function_v<F, array<string>>) {
-      replacement = co_await std::invoke(callback, std::move(matches));
-    } else {
-      replacement = std::invoke(callback, std::move(matches));
-    }
-
-    output_str.append(replacement);
-
-    ++regex_info.replace_count;
-  }
-
-  output_str.append(std::next(regex_info.subject.c_str(), last_pos), regex_info.subject.size() - last_pos);
-
-  co_return output_str;
-}
-
 } // namespace details
 
 inline constexpr int64_t PREG_NO_ERROR = 0;
