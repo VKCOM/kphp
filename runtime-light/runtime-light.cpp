@@ -15,9 +15,11 @@
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))
 
 VISIBILITY_DEFAULT ImageState* k2_create_image() {
-  kphp::log::debug("start image state creation, requested {} bytes", sizeof(ImageState));
+  kphp::log::debug("start image state creation");
   auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
-  kphp::log::assertion(image_state_ptr != nullptr); // Not enough memory for image state
+  if (image_state_ptr == nullptr) [[unlikely]] {
+    kphp::log::error("can't allocate enough memory for image state");
+  }
   kphp::log::debug("finish image state creation");
   return image_state_ptr;
 }
@@ -30,9 +32,11 @@ VISIBILITY_DEFAULT void k2_init_image() {
 }
 
 VISIBILITY_DEFAULT ComponentState* k2_create_component() {
-  kphp::log::debug("start component state creation, requested {} bytes", sizeof(ComponentState));
+  kphp::log::debug("start component state creation");
   auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc(sizeof(ComponentState)))};
-  kphp::log::assertion(component_state_ptr != nullptr); // Not enough memory for component state
+  if (component_state_ptr == nullptr) [[unlikely]] {
+    kphp::log::error("can't allocate enough memory for component state");
+  }
   kphp::log::debug("finish component state creation");
   return component_state_ptr;
 }
@@ -44,9 +48,11 @@ VISIBILITY_DEFAULT void k2_init_component() {
 }
 
 VISIBILITY_DEFAULT InstanceState* k2_create_instance() {
-  kphp::log::debug("start instance state creation, requested {} bytes", sizeof(InstanceState));
+  kphp::log::debug("start instance state creation");
   auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc(sizeof(InstanceState)))};
-  kphp::log::assertion(instance_state_ptr != nullptr); // Not enough memory for instance state
+  if (instance_state_ptr == nullptr) [[unlikely]] {
+    kphp::log::error("can't allocate enough memory for instance state");
+  }
   kphp::log::debug("finish instance state creation");
   return instance_state_ptr;
 }

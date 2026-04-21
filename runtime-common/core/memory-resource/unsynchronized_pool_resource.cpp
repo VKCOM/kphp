@@ -10,6 +10,8 @@
 
 namespace memory_resource {
 
+constexpr size_t unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE_;
+
 void unsynchronized_pool_resource::init(void* buffer, size_t buffer_size, size_t oom_handling_buffer_size) noexcept {
   monotonic_buffer_resource::init(buffer, buffer_size);
 

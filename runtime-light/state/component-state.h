@@ -19,7 +19,7 @@
 #include "runtime-light/stdlib/kml/kml-state.h"
 
 struct ComponentState final : private vk::not_copyable {
-  AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE, 0};
+  AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, 0};
   KmlComponentState kml_component_state; // This member does not hold any KPHP types, so setting a reference counter is unnecessary.
 
   const uint32_t argc{k2::args_count()};
@@ -29,8 +29,6 @@ struct ComponentState final : private vk::not_copyable {
   mixed runtime_config;
   string cluster_name{DEFAULT_CLUSTER_NAME.data(), DEFAULT_CLUSTER_NAME.size()};
   bool exit_after_response{};
-  uint64_t initial_instance_memory_size{INIT_INSTANCE_ALLOCATOR_SIZE};
-  uint64_t min_instance_extra_memory_size{DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE};
 
   ComponentState() noexcept {
     parse_env();
@@ -61,10 +59,7 @@ private:
   static constexpr std::string_view CLUSTER_NAME_ARG = "cluster-name";
   static constexpr std::string_view DEFAULT_CLUSTER_NAME = "default";
   static constexpr std::string_view EXIT_AFTER_RESPONSE_ARG = "exit-after-response";
-  static constexpr std::string_view INITIAL_INSTANCE_MEMORY_SIZE_ARG = "initial-instance-memory-size";
-  static constexpr std::string_view MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG = "min-instance-extra-memory-size";
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U);      // 1MB
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U); // 64MB
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
 
   void parse_env() noexcept;
 
@@ -79,8 +74,4 @@ private:
   void parse_cluster_name_arg(std::string_view) noexcept;
 
   void parse_exit_after_response_arg(std::string_view) noexcept;
-
-  void parse_initial_instance_memory_size_arg(std::string_view) noexcept;
-
-  void parse_min_instance_extra_memory_size_arg(std::string_view) noexcept;
 };
