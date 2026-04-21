@@ -88,7 +88,7 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
-  AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
+  AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
 
   kphp::log::contextual_tags instance_tags;
   kphp::coro::io_scheduler io_scheduler;
@@ -135,4 +135,6 @@ private:
 
   enum image_kind image_kind_ { image_kind::invalid };
   enum instance_kind instance_kind_ { instance_kind::invalid };
+
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(128U * 1024U * 1024U);
 };
