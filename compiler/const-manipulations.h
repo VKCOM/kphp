@@ -470,8 +470,7 @@ protected:
   }
 
   void on_define_val(VertexAdaptor<op_define_val> v) override {
-    auto define_hasher = DefinePtr::Hash();
-    feed_hash(static_cast<uint64_t>(define_hasher(v->define_id)));
+    feed_hash_string(v->define_id->name);
     visit(v->value());
   }
 
