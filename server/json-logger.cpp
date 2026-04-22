@@ -6,10 +6,13 @@
 #include <cinttypes>
 #include <execinfo.h>
 #include <fcntl.h>
+#include <ucontext.h>
 #include <unistd.h>
+#include <memory>
 
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
+#include "common/server/crash-dump.h"
 #include "common/wrappers/likely.h"
 #include "common/ucontext/ucontext-portable.h"
 #include "runtime/kphp-backtrace.h"
@@ -348,12 +351,28 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
     json_out_it->append_key("logname_id").append_integer(logname_id);
   }
   json_out_it->append_key("pid").append_integer(pid);
+  json_out_it->append_key("ppid").append_integer(ppid);
   json_out_it->append_key("cluster").append_string(vk::singleton<ServerConfig>::get().get_cluster_name());
   json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
   json_out_it->finish<'}'>();
 
   if (extra_info_available_) {
-    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
+    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_);
+    if (ucontext_t ucp{}; getcontext(std::addressof(ucp)) != -1) {
+      #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
+      crash_dump_buffer_t buffer{};
+
+      crash_dump_write_reg(LITERAL_WITH_LENGTH("0x"), ucp.uc_mcontext.gregs[REG_CR2], std::addressof(buffer));
+      assert(buffer.position < sizeof(buffer.scratchpad));
+      json_out_it->append_key("CR2 register").append_string(std::string_view{buffer.scratchpad, buffer.position});
+
+      buffer.reset();
+
+      crash_dump_prepare_registers(std::addressof(buffer), std::addressof(ucp));
+      assert(buffer.position < sizeof(buffer.scratchpad));
+      json_out_it->append_key("registers").append_string(std::string_view{buffer.scratchpad, buffer.position});
+    }
+    json_out_it->finish<'}'>();
   }
 }
 

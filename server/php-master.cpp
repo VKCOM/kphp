@@ -638,6 +638,7 @@ int run_worker(WorkerType worker_type) {
     //verbosity = 0;
     verbosity = initial_verbosity;
     pid = getpid();
+    ppid = getppid();
 
     master_sfd = -1;
     if (worker_type == WorkerType::job_worker) {

@@ -2381,6 +2381,7 @@ void init_default() {
   now = (int)time(nullptr);
 
   pid = getpid();
+  ppid = getppid();
   master_pid = getpid();
   // RPC part
   PID.port = -1; // TODO: get rid of this?
