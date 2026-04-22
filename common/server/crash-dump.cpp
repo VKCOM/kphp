@@ -44,7 +44,7 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t* 
   crash_dump_write_uint32(static_cast<uint32_t>(value & 0xFFFFFFFF), buffer);
 }
 
-[[maybe_unused]] void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t* buffer) {
+[[maybe_unused]] static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t* buffer) {
   assert(reg_name_size + buffer->position <= sizeof(buffer->scratchpad));
   memcpy(&buffer->scratchpad[buffer->position], reg_name, reg_name_size);
   buffer->position += reg_name_size;
@@ -122,7 +122,7 @@ void crash_dump_write(void* ucontext) {
   kwrite(STDERR_FILENO, header, sizeof(header) - 1);
 
   static crash_dump_buffer_t buffer;
-  buffer.reset();
+  buffer.position = 0;
   crash_dump_prepare_registers(&buffer, static_cast<ucontext_t*>(ucontext));
 
   assert(buffer.position < sizeof(buffer.scratchpad));
