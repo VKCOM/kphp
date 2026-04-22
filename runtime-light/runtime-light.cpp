@@ -16,7 +16,7 @@
 
 VISIBILITY_DEFAULT ImageState* k2_create_image() {
   kphp::log::debug("start image state creation, requested {} bytes", sizeof(ImageState));
-  auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
+  auto* image_state_ptr{static_cast<ImageState*>(k2::alloc_align(sizeof(ImageState), k2::sysconf(_SC_PAGESIZE)))};
   kphp::log::assertion(image_state_ptr != nullptr); // Not enough memory for image state
   kphp::log::debug("finish image state creation");
   return image_state_ptr;
@@ -31,7 +31,7 @@ VISIBILITY_DEFAULT void k2_init_image() {
 
 VISIBILITY_DEFAULT ComponentState* k2_create_component() {
   kphp::log::debug("start component state creation, requested {} bytes", sizeof(ComponentState));
-  auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc(sizeof(ComponentState)))};
+  auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc_align(sizeof(ComponentState), k2::sysconf(_SC_PAGESIZE)))};
   kphp::log::assertion(component_state_ptr != nullptr); // Not enough memory for component state
   kphp::log::debug("finish component state creation");
   return component_state_ptr;

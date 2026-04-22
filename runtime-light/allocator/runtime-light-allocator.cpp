@@ -18,7 +18,7 @@ RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_
     : m_min_extra_mem_size(min_extra_mem_size) {
   kphp::log::debug("create runtime allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
                    oom_handling_mem_size);
-  void* buffer{alloc_global_memory(script_mem_size)};
+  void* buffer{k2::alloc_align(script_mem_size, k2::sysconf(_SC_PAGESIZE))};
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
