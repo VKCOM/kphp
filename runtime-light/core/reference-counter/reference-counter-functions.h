@@ -7,11 +7,22 @@
 #include <utility>
 
 #include "common/php-functions.h"
+#include "runtime-common/core/core-types/kphp_type_traits.h"
 #include "runtime-common/core/runtime-core.h"
 
 namespace kphp::core {
 
 template<typename T>
+void set_reference_counter_recursive(Optional<T>& obj, ExtraRefCnt rc) noexcept;
+
+template<typename T>
+void set_reference_counter_recursive(class_instance<T>& obj, ExtraRefCnt rc) noexcept;
+
+template<typename T>
+void set_reference_counter_recursive(array<T>& obj, ExtraRefCnt rc) noexcept;
+
+template<typename T>
+requires(!is_array<T>::value && !is_class_instance<T>::value && !is_optional<T>::value)
 void set_reference_counter_recursive(T& /*obj*/, ExtraRefCnt /*rc*/) noexcept {}
 
 template<typename T>
@@ -64,6 +75,16 @@ inline void set_reference_counter_recursive<mixed>(mixed& obj, ExtraRefCnt rc) n
 // ================================================================================================
 
 template<typename T>
+bool is_reference_counter_recursive(const Optional<T>& obj, ExtraRefCnt rc) noexcept;
+
+template<typename T>
+bool is_reference_counter_recursive(const class_instance<T>& obj, ExtraRefCnt rc) noexcept;
+
+template<typename T>
+bool is_reference_counter_recursive(const array<T>& obj, ExtraRefCnt rc) noexcept;
+
+template<typename T>
+requires(!is_array<T>::value && !is_class_instance<T>::value && !is_optional<T>::value)
 bool is_reference_counter_recursive(const T& /*obj*/, ExtraRefCnt /*rc*/) noexcept {
   return true;
 }
