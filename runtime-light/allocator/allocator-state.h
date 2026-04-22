@@ -11,7 +11,7 @@
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-inline constexpr auto DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE{static_cast<size_t>(1 * 1024U * 1024U)}; // 1mb
+inline constexpr auto DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE{static_cast<size_t>(1 * 1024U * 1024U)}; // 1Mib
 
 class AllocatorState final : private vk::not_copyable {
   uint32_t m_libc_alloc_allowed{};

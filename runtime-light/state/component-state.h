@@ -63,8 +63,8 @@ private:
   static constexpr std::string_view EXIT_AFTER_RESPONSE_ARG = "exit-after-response";
   static constexpr std::string_view INITIAL_INSTANCE_MEMORY_SIZE_ARG = "initial-instance-memory-size";
   static constexpr std::string_view MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG = "min-instance-extra-memory-size";
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U);      // 1MB
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U); // 64MB
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U);      // 1MiB
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U); // 64MiB
 
   void parse_env() noexcept;
 
