@@ -29,11 +29,11 @@ struct RuntimeAllocator final : vk::not_copyable {
   void free_global_memory(void* mem, size_t size) noexcept;
 
 private:
-  void request_extra_memory(size_t requested_size, size_t min_extra_mem_size) noexcept;
+  void request_extra_memory(size_t requested_size) noexcept;
 
 public:
   memory_resource::unsynchronized_pool_resource memory_resource;
 
 private:
-  size_t min_extra_mem_size{0};
+  size_t m_min_extra_mem_size{0};
 };
