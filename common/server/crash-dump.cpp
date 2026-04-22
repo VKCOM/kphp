@@ -64,8 +64,6 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t* 
 void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t* buffer, [[maybe_unused]] const ucontext_t* uc) {
 #ifdef __x86_64__
 #ifdef __APPLE__
-  const auto* uc = static_cast<ucontext_t*>(ucontext);
-
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext->__ss.__rip, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext->__ss.__rsp, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RBP=0x"), uc->uc_mcontext->__ss.__rbp, buffer);
