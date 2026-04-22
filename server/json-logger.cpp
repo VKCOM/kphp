@@ -359,21 +359,19 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
   if (extra_info_available_) {
     json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_);
     if (ucontext != nullptr) {
-      #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
+      static constexpr std::string_view hex_prefix{"0x"};
       const auto* ucp = static_cast<ucontext_t*>(ucontext);
       crash_dump_buffer_t buffer{};
 
 #if defined(__x86_64__) && !defined(__APPLE__)
-      crash_dump_write_reg(LITERAL_WITH_LENGTH("0x"), ucp->uc_mcontext.gregs[REG_CR2], std::addressof(buffer));
-      assert(buffer.position < sizeof(buffer.scratchpad));
-      json_out_it->append_key("CR2 register").append_string(std::string_view{buffer.scratchpad, buffer.position});
+      crash_dump_write_reg(hex_prefix.data(), hex_prefix.size(), ucp->uc_mcontext.gregs[REG_CR2], std::addressof(buffer));
+      json_out_it->append_key("CR2 register").append_string(buffer.get_content());
 
       buffer.reset();
 #endif
 
       crash_dump_prepare_registers(std::addressof(buffer), ucp);
-      assert(buffer.position < sizeof(buffer.scratchpad));
-      json_out_it->append_key("registers").append_string(std::string_view{buffer.scratchpad, buffer.position});
+      json_out_it->append_key("registers").append_string(buffer.get_content());
     }
     json_out_it->finish<'}'>();
   }

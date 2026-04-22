@@ -5,6 +5,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <ucontext.h>
 
 struct crash_dump_buffer_t {
@@ -13,6 +14,10 @@ struct crash_dump_buffer_t {
 
   void reset() {
     position = 0;
+  }
+
+  std::string_view get_content() const noexcept {
+    return std::string_view{scratchpad, position};
   }
 };
 

@@ -89,4 +89,9 @@ class KphpServer(WebServer):
         if not got_tags.get("cluster", ""):
             raise RuntimeError("Got an empty cluster in json log: {}".format(got_tags))
         del log_record["tags"]["cluster"]
+
+        if log_record.get("extra_info"):
+            log_record["extra_info"].pop("CR2 register", None)
+            log_record["extra_info"].pop("registers", None)
+
         return log_record
