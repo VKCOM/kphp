@@ -8,8 +8,8 @@
 #include <string_view>
 #include <ucontext.h>
 
-struct crash_dump_buffer_t {
-  char scratchpad[1024]{};
+struct crash_dump_buffer_t { // NOLINT
+  char scratchpad[1024];
   size_t position{0};
 
   void reset() {
