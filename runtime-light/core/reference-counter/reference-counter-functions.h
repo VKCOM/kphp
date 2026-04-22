@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "common/php-functions.h"
-#include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/core-types/kphp_type_traits.h"
 #include "runtime-common/core/runtime-core.h"
 
@@ -23,7 +22,7 @@ template<typename T>
 void set_reference_counter_recursive(array<T>& obj, ExtraRefCnt rc) noexcept;
 
 template<typename T>
-requires (!is_array<T>::value && !is_class_instance<T>::value && !is_optional<T>::value)
+requires(!is_array<T>::value && !is_class_instance<T>::value && !is_optional<T>::value)
 void set_reference_counter_recursive(T& /*obj*/, ExtraRefCnt /*rc*/) noexcept {}
 
 template<typename T>
@@ -85,7 +84,7 @@ template<typename T>
 bool is_reference_counter_recursive(const array<T>& obj, ExtraRefCnt rc) noexcept;
 
 template<typename T>
-requires (!is_array<T>::value && !is_class_instance<T>::value && !is_optional<T>::value)
+requires(!is_array<T>::value && !is_class_instance<T>::value && !is_optional<T>::value)
 bool is_reference_counter_recursive(const T& /*obj*/, ExtraRefCnt /*rc*/) noexcept {
   return true;
 }
