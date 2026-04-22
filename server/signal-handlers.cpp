@@ -195,7 +195,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
     }
   } else {
     const char *msg = signum == SIGBUS ? "SIGBUS terminating program" : "SIGSEGV terminating program";
-    vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
+    vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true, ucontext);
     vk::singleton<JsonLogger>::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault\n");
     print_http_data();
@@ -206,7 +206,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   }
 }
 
-void sigabrt_handler(int, siginfo_t *info, void *) {
+void sigabrt_handler(int, siginfo_t *info, void *ucontext) {
   const int64_t cur_time = time(nullptr);
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
@@ -214,7 +214,7 @@ void sigabrt_handler(int, siginfo_t *info, void *) {
   if (msg.empty()) {
     msg = "SIGABRT terminating program";
   }
-  vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
+  vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true, ucontext);
   vk::singleton<JsonLogger>::get().fsync_log_file();
 
   print_prologue(cur_time);

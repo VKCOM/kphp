@@ -262,7 +262,7 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int 
 }
 
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
-                           void *const *trace, int64_t trace_size, bool uncaught) noexcept {
+                           void *const *trace, int64_t trace_size, bool uncaught, void* ucontext) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -272,7 +272,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   }
   assert(json_out_it != buffers_.end());
 
-  write_general_info(json_out_it, type, created_at, uncaught);
+  write_general_info(json_out_it, type, created_at, uncaught, ucontext);
 
   json_out_it->append_key("trace").start<'['>();
   for (int64_t i = 0; i < trace_size; i++) {
@@ -327,7 +327,7 @@ void JsonLogger::reset_buffers() noexcept {
   }
 }
 
-void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught) {
+void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught, void* ucontext) {
   json_out_it->append_key("version").append_integer(release_version_);
   json_out_it->append_key("hostname").append_string(hostname_);
   json_out_it->append_key("type").append_integer(type);
@@ -358,19 +358,20 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
 
   if (extra_info_available_) {
     json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_);
-    if (ucontext_t ucp{}; getcontext(std::addressof(ucp)) != -1) {
+    if (ucontext != nullptr) {
       #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
+      const auto* ucp = static_cast<ucontext_t*>(ucontext);
       crash_dump_buffer_t buffer{};
 
 #if defined(__x86_64__) && !defined(__APPLE__)
-      crash_dump_write_reg(LITERAL_WITH_LENGTH("0x"), ucp.uc_mcontext.gregs[REG_CR2], std::addressof(buffer));
+      crash_dump_write_reg(LITERAL_WITH_LENGTH("0x"), ucp->uc_mcontext.gregs[REG_CR2], std::addressof(buffer));
       assert(buffer.position < sizeof(buffer.scratchpad));
       json_out_it->append_key("CR2 register").append_string(std::string_view{buffer.scratchpad, buffer.position});
 
       buffer.reset();
 #endif
 
-      crash_dump_prepare_registers(std::addressof(buffer), std::addressof(ucp));
+      crash_dump_prepare_registers(std::addressof(buffer), ucp);
       assert(buffer.position < sizeof(buffer.scratchpad));
       json_out_it->append_key("registers").append_string(std::string_view{buffer.scratchpad, buffer.position});
     }
