@@ -14,12 +14,6 @@
 #include "common/ucontext/ucontext-portable.h"
 #include <ucontext.h>
 
-struct crash_dump_buffer {
-  char scratchpad[1024];
-  size_t position;
-};
-using crash_dump_buffer_t = struct crash_dump_buffer;
-
 static inline char crash_dump_half_byte_char(uint8_t hb) {
   if (hb <= 9) {
     return '0' + hb;
@@ -67,7 +61,7 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t* 
 // Keep in mind that:
 //  * `ucontext_t_portable` -- using for more efficient user context manipulations (e.g. `swapcontext`, `getcontext`, `setcontext`, etc)
 //  * `ucontext_t` -- using in signal handlers for machine state extracting in debug purposes.
-static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t* buffer, [[maybe_unused]] void* ucontext) {
+void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t* buffer, [[maybe_unused]] const ucontext_t* uc) {
 #ifdef __x86_64__
 #ifdef __APPLE__
   const auto* uc = static_cast<ucontext_t*>(ucontext);
@@ -93,8 +87,6 @@ static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buff
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext->__ss.__r14, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
 #else
-  const auto* uc = static_cast<ucontext_t*>(ucontext);
-
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext.gregs[REG_RIP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext.gregs[REG_RSP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RBP=0x"), uc->uc_mcontext.gregs[REG_RBP], buffer);
@@ -131,7 +123,7 @@ void crash_dump_write(void* ucontext) {
 
   static crash_dump_buffer_t buffer;
   buffer.position = 0;
-  crash_dump_prepare_registers(&buffer, ucontext);
+  crash_dump_prepare_registers(&buffer, static_cast<ucontext_t*>(ucontext));
 
   assert(buffer.position < sizeof(buffer.scratchpad));
   buffer.scratchpad[buffer.position++] = '\n';

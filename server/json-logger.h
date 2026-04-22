@@ -47,7 +47,7 @@ public:
   // ATTENTION: this functions are used in signal handlers, therefore they are expected to be safe for them
   // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
   // todo: functions bellow use backtrace which isn't async-signal safety
-  void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept;
+  void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught, void* ucontext = nullptr) noexcept;
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_log_with_script_backtrace(vk::string_view message, int type) noexcept;
 
@@ -112,6 +112,6 @@ private:
   };
   std::array<JsonBuffer, 8> buffers_;
 
-  void write_general_info(JsonBuffer * json_out_it, int type, int64_t created_at, bool uncaught);
+  void write_general_info(JsonBuffer * json_out_it, int type, int64_t created_at, bool uncaught, void* ucontext = nullptr);
 };
 

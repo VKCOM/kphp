@@ -6,10 +6,13 @@
 #include <cinttypes>
 #include <execinfo.h>
 #include <fcntl.h>
+#include <ucontext.h>
 #include <unistd.h>
+#include <memory>
 
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
+#include "common/server/crash-dump.h"
 #include "common/wrappers/likely.h"
 #include "common/ucontext/ucontext-portable.h"
 #include "runtime/kphp-backtrace.h"
@@ -259,7 +262,7 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int 
 }
 
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
-                           void *const *trace, int64_t trace_size, bool uncaught) noexcept {
+                           void *const *trace, int64_t trace_size, bool uncaught, void* ucontext) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -269,7 +272,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   }
   assert(json_out_it != buffers_.end());
 
-  write_general_info(json_out_it, type, created_at, uncaught);
+  write_general_info(json_out_it, type, created_at, uncaught, ucontext);
 
   json_out_it->append_key("trace").start<'['>();
   for (int64_t i = 0; i < trace_size; i++) {
@@ -324,7 +327,7 @@ void JsonLogger::reset_buffers() noexcept {
   }
 }
 
-void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught) {
+void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught, void* ucontext) {
   json_out_it->append_key("version").append_integer(release_version_);
   json_out_it->append_key("hostname").append_string(hostname_);
   json_out_it->append_key("type").append_integer(type);
@@ -348,12 +351,25 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
     json_out_it->append_key("logname_id").append_integer(logname_id);
   }
   json_out_it->append_key("pid").append_integer(pid);
+  json_out_it->append_key("ppid").append_integer(ppid);
   json_out_it->append_key("cluster").append_string(vk::singleton<ServerConfig>::get().get_cluster_name());
   json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
   json_out_it->finish<'}'>();
 
   if (extra_info_available_) {
-    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
+    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_);
+    if (ucontext != nullptr) {
+      const auto* ucp = static_cast<ucontext_t*>(ucontext);
+
+#if defined(__x86_64__) && !defined(__APPLE__)
+      json_out_it->append_key("CR2 register").append_hex_as_string(ucp->uc_mcontext.gregs[REG_CR2]);
+#endif
+
+      crash_dump_buffer_t buffer{};
+      crash_dump_prepare_registers(std::addressof(buffer), ucp);
+      json_out_it->append_key("registers").append_string(buffer.get_content());
+    }
+    json_out_it->finish<'}'>();
   }
 }
 
