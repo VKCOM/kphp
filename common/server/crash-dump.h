@@ -3,8 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 struct crash_dump_buffer_t {
   char scratchpad[1024]{};
