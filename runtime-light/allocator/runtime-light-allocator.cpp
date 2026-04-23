@@ -109,7 +109,7 @@ void RuntimeAllocator::request_extra_memory(size_t requested_size) noexcept {
   size_t extra_mem_size{std::max(min_size, 2 * requested_size)};
 
   // Take into account internal layout of `memory_resource::extra_memory_pool`
-  extra_mem_size += sizeof(memory_resource::extra_memory_pool);
+//  extra_mem_size += sizeof(memory_resource::extra_memory_pool);
 
   kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
 
