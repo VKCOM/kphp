@@ -951,10 +951,11 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
     END_TIMER(store_function2)
     return false;
   }
+  fprintf(stderr, "typedStore user-defined success\n");
   // when using fetcher, tl_current_function_name will not be accessed. But we set it anyway in case we forgot something.
   tl_current_function_name = "typedStore";
   END_TIMER(store_function2)
-  return true;
+  return false;
 }
 
 struct tl_tree *store_function(VK_ZVAL_API_P arr) {
@@ -1116,8 +1117,7 @@ zval *fetch_function(struct tl_tree *T) {
     if (*_arr) {
       zval_dtor (*_arr);
     }
-    *_arr = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
-    return *_arr;
+    return make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
   }
 }
 
@@ -1184,17 +1184,10 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
   return q;
 }
 
-zval *fetch_function2(zval *fetcher);
-
 zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T, zval *fetcher) {
   tl_parse_init();
   START_TIMER (tmp);
-  zval *r = NULL;
-  if (T) {
-    r = fetch_function(T);
-  }else{
-    r = fetch_function2(fetcher);
-  }
+  zval *r = fetch_function(T);
   //fprintf(stderr, "~~~~ after fetch:\n");
   //php_debug_zval_dump(*r, 1);
   END_TIMER (tmp);
@@ -1418,77 +1411,6 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
   }
 
   return res;
-}
-
-zval *fetch_function2(zval *fetcher) {
-  ADD_CNT(fetch_function2)
-  START_TIMER(fetch_function2)
-
-  assert(fetcher);
-  assert(Z_TYPE_P(fetcher) == IS_OBJECT);
-
-  vkext_rpc::RpcError rpc_error;
-  rpc_error.try_fetch();
-  if (rpc_error.error.has_value()) {
-    zval *ret = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
-    END_TIMER(fetch_function2)
-    return ret;
-  }
-
-  zval* return_value;
-  VK_ALLOC_INIT_ZVAL(return_value);
-  ZVAL_UNDEF(return_value);
-  vk_zend_call_known_instance_method(fetcher, "typedFetch", strlen("typedFetch"), return_value, 0, NULL);
-  if (EG(exception)) {
-    efree(return_value); // it is UNDEF
-
-    _zend_object * old_exception = EG(exception);
-    EG(exception) = NULL;
-
-    zval exception_zval;
-    ZVAL_OBJ(&exception_zval, old_exception);
-
-    zval *message;
-    VK_ALLOC_INIT_ZVAL(message);
-    ZVAL_UNDEF(message);
-    vk_zend_call_known_instance_method(&exception_zval, "getMessage", strlen("getMessage"), message, 0, NULL);
-    // fprintf(stderr, "getMessage after call %d\n", Z_TYPE(message));
-    assert(Z_TYPE_P(message) == IS_STRING);
-
-    OBJ_RELEASE(old_exception);
-
-    zval *_err = create_php_instance(reqResult_error_class_name);
-
-    vk_zend_update_public_property_nod(_err, "error", message);
-
-    // vk_zend_update_public_property_string(_err, "error", "hren");
-    vk_zend_update_public_property_long(_err, "error_code", -1000);
-    END_TIMER(fetch_function2)
-    return _err;
-  }
-  // TODO - will remove later when everything works
-  // fprintf(stderr, "typedFetch after call %d\n", Z_TYPE_P(return_value));
-  if (Z_TYPE_P(return_value) != IS_OBJECT) { // should be never, but that is user code
-    zval *_err = create_php_instance(reqResult_error_class_name);
-    vk_zend_update_public_property_string(_err, "error", "fetcher->typedFetch() did not return object, as expected");
-    vk_zend_update_public_property_long(_err, "error_code", -1000);
-    END_TIMER(fetch_function2)
-    return _err;
-  }
-  if (rpc_error.header.has_value()) {
-    zval *wrapped_err = create_php_instance(reqResult_header_class_name);
-    zval *header_php_repr = convert_rpc_extra_header_to_php_repr(rpc_error.header.value());
-
-    set_field_int(&wrapped_err, rpc_error.flags, "flags", -1);
-    set_field(&wrapped_err, header_php_repr, "extra", -1);
-    set_field(&wrapped_err, return_value, "result", -1);
-    END_TIMER(fetch_function2)
-    return wrapped_err;
-  }
-  zval *wrapped_err = create_php_instance(reqResult_underscore_class_name);
-  set_field(&wrapped_err, return_value, "result", -1);
-  END_TIMER(fetch_function2)
-  return wrapped_err;
 }
 
 static zval *make_query_result_or_error(zval *r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header, int extra_flags) {
