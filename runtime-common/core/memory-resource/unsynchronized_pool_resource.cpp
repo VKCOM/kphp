@@ -2,6 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <iterator>
+
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 
 #include "common/wrappers/likely.h"
@@ -37,7 +39,10 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   details::memory_ordered_chunk_list mem_list{memory_begin_, memory_end_};
 
   huge_pieces_.flush_to(mem_list);
-  if (const auto fallback_resource_left_size = fallback_resource_.size(); fallback_resource_left_size > 0) {
+  if (const auto fallback_resource_left_size {fallback_resource_.size()};
+      fallback_resource_left_size > 0 &&
+      !is_memory_from_extra_pool(fallback_resource_.memory_begin(), std::distance(reinterpret_cast<uint8_t*>(fallback_resource_.memory_begin()),
+                                                                                  reinterpret_cast<uint8_t*>(fallback_resource_.memory_current())))) {
     mem_list.add_memory(fallback_resource_.memory_current(), fallback_resource_left_size);
     fallback_resource_.init(nullptr, 0);
   }

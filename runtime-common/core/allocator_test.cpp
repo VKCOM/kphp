@@ -12,7 +12,7 @@ void memory_resource::monotonic_buffer_resource::raise_oom(size_t) const noexcep
 void memory_resource::monotonic_buffer_resource::critical_dump(void*, size_t) const noexcept {};
 
 void php_assert__(const char* msg, const char* file, int line) {
-  std::cout << "Assertion '" << msg << "' failed in file " << file << " on line" << line << "\n";
+  std::cerr << "Assertion '" << msg << "' failed in file " << file << " on line" << line << "\n";
   exit(1);
 }
 
@@ -52,15 +52,16 @@ struct MultipleBufferMemoryManager {
   void* alloc(size_t size) noexcept {
     auto* mem{reinterpret_cast<size_t*>(pool.allocate(sizeof(size_t) + size))};
     if (mem == nullptr) {
+      std::cerr << "MultipleBufferMemoryManager: requested extra memory" << "\n";
       current_buffer_id += 1;
       if (current_buffer_id > MAX_BUFFERS_NUM) {
-        std::cout << "MultipleBufferMemoryManager: not enough buffers for extra pool" << "\n";
+        std::cerr << "MultipleBufferMemoryManager: not enough buffers for extra pool" << "\n";
         return nullptr;
       }
       pool.add_extra_memory(new (RAW_MULTIPLE_BUFFERS[current_buffer_id]) memory_resource::extra_memory_pool{RAW_BUFFER_SIZE});
       mem = reinterpret_cast<size_t*>(pool.allocate(sizeof(size_t) + size));
       if (mem == nullptr) {
-        std::cout << "MultipleBufferMemoryManager: not enough extra memory" << "\n";
+        std::cerr << "MultipleBufferMemoryManager: not enough extra memory" << "\n";
         return nullptr;
       }
     }
@@ -106,7 +107,43 @@ void simple_alloc_multiple_buffer() {
   std::cout << "Elapsed: " << elapsed << "\n";
 }
 
+void emulate_image_allocation() {
+    MultipleBufferMemoryManager mm{};
+    for (size_t i = 0; i < 65024; ++i) {
+        mm.alloc(8);
+    }
+    // allocate huge
+    mm.alloc(16400);
+
+    for (size_t i = 0; i < 512; ++i) {
+        mm.alloc(8);
+    }
+
+    // allocate tiny
+    mm.alloc(8);
+
+    // allocate huge
+    mm.alloc(16400);
+
+    // allocate tiny
+    mm.alloc(8);
+
+    // allocate huge
+    mm.alloc(16400);
+
+      // allocate tiny
+    mm.alloc(8);
+
+    // allocate huge
+    mm.alloc(16400);
+
+      // allocate tiny
+    mm.alloc(8);
+
+}
+
 int main() {
+    emulate_image_allocation();
   // simple_alloc_single_buffer();
-  simple_alloc_multiple_buffer();
+  //simple_alloc_multiple_buffer();
 }

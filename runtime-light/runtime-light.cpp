@@ -4,6 +4,7 @@
 
 #include <utility>
 
+#include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -26,7 +27,8 @@ VISIBILITY_DEFAULT void k2_init_image() {
   kphp::log::debug("start image state init");
   new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
-  kphp::log::debug("finish image state init");
+  const auto stats{AllocatorState::get().allocator.memory_resource.get_memory_stats()};
+  kphp::log::debug("finish image state init. Memory used: {}, real memory used: {}, small memory pieces: {}, huge memory pieces: {}, defragmentation calls: {}, total allocations number: {}; total memory allocations: {}", stats.memory_used, stats.real_memory_used, stats.small_memory_pieces, stats.huge_memory_pieces,  stats.defragmentation_calls, stats.total_allocations, stats.total_memory_allocated);
 }
 
 VISIBILITY_DEFAULT ComponentState* k2_create_component() {
