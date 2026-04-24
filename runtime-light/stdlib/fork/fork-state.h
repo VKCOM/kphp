@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <utility>
 
@@ -35,7 +36,7 @@ struct ForkInstanceState final : private vk::not_copyable {
   };
 
 private:
-  static constexpr int64_t FORK_ID_INIT = 0;
+  static constexpr auto FORK_ID_INIT{std::numeric_limits<int64_t>::max()};
 
   int64_t next_fork_id{FORK_ID_INIT};
   // type erased tasks that represent forks
@@ -64,7 +65,7 @@ public:
           co_return s;
         }};
 
-    const int64_t fork_id{next_fork_id++};
+    const int64_t fork_id{next_fork_id--};
     auto fork_task{std::invoke(fork_coroutine, std::move(task), fork_id)};
     forks.emplace(
         fork_id,

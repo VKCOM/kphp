@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <concepts>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -73,7 +74,8 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
   auto& fork_instance_st{ForkInstanceState::get()};
   auto opt_info{fork_instance_st.get_info(fork_id)};
   if (!opt_info || !(*opt_info).get().opt_handle || (*opt_info).get().awaited) [[unlikely]] {
-    kphp::log::warning("fork does not exist or has already been awaited by another fork: id -> {}", fork_id);
+    // TODO: uncomment this warning after we stabilize K2
+    // kphp::log::warning("fork does not exist or has already been awaited by another fork: id -> {}", fork_id);
     co_return std::nullopt;
   }
 
@@ -122,18 +124,29 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
 
 } // namespace kphp::forks
 
-template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
-kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto opt_result{co_await kphp::forks::id_managed(
-      kphp::forks::wait<T>(fork_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
-  co_return opt_result ? T{*std::move(opt_result)} : T{};
+template<std::default_initializable return_type>
+requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
+kphp::coro::task<return_type> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
+  auto opt_result{co_await kphp::forks::id_managed(kphp::forks::wait<return_type>(fork_id, std::chrono::duration<double>{timeout}))};
+  co_return opt_result ? return_type{*std::move(opt_result)} : return_type{};
 }
 
-template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
-kphp::coro::task<T> f$wait(Optional<int64_t> opt_fork_id, double timeout = -1.0) noexcept {
-  co_return co_await f$wait<T>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout);
+template<typename return_type>
+requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
+kphp::coro::task<return_type> f$wait(Optional<int64_t> opt_fork_id, double timeout = -1.0) noexcept {
+  co_return co_await f$wait<return_type>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout);
+}
+
+template<typename return_type>
+requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
+kphp::coro::task<return_type> f$wait_synchronously(int64_t fork_id) noexcept {
+  co_return co_await f$wait<return_type>(fork_id);
+}
+
+template<typename return_type>
+requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
+kphp::coro::task<return_type> f$wait_synchronously(Optional<int64_t> opt_fork_id) noexcept {
+  co_return co_await f$wait<return_type>(opt_fork_id);
 }
 
 // ================================================================================================
