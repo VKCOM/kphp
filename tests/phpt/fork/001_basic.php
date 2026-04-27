@@ -88,7 +88,7 @@ function hash4($n) {
   return $q;
 }
 
-
+wait(false);
 
 $id2 = fork(hash2(10));
 $id = fork(hash3(10));
