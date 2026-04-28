@@ -3,8 +3,11 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "common/type_traits/list_of_types.h"
 
@@ -35,6 +38,18 @@ struct is_class_instance : std::false_type {};
 
 template<typename T>
 struct is_class_instance<class_instance<T>> : std::true_type {};
+
+template<typename>
+struct is_tuple : std::false_type {};
+
+template<typename... Ts>
+struct is_tuple<std::tuple<Ts...>> : std::true_type {};
+
+template<typename>
+struct is_shape : std::false_type {};
+
+template<size_t... Is, typename... Ts>
+struct is_shape<shape<std::index_sequence<Is...>, Ts...>> : std::true_type {};
 
 template<typename T>
 inline constexpr bool is_class_instance_v = is_class_instance<T>::value;
