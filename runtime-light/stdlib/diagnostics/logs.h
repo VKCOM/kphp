@@ -21,10 +21,11 @@ namespace kphp::log {
 
 namespace impl {
 
+static constexpr size_t DEFAULT_LOG_BUFFER_SIZE = 2048UZ;
+
 template<typename... Args>
 void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  static constexpr size_t LOG_BUFFER_SIZE = 2048UZ;
-  std::array<char, LOG_BUFFER_SIZE> log_buffer; // NOLINT
+  std::array<char, DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
   size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
 
@@ -67,7 +68,10 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
 // If assertion is modified, the backtrace algorithm should be updated accordingly
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
   if (!condition) [[unlikely]] {
-    impl::log(level::error, std::nullopt, "assertion failed at {}:{}", location.file_name(), location.line());
+    std::array<char, impl::DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
+    size_t message_size{impl::format_log_message(log_buffer, "assertion failed at {}:{}", location.file_name(), location.line())};
+    auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
+    k2::log(std::to_underlying(level::error), message, {});
     k2::exit(1);
   }
 }
