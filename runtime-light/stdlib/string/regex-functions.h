@@ -1052,9 +1052,10 @@ kphp::coro::task<Optional<string>> preg_replace_callback_base(const regexp& rege
   const auto& re{opt_re->get()};
   auto group_names{kphp::regex::details::collect_group_names(re)};
   auto unsigned_limit{limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit)};
-  count = 0;
+  int64_t replace_count = 0;
 
   if (limit == 0) {
+    count = replace_count;
     co_return subject;
   }
 
@@ -1067,7 +1068,7 @@ kphp::coro::task<Optional<string>> preg_replace_callback_base(const regexp& rege
   string output_str{};
 
   kphp::pcre2::matcher pcre2_matcher{re, {subject.c_str(), subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex.match_options};
-  while (count < unsigned_limit) {
+  while (replace_count < unsigned_limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
 
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
@@ -1102,11 +1103,12 @@ kphp::coro::task<Optional<string>> preg_replace_callback_base(const regexp& rege
 
     output_str.append(replacement);
 
-    ++count;
+    ++replace_count;
   }
 
   output_str.append(std::next(subject.c_str(), last_pos), subject.size() - last_pos);
 
+  count = replace_count;
   co_return output_str;
 }
 
