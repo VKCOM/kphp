@@ -192,8 +192,7 @@ private:
     const auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
 
     if (function != nullptr || file != nullptr) {
-      kphp::log::warning("{} [in function {}() at {}]", message, function == nullptr ? "unknown_function" : function,
-                         file == nullptr ? "unknown_file" : file);
+      kphp::log::warning("{} [in function {}() at {}]", message, function == nullptr ? "unknown_function" : function, file == nullptr ? "unknown_file" : file);
     } else {
       kphp::log::warning("{}", message);
     }
