@@ -23,7 +23,7 @@ struct InitConstVar {
     Location save_location = stage::get_location();
 
     VertexPtr init_val = var->init_val;
-    if (init_val->type() == op_conv_regexp && !G->is_output_mode_k2()) {
+    if (init_val->type() == op_conv_regexp) {
       const auto &location = init_val->get_location();
       kphp_assert(location.function && location.file);
       W << var->name << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "

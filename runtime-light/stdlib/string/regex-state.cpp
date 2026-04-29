@@ -9,3 +9,11 @@
 RegexInstanceState& RegexInstanceState::get() noexcept {
   return InstanceState::get().regex_instance_state;
 }
+
+const RegexImageState& RegexImageState::get() noexcept {
+  return ImageState::get().regex_image_state;
+}
+
+RegexImageState& RegexImageState::get_mutable() noexcept {
+  return ImageState::get_mutable().regex_image_state;
+}
