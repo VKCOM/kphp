@@ -20,7 +20,7 @@
 // correctly include PCRE2 lib
 #include "runtime-light/stdlib/string/regex-include.h"
 
-struct RegexInstanceState final : private vk::not_copyable {
+struct RegexBaseState : private vk::not_copyable {
   struct compiled_regex {
     // PCRE compile options of the regex
     uint32_t compile_options{};
@@ -56,25 +56,15 @@ public:
 
   kphp::pcre2::general_context general_context;
   kphp::pcre2::compile_context compile_context;
-  kphp::pcre2::match_context match_context;
-  kphp::pcre2::match_data match_data;
 
-  RegexInstanceState() noexcept
+  RegexBaseState() noexcept
       : general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8),
-        compile_context(pcre2_compile_context_create_8(general_context.get()), pcre2_compile_context_free_8),
-        match_context(pcre2_match_context_create_8(general_context.get()), pcre2_match_context_free_8),
-        match_data(pcre2_match_data_create_8(OVECTOR_SIZE, general_context.get()), pcre2_match_data_free_8) {
+        compile_context(pcre2_compile_context_create_8(general_context.get()), pcre2_compile_context_free_8) {
     if (!general_context) [[unlikely]] {
       kphp::log::error("can't create pcre2_general_context");
     }
     if (!compile_context) [[unlikely]] {
       kphp::log::error("can't create pcre2_compile_context");
-    }
-    if (!match_context) [[unlikely]] {
-      kphp::log::error("can't create pcre2_match_context");
-    }
-    if (!match_data) [[unlikely]] {
-      kphp::log::error("can't create match_data");
     }
   }
 
@@ -90,6 +80,27 @@ public:
     return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = std::move(regex_code)})
         .first->second;
   }
+};
+
+struct RegexInstanceState final : public RegexBaseState {
+  kphp::pcre2::match_context match_context;
+  kphp::pcre2::match_data match_data;
+
+  RegexInstanceState()
+      : match_context(pcre2_match_context_create_8(general_context.get()), pcre2_match_context_free_8),
+        match_data(pcre2_match_data_create_8(OVECTOR_SIZE, general_context.get()), pcre2_match_data_free_8) {
+    if (!match_context) [[unlikely]] {
+      kphp::log::error("can't create pcre2_match_context");
+    }
+    if (!match_data) [[unlikely]] {
+      kphp::log::error("can't create match_data");
+    }
+  }
 
   static RegexInstanceState& get() noexcept;
+};
+
+struct RegexImageState final : public RegexBaseState {
+  static const RegexImageState& get() noexcept;
+  static RegexImageState& get_mutable() noexcept;
 };
