@@ -310,6 +310,15 @@ int32_t k2_unlink(const char* path, size_t path_len);
 int32_t k2_component_access(size_t name_len, const char* name);
 
 /**
+ * @return returns descriptor of rpc request, which should be later used to call `k2_rpc_fetch_response`.
+ */
+int32_t k2_rpc_send_request(const char *actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, uint64_t *rpc_d);
+
+size_t k2_rpc_get_response_size(uint64_t rpc_d);
+
+size_t k2_rpc_fetch_response(uint64_t rpc_d, void* buf, size_t buf_size);
+
+/**
  * If the write or read status is `Blocked` - then the platform ensures that
  * the component receives this `stream_d` via `k2_take_update` when the status is
  * no longer `Blocked` ("edge-triggered epoll"-like behaviour).

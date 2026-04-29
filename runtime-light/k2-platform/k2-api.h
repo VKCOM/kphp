@@ -201,6 +201,23 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
+inline std::expected<uint64_t, int32_t> rpc_send_request(std::string_view actor_name, std::span<const std::byte> request_buffer) noexcept {
+  uint64_t rpc_d{};
+  if (auto error_code{k2_rpc_send_request(actor_name.data(), actor_name.size(), request_buffer.data(), request_buffer.size(), std::addressof(rpc_d))};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+  return {rpc_d};
+}
+
+inline size_t rpc_get_response_size(uint64_t rpc_d) noexcept {
+  return k2_rpc_get_response_size(rpc_d);
+}
+
+inline size_t rpc_fetch_response(uint64_t rpc_d, std::span<std::byte> buffer) noexcept {
+  return k2_rpc_fetch_response(rpc_d, buffer.data(), buffer.size());
+}
+
 inline void stream_status(k2::descriptor descriptor, StreamStatus* status) noexcept {
   k2_stream_status(descriptor, status);
 }
