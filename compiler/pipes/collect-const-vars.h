@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
 
 /*** Replace constant expressions with const variables ***/

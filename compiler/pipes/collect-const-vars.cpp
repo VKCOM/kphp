@@ -4,7 +4,11 @@
 
 #include "compiler/pipes/collect-const-vars.h"
 
-#include "compiler/data/src-file.h"
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/hashes.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/vertex-util.h"
 #include "compiler/data/var-data.h"
 #include "compiler/const-manipulations.h"
@@ -17,22 +21,26 @@ template<class Derived, class ResultType>
 struct VertexVisitor {
   static ResultType visit(VertexPtr v) {
     switch (v->type()) {
-      case op_array:
-        return Derived::on_array(v.as<op_array>());
-      case op_string:
-        return Derived::on_string(v.as<op_string>());
-      case op_concat:
-        return Derived::on_concat(v.as<op_concat>());
-      case op_conv_regexp:
-        return Derived::on_conv_regexp(v.as<op_conv_regexp>());
-      case op_func_call:
-        return Derived::on_func_call(v.as<op_func_call>());
-      case op_string_build:
-        return Derived::on_string_build(v.as<op_string_build>());
-      case op_define_val:
-        return Derived::on_define_val(v.as<op_define_val>());
-      default:
-        return Derived::fallback(v);
+    case op_array:
+      return Derived::on_array(v.as<op_array>());
+    case op_string:
+      return Derived::on_string(v.as<op_string>());
+    case op_concat:
+      return Derived::on_concat(v.as<op_concat>());
+    case op_add:
+      return Derived::on_add(v.as<op_add>());
+    case op_conv_regexp:
+      return Derived::on_conv_regexp(v.as<op_conv_regexp>());
+    case op_func_call:
+      return Derived::on_func_call(v.as<op_func_call>());
+    case op_string_build:
+      return Derived::on_string_build(v.as<op_string_build>());
+    case op_define_val:
+      return Derived::on_define_val(v.as<op_define_val>());
+    case op_var:
+      return Derived::on_var(v.as<op_var>());
+    default:
+      return Derived::fallback(v);
     }
   }
 
@@ -45,6 +53,10 @@ struct VertexVisitor {
   }
 
   static ResultType on_concat(VertexAdaptor<op_concat> v) {
+    return Derived::fallback(v);
+  }
+
+  static ResultType on_add(VertexAdaptor<op_add> v) {
     return Derived::fallback(v);
   }
 
@@ -64,6 +76,10 @@ struct VertexVisitor {
     return Derived::fallback(v);
   }
 
+  static ResultType on_var(VertexAdaptor<op_var> v) {
+    return Derived::fallback(v);
+  }
+
   static ResultType fallback(VertexPtr v [[maybe_unused]]) {
     kphp_assert_msg(false, "Internal error: invalid visitor in CollectConstVars pass!");
   }
@@ -76,6 +92,14 @@ struct IsComposite : public VertexVisitor<IsComposite, bool> {
 
   static bool on_array(VertexAdaptor<op_array> v [[maybe_unused]]) {
     return true;
+  }
+
+  static bool on_add(VertexAdaptor<op_add> v) {
+    return v && (visit(v->lhs()) || visit(v->rhs()));
+  }
+
+  static bool on_var(VertexAdaptor<op_var> v) {
+    return v && v->var_id && v->var_id->init_val && visit(v->var_id->init_val);
   }
 
   static bool fallback(VertexPtr v [[maybe_unused]]) {
@@ -91,7 +115,7 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
 
   static bool on_func_call(VertexAdaptor<op_func_call> v) {
     // const constructors are handled in on_define_val
-    auto res =  v->func_id && v->func_id->is_pure;
+    auto res = v->func_id && v->func_id->is_pure;
     return res;
   }
 
@@ -105,6 +129,19 @@ struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool>
     auto val = v->value().try_as<op_func_call>();
     auto res = val && val->func_id && val->func_id->is_constructor();
     return res;
+  }
+
+  static bool on_add(VertexAdaptor<op_add> v) {
+    // This optimization moves constant expression evaluation from request execution time to kPHP initialization
+    // stage (which runs before the first request is processed). During initialization, we use the kPHP runtime
+    // to evaluate the '+' operation. This is safe even for edge cases like adding an integer to a string constant
+    // (e.g., 'c_str$<hash> + 1', where 'c_str$<hash>' is an auto-generated constant variable name), because the runtime
+    // handles type coercion just as it would during normal request execution.
+    return v && visit(v->lhs()) && visit(v->rhs());
+  }
+
+  static bool on_var(VertexAdaptor<op_var> v) {
+    return v && v->var_id && v->var_id->init_val && visit(v->var_id->init_val);
   }
 
   static bool fallback(VertexPtr v) {
@@ -135,6 +172,15 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
       return gen_const_array_name(v);
     }
     return fallback(v);
+  }
+
+  static std::string on_add(VertexAdaptor<op_add> v) {
+    return fmt_format("c_add${:x}", vk::std_hash(visit(v->lhs()) + visit(v->rhs())));
+  }
+
+  static std::string on_var(VertexAdaptor<op_var> v) {
+    kphp_assert_msg(v && v->var_id && v->var_id->init_val, "Internal error: expected op_var to be fully defined");
+    return fmt_format("c_var${:x}", vk::std_hash(visit(v->var_id->init_val)));
   }
 
   static std::string on_conv_regexp(VertexAdaptor<op_conv_regexp> v) {
@@ -192,6 +238,10 @@ struct ProcessBeforeReplace : public VertexVisitor<ProcessBeforeReplace, VertexP
 
     static VertexPtr on_string_build(VertexAdaptor<op_string_build> str_build) {
       return remove_op_define_val(str_build);
+    }
+
+    static VertexPtr on_add(VertexAdaptor<op_add> add) {
+      return remove_op_define_val(add);
     }
 
   private:
