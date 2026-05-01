@@ -951,6 +951,7 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
     END_TIMER(store_function2)
     return false;
   }
+  fprintf(stderr, "typedStore user-defined success\n");
   // when using fetcher, tl_current_function_name will not be accessed. But we set it anyway in case we forgot something.
   tl_current_function_name = "typedStore";
   END_TIMER(store_function2)
@@ -1116,8 +1117,7 @@ zval *fetch_function(struct tl_tree *T) {
     if (*_arr) {
       zval_dtor (*_arr);
     }
-    *_arr = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
-    return *_arr;
+    return make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
   }
 }
 
