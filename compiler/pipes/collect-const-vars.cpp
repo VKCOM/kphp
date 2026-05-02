@@ -37,8 +37,6 @@ struct VertexVisitor {
       return Derived::on_string_build(v.as<op_string_build>());
     case op_define_val:
       return Derived::on_define_val(v.as<op_define_val>());
-    case op_var:
-      return Derived::on_var(v.as<op_var>());
     default:
       return Derived::fallback(v);
     }
@@ -76,10 +74,6 @@ struct VertexVisitor {
     return Derived::fallback(v);
   }
 
-  static ResultType on_var(VertexAdaptor<op_var> v) {
-    return Derived::fallback(v);
-  }
-
   static ResultType fallback(VertexPtr v [[maybe_unused]]) {
     kphp_assert_msg(false, "Internal error: invalid visitor in CollectConstVars pass!");
   }
@@ -92,14 +86,6 @@ struct IsComposite : public VertexVisitor<IsComposite, bool> {
 
   static bool on_array(VertexAdaptor<op_array> v [[maybe_unused]]) {
     return true;
-  }
-
-  static bool on_add(VertexAdaptor<op_add> v) {
-    return v && (visit(v->lhs()) || visit(v->rhs()));
-  }
-
-  static bool on_var(VertexAdaptor<op_var> v) {
-    return v && v->var_id && v->var_id->init_val && visit(v->var_id->init_val);
   }
 
   static bool fallback(VertexPtr v [[maybe_unused]]) {
@@ -168,11 +154,6 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
 
   static std::string on_add(VertexAdaptor<op_add> v) {
     return fmt_format("c_add${:x}", vk::std_hash(visit(v->lhs()) + visit(v->rhs())));
-  }
-
-  static std::string on_var(VertexAdaptor<op_var> v) {
-    kphp_assert_msg(v && v->var_id && v->var_id->init_val, "Internal error: expected op_var to be fully defined");
-    return fmt_format("c_var${:x}", vk::std_hash(visit(v->var_id->init_val)));
   }
 
   static std::string on_conv_regexp(VertexAdaptor<op_conv_regexp> v) {
@@ -267,9 +248,7 @@ void set_var_dep_level(VarPtr var_id) {
   }
 }
 
-
 } // namespace
-
 
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   if (root->const_type == cnst_const_val) {
