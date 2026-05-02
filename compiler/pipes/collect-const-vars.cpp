@@ -131,21 +131,13 @@ struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool>
     return res;
   }
 
-  static bool on_add(VertexAdaptor<op_add> v) {
-    // This optimization moves constant expression evaluation from request execution time to kPHP initialization
+  static bool fallback(VertexPtr v) {
+    // `op_add`: this optimization moves constant expression evaluation from request execution time to kPHP initialization
     // stage (which runs before the first request is processed). During initialization, we use the kPHP runtime
     // to evaluate the '+' operation. This is safe even for edge cases like adding an integer to a string constant
     // (e.g., 'c_str$<hash> + 1', where 'c_str$<hash>' is an auto-generated constant variable name), because the runtime
     // handles type coercion just as it would during normal request execution.
-    return v && visit(v->lhs()) && visit(v->rhs());
-  }
-
-  static bool on_var(VertexAdaptor<op_var> v) {
-    return v && v->var_id && v->var_id->init_val && visit(v->var_id->init_val);
-  }
-
-  static bool fallback(VertexPtr v) {
-    return vk::any_of_equal(v->type(), op_string, op_array);
+    return vk::any_of_equal(v->type(), op_string, op_array, op_add);
   }
 };
 
