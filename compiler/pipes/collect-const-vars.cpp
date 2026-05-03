@@ -9,6 +9,7 @@
 #include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/hashes.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/vertex-util.h"
 #include "compiler/data/var-data.h"
 #include "compiler/const-manipulations.h"
@@ -117,13 +118,39 @@ struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool>
     return res;
   }
 
+  // This optimization moves constant expression evaluation from request execution time to kPHP initialization
+  // stage (which runs before the first request is processed). During initialization, we use the kPHP runtime
+  // to evaluate the '+' operation. This is safe even for edge cases like adding an integer to a string constant
+  // (e.g., 'c_str$<hash> + 1', where 'c_str$<hash>' is an auto-generated constant variable name), because the runtime
+  // handles type coercion just as it would during normal request execution. However, due to current limitations in
+  // K2 runtime's impementation of string addition (it requires RuntimeContext to be initialized), we limit this
+  // optimization to `arr + arr` case for now.
+  static bool on_add(VertexAdaptor<op_add> v) {
+    static constexpr auto is_suitable_op = [](const auto& self, VertexPtr v, Operation target_op) {
+      if (!v) {
+        return false;
+      }
+
+      switch (v->type()) {
+      case op_var:
+        if (const auto var = v.as<op_var>(); var && var->var_id && var->var_id->init_val) {
+          return self(self, var->var_id->init_val, target_op);
+        }
+        return false;
+      case op_add: {
+        const auto add = v.as<op_add>();
+        return self(self, add->lhs(), target_op) && self(self, add->rhs(), target_op);
+      }
+      default:
+        return v->type() == target_op;
+      }
+    };
+
+    return v && (is_suitable_op(is_suitable_op, v->lhs(), op_array) && is_suitable_op(is_suitable_op, v->rhs(), op_array));
+  }
+
   static bool fallback(VertexPtr v) {
-    // `op_add`: this optimization moves constant expression evaluation from request execution time to kPHP initialization
-    // stage (which runs before the first request is processed). During initialization, we use the kPHP runtime
-    // to evaluate the '+' operation. This is safe even for edge cases like adding an integer to a string constant
-    // (e.g., 'c_str$<hash> + 1', where 'c_str$<hash>' is an auto-generated constant variable name), because the runtime
-    // handles type coercion just as it would during normal request execution.
-    return vk::any_of_equal(v->type(), op_string, op_array, op_add);
+    return vk::any_of_equal(v->type(), op_string, op_array);
   }
 };
 
