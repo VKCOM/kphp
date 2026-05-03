@@ -4,7 +4,12 @@
 
 #include "compiler/pipes/collect-const-vars.h"
 
-#include "compiler/data/src-file.h"
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/hashes.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/vertex-util.h"
 #include "compiler/data/var-data.h"
 #include "compiler/const-manipulations.h"
@@ -17,22 +22,24 @@ template<class Derived, class ResultType>
 struct VertexVisitor {
   static ResultType visit(VertexPtr v) {
     switch (v->type()) {
-      case op_array:
-        return Derived::on_array(v.as<op_array>());
-      case op_string:
-        return Derived::on_string(v.as<op_string>());
-      case op_concat:
-        return Derived::on_concat(v.as<op_concat>());
-      case op_conv_regexp:
-        return Derived::on_conv_regexp(v.as<op_conv_regexp>());
-      case op_func_call:
-        return Derived::on_func_call(v.as<op_func_call>());
-      case op_string_build:
-        return Derived::on_string_build(v.as<op_string_build>());
-      case op_define_val:
-        return Derived::on_define_val(v.as<op_define_val>());
-      default:
-        return Derived::fallback(v);
+    case op_array:
+      return Derived::on_array(v.as<op_array>());
+    case op_string:
+      return Derived::on_string(v.as<op_string>());
+    case op_concat:
+      return Derived::on_concat(v.as<op_concat>());
+    case op_add:
+      return Derived::on_add(v.as<op_add>());
+    case op_conv_regexp:
+      return Derived::on_conv_regexp(v.as<op_conv_regexp>());
+    case op_func_call:
+      return Derived::on_func_call(v.as<op_func_call>());
+    case op_string_build:
+      return Derived::on_string_build(v.as<op_string_build>());
+    case op_define_val:
+      return Derived::on_define_val(v.as<op_define_val>());
+    default:
+      return Derived::fallback(v);
     }
   }
 
@@ -45,6 +52,10 @@ struct VertexVisitor {
   }
 
   static ResultType on_concat(VertexAdaptor<op_concat> v) {
+    return Derived::fallback(v);
+  }
+
+  static ResultType on_add(VertexAdaptor<op_add> v) {
     return Derived::fallback(v);
   }
 
@@ -91,7 +102,7 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
 
   static bool on_func_call(VertexAdaptor<op_func_call> v) {
     // const constructors are handled in on_define_val
-    auto res =  v->func_id && v->func_id->is_pure;
+    auto res = v->func_id && v->func_id->is_pure;
     return res;
   }
 
@@ -105,6 +116,37 @@ struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool>
     auto val = v->value().try_as<op_func_call>();
     auto res = val && val->func_id && val->func_id->is_constructor();
     return res;
+  }
+
+  // This optimization moves constant expression evaluation from request execution time to kPHP initialization
+  // stage (which runs before the first request is processed). During initialization, we use the kPHP runtime
+  // to evaluate the '+' operation. This is safe even for edge cases like adding an integer to a string constant
+  // (e.g., 'c_str$<hash> + 1', where 'c_str$<hash>' is an auto-generated constant variable name), because the runtime
+  // handles type coercion just as it would during normal request execution. However, due to current limitations in
+  // K2 runtime's impementation of string addition (it requires RuntimeContext to be initialized), we limit this
+  // optimization to `arr + arr` case for now.
+  static bool on_add(VertexAdaptor<op_add> v) {
+    static constexpr auto is_suitable_op = [](const auto& self, VertexPtr v, Operation target_op) {
+      if (!v) {
+        return false;
+      }
+
+      switch (v->type()) {
+      case op_var:
+        if (const auto var = v.as<op_var>(); var && var->var_id && var->var_id->init_val) {
+          return self(self, var->var_id->init_val, target_op);
+        }
+        return false;
+      case op_add: {
+        const auto add = v.as<op_add>();
+        return self(self, add->lhs(), target_op) && self(self, add->rhs(), target_op);
+      }
+      default:
+        return v->type() == target_op;
+      }
+    };
+
+    return v && (is_suitable_op(is_suitable_op, v->lhs(), op_array) && is_suitable_op(is_suitable_op, v->rhs(), op_array));
   }
 
   static bool fallback(VertexPtr v) {
@@ -135,6 +177,10 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
       return gen_const_array_name(v);
     }
     return fallback(v);
+  }
+
+  static std::string on_add(VertexAdaptor<op_add> v) {
+    return fmt_format("c_add${:x}", vk::std_hash(visit(v->lhs()) + visit(v->rhs())));
   }
 
   static std::string on_conv_regexp(VertexAdaptor<op_conv_regexp> v) {
@@ -194,6 +240,10 @@ struct ProcessBeforeReplace : public VertexVisitor<ProcessBeforeReplace, VertexP
       return remove_op_define_val(str_build);
     }
 
+    static VertexPtr on_add(VertexAdaptor<op_add> add) {
+      return remove_op_define_val(add);
+    }
+
   private:
     static VertexPtr remove_op_define_val(VertexPtr v) {
       for (VertexPtr& sub_vertex: *v) {
@@ -225,9 +275,7 @@ void set_var_dep_level(VarPtr var_id) {
   }
 }
 
-
 } // namespace
-
 
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   if (root->const_type == cnst_const_val) {
