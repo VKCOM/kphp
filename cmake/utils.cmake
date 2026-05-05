@@ -91,17 +91,17 @@ function(update_git_submodule SUBMODULE_PATH)
     message(STATUS "Updating Git submodule ${SUBMODULE_PATH} ...")
 
     # Update submodules
-    execute_process(
-            COMMAND ${GIT_EXECUTABLE} submodule update --init ${ARGN} ${SUBMODULE_PATH}
-            WORKING_DIRECTORY ${BASE_DIR}
-            RESULT_VARIABLE return_code
-            OUTPUT_VARIABLE stdout
-            ERROR_VARIABLE stderr
-    )
+#    execute_process(
+#            COMMAND ${GIT_EXECUTABLE} submodule update --init ${ARGN} ${SUBMODULE_PATH}
+#            WORKING_DIRECTORY ${BASE_DIR}
+#            RESULT_VARIABLE return_code
+#            OUTPUT_VARIABLE stdout
+#            ERROR_VARIABLE stderr
+#    )
 
-    if(NOT return_code EQUAL 0)
-        message(FATAL_ERROR "Failed to update Git submodule ${SUBMODULE_PATH}: ${stdout} ${stderr}")
-    endif()
+#    if(NOT return_code EQUAL 0)
+#        message(FATAL_ERROR "Failed to update Git submodule ${SUBMODULE_PATH}: ${stdout} ${stderr}")
+#    endif()
 endfunction()
 
 function(detect_xcode_sdk_path SDK_PATH INCLUDE_DIRS)
