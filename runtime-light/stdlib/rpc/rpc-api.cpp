@@ -111,42 +111,42 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   return rpc_tl_query;
 }
 
-kphp::coro::task<kphp::rpc::query_info> rpc_tl_query_one_impl(std::string_view actor, mixed tl_object, std::optional<double> opt_timeout,
+kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, mixed tl_object, std::optional<double> opt_timeout,
                                                               bool collect_resp_extra_info, bool ignore_answer) noexcept {
   if (!tl_object.is_array()) [[unlikely]] {
     kphp::log::warning("not an array passed to function rpc_tl_query");
-    co_return kphp::rpc::query_info{};
+    return kphp::rpc::query_info{};
   }
 
   f$rpc_clean();
   auto rpc_tl_query{store_function(tl_object)}; // THROWING
   // handle exceptions that could arise during store_function
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || rpc_tl_query.is_null()) [[unlikely]] {
-    co_return kphp::rpc::query_info{};
+    return kphp::rpc::query_info{};
   }
 
-  const auto query_info{co_await kphp::rpc::send_request(actor, opt_timeout, ignore_answer, collect_resp_extra_info)};
+  const auto query_info{kphp::rpc::send_request(actor, opt_timeout, ignore_answer, collect_resp_extra_info)};
   if (!ignore_answer) {
     RpcClientInstanceState::get().response_fetcher_instances.emplace(query_info.id, std::move(rpc_tl_query));
   }
-  co_return query_info;
+  return query_info;
 }
 
-kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(std::string_view actor, const RpcRequest& rpc_request, std::optional<double> opt_timeout,
+kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const RpcRequest& rpc_request, std::optional<double> opt_timeout,
                                                                     bool collect_responses_extra_info, bool ignore_answer) noexcept {
   if (rpc_request.empty()) [[unlikely]] {
     kphp::log::warning("query function is null");
-    co_return kphp::rpc::query_info{};
+    return kphp::rpc::query_info{};
   }
 
   f$rpc_clean();
   auto fetcher{rpc_request.store_request()}; // THROWING
   // handle exceptions that could arise during store_request
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
-    co_return kphp::rpc::query_info{};
+    return kphp::rpc::query_info{};
   }
 
-  const auto query_info{co_await kphp::rpc::send_request(actor, opt_timeout, ignore_answer, collect_responses_extra_info)};
+  const auto query_info{kphp::rpc::send_request(actor, opt_timeout, ignore_answer, collect_responses_extra_info)};
   if (!ignore_answer) {
     auto rpc_tl_query{make_instance<RpcTlQuery>()};
     rpc_tl_query.get()->result_fetcher = std::move(fetcher);
@@ -154,7 +154,7 @@ kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(std::string_
 
     RpcClientInstanceState::get().response_fetcher_instances.emplace(query_info.id, std::move(rpc_tl_query));
   }
-  co_return query_info;
+  return query_info;
 }
 
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
@@ -273,7 +273,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
 } // namespace detail
 
-kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std::optional<double> opt_timeout, bool ignore_answer,
+kphp::rpc::query_info send_request(std::string_view actor, std::optional<double> opt_timeout, bool ignore_answer,
                                                      bool collect_responses_extra_info) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
@@ -348,13 +348,13 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
         // TODO ERROR
         k2::exit(148);
       }
-      std::span<std::byte> response_buf{reinterpret_cast<std::byte*>(k2::alloc(response_size)), response_size};
-      size_t new_resonse_size = k2::rpc_fetch_response(rpc_d, response_buf);
-      if (new_resonse_size != response_size) {
+      string response{reinterpret_cast<char*>(k2::alloc(response_size)), static_cast<string::size_type>(response_size)};
+      size_t new_response_size = k2::rpc_fetch_response(rpc_d, {reinterpret_cast<std::byte*>(response.buffer()), response.size()});
+      if (new_response_size != response_size) {
         // TODO ERROR
         k2::exit(69);
       }
-      opt_response = {reinterpret_cast<char*>(response_buf.data()), static_cast<string::size_type>(response_buf.size())};
+      opt_response = std::move(response);
       break;
     }
     case kphp::coro::poll_status::closed:
@@ -403,7 +403,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
 
   // normalize timeout
   using namespace std::chrono_literals;
-  static constexpr auto DEFAULT_TIMEOUT{300ms};
+  static constexpr auto DEFAULT_TIMEOUT{/*TODO RETURN 300ms BEFORE MERGE*/3000ms};
   static constexpr auto MIN_TIMEOUT{1ms};
   static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(24h)};
   static_assert(MIN_TIMEOUT <= MAX_TIMEOUT, "calling std::clamp will lead to undefined behavior");
@@ -420,7 +420,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
     kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
 
     rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(ignore_answer_awaiter_task));
-    co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+    return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
   // start awaiter task
   // TODO need to move rpc_d ?
@@ -428,7 +428,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
 
   rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
-  co_return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
+  return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
 } // namespace kphp::rpc
