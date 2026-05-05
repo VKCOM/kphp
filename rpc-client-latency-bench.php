@@ -13,10 +13,10 @@ function proxy_queries($queries) {
 //   $requests_time_start = $start_time;
 
 //   if ($is_k2 === 1) {
-    $query_ids = rpc_send_typed_query_requests("rpc", $queries, 0, false, null, false);
+    $query_ids = rpc_send_typed_query_requests("rpc", $queries, null, false, null, false);
 //   } else {
 //     $connection = new_rpc_connection("127.0.0.1", 9999);
-//     $query_ids = typed_rpc_tl_query($connection, $queries, 0, false, null, false);
+//     $query_ids = typed_rpc_tl_query($connection, $queries, null, false, null, false);
 //   }
 
 //   $requests_time_end = microtime(true);
