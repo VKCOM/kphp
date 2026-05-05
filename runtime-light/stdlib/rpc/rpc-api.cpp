@@ -355,15 +355,19 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
         k2::exit(69);
       }
       opt_response = {reinterpret_cast<char*>(response_buf.data()), static_cast<string::size_type>(response_buf.size())};
+      break;
     }
     case kphp::coro::poll_status::closed:
+      k2::exit(70);
       // TODO really nothing ?
       // fallthrough
     case kphp::coro::poll_status::error:
+      k2::exit(71);
       // TODO ERROR ???
       // nothing
       // fallthrough
     case kphp::coro::poll_status::timeout:
+      k2::exit(79);
       // nothing
       // fallthrough
     }
