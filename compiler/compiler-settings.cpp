@@ -222,8 +222,9 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
-  const auto now{std::chrono::system_clock::now()};
-  build_timestamp.value_ = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
+  build_timestamp.value_ = std::to_string(
+    std::chrono::duration_cast<std::chrono::milliseconds>(build_tp.time_since_epoch()).count()
+  );
 
   bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
