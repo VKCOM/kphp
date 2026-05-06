@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstring>
 
@@ -105,11 +106,11 @@ void RuntimeAllocator::request_extra_memory(size_t requested_size) noexcept {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
 
-  // If the requested size is greater than or equal to half of min_size, it’s more efficient to allocate a multiple of the requested size.
-  size_t extra_mem_size{std::max(min_size, 2 * requested_size)};
-
+  size_t extra_mem_size{std::max(min_size, requested_size)};
   // Take into account internal layout of `memory_resource::extra_memory_pool`
   extra_mem_size += sizeof(memory_resource::extra_memory_pool);
+  // The smallest power of two that is not smaller than `extra_mem_size`
+  extra_mem_size = std::bit_ceil(extra_mem_size);
 
   // kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
 
