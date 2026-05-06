@@ -9,8 +9,6 @@
 
 #include <fmt/chrono.h>
 
-#include "common/wrappers/fmt_format.h"
-
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
@@ -301,7 +299,7 @@ void CppMainFile::compile(CodeGenerator &W) const {
 
 void ComponentInfoFile::compile(CodeGenerator &W) const {
   auto build_time{std::chrono::system_clock::to_time_t(G->settings().build_tp)};
-  auto date_str{fmt_format("{:%b %e %Y %T %Z}", fmt::localtime(build_time))};
+  auto date_str{fmt::format("{:%b %e %Y %T %Z}", fmt::localtime(build_time))};
 
   kphp_assert(G->is_output_mode_k2());
   W << OpenFile("image_info.cpp");
