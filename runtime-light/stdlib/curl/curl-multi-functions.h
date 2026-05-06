@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -17,8 +18,8 @@
 #include "runtime-light/stdlib/curl/details/diagnostics.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
-#include "runtime-light/stdlib/web-transfer-lib/details/web-property.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-composite-transfer.h"
+#include "runtime-light/stdlib/web-transfer-lib/web-property.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-simple-transfer.h"
 
 inline auto f$curl_multi_init() noexcept -> kphp::coro::task<kphp::web::curl::multi_type> {
@@ -91,7 +92,7 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
     case kphp::web::curl::CURLPIPE::NOTHING:
     case kphp::web::curl::CURLPIPE::HTTP1:
     case kphp::web::curl::CURLPIPE::MULTIPLEX: {
-      auto res{kphp::web::set_transfer_property(ct, option, kphp::web::property_value::as_long(static_cast<int64_t>(pipeling_type)))};
+      auto res{kphp::web::set_transfer_property(ct, option, kphp::web::property_value::as_long(std::to_underlying(pipeling_type)))};
       if (!res.has_value()) [[unlikely]] {
         kphp::web::curl::print_error("could not set an mutli option", std::move(res.error()));
         return false;

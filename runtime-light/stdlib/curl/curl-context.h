@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 #include "common/mixin/movable_only.h"
 #include "runtime-common/core/runtime-core.h"
@@ -25,7 +26,7 @@ struct curl_context : vk::movable_only {
     if (code == kphp::web::WEB_INTERNAL_ERROR_CODE) [[unlikely]] {
       return;
     }
-    error_code = static_cast<int64_t>(code);
+    error_code = code;
     std::memcpy(error_description.data(), description.data(), std::min(description.size(), static_cast<size_t>(CURL_ERROR_SIZE)));
   }
 
@@ -38,19 +39,19 @@ struct curl_context : vk::movable_only {
   }
 
   inline auto set_errno(kphp::web::curl::CURLE code, std::string_view description) noexcept {
-    set_errno(static_cast<int64_t>(code), description);
+    set_errno(std::to_underlying(code), description);
   }
 
   inline auto set_errno(kphp::web::curl::CURLE code, std::optional<string> description = std::nullopt) noexcept {
-    set_errno(static_cast<int64_t>(code), std::move(description));
+    set_errno(std::to_underlying(code), std::move(description));
   }
 
   inline auto set_errno(kphp::web::curl::CURLME code, std::string_view description) noexcept {
-    set_errno(static_cast<int64_t>(code), description);
+    set_errno(std::to_underlying(code), description);
   }
 
   inline auto set_errno(kphp::web::curl::CURLME code, std::optional<string> description = std::nullopt) noexcept {
-    set_errno(static_cast<int64_t>(code), std::move(description));
+    set_errno(std::to_underlying(code), std::move(description));
   }
 
   template<size_t N>

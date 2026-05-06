@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/curl/curl-context.h"
@@ -17,7 +18,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/print-functions.h"
-#include "runtime-light/stdlib/web-transfer-lib/details/web-property.h"
+#include "runtime-light/stdlib/web-transfer-lib/web-property.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-simple-transfer.h"
 
 inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kphp::web::curl::easy_type> {
@@ -46,7 +47,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto st{kphp::web::simple_transfer{.descriptor = easy_id}};
 
-  if (option == static_cast<int64_t>(kphp::web::curl::CURLINFO::HEADER_OUT)) {
+  if (option == std::to_underlying(kphp::web::curl::CURLINFO::HEADER_OUT)) {
     auto res{kphp::web::set_transfer_property(st, static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::VERBOSE),
                                               kphp::web::property_value::as_long(value.to_int()))};
     if (!res.has_value()) [[unlikely]] {
@@ -56,7 +57,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     return true;
   }
 
-  if (option == static_cast<uint64_t>(kphp::web::curl::PHPCURL::RETURNTRANSFER)) {
+  if (option == std::to_underlying(kphp::web::curl::PHPCURL::RETURNTRANSFER)) {
     easy_ctx.return_transfer = (value.to_int());
     easy_ctx.set_errno(kphp::web::curl::CURLE::OK);
     return true;
@@ -272,7 +273,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     case kphp::web::curl::CURLPROXY::SOCKS5:
     case kphp::web::curl::CURLPROXY::SOCKS4A:
     case kphp::web::curl::CURLPROXY::SOCKS5_HOSTNAME: {
-      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(static_cast<int64_t>(proxy_type)))};
+      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(std::to_underlying(proxy_type)))};
       if (!res.has_value()) [[unlikely]] {
         kphp::web::curl::print_error("could not set an option", std::move(res.error()));
         return false;
@@ -299,7 +300,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     case kphp::web::curl::CURL_SSLVERSION::TLSv1_1:
     case kphp::web::curl::CURL_SSLVERSION::TLSv1_2:
     case kphp::web::curl::CURL_SSLVERSION::TLSv1_3: {
-      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(static_cast<int64_t>(ssl_version)))};
+      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(std::to_underlying(ssl_version)))};
       if (!res.has_value()) [[unlikely]] {
         kphp::web::curl::print_error("could not set an option", std::move(res.error()));
         return false;
@@ -318,7 +319,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     case kphp::web::curl::CURL_IPRESOLVE::WHATEVER:
     case kphp::web::curl::CURL_IPRESOLVE::V4:
     case kphp::web::curl::CURL_IPRESOLVE::V6: {
-      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(static_cast<int64_t>(ip_resolve)))};
+      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(std::to_underlying(ip_resolve)))};
       if (!res.has_value()) [[unlikely]] {
         kphp::web::curl::print_error("could not set an option", std::move(res.error()));
         return false;
@@ -337,7 +338,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     case kphp::web::curl::CURL_NETRC::IGNORED:
     case kphp::web::curl::CURL_NETRC::OPTIONAL:
     case kphp::web::curl::CURL_NETRC::REQUIRED: {
-      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(static_cast<int64_t>(netrc)))};
+      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(std::to_underlying(netrc)))};
       if (!res.has_value()) [[unlikely]] {
         kphp::web::curl::print_error("could not set an option", std::move(res.error()));
         return false;
@@ -359,7 +360,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     case kphp::web::curl::CURL_HTTP_VERSION::_2_0:
     case kphp::web::curl::CURL_HTTP_VERSION::_2TLS:
     case kphp::web::curl::CURL_HTTP_VERSION::_2_PRIOR_KNOWLEDGE: {
-      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(static_cast<int64_t>(http_version)))};
+      auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_long(std::to_underlying(http_version)))};
       if (!res.has_value()) [[unlikely]] {
         kphp::web::curl::print_error("could not set an option", std::move(res.error()));
         return false;
@@ -495,7 +496,7 @@ inline auto f$curl_error(kphp::web::curl::easy_type easy_id) noexcept -> string 
     return {};
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  if (easy_ctx.error_code != static_cast<int64_t>(kphp::web::curl::CURLE::OK)) [[likely]] {
+  if (easy_ctx.error_code != std::to_underlying((kphp::web::curl::CURLE::OK))) [[likely]] {
     const auto* const desc_data{reinterpret_cast<const char*>(easy_ctx.error_description.data())};
     const auto desc_size{static_cast<string::size_type>(easy_ctx.error_description.size())};
     return string{desc_data, desc_size};
