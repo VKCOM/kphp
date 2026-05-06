@@ -25,7 +25,7 @@
 inline auto f$curl_multi_init() noexcept -> kphp::coro::task<kphp::web::curl::multi_type> {
   auto open_res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_open(kphp::web::transfer_backend::CURL))};
   if (!open_res.has_value()) [[unlikely]] {
-    kphp::web::curl::print_error("could not initialize a new curl multi handle", std::move(open_res.error()));
+    kphp::web::curl::print_warning("could not initialize a new curl multi handle", std::move(open_res.error()));
     co_return 0;
   }
   const auto descriptor{(*open_res).descriptor};
@@ -48,7 +48,7 @@ inline auto f$curl_multi_add_handle(kphp::web::curl::multi_type multi_id, kphp::
   auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_add(kphp::web::composite_transfer{multi_id}, kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code);
-    kphp::web::curl::print_error("could not add a curl easy handler into multi handle", std::move(res.error()));
+    kphp::web::curl::print_warning("could not add a curl easy handler into multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
   multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
@@ -69,7 +69,7 @@ inline auto f$curl_multi_remove_handle(kphp::web::curl::multi_type multi_id,
       co_await kphp::forks::id_managed(kphp::web::composite_transfer_remove(kphp::web::composite_transfer{multi_id}, kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code);
-    kphp::web::curl::print_error("could not remove a curl easy handler from multi handle", std::move(res.error()));
+    kphp::web::curl::print_warning("could not remove a curl easy handler from multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
   multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
@@ -94,7 +94,7 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
     case kphp::web::curl::CURLPIPE::MULTIPLEX: {
       auto res{kphp::web::set_transfer_property(ct, option, kphp::web::property_value::as_long(std::to_underlying(pipeling_type)))};
       if (!res.has_value()) [[unlikely]] {
-        kphp::web::curl::print_error("could not set an mutli option", std::move(res.error()));
+        kphp::web::curl::print_warning("could not set an mutli option", std::move(res.error()));
         return false;
       }
       multi_ctx.set_errno(kphp::web::curl::CURLME::OK);
@@ -111,7 +111,7 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
   case kphp::web::curl::CURMLOPT::MAX_TOTAL_CONNECTIONS: {
     auto res{kphp::web::set_transfer_property(ct, option, kphp::web::property_value::as_long(value))};
     if (!res.has_value()) [[unlikely]] {
-      kphp::web::curl::print_error("could not set an multi option", std::move(res.error()));
+      kphp::web::curl::print_warning("could not set an multi option", std::move(res.error()));
       return false;
     }
     multi_ctx.set_errno(kphp::web::curl::CURLME::OK);
@@ -132,7 +132,7 @@ inline auto f$curl_multi_exec(kphp::web::curl::multi_type multi_id, int64_t& sti
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code);
-    kphp::web::curl::print_error("could not execute curl multi handle", std::move(res.error()));
+    kphp::web::curl::print_warning("could not execute curl multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
   still_running = (*res);
@@ -150,7 +150,7 @@ inline auto f$curl_multi_getcontent(kphp::web::curl::easy_type easy_id) noexcept
     auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_get_response(kphp::web::simple_transfer{easy_id}))};
     if (!res.has_value()) [[unlikely]] {
       easy_ctx.set_errno(res.error().code);
-      kphp::web::curl::print_error("could not get response of curl easy handle", std::move(res.error()));
+      kphp::web::curl::print_warning("could not get response of curl easy handle", std::move(res.error()));
       co_return false;
     }
     co_return std::move((*res).body);
@@ -167,7 +167,7 @@ inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept ->
   auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_close(kphp::web::composite_transfer{multi_id}))};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code);
-    kphp::web::curl::print_error("could not close curl multi handle", std::move(res.error()));
+    kphp::web::curl::print_warning("could not close curl multi handle", std::move(res.error()));
     co_return;
   }
   multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
@@ -228,7 +228,7 @@ inline auto f$curl_multi_select(kphp::web::curl::multi_type multi_id, double tim
       kphp::web::composite_transfer{multi_id}, std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{timeout})))};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code);
-    kphp::web::curl::print_error("could not select curl multi handle", std::move(res.error()));
+    kphp::web::curl::print_warning("could not select curl multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
   co_return *res;
@@ -248,7 +248,7 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
       kphp::web::get_transfer_properties(kphp::web::composite_transfer{multi_id}, CURL_MULTI_INFO_READ_OPTION, kphp::web::get_properties_policy::load))};
   if (!props.has_value()) [[unlikely]] {
     multi_ctx.set_errno(props.error().code, props.error().description);
-    kphp::web::curl::print_error("could not get info message of multi handle", std::move(props.error()));
+    kphp::web::curl::print_warning("could not get info message of multi handle", std::move(props.error()));
     if (msgs_in_queue.has_value()) {
       (*msgs_in_queue).get() = 0;
     }
@@ -257,7 +257,7 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
 
   auto it_optional_info{(*props).find(CURL_MULTI_INFO_READ_OPTION)};
   if (it_optional_info == (*props).end()) [[unlikely]] {
-    kphp::web::curl::print_error("incorrect format of multi info message", std::move(props.error()));
+    kphp::web::curl::print_warning("incorrect format of multi info message", std::move(props.error()));
     if (msgs_in_queue.has_value()) {
       (*msgs_in_queue).get() = 0;
     }

@@ -19,7 +19,7 @@ namespace kphp::web::curl {
 
 struct curl_context : vk::movable_only {
   int64_t error_code{0};
-  std::array<std::byte, kphp::web::curl::CURL_ERROR_SIZE> error_description{std::byte{0}};
+  std::array<std::byte, kphp::web::curl::CURL_DIAGNOSTICS_MSG_SIZE> error_description{std::byte{0}};
 
   inline auto set_errno(int64_t code, std::string_view description) noexcept {
     // If Web Transfer Lib specific error
@@ -27,7 +27,7 @@ struct curl_context : vk::movable_only {
       return;
     }
     error_code = code;
-    std::memcpy(error_description.data(), description.data(), std::min(description.size(), static_cast<size_t>(CURL_ERROR_SIZE)));
+    std::memcpy(error_description.data(), description.data(), std::min(description.size(), static_cast<size_t>(CURL_DIAGNOSTICS_MSG_SIZE)));
   }
 
   inline auto set_errno(int64_t code, std::optional<string> description = std::nullopt) noexcept {
@@ -56,7 +56,7 @@ struct curl_context : vk::movable_only {
 
   template<size_t N>
   inline auto bad_option_error(const char (&msg)[N]) noexcept {
-    static_assert(N <= CURL_ERROR_SIZE, "too long error");
+    static_assert(N <= CURL_DIAGNOSTICS_MSG_SIZE, "too long error");
     kphp::log::warning("{}", msg);
     set_errno(CURLE::BAD_FUNCTION_ARGUMENT, {{msg, N}});
   }
