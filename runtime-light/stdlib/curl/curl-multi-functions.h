@@ -291,18 +291,19 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
     (*msgs_in_queue).get() = info.get_value(MSGS_IN_QUEUE);
   }
 
+  const auto& image_state{CurlImageState::get()};
   if (info.has_key(MSG_IDX)) {
-    result.set_value(string{"msg"}, info.get_value(MSG_IDX));
+    result.set_value(image_state.MULTIINFO_MSG, info.get_value(MSG_IDX));
   }
 
   if (info.has_key(RESULT_IDX)) {
-    result.set_value(string{"result"}, info.get_value(RESULT_IDX));
+    result.set_value(image_state.MULTIINFO_RESULT, info.get_value(RESULT_IDX));
   }
 
   if (info.has_key(HANDLE_IDX)) {
     auto easy_id{info.get_value(HANDLE_IDX)};
     if (curl_state.easy_ctx.has(easy_id)) {
-      result.set_value(string{"handle"}, info.get_value(HANDLE_IDX));
+      result.set_value(image_state.MULTIINFO_HANDLE, info.get_value(HANDLE_IDX));
     }
   }
 

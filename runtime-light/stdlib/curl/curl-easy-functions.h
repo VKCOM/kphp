@@ -540,6 +540,7 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
       }
     }};
 
+    const auto& image_state{CurlImageState::get()};
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::URL)};
       const auto url{co_await kphp::forks::id_managed(
@@ -547,34 +548,34 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
       if (url.has_value()) {
         const auto& v{(*url).find(url_opt_id)};
         kphp::log::assertion(v != (*url).end());
-        result.set_value(string{"url"}, v->second.to_mixed());
+        result.set_value(image_state.EASYINFO_URL, v->second.to_mixed());
       } else {
-        result.set_value(string{"url"}, string{});
+        result.set_value(image_state.EASYINFO_URL, string{});
       }
     } else {
-      set_value(string{"url"}, kphp::web::curl::CURLINFO::EFFECTIVE_URL);
+      set_value(image_state.EASYINFO_URL, kphp::web::curl::CURLINFO::EFFECTIVE_URL);
     }
-    set_value(string{"content_type"}, kphp::web::curl::CURLINFO::CONTENT_TYPE);
-    set_value(string{"http_code"}, kphp::web::curl::CURLINFO::RESPONSE_CODE);
-    set_value(string{"header_size"}, kphp::web::curl::CURLINFO::HEADER_SIZE);
-    set_value(string{"request_size"}, kphp::web::curl::CURLINFO::REQUEST_SIZE);
-    set_value(string{"filetime"}, kphp::web::curl::CURLINFO::FILETIME);
-    set_value(string{"redirect_count"}, kphp::web::curl::CURLINFO::REDIRECT_COUNT);
-    set_value(string{"total_time"}, kphp::web::curl::CURLINFO::TOTAL_TIME);
-    set_value(string{"namelookup_time"}, kphp::web::curl::CURLINFO::NAMELOOKUP_TIME);
-    set_value(string{"connect_time"}, kphp::web::curl::CURLINFO::CONNECT_TIME);
-    set_value(string{"pretransfer_time"}, kphp::web::curl::CURLINFO::PRETRANSFER_TIME);
-    set_value(string{"size_upload"}, kphp::web::curl::CURLINFO::SIZE_UPLOAD);
-    set_value(string{"size_download"}, kphp::web::curl::CURLINFO::SIZE_DOWNLOAD);
-    set_value(string{"download_content_length"}, kphp::web::curl::CURLINFO::CONTENT_LENGTH_DOWNLOAD);
-    set_value(string{"starttransfer_time"}, kphp::web::curl::CURLINFO::STARTTRANSFER_TIME);
-    set_value(string{"redirect_time"}, kphp::web::curl::CURLINFO::REDIRECT_TIME);
-    set_value(string{"redirect_url"}, kphp::web::curl::CURLINFO::REDIRECT_URL);
-    set_value(string{"primary_ip"}, kphp::web::curl::CURLINFO::PRIMARY_IP);
-    set_value(string{"primary_port"}, kphp::web::curl::CURLINFO::PRIMARY_PORT);
-    set_value(string{"local_ip"}, kphp::web::curl::CURLINFO::LOCAL_IP);
-    set_value(string{"local_port"}, kphp::web::curl::CURLINFO::LOCAL_PORT);
-    set_value(string{"request_header"}, kphp::web::curl::CURLINFO::HEADER_OUT);
+    set_value(image_state.EASYINFO_CONTENT_TYPE, kphp::web::curl::CURLINFO::CONTENT_TYPE);
+    set_value(image_state.EASYINFO_HTTP_CODE, kphp::web::curl::CURLINFO::RESPONSE_CODE);
+    set_value(image_state.EASYINFO_HEADER_SIZE, kphp::web::curl::CURLINFO::HEADER_SIZE);
+    set_value(image_state.EASYINFO_REQUEST_SIZE, kphp::web::curl::CURLINFO::REQUEST_SIZE);
+    set_value(image_state.EASYINFO_FILETIME, kphp::web::curl::CURLINFO::FILETIME);
+    set_value(image_state.EASYINFO_REDIRECT_COUNT, kphp::web::curl::CURLINFO::REDIRECT_COUNT);
+    set_value(image_state.EASYINFO_TOTAL_TIME, kphp::web::curl::CURLINFO::TOTAL_TIME);
+    set_value(image_state.EASYINFO_NAMELOOKUP_TIME, kphp::web::curl::CURLINFO::NAMELOOKUP_TIME);
+    set_value(image_state.EASYINFO_CONNECT_TIME, kphp::web::curl::CURLINFO::CONNECT_TIME);
+    set_value(image_state.EASYINFO_PRETRANSFER_TIME, kphp::web::curl::CURLINFO::PRETRANSFER_TIME);
+    set_value(image_state.EASYINFO_SIZE_UPLOAD, kphp::web::curl::CURLINFO::SIZE_UPLOAD);
+    set_value(image_state.EASYINFO_SIZE_DOWNLOAD, kphp::web::curl::CURLINFO::SIZE_DOWNLOAD);
+    set_value(image_state.EASYINFO_DOWNLOAD_CONTENT_LENGTH, kphp::web::curl::CURLINFO::CONTENT_LENGTH_DOWNLOAD);
+    set_value(image_state.EASYINFO_STARTTRANSFER_TIME, kphp::web::curl::CURLINFO::STARTTRANSFER_TIME);
+    set_value(image_state.EASYINFO_REDIRECT_TIME, kphp::web::curl::CURLINFO::REDIRECT_TIME);
+    set_value(image_state.EASYINFO_REDIRECT_URL, kphp::web::curl::CURLINFO::REDIRECT_URL);
+    set_value(image_state.EASYINFO_PRIMARY_IP, kphp::web::curl::CURLINFO::PRIMARY_IP);
+    set_value(image_state.EASYINFO_PRIMARY_PORT, kphp::web::curl::CURLINFO::PRIMARY_PORT);
+    set_value(image_state.EASYINFO_LOCAL_IP, kphp::web::curl::CURLINFO::LOCAL_IP);
+    set_value(image_state.EASYINFO_LOCAL_PORT, kphp::web::curl::CURLINFO::LOCAL_PORT);
+    set_value(image_state.EASYINFO_REQUEST_HEADER, kphp::web::curl::CURLINFO::HEADER_OUT);
     co_return result;
   }
   case kphp::web::curl::CURLINFO::PRIVATE: {
