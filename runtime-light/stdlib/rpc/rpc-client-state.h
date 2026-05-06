@@ -19,10 +19,20 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 
+namespace уберите_меня_отсюда {
+
+struct rpc_request_info {
+  k2::descriptor rpc_d;
+  bool collect_responses_extra_info;
+};
+
+}
+
 struct RpcClientInstanceState final : private vk::not_copyable {
   CurrentTlQuery current_client_query{};
   int64_t current_query_id{kphp::rpc::VALID_QUERY_ID_RANGE_START};
 
+  kphp::stl::unordered_map<int64_t, уберите_меня_отсюда::rpc_request_info, kphp::memory::script_allocator> rpc_requests_infos;
   kphp::stl::unordered_map<int64_t, kphp::coro::shared_task<std::optional<string>>, kphp::memory::script_allocator> response_awaiter_tasks;
   kphp::stl::unordered_map<int64_t, class_instance<RpcTlQuery>, kphp::memory::script_allocator> response_fetcher_instances;
   kphp::stl::unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>, kphp::memory::script_allocator>

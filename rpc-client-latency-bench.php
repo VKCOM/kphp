@@ -36,6 +36,9 @@ function proxy_queries($queries) {
     if (is_null($response)) {
       critical_error("null response");
     }
+    if ($response->isError()) {
+      critical_error("error response");
+    }
   }
 
 //   echo "Wall time -> " . number_format(($end_time - $start_time) * 1000, 2) . ", requests time -> " . number_format(($requests_time_end - $requests_time_start) * 1000, 2) .
