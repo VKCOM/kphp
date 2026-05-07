@@ -175,7 +175,7 @@ private:
         auto& buffer_providers{ctx.get()->query2resp_buffer_provider};
         auto it_buffer_provider{buffer_providers.find(qid)};
 
-        // Response provider is not present => read response into dummy buffer, just to maintain consistency
+        // Response provider is not present => read response into dummy buffer, just to keep consistency
         if (it_buffer_provider == buffer_providers.end()) {
           kphp::stl::vector<std::byte, kphp::memory::script_allocator> sink_buffer{size};
           std::span<std::byte> sink_resp{sink_buffer.data(), sink_buffer.size()};
