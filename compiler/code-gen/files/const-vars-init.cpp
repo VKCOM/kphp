@@ -23,12 +23,15 @@ struct InitConstVar {
     Location save_location = stage::get_location();
 
     VertexPtr init_val = var->init_val;
-    if (init_val->type() == op_conv_regexp && !G->is_output_mode_k2()) {
-      const auto &location = init_val->get_location();
-      kphp_assert(location.function && location.file);
-      W << var->name << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "
-        << RawString(location.file->relative_file_name + ':' + std::to_string(location.line))
-        << ");" << NL;
+    if (init_val->type() == op_conv_regexp) {
+      if (!G->is_output_mode_k2()) {
+        const auto& location = init_val->get_location();
+        kphp_assert(location.function && location.file);
+        W << var->name << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "
+          << RawString(location.file->relative_file_name + ':' + std::to_string(location.line)) << ");" << NL;
+      } else {
+        W << var->name << ".compile_time_init(" << var->init_val << ");" << NL;
+      }
     } else {
       W << var->name << " = " << var->init_val << ";" << NL;
     }

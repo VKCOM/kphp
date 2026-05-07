@@ -24,6 +24,7 @@
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
+#include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
@@ -50,6 +51,7 @@ struct ImageState final : private vk::not_copyable {
   MathImageState math_image_state;
   RpcImageState rpc_image_state;
   CurlImageState curl_image_state;
+  RegexImageState regex_image_state;
 
   ImageState() noexcept {
     if (const int64_t sysconf_max_buffer_size{k2::sysconf(_SC_GETPW_R_SIZE_MAX)}; sysconf_max_buffer_size != -1) {
