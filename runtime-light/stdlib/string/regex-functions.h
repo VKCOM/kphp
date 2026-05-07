@@ -165,7 +165,7 @@ private:
     }
 
     auto& re{*expected_re};
-    // add compiled code to runtime cache
+    // add compiled code to cache
     m_re = regex_state.add_compiled_regex(pattern, this->compile_options, std::move(re))->get().regex_code;
   }
 
@@ -734,7 +734,7 @@ inline auto get_count_finalizer(int64_t& count, Optional<std::variant<std::monos
   }};
 }
 
-inline bool preg_match_args_check(const string& subject, const int64_t flags, int64_t& offset) noexcept {
+inline bool preg_match_check_args(const string& subject, const int64_t flags, int64_t& offset) noexcept {
   if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL))
       [[unlikely]] {
     return false;
@@ -785,7 +785,7 @@ inline Optional<int64_t> preg_match_impl(const regexp& regex, const string& subj
   return opt_match_view.has_value() ? 1 : 0;
 }
 
-inline bool preg_match_all_args_check(const string& subject, const int64_t flags, int64_t& offset) noexcept {
+inline bool preg_match_all_check_args(const string& subject, const int64_t flags, int64_t& offset) noexcept {
   if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_PATTERN_ORDER, kphp::regex::PREG_SET_ORDER,
                                                kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)) [[unlikely]] {
     return false;
@@ -901,7 +901,7 @@ inline Optional<string> preg_replace_impl(const regexp& regex, const string& sub
   return std::move(*opt_replace_result);
 }
 
-inline bool preg_replace_callback_check(int64_t limit = kphp::regex::PREG_NOLIMIT, int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
+inline bool preg_replace_callback_check_args(int64_t limit = kphp::regex::PREG_NOLIMIT, int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
   if (limit < 0 && limit != kphp::regex::PREG_NOLIMIT) [[unlikely]] {
     kphp::log::warning("invalid limit {} in preg_replace_callback", limit);
     return false;
@@ -985,7 +985,7 @@ kphp::coro::task<Optional<string>> preg_replace_callback_impl(const regexp& rege
   co_return output_str;
 }
 
-inline bool preg_split_check(const int64_t flags) noexcept {
+inline bool preg_split_check_args(const int64_t flags) noexcept {
   return kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
                                                  kphp::regex::PREG_SPLIT_OFFSET_CAPTURE);
 }
@@ -1121,7 +1121,7 @@ Optional<array<mixed>> f$preg_split(const mixed& pattern, const string& subject,
 inline Optional<int64_t> f$preg_match(const kphp::regex::regexp& regex, const string& subject,
                                       const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
                                       int64_t offset) noexcept {
-  if (!kphp::regex::details::preg_match_args_check(subject, flags, offset)) [[unlikely]] {
+  if (!kphp::regex::details::preg_match_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
   return kphp::regex::details::preg_match_impl(regex, subject, opt_matches, flags, offset);
@@ -1130,7 +1130,7 @@ inline Optional<int64_t> f$preg_match(const kphp::regex::regexp& regex, const st
 inline Optional<int64_t> f$preg_match(const string& pattern, const string& subject,
                                       const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
                                       int64_t offset) noexcept {
-  if (!kphp::regex::details::preg_match_args_check(subject, flags, offset)) [[unlikely]] {
+  if (!kphp::regex::details::preg_match_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
   return kphp::regex::details::preg_match_impl(kphp::regex::regexp{pattern, subject}, subject, opt_matches, flags, offset);
@@ -1147,7 +1147,7 @@ inline Optional<int64_t> f$preg_match(const mixed& pattern, const string& subjec
 inline Optional<int64_t> f$preg_match_all(const kphp::regex::regexp& regex, const string& subject,
                                           const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
                                           int64_t offset) noexcept {
-  if (!kphp::regex::details::preg_match_all_args_check(subject, flags, offset)) [[unlikely]] {
+  if (!kphp::regex::details::preg_match_all_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
   return kphp::regex::details::preg_match_all_impl(regex, subject, opt_matches, flags, offset);
@@ -1156,7 +1156,7 @@ inline Optional<int64_t> f$preg_match_all(const kphp::regex::regexp& regex, cons
 inline Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
                                           const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
                                           int64_t offset) noexcept {
-  if (!kphp::regex::details::preg_match_all_args_check(subject, flags, offset)) [[unlikely]] {
+  if (!kphp::regex::details::preg_match_all_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
   return kphp::regex::details::preg_match_all_impl(kphp::regex::regexp{pattern, subject}, subject, opt_matches, flags, offset);
@@ -1225,7 +1225,7 @@ inline kphp::coro::task<Optional<string>> f$preg_replace_callback(const kphp::re
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
-  if (!kphp::regex::details::preg_replace_callback_check(limit, flags)) [[unlikely]] {
+  if (!kphp::regex::details::preg_replace_callback_check_args(limit, flags)) [[unlikely]] {
     co_return Optional<string>{};
   }
 
@@ -1278,7 +1278,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
-  if (!kphp::regex::details::preg_replace_callback_check(limit, flags)) [[unlikely]] {
+  if (!kphp::regex::details::preg_replace_callback_check_args(limit, flags)) [[unlikely]] {
     co_return Optional<string>{};
   }
   const kphp::regex::regexp regex{pattern, subject};
@@ -1379,14 +1379,14 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
 // === preg_split implementation ==================================================================
 
 inline Optional<array<mixed>> f$preg_split(const kphp::regex::regexp& regex, const string& subject, const int64_t limit, const int64_t flags) noexcept {
-  if (!kphp::regex::details::preg_split_check(flags)) {
+  if (!kphp::regex::details::preg_split_check_args(flags)) {
     return false;
   }
   return kphp::regex::details::preg_split_impl(regex, subject, limit, flags);
 }
 
 inline Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, const int64_t limit, const int64_t flags) noexcept {
-  if (!kphp::regex::details::preg_split_check(flags)) {
+  if (!kphp::regex::details::preg_split_check_args(flags)) {
     return false;
   }
   return kphp::regex::details::preg_split_impl(kphp::regex::regexp{pattern, subject}, subject, limit, flags);
