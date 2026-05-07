@@ -15,12 +15,14 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/string/pcre2-functions.h"
 // correctly include PCRE2 lib
 #include "runtime-light/stdlib/string/regex-include.h"
 
-struct RegexBaseState : private vk::not_copyable {
+namespace kphp::regex::details {
+struct RegexCoreState : private vk::not_copyable {
   struct compiled_regex {
     // PCRE compile options of the regex
     uint32_t compile_options{};
@@ -28,12 +30,14 @@ struct RegexBaseState : private vk::not_copyable {
     kphp::pcre2::regex regex_code;
   };
 
-private:
+protected:
   using hasher_type = decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); });
-
-  static constexpr size_t MAX_SUBPATTERNS_COUNT{512};
-
   kphp::stl::unordered_map<string, compiled_regex, kphp::memory::script_allocator, hasher_type> regex_pcre2_code_cache;
+
+  virtual void set_global_const_refcnt(string& /*unused*/) noexcept {};
+
+private:
+  static constexpr size_t MAX_SUBPATTERNS_COUNT{512};
 
   static void* regex_malloc(PCRE2_SIZE size, [[maybe_unused]] void* memory_data) noexcept {
     auto* mem{kphp::memory::script::alloc(size)};
@@ -57,7 +61,7 @@ public:
   kphp::pcre2::general_context general_context;
   kphp::pcre2::compile_context compile_context;
 
-  RegexBaseState() noexcept
+  RegexCoreState() noexcept
       : general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8),
         compile_context(pcre2_compile_context_create_8(general_context.get()), pcre2_compile_context_free_8) {
     if (!general_context) [[unlikely]] {
@@ -67,6 +71,7 @@ public:
       kphp::log::error("can't create pcre2_compile_context");
     }
   }
+  virtual ~RegexCoreState() = default;
 
   std::optional<std::reference_wrapper<const compiled_regex>> get_compiled_regex(const string& regex) const noexcept {
     if (const auto it{regex_pcre2_code_cache.find(regex)}; it != regex_pcre2_code_cache.end()) {
@@ -77,16 +82,18 @@ public:
 
   std::optional<std::reference_wrapper<const compiled_regex>> add_compiled_regex(string regex, uint32_t compile_options,
                                                                                  kphp::pcre2::regex regex_code) noexcept {
+    set_global_const_refcnt(regex);
     return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = std::move(regex_code)})
         .first->second;
   }
 };
+} // namespace kphp::regex::details
 
-struct RegexInstanceState final : public RegexBaseState {
+struct RegexInstanceState final : public kphp::regex::details::RegexCoreState {
   kphp::pcre2::match_context match_context;
   kphp::pcre2::match_data match_data;
 
-  RegexInstanceState()
+  RegexInstanceState() noexcept
       : match_context(pcre2_match_context_create_8(general_context.get()), pcre2_match_context_free_8),
         match_data(pcre2_match_data_create_8(OVECTOR_SIZE, general_context.get()), pcre2_match_data_free_8) {
     if (!match_context) [[unlikely]] {
@@ -100,7 +107,13 @@ struct RegexInstanceState final : public RegexBaseState {
   static RegexInstanceState& get() noexcept;
 };
 
-struct RegexImageState final : public RegexBaseState {
+struct RegexImageState final : public kphp::regex::details::RegexCoreState {
   static const RegexImageState& get() noexcept;
   static RegexImageState& get_mutable() noexcept;
+
+private:
+  void set_global_const_refcnt(string& obj) noexcept override {
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(obj, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(obj, ExtraRefCnt::for_global_const)));
+  }
 };
