@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -195,6 +196,8 @@ public:
 
   KphpImplicitOption tl_namespace_prefix;
   KphpImplicitOption tl_classname_prefix;
+
+  std::chrono::system_clock::time_point build_tp{std::chrono::system_clock::now()};
 
   std::string get_version() const;
   bool is_composer_enabled() const; // reports whether composer compatibility mode is on

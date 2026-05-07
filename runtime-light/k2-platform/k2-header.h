@@ -27,7 +27,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 13
+#define K2_PLATFORM_HEADER_H_VERSION 14
 
 // Always check that enum value is a valid value!
 
@@ -98,17 +98,24 @@ enum UpdateStatus {
 };
 
 struct ImageInfo {
-  // TODO: null terminated string is OK?
-  // TODO: namespaces?
+  // Base
   const char* image_name;
+  uint8_t is_oneshot;
 
+  // DSO specific
   uint64_t build_timestamp;
   uint64_t header_h_version;
   uint8_t commit_hash[40];
-  // TODO: more informative?
-  uint8_t compiler_hash[64];
-  // bool
-  uint8_t is_oneshot;
+  const char* version;
+
+  // Extra
+  struct KeyValuePair {
+    const char* key;
+    const char* value;
+  };
+
+  size_t extra_info_size;
+  const struct KeyValuePair* extra_info;
 };
 
 /**
