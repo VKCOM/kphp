@@ -51,7 +51,7 @@ mixed f$preg_replace(const kphp::regex::regexp& regex, const mixed& replacement,
   return std::move(result);
 }
 
-Optional<string> f$preg_replace(const mixed& pattern, const string& replacement, const string& subject, const int64_t limit,
+Optional<string> f$preg_replace(const mixed& pattern, const string& replacement, const string& subject, int64_t limit,
                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
@@ -82,7 +82,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
   return result;
 }
 
-Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, const string& subject, const int64_t limit,
+Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, const string& subject, int64_t limit,
                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
@@ -129,7 +129,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
   return result;
 }
 
-mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed& subject, const int64_t limit,
+mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed& subject, int64_t limit,
                      Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
