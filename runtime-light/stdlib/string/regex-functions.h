@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -147,7 +148,7 @@ private:
         return;
       }
       if (!mb_UTF8_check(subject.c_str())) [[unlikely]] {
-        kphp::log::warning("invalid UTF-8 subject: {}", pattern.c_str());
+        kphp::log::warning("invalid UTF-8 subject: {}", subject.c_str());
         return;
       }
     }
@@ -205,11 +206,7 @@ public:
 
   // PCRE compile options of the regex
   uint32_t compile_options{};
-
-  int64_t match_count{};
   uint32_t match_options{PCRE2_NO_UTF_CHECK};
-
-  int64_t replace_count{};
   uint32_t replace_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY};
 };
 
@@ -247,7 +244,7 @@ bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
   return valid;
 }
 
-inline bool correct_offset(int64_t& offset, const std::string_view subject) noexcept {
+inline bool correct_offset(int64_t& offset, std::string_view subject) noexcept {
   if (offset < 0) [[unlikely]] {
     offset += subject.size();
     if (offset < 0) [[unlikely]] {
@@ -270,8 +267,8 @@ inline std::optional<kphp::regex::details::backref> try_get_backref(std::string_
   return kphp::regex::details::backref{preg_replacement.substr(0, 2)};
 }
 
-inline std::optional<string> replace_regex(const regexp& regex, const string& subject, const std::optional<string>& replacement, const kphp::pcre2::regex& re,
-                                           const uint64_t limit, int64_t& replace_count) noexcept {
+inline std::optional<string> replace_regex(const kphp::pcre2::regex& re, const string& subject, const std::optional<string>& replacement, uint64_t limit,
+                                           uint32_t match_options, int64_t& replace_count) noexcept {
   replace_count = 0;
 
   if (limit == 0) {
@@ -291,8 +288,9 @@ inline std::optional<string> replace_regex(const regexp& regex, const string& su
   string output_str{};
 
   kphp::log::assertion(replacement.has_value());
+  std::string_view sv_replacement{replacement->c_str(), replacement->size()};
 
-  kphp::pcre2::matcher pcre2_matcher{re, {subject.c_str(), subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex.match_options};
+  kphp::pcre2::matcher pcre2_matcher{re, {subject.c_str(), subject.size()}, {}, regex_state.match_context, regex_state.match_data, match_options};
   while (replace_count < limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
 
@@ -309,15 +307,13 @@ inline std::optional<string> replace_regex(const regexp& regex, const string& su
 
     output_str.append(std::next(subject.c_str(), last_pos), match_view.match_start() - last_pos);
 
-    auto sub_res{
-        match_view.substitute({replacement->c_str(), replacement->size()}, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context)};
+    auto sub_res{match_view.substitute(sv_replacement, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context)};
     if (!sub_res.has_value()) {
       auto [needed_size, error]{sub_res.error()};
       if (error.code == PCRE2_ERROR_NOMEMORY) [[unlikely]] {
         runtime_ctx.static_SB.reserve(needed_size);
         buffer_length = needed_size;
-        sub_res =
-            match_view.substitute({replacement->c_str(), replacement->size()}, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context);
+        sub_res = match_view.substitute(sv_replacement, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context);
       }
       if (!sub_res.has_value()) [[unlikely]] {
         kphp::log::warning("pcre2_substitute error {}", sub_res.error().second);
@@ -336,8 +332,8 @@ inline std::optional<string> replace_regex(const regexp& regex, const string& su
   return output_str;
 }
 
-inline std::optional<array<mixed>> split_regex(const kphp::pcre2::regex& re, const string& subject, int64_t limit, const uint32_t match_options,
-                                               const bool no_empty, const bool delim_capture, const bool offset_capture) noexcept {
+inline std::optional<array<mixed>> split_regex(const kphp::pcre2::regex& re, const string& subject, int64_t limit, uint32_t match_options, bool no_empty,
+                                               bool delim_capture, bool offset_capture) noexcept {
   if (limit == 0) {
     limit = kphp::regex::PREG_NOLIMIT;
   }
@@ -367,7 +363,7 @@ inline std::optional<array<mixed>> split_regex(const kphp::pcre2::regex& re, con
     if (const auto size{match_view.match_start() - offset}; !no_empty || size != 0) {
       string val{std::next(subject.c_str(), offset), static_cast<string::size_type>(size)};
 
-      mixed output_val;
+      mixed output_val{};
       if (offset_capture) {
         output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(offset));
       } else {
@@ -384,12 +380,12 @@ inline std::optional<array<mixed>> split_regex(const kphp::pcre2::regex& re, con
         auto submatch_string_view{opt_submatch.value_or(std::string_view{})};
         const auto size{submatch_string_view.size()};
         if (!no_empty || size != 0) {
-          string val;
+          string val{};
           if (opt_submatch.has_value()) [[likely]] {
             val = string{submatch_string_view.data(), static_cast<string::size_type>(size)};
           }
 
-          mixed output_val;
+          mixed output_val{};
           if (offset_capture) {
             output_val = array<mixed>::create(std::move(val), opt_submatch
                                                                   .transform([&subject](auto submatch_string_view) noexcept {
@@ -412,7 +408,7 @@ inline std::optional<array<mixed>> split_regex(const kphp::pcre2::regex& re, con
   if (!no_empty || size != 0) {
     string val{std::next(subject.c_str(), offset), static_cast<string::size_type>(size)};
 
-    mixed output_val;
+    mixed output_val{};
     if (offset_capture) {
       output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(offset));
     } else {
@@ -555,8 +551,8 @@ class match_results_wrapper {
 
 public:
   match_results_wrapper(const pcre2::match_view& match_view, const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& names,
-                        const uint32_t capture_count, const uint32_t name_count, const trailing_unmatch last_unmatched_policy, const bool is_offset_capture,
-                        const bool is_unmatched_as_null) noexcept
+                        uint32_t capture_count, uint32_t name_count, trailing_unmatch last_unmatched_policy, bool is_offset_capture,
+                        bool is_unmatched_as_null) noexcept
       : m_view{match_view},
         m_group_names{names},
         m_capture_count{capture_count},
@@ -592,7 +588,7 @@ public:
     using pointer = value_type*;
     using reference = value_type;
 
-    iterator(const match_results_wrapper& parent, const uint32_t group_idx) noexcept
+    iterator(const match_results_wrapper& parent, uint32_t group_idx) noexcept
         : m_parent{parent},
           m_group_idx{group_idx} {
       if (m_group_idx < m_parent.m_group_names.size() && !m_parent.m_group_names[m_group_idx].name.empty()) {
@@ -671,8 +667,7 @@ inline match_results_wrapper::iterator::reference match_results_wrapper::iterato
 // *** importrant ***
 // in case of a pattern order all_matches must already contain all groups as empty arrays before the first call to set_all_matches
 inline void set_all_matches(const kphp::pcre2::regex& re, const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& group_names,
-                            const kphp::pcre2::match_view& match_view, const int64_t flags,
-                            const std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
+                            const kphp::pcre2::match_view& match_view, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
   const auto is_pattern_order{!static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)};
   const auto is_offset_capture{static_cast<bool>(flags & kphp::regex::PREG_OFFSET_CAPTURE)};
   const auto is_unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
@@ -734,7 +729,7 @@ inline auto get_count_finalizer(int64_t& count, Optional<std::variant<std::monos
   }};
 }
 
-inline bool preg_match_check_args(const string& subject, const int64_t flags, int64_t& offset) noexcept {
+inline bool preg_match_check_args(const string& subject, int64_t flags, int64_t& offset) noexcept {
   if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL))
       [[unlikely]] {
     return false;
@@ -748,8 +743,8 @@ inline bool preg_match_check_args(const string& subject, const int64_t flags, in
 }
 
 inline Optional<int64_t> preg_match_impl(const regexp& regex, const string& subject,
-                                         Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, const int64_t flags,
-                                         const int64_t offset) noexcept {
+                                         Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags,
+                                         int64_t offset) noexcept {
   const auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
     return false;
@@ -785,7 +780,7 @@ inline Optional<int64_t> preg_match_impl(const regexp& regex, const string& subj
   return opt_match_view.has_value() ? 1 : 0;
 }
 
-inline bool preg_match_all_check_args(const string& subject, const int64_t flags, int64_t& offset) noexcept {
+inline bool preg_match_all_check_args(const string& subject, int64_t flags, int64_t& offset) noexcept {
   if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_PATTERN_ORDER, kphp::regex::PREG_SET_ORDER,
                                                kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)) [[unlikely]] {
     return false;
@@ -892,8 +887,8 @@ inline Optional<string> preg_replace_impl(const regexp& regex, const string& sub
   const auto& re{opt_re->get()};
   int64_t replace_count{};
   auto opt_replace_result{kphp::regex::details::replace_regex(
-      regex, subject, std::optional{replacement}, re, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit),
-      replace_count)};
+      re, subject, std::optional{replacement}, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit),
+      regex.match_options, replace_count)};
   if (!opt_replace_result.has_value()) {
     return {};
   }
@@ -915,7 +910,7 @@ inline bool preg_replace_callback_check_args(int64_t limit = kphp::regex::PREG_N
 
 template<std::invocable<array<string>> F>
 kphp::coro::task<Optional<string>> preg_replace_callback_impl(const regexp& regex, F callback, string subject, int64_t& count,
-                                                              const int64_t limit = kphp::regex::PREG_NOLIMIT) noexcept {
+                                                              int64_t limit = kphp::regex::PREG_NOLIMIT) noexcept {
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
 
   const auto opt_re{regex.get_regex()};
@@ -985,12 +980,12 @@ kphp::coro::task<Optional<string>> preg_replace_callback_impl(const regexp& rege
   co_return output_str;
 }
 
-inline bool preg_split_check_args(const int64_t flags) noexcept {
+inline bool preg_split_check_args(int64_t flags) noexcept {
   return kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
                                                  kphp::regex::PREG_SPLIT_OFFSET_CAPTURE);
 }
 
-inline Optional<array<mixed>> preg_split_impl(const regexp& regex, const string& subject, const int64_t limit, const int64_t flags) noexcept {
+inline Optional<array<mixed>> preg_split_impl(const regexp& regex, const string& subject, int64_t limit, int64_t flags) noexcept {
 
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -1119,7 +1114,7 @@ Optional<array<mixed>> f$preg_split(const mixed& pattern, const string& subject,
 // === preg_match implementation ==================================================================
 
 inline Optional<int64_t> f$preg_match(const kphp::regex::regexp& regex, const string& subject,
-                                      const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
+                                      const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                       int64_t offset) noexcept {
   if (!kphp::regex::details::preg_match_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
@@ -1128,7 +1123,7 @@ inline Optional<int64_t> f$preg_match(const kphp::regex::regexp& regex, const st
 }
 
 inline Optional<int64_t> f$preg_match(const string& pattern, const string& subject,
-                                      const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
+                                      const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                       int64_t offset) noexcept {
   if (!kphp::regex::details::preg_match_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
@@ -1137,7 +1132,7 @@ inline Optional<int64_t> f$preg_match(const string& pattern, const string& subje
 }
 
 inline Optional<int64_t> f$preg_match(const mixed& pattern, const string& subject,
-                                      const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
+                                      const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                       int64_t offset) noexcept {
   return f$preg_match(pattern.to_string(), subject, opt_matches, flags, offset);
 }
@@ -1145,7 +1140,7 @@ inline Optional<int64_t> f$preg_match(const mixed& pattern, const string& subjec
 // === preg_match_all implementation ==============================================================
 
 inline Optional<int64_t> f$preg_match_all(const kphp::regex::regexp& regex, const string& subject,
-                                          const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
+                                          const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                           int64_t offset) noexcept {
   if (!kphp::regex::details::preg_match_all_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
@@ -1154,7 +1149,7 @@ inline Optional<int64_t> f$preg_match_all(const kphp::regex::regexp& regex, cons
 }
 
 inline Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
-                                          const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
+                                          const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                           int64_t offset) noexcept {
   if (!kphp::regex::details::preg_match_all_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
@@ -1163,14 +1158,14 @@ inline Optional<int64_t> f$preg_match_all(const string& pattern, const string& s
 }
 
 inline Optional<int64_t> f$preg_match_all(const mixed& pattern, const string& subject,
-                                          const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, const int64_t flags,
-                                          const int64_t offset) noexcept {
+                                          const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
+                                          int64_t offset) noexcept {
   return f$preg_match_all(pattern.to_string(), subject, opt_matches, flags, offset);
 }
 
 // === preg_replace part of implementation ========================================================
 
-inline Optional<string> f$preg_replace(const kphp::regex::regexp& regex, const string& replacement, const string& subject, const int64_t limit,
+inline Optional<string> f$preg_replace(const kphp::regex::regexp& regex, const string& replacement, const string& subject, int64_t limit,
                                        Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
@@ -1199,7 +1194,7 @@ inline mixed f$preg_replace(const kphp::regex::regexp& regex, const string& repl
   return f$preg_replace(regex, mixed{replacement}, subject, limit, opt_count);
 }
 
-inline Optional<string> f$preg_replace(const string& pattern, const string& replacement, const string& subject, const int64_t limit,
+inline Optional<string> f$preg_replace(const string& pattern, const string& replacement, const string& subject, int64_t limit,
                                        Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
@@ -1211,7 +1206,7 @@ inline Optional<string> f$preg_replace(const string& pattern, const string& repl
   return kphp::regex::details::preg_replace_impl(regex, subject, pcre2_replacement.value(), limit, count);
 }
 
-inline mixed f$preg_replace(const mixed& pattern, const string& replace_val, const mixed& subject, const int64_t limit,
+inline mixed f$preg_replace(const mixed& pattern, const string& replace_val, const mixed& subject, int64_t limit,
                             const Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count) noexcept {
   return f$preg_replace(pattern, mixed{replace_val}, subject, limit, opt_count);
 }
@@ -1378,14 +1373,14 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
 
 // === preg_split implementation ==================================================================
 
-inline Optional<array<mixed>> f$preg_split(const kphp::regex::regexp& regex, const string& subject, const int64_t limit, const int64_t flags) noexcept {
+inline Optional<array<mixed>> f$preg_split(const kphp::regex::regexp& regex, const string& subject, int64_t limit, int64_t flags) noexcept {
   if (!kphp::regex::details::preg_split_check_args(flags)) {
     return false;
   }
   return kphp::regex::details::preg_split_impl(regex, subject, limit, flags);
 }
 
-inline Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, const int64_t limit, const int64_t flags) noexcept {
+inline Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, int64_t limit, int64_t flags) noexcept {
   if (!kphp::regex::details::preg_split_check_args(flags)) {
     return false;
   }
