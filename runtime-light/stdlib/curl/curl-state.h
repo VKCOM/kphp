@@ -78,6 +78,35 @@ struct CurlImageState final : private vk::not_copyable {
   string CURLME_ABORTED_BY_CALLBACK{kphp::web::curl::details::CURLME_ABORTED_BY_CALLBACK.data(), kphp::web::curl::details::CURLME_ABORTED_BY_CALLBACK.size()};
   string CURLME_UNRECOVERABLE_POLL{kphp::web::curl::details::CURLME_UNRECOVERABLE_POLL.data(), kphp::web::curl::details::CURLME_UNRECOVERABLE_POLL.size()};
 
+  string EASYINFO_URL{kphp::web::curl::details::EASYINFO_URL.data(), kphp::web::curl::details::EASYINFO_URL.size()};
+  string EASYINFO_CONTENT_TYPE{kphp::web::curl::details::EASYINFO_CONTENT_TYPE.data(), kphp::web::curl::details::EASYINFO_CONTENT_TYPE.size()};
+  string EASYINFO_HTTP_CODE{kphp::web::curl::details::EASYINFO_HTTP_CODE.data(), kphp::web::curl::details::EASYINFO_HTTP_CODE.size()};
+  string EASYINFO_HEADER_SIZE{kphp::web::curl::details::EASYINFO_HEADER_SIZE.data(), kphp::web::curl::details::EASYINFO_HEADER_SIZE.size()};
+  string EASYINFO_REQUEST_SIZE{kphp::web::curl::details::EASYINFO_REQUEST_SIZE.data(), kphp::web::curl::details::EASYINFO_REQUEST_SIZE.size()};
+  string EASYINFO_FILETIME{kphp::web::curl::details::EASYINFO_FILETIME.data(), kphp::web::curl::details::EASYINFO_FILETIME.size()};
+  string EASYINFO_REDIRECT_COUNT{kphp::web::curl::details::EASYINFO_REDIRECT_COUNT.data(), kphp::web::curl::details::EASYINFO_REDIRECT_COUNT.size()};
+  string EASYINFO_TOTAL_TIME{kphp::web::curl::details::EASYINFO_TOTAL_TIME.data(), kphp::web::curl::details::EASYINFO_TOTAL_TIME.size()};
+  string EASYINFO_NAMELOOKUP_TIME{kphp::web::curl::details::EASYINFO_NAMELOOKUP_TIME.data(), kphp::web::curl::details::EASYINFO_NAMELOOKUP_TIME.size()};
+  string EASYINFO_CONNECT_TIME{kphp::web::curl::details::EASYINFO_CONNECT_TIME.data(), kphp::web::curl::details::EASYINFO_CONNECT_TIME.size()};
+  string EASYINFO_PRETRANSFER_TIME{kphp::web::curl::details::EASYINFO_PRETRANSFER_TIME.data(), kphp::web::curl::details::EASYINFO_PRETRANSFER_TIME.size()};
+  string EASYINFO_SIZE_UPLOAD{kphp::web::curl::details::EASYINFO_SIZE_UPLOAD.data(), kphp::web::curl::details::EASYINFO_SIZE_UPLOAD.size()};
+  string EASYINFO_SIZE_DOWNLOAD{kphp::web::curl::details::EASYINFO_SIZE_DOWNLOAD.data(), kphp::web::curl::details::EASYINFO_SIZE_DOWNLOAD.size()};
+  string EASYINFO_DOWNLOAD_CONTENT_LENGTH{kphp::web::curl::details::EASYINFO_DOWNLOAD_CONTENT_LENGTH.data(),
+                                          kphp::web::curl::details::EASYINFO_DOWNLOAD_CONTENT_LENGTH.size()};
+  string EASYINFO_STARTTRANSFER_TIME{kphp::web::curl::details::EASYINFO_STARTTRANSFER_TIME.data(),
+                                     kphp::web::curl::details::EASYINFO_STARTTRANSFER_TIME.size()};
+  string EASYINFO_REDIRECT_TIME{kphp::web::curl::details::EASYINFO_REDIRECT_TIME.data(), kphp::web::curl::details::EASYINFO_REDIRECT_TIME.size()};
+  string EASYINFO_REDIRECT_URL{kphp::web::curl::details::EASYINFO_REDIRECT_URL.data(), kphp::web::curl::details::EASYINFO_REDIRECT_URL.size()};
+  string EASYINFO_PRIMARY_IP{kphp::web::curl::details::EASYINFO_PRIMARY_IP.data(), kphp::web::curl::details::EASYINFO_PRIMARY_IP.size()};
+  string EASYINFO_PRIMARY_PORT{kphp::web::curl::details::EASYINFO_PRIMARY_PORT.data(), kphp::web::curl::details::EASYINFO_PRIMARY_PORT.size()};
+  string EASYINFO_LOCAL_IP{kphp::web::curl::details::EASYINFO_LOCAL_IP.data(), kphp::web::curl::details::EASYINFO_LOCAL_IP.size()};
+  string EASYINFO_LOCAL_PORT{kphp::web::curl::details::EASYINFO_LOCAL_PORT.data(), kphp::web::curl::details::EASYINFO_LOCAL_PORT.size()};
+  string EASYINFO_REQUEST_HEADER{kphp::web::curl::details::EASYINFO_REQUEST_HEADER.data(), kphp::web::curl::details::EASYINFO_REQUEST_HEADER.size()};
+
+  string MULTIINFO_MSG{kphp::web::curl::details::MULTIINFO_MSG.data(), kphp::web::curl::details::MULTIINFO_MSG.size()};
+  string MULTIINFO_RESULT{kphp::web::curl::details::MULTIINFO_RESULT.data(), kphp::web::curl::details::MULTIINFO_RESULT.size()};
+  string MULTIINFO_HANDLE{kphp::web::curl::details::MULTIINFO_HANDLE.data(), kphp::web::curl::details::MULTIINFO_HANDLE.size()};
+
   CurlImageState() noexcept {
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(CURLME_CALL_MULTI_PERFORM, ExtraRefCnt::for_global_const),
                           kphp::core::is_reference_counter_recursive(CURLME_CALL_MULTI_PERFORM, ExtraRefCnt::for_global_const)));
@@ -107,6 +136,58 @@ struct CurlImageState final : private vk::not_copyable {
                           kphp::core::is_reference_counter_recursive(CURLME_ABORTED_BY_CALLBACK, ExtraRefCnt::for_global_const)));
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(CURLME_UNRECOVERABLE_POLL, ExtraRefCnt::for_global_const),
                           kphp::core::is_reference_counter_recursive(CURLME_UNRECOVERABLE_POLL, ExtraRefCnt::for_global_const)));
+
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_URL, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_URL, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_CONTENT_TYPE, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_CONTENT_TYPE, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_HTTP_CODE, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_HTTP_CODE, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_HEADER_SIZE, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_HEADER_SIZE, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_REQUEST_SIZE, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_REQUEST_SIZE, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_FILETIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_FILETIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_REDIRECT_COUNT, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_REDIRECT_COUNT, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_TOTAL_TIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_TOTAL_TIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_NAMELOOKUP_TIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_NAMELOOKUP_TIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_CONNECT_TIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_CONNECT_TIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_PRETRANSFER_TIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_PRETRANSFER_TIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_SIZE_UPLOAD, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_SIZE_UPLOAD, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_SIZE_DOWNLOAD, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_SIZE_DOWNLOAD, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_DOWNLOAD_CONTENT_LENGTH, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_DOWNLOAD_CONTENT_LENGTH, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_STARTTRANSFER_TIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_STARTTRANSFER_TIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_REDIRECT_TIME, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_REDIRECT_TIME, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_REDIRECT_URL, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_REDIRECT_URL, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_PRIMARY_IP, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_PRIMARY_IP, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_PRIMARY_PORT, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_PRIMARY_PORT, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_LOCAL_IP, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_LOCAL_IP, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_LOCAL_PORT, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_LOCAL_PORT, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(EASYINFO_REQUEST_HEADER, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(EASYINFO_REQUEST_HEADER, ExtraRefCnt::for_global_const)));
+
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(MULTIINFO_MSG, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(MULTIINFO_MSG, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(MULTIINFO_RESULT, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(MULTIINFO_RESULT, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(MULTIINFO_HANDLE, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(MULTIINFO_HANDLE, ExtraRefCnt::for_global_const)));
   }
 
   static const CurlImageState& get() noexcept;

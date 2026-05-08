@@ -11,12 +11,22 @@
 namespace kphp::web::curl {
 
 template<size_t N>
-inline auto print_error(const char (&msg)[N], kphp::web::error&& e) noexcept {
-  static_assert(N <= CURL_ERROR_SIZE, "too long error");
+inline auto print_warning(const char (&msg)[N], kphp::web::error&& e) noexcept {
+  static_assert(N <= CURL_DIAGNOSTICS_MSG_SIZE, "too long error");
   if (e.description.has_value()) {
     kphp::log::warning("{}\ncode: {}; description: {}", msg, e.code, (*e.description).c_str());
   } else {
     kphp::log::warning("{}: {}", msg, e.code);
+  }
+}
+
+template<size_t N>
+inline auto print_debug(const char (&msg)[N], kphp::web::error&& e) noexcept {
+  static_assert(N <= CURL_DIAGNOSTICS_MSG_SIZE, "too long error");
+  if (e.description.has_value()) {
+    kphp::log::debug("{}\ncode: {}; description: {}", msg, e.code, (*e.description).c_str());
+  } else {
+    kphp::log::debug("{}: {}", msg, e.code);
   }
 }
 

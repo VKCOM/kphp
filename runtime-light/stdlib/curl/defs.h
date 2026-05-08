@@ -19,7 +19,7 @@ enum class PHPCURL : uint64_t {
 using easy_type = simple_transfer::descriptor_type;
 using multi_type = composite_transfer::descriptor_type;
 
-constexpr auto CURL_ERROR_SIZE = 256;
+constexpr auto CURL_DIAGNOSTICS_MSG_SIZE = 256;
 
 enum class CURLE : uint16_t {
   OK = 0,
@@ -302,4 +302,30 @@ inline constexpr std::string_view CURLME_BAD_FUNCTION_ARGUMENT{"A libcurl functi
 inline constexpr std::string_view CURLME_ABORTED_BY_CALLBACK{"Operation was aborted by an application callback"};
 inline constexpr std::string_view CURLME_UNRECOVERABLE_POLL{"Unrecoverable error in select/poll"};
 
+inline constexpr std::string_view EASYINFO_URL{"url"};
+inline constexpr std::string_view EASYINFO_CONTENT_TYPE{"content_type"};
+inline constexpr std::string_view EASYINFO_HTTP_CODE{"http_code"};
+inline constexpr std::string_view EASYINFO_HEADER_SIZE{"header_size"};
+inline constexpr std::string_view EASYINFO_REQUEST_SIZE{"request_size"};
+inline constexpr std::string_view EASYINFO_FILETIME{"filetime"};
+inline constexpr std::string_view EASYINFO_REDIRECT_COUNT{"redirect_count"};
+inline constexpr std::string_view EASYINFO_TOTAL_TIME{"total_time"};
+inline constexpr std::string_view EASYINFO_NAMELOOKUP_TIME{"namelookup_time"};
+inline constexpr std::string_view EASYINFO_CONNECT_TIME{"connect_time"};
+inline constexpr std::string_view EASYINFO_PRETRANSFER_TIME{"pretransfer_time"};
+inline constexpr std::string_view EASYINFO_SIZE_UPLOAD{"size_upload"};
+inline constexpr std::string_view EASYINFO_SIZE_DOWNLOAD{"size_download"};
+inline constexpr std::string_view EASYINFO_DOWNLOAD_CONTENT_LENGTH{"download_content_length"};
+inline constexpr std::string_view EASYINFO_STARTTRANSFER_TIME{"starttransfer_time"};
+inline constexpr std::string_view EASYINFO_REDIRECT_TIME{"redirect_time"};
+inline constexpr std::string_view EASYINFO_REDIRECT_URL{"redirect_url"};
+inline constexpr std::string_view EASYINFO_PRIMARY_IP{"primary_ip"};
+inline constexpr std::string_view EASYINFO_PRIMARY_PORT{"primary_port"};
+inline constexpr std::string_view EASYINFO_LOCAL_IP{"local_ip"};
+inline constexpr std::string_view EASYINFO_LOCAL_PORT{"local_port"};
+inline constexpr std::string_view EASYINFO_REQUEST_HEADER{"request_header"};
+
+inline constexpr std::string_view MULTIINFO_MSG{"msg"};
+inline constexpr std::string_view MULTIINFO_RESULT{"result"};
+inline constexpr std::string_view MULTIINFO_HANDLE{"handle"};
 } // namespace kphp::web::curl::details
