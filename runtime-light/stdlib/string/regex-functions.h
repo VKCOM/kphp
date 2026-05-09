@@ -29,7 +29,7 @@ namespace kphp::regex {
 class regexp final {
 private:
   void compile_regex(kphp::regex::details::RegexCoreState& regex_state, string pattern, const string& subject = {}) noexcept {
-    if (!should_compile(regex_state, pattern)) {
+    if (!try_get_from_cache(regex_state, pattern)) {
       return;
     }
     if (pattern.empty()) {
@@ -170,7 +170,7 @@ private:
     m_re = regex_state.add_compiled_regex(pattern, this->compile_options, std::move(re))->get().regex_code;
   }
 
-  bool should_compile(const kphp::regex::details::RegexCoreState& regex_state, const string& pattern) noexcept {
+  bool try_get_from_cache(const kphp::regex::details::RegexCoreState& regex_state, const string& pattern) noexcept {
     if (!regex_state.compile_context) [[unlikely]] {
       return false;
     }
@@ -189,7 +189,7 @@ public:
   regexp() noexcept = default;
 
   explicit regexp(const string& pattern, const string& subject) noexcept {
-    if (!should_compile(RegexImageState::get(), pattern)) {
+    if (!try_get_from_cache(RegexImageState::get(), pattern)) {
       return;
     }
     compile_regex(RegexInstanceState::get(), pattern, subject);
@@ -267,7 +267,7 @@ inline std::optional<kphp::regex::details::backref> try_get_backref(std::string_
   return kphp::regex::details::backref{preg_replacement.substr(0, 2)};
 }
 
-inline std::optional<string> replace_regex(const kphp::pcre2::regex& re, const string& subject, const std::optional<string>& replacement, uint64_t limit,
+inline std::optional<string> replace_regex(const kphp::pcre2::regex& re, const string& subject, std::string_view replacement, uint64_t limit,
                                            uint32_t match_options, int64_t& replace_count) noexcept {
   replace_count = 0;
 
@@ -287,9 +287,6 @@ inline std::optional<string> replace_regex(const kphp::pcre2::regex& re, const s
   size_t last_pos{};
   string output_str{};
 
-  kphp::log::assertion(replacement.has_value());
-  std::string_view sv_replacement{replacement->c_str(), replacement->size()};
-
   kphp::pcre2::matcher pcre2_matcher{re, {subject.c_str(), subject.size()}, {}, regex_state.match_context, regex_state.match_data, match_options};
   while (replace_count < limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
@@ -307,13 +304,13 @@ inline std::optional<string> replace_regex(const kphp::pcre2::regex& re, const s
 
     output_str.append(std::next(subject.c_str(), last_pos), match_view.match_start() - last_pos);
 
-    auto sub_res{match_view.substitute(sv_replacement, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context)};
+    auto sub_res{match_view.substitute(replacement, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context)};
     if (!sub_res.has_value()) {
       auto [needed_size, error]{sub_res.error()};
       if (error.code == PCRE2_ERROR_NOMEMORY) [[unlikely]] {
         runtime_ctx.static_SB.reserve(needed_size);
         buffer_length = needed_size;
-        sub_res = match_view.substitute(sv_replacement, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context);
+        sub_res = match_view.substitute(replacement, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context);
       }
       if (!sub_res.has_value()) [[unlikely]] {
         kphp::log::warning("pcre2_substitute error {}", sub_res.error().second);
@@ -887,8 +884,8 @@ inline Optional<string> preg_replace_impl(const regexp& regex, const string& sub
   const auto& re{opt_re->get()};
   int64_t replace_count{};
   auto opt_replace_result{kphp::regex::details::replace_regex(
-      re, subject, std::optional{replacement}, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit),
-      regex.match_options, replace_count)};
+      re, subject, {replacement.c_str(), replacement.size()},
+      limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit), regex.match_options, replace_count)};
   if (!opt_replace_result.has_value()) {
     return {};
   }
@@ -1051,7 +1048,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
 Optional<string> f$preg_replace(const mixed& pattern, const string& replacement, const string& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {}) noexcept;
-mixed f$preg_replace(const mixed& pattern, const string& replace_val, const mixed& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
+mixed f$preg_replace(const mixed& pattern, const string& replacement, const mixed& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                      const Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count = {}) noexcept;
 Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, const string& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {}) noexcept;
@@ -1059,9 +1056,9 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
                      Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {}) noexcept;
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-auto f$preg_replace(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
+auto f$preg_replace(const T1& regex, const T2& replacement, const T3& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                     Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {}) noexcept {
-  return f$preg_replace(regex, replace_val, subject.val(), limit, opt_count);
+  return f$preg_replace(regex, replacement, subject.val(), limit, opt_count);
 }
 
 // === preg_replace_callback ======================================================================
@@ -1206,9 +1203,9 @@ inline Optional<string> f$preg_replace(const string& pattern, const string& repl
   return kphp::regex::details::preg_replace_impl(regex, subject, pcre2_replacement.value(), limit, count);
 }
 
-inline mixed f$preg_replace(const mixed& pattern, const string& replace_val, const mixed& subject, int64_t limit,
+inline mixed f$preg_replace(const mixed& pattern, const string& replacement, const mixed& subject, int64_t limit,
                             const Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count) noexcept {
-  return f$preg_replace(pattern, mixed{replace_val}, subject, limit, opt_count);
+  return f$preg_replace(pattern, mixed{replacement}, subject, limit, opt_count);
 }
 
 // === preg_replace_callback implementation =======================================================
