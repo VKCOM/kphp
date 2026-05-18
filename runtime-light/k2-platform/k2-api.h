@@ -29,11 +29,17 @@
 
 namespace k2 {
 
-namespace k2_impl_ {
+namespace details {
 
 inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 
-} // namespace k2_impl_
+#define TLS_INITIAL_EXEC __attribute__((tls_model("initial-exec")))
+
+TLS_INITIAL_EXEC inline thread_local const ImageState* image_state_ptr{};         // NOLINT
+TLS_INITIAL_EXEC inline thread_local const ComponentState* component_state_ptr{}; // NOLINT
+TLS_INITIAL_EXEC inline thread_local InstanceState* instance_state_ptr{};         // NOLINT
+
+} // namespace details
 
 inline constexpr int32_t errno_ok = 0;
 inline constexpr int32_t errno_e2big = E2BIG;
@@ -82,15 +88,15 @@ inline const ControlFlags* control_flags() noexcept {
 }
 
 inline const ImageState* image_state() noexcept {
-  return k2_image_state();
+  return details::image_state_ptr;
 }
 
 inline const ComponentState* component_state() noexcept {
-  return k2_component_state();
+  return details::component_state_ptr;
 }
 
 inline InstanceState* instance_state() noexcept {
-  return k2_instance_state();
+  return details::instance_state_ptr;
 }
 
 inline void* alloc_align(size_t size, size_t align) noexcept {
@@ -98,7 +104,7 @@ inline void* alloc_align(size_t size, size_t align) noexcept {
 }
 
 inline void* alloc(size_t size) noexcept {
-  return k2::alloc_align(size, k2_impl_::DEFAULT_MEMORY_ALIGN);
+  return k2::alloc_align(size, details::DEFAULT_MEMORY_ALIGN);
 }
 
 inline void* realloc(void* ptr, size_t new_size) noexcept {
