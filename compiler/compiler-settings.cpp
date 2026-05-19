@@ -340,6 +340,11 @@ void CompilerSettings::init() {
     if (!dynamic_incremental_linkage.get()) {
       ss << " -fvisibility=hidden";
     }
+    if (vk::contains(cxx.get(), "clang")) {
+      // To avoid undefined behavior, the coroutine frame must be allocated using the aligned operator new overload (the one that takes a std::align_val_t)
+      // Details: https://github.com/llvm/llvm-project/commit/327141fb1d8ca35b323107a43d57886eb77e7384
+      ss << " -fcoro-aligned-allocation";
+    }
     // Temporary solution. Required for allocator functions replacement in timelib
     ss << " -DTIMELIB_ALLOC_FUNC_PREFIX=timelib_";
   } else {
