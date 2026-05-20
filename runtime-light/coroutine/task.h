@@ -74,7 +74,7 @@ struct promise_base : kphp::coro::async_stack_element {
     return kphp::memory::script::alloc_aligned(n, al);
   }
 
-  auto operator delete([[maybe_unused]] void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
+  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
     kphp::memory::script::free(ptr);
   }
 
