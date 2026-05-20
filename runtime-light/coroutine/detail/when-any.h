@@ -165,6 +165,11 @@ public:
     return kphp::memory::script::alloc(n);
   }
 
+  template<typename... Args>
+  auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
+    return kphp::memory::script::alloc_aligned(n, al);
+  }
+
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
     kphp::memory::script::free(ptr);
   }
