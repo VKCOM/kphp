@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/allocator/runtime-allocator.h"
@@ -24,10 +25,12 @@ constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00; // 4GiB
 namespace details {
 struct control_block {
 private:
-  static inline constexpr auto SIZE_FIELD_BITSIZE{48};
-  static inline constexpr auto BASE_OFFSET_FIELD_BITSIZE{16};
-  static inline constexpr uint64_t BLOCK_SIZE_MASK{(1UL << SIZE_FIELD_BITSIZE) - 1};
-  static inline constexpr uint64_t BASE_OFFSET_MASK{(1UL << BASE_OFFSET_FIELD_BITSIZE) - 1};
+  static constexpr auto SIZE_FIELD_BITSIZE{48};
+  static constexpr auto BASE_OFFSET_FIELD_BITSIZE{16};
+  static constexpr uint64_t BLOCK_SIZE_MASK{(1UL << SIZE_FIELD_BITSIZE) - 1};
+  static constexpr uint64_t BASE_OFFSET_MASK{(1UL << BASE_OFFSET_FIELD_BITSIZE) - 1};
+
+  static_assert(SIZE_FIELD_BITSIZE + BASE_OFFSET_FIELD_BITSIZE == std::numeric_limits<uint64_t>::digits);
 
 public:
   static constexpr uint64_t max_size() noexcept {
@@ -59,7 +62,7 @@ static_assert(sizeof(control_block) == sizeof(uint64_t), "Control block's size m
 } // namespace details
 
 inline void* alloc(size_t size) noexcept {
-  const size_t cb_size{sizeof(details::control_block)};
+  constexpr size_t cb_size{sizeof(details::control_block)};
   if (unlikely(size > std::min(details::control_block::max_size(), MALLOC_REPLACER_MAX_ALLOC) - cb_size)) {
     php_warning("attempt to allocate too much memory by malloc replacer, requested : %lu", size);
     return nullptr;
@@ -70,21 +73,21 @@ inline void* alloc(size_t size) noexcept {
     php_warning("not enough script memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
     return base;
   }
-  *(reinterpret_cast<uint64_t*>(base)) = details::control_block{.size = total_size, .base_offset = cb_size}.raw();
-  return reinterpret_cast<void*>(reinterpret_cast<uint64_t>(base) + cb_size); // NOLINT
+  *(static_cast<uint64_t*>(base)) = details::control_block{.size = total_size, .base_offset = cb_size}.raw();
+  return static_cast<void*>(static_cast<uint8_t*>(base) + cb_size);
 }
 
 inline void* alloc_aligned(size_t size, std::align_val_t alignment) noexcept {
   // Check that provided alignment is power of two
   const size_t align{static_cast<uint64_t>(alignment)};
   if (unlikely(align == 0 || !details::is_power_of_2(align) || align >= details::control_block::max_alignment())) {
-    php_warning("allocation alignment have to be non-zero power of two and not greater than %" PRIi64 ", got : %lu", details::control_block::max_alignment(),
+    php_warning("allocation alignment have to be non-zero power of two and not greater than %" PRIu64 ", got : %lu", details::control_block::max_alignment(),
                 align);
     return nullptr;
   }
 
   // Check that memory is enough
-  const size_t cb_size{sizeof(details::control_block)};
+  constexpr size_t cb_size{sizeof(details::control_block)};
   if (unlikely(size > std::min(details::control_block::max_size(), MALLOC_REPLACER_MAX_ALLOC) - (align - 1) - cb_size)) {
     php_warning("attempt to allocate too much memory by malloc replacer, requested : %lu", size);
     return nullptr;
@@ -123,7 +126,7 @@ inline void free(void* ptr) noexcept {
     return;
   }
 
-  const size_t cb_size{sizeof(details::control_block)};
+  constexpr size_t cb_size{sizeof(details::control_block)};
   const auto mem{reinterpret_cast<uint64_t>(ptr)};
 
   const auto cb{details::control_block::from_raw(*reinterpret_cast<uint64_t*>(mem - cb_size))}; // NOLINT
@@ -142,7 +145,7 @@ inline void* realloc(void* ptr, size_t new_size) noexcept {
     return nullptr;
   }
 
-  const size_t cb_size{sizeof(details::control_block)};
+  constexpr size_t cb_size{sizeof(details::control_block)};
   const auto mem{reinterpret_cast<uint64_t>(ptr)};
 
   const auto cb{details::control_block::from_raw(*reinterpret_cast<uint64_t*>(mem - cb_size))}; // NOLINT
