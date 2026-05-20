@@ -23,11 +23,13 @@ constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00; // 4GiB
 
 namespace details {
 struct control_block {
-  static constexpr auto SIZE_FIELD_BITSIZE{48};
-  static constexpr auto BASE_OFFSET_FIELD_BITSIZE{16};
-  static constexpr uint64_t BLOCK_SIZE_MASK{(1UL << SIZE_FIELD_BITSIZE) - 1};
-  static constexpr uint64_t BASE_OFFSET_MASK{(1UL << BASE_OFFSET_FIELD_BITSIZE) - 1};
+private:
+  static inline constexpr auto SIZE_FIELD_BITSIZE{48};
+  static inline constexpr auto BASE_OFFSET_FIELD_BITSIZE{16};
+  static inline constexpr uint64_t BLOCK_SIZE_MASK{(1UL << SIZE_FIELD_BITSIZE) - 1};
+  static inline constexpr uint64_t BASE_OFFSET_MASK{(1UL << BASE_OFFSET_FIELD_BITSIZE) - 1};
 
+public:
   static constexpr uint64_t max_size() noexcept {
     return 1UL << SIZE_FIELD_BITSIZE;
   }
@@ -37,10 +39,10 @@ struct control_block {
   }
 
   uint64_t raw() const noexcept {
-    return (static_cast<std::uint64_t>(base_offset) << SIZE_FIELD_BITSIZE) | (static_cast<std::uint64_t>(size) & BLOCK_SIZE_MASK);
+    return (static_cast<uint64_t>(base_offset) << SIZE_FIELD_BITSIZE) | (static_cast<uint64_t>(size) & BLOCK_SIZE_MASK);
   }
 
-  static control_block from_raw(std::uint64_t raw) noexcept {
+  static control_block from_raw(uint64_t raw) noexcept {
     return control_block{.size = raw & BLOCK_SIZE_MASK, .base_offset = static_cast<uint16_t>((raw >> SIZE_FIELD_BITSIZE) & BASE_OFFSET_MASK)};
   }
 
@@ -68,7 +70,7 @@ inline void* alloc(size_t size) noexcept {
     php_warning("not enough script memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
     return base;
   }
-  *(reinterpret_cast<std::uint64_t*>(base)) = details::control_block{.size = total_size, .base_offset = cb_size}.raw();
+  *(reinterpret_cast<uint64_t*>(base)) = details::control_block{.size = total_size, .base_offset = cb_size}.raw();
   return reinterpret_cast<void*>(reinterpret_cast<uint64_t>(base) + cb_size); // NOLINT
 }
 
@@ -102,7 +104,7 @@ inline void* alloc_aligned(size_t size, std::align_val_t alignment) noexcept {
   const uint64_t base_offset_u{aligned_u - base_u};
 
   // Save control block
-  *(reinterpret_cast<std::uint64_t*>(aligned_u - cb_size)) = // NOLINT
+  *(reinterpret_cast<uint64_t*>(aligned_u - cb_size)) = // NOLINT
       details::control_block{.size = total_size, .base_offset = static_cast<std::uint16_t>(base_offset_u)}.raw();
 
   return reinterpret_cast<void*>(aligned_u); // NOLINT
