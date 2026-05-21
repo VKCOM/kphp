@@ -39,6 +39,8 @@ TLS_INITIAL_EXEC inline thread_local const ImageState* image_state_ptr{};       
 TLS_INITIAL_EXEC inline thread_local const ComponentState* component_state_ptr{}; // NOLINT
 TLS_INITIAL_EXEC inline thread_local InstanceState* instance_state_ptr{};         // NOLINT
 
+#undef TLS_INITIAL_EXEC
+
 } // namespace details
 
 inline constexpr int32_t errno_ok = 0;

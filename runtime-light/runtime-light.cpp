@@ -16,17 +16,24 @@
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))
 
 VISIBILITY_DEFAULT ImageState* k2_create_image() {
+  k2::details::image_state_ptr = nullptr;
+  k2::details::component_state_ptr = nullptr;
+  k2::details::instance_state_ptr = nullptr;
   return static_cast<ImageState*>(k2::alloc_align(sizeof(ImageState), alignof(ImageState)));
 }
 
 VISIBILITY_DEFAULT void k2_init_image() {
   k2::details::image_state_ptr = k2_image_state();
+  k2::details::component_state_ptr = nullptr;
+  k2::details::instance_state_ptr = nullptr;
   new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
 }
 
 VISIBILITY_DEFAULT ComponentState* k2_create_component() {
   k2::details::image_state_ptr = k2_image_state();
+  k2::details::component_state_ptr = nullptr;
+  k2::details::instance_state_ptr = nullptr;
   kphp::log::debug("start component state creation, requested {} bytes", sizeof(ComponentState));
   auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc_align(sizeof(ComponentState), alignof(ComponentState)))};
   kphp::log::debug("finish component state creation");
@@ -36,6 +43,7 @@ VISIBILITY_DEFAULT ComponentState* k2_create_component() {
 VISIBILITY_DEFAULT void k2_init_component() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
+  k2::details::instance_state_ptr = nullptr;
   kphp::log::debug("start component state init");
   new (const_cast<ComponentState*>(k2::component_state())) ComponentState{};
   kphp::log::debug("finish component state init");
@@ -44,6 +52,7 @@ VISIBILITY_DEFAULT void k2_init_component() {
 VISIBILITY_DEFAULT InstanceState* k2_create_instance() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
+  k2::details::instance_state_ptr = nullptr;
   kphp::log::debug("start instance state creation, requested {} bytes", sizeof(InstanceState));
   auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc_align(sizeof(InstanceState), alignof(InstanceState)))};
   kphp::log::debug("finish instance state creation");
