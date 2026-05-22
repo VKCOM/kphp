@@ -463,13 +463,10 @@ inline int64_t can_use_precomputed_hash_indexing_array(VertexPtr key) {
 
 // Helper to recursively check if a vertex subtree contains interruptible function calls
 bool contains_interruptible_call(VertexPtr vertex) {
-  if (auto func_call = vertex.try_as<op_func_call>()) {
-    if (func_call->func_id && func_call->func_id->is_interruptible) {
-      return true;
-    }
+  if (auto func_call = vertex.try_as<op_func_call>(); func_call && func_call->func_id && func_call->func_id->is_interruptible) {
+    return true;
   }
 
-  // Recursively check all children
   for (auto child : *vertex) {
     if (contains_interruptible_call(child)) {
       return true;
@@ -489,10 +486,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
 
-  const bool interruptible_call =
+  const bool interruptible_rhs =
       G->is_output_mode_k2() && !vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null) && contains_interruptible_call(rhs);
 
-  if (interruptible_call) {
+  if (interruptible_rhs) {
     W << "co_await ";
     G->stats.on_interruptible_null_coalescing();
   }
@@ -517,7 +514,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << rhs;
   } else {
     auto& context = W.get_context();
-    const auto saved_interruptible_flag = std::exchange(context.interruptible_flag, interruptible_call);
+    const auto saved_interruptible_flag = std::exchange(context.interruptible_flag, interruptible_rhs);
     context.catch_labels.emplace_back();
     ++context.inside_null_coalesce_fallback;
     /* TODO: K2
@@ -534,8 +531,8 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
       W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
 
       FunctionSignatureGenerator(W) << "[&] ()";
-      W << " -> " << (interruptible_call ? "kphp::coro::task<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
-      W << (interruptible_call ? "co_return " : "return ") << rhs << ";" << NL;
+      W << " -> " << (interruptible_rhs ? "kphp::coro::task<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_rhs ? "> " : " ") << BEGIN;
+      W << (interruptible_rhs ? "co_return " : "return ") << rhs << ";" << NL;
       W << END;
     }
 
@@ -942,10 +939,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
           W << "kphp::forks::start(" << FunctionName(func);
         } else {
           // For non-interruptible functions, wrap with lift_sync(f, args...)
-          W << "kphp::forks::start(kphp::coro::lift_sync(" << FunctionName(func);
-          if (!root->args().empty()) {
-            W << ", ";
-          }
+          W << "kphp::forks::start(kphp::coro::lift_sync(" << FunctionName(func) << (!root->args().empty() ? ", " : "");
         }
       } else {
         W << FunctionForkName(func);
@@ -990,14 +984,12 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   }
 
   // For K2 fork call, close forks::start (and lift_sync for non-interruptible functions)
-  if (mode == func_call_mode::fork_call && G->is_output_mode_k2()) {
-    if (func->is_interruptible) {
-      W << ")";
+  if (G->is_output_mode_k2()) {
+    if (mode == func_call_mode::fork_call) {
+      W << (func->is_interruptible ? ")" : "))");
     } else {
-      W << "))";
+      W << (func->is_interruptible ? ")" : "");
     }
-  } else if (func->is_interruptible) {
-    W << ")";
   }
 }
 
