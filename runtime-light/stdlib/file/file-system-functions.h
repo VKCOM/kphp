@@ -192,6 +192,14 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
   return make_instance<kphp::fs::socket>(*std::move(expected));
 }
 
+inline bool f$stream_set_blocking(const resource& stream, bool mode) noexcept {
+  if (auto socket{from_mixed<class_instance<kphp::fs::socket>>(stream, {})}; !socket.is_null()) {
+    socket.get()->set_blocking(mode);
+    return true;
+  }
+  return false;
+}
+
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, FileSystemImageState::get().READ_MODE), {})};
       !sync_resource.is_null()) {
