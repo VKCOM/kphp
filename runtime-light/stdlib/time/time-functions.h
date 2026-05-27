@@ -47,7 +47,7 @@ inline mixed f$hrtime(bool as_number = false) noexcept {
 
 inline string f$_microtime_string() noexcept {
   namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::high_resolution_clock::now().time_since_epoch()};
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   const auto seconds{duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto nanoseconds{duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
 
