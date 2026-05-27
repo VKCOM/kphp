@@ -34,8 +34,8 @@ class stream {
   explicit stream(k2::descriptor descriptor) noexcept
       : m_descriptor(descriptor) {}
 
-  auto read_non_blocking(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>>;
-  auto write_non_blocking(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>>;
+  auto read_non_blocking(std::span<std::byte> buf) const noexcept -> std::expected<size_t, int32_t>;
+  auto write_non_blocking(std::span<const std::byte> buf) const noexcept -> std::expected<size_t, int32_t>;
 
 public:
   stream(stream&& other) noexcept
@@ -77,18 +77,18 @@ public:
 
 // ================================================================================================
 
-inline auto stream::read_non_blocking(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+inline auto stream::read_non_blocking(std::span<std::byte> buf) const noexcept -> std::expected<size_t, int32_t> {
   if (status().read_status != k2::IOStatus::IOAvailable) {
-    co_return std::expected<size_t, int32_t>{0};
+    return std::expected<size_t, int32_t>{0};
   }
-  co_return std::expected<size_t, int32_t>{k2::read(m_descriptor, buf)};
+  return k2::read(m_descriptor, buf);
 }
 
-inline auto stream::write_non_blocking(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+inline auto stream::write_non_blocking(std::span<const std::byte> buf) const noexcept -> std::expected<size_t, int32_t> {
   if (status().write_status != k2::IOStatus::IOAvailable) {
-    co_return std::expected<size_t, int32_t>{0};
+    return std::expected<size_t, int32_t>{0};
   }
-  co_return std::expected<size_t, int32_t>{k2::write(m_descriptor, buf)};
+  return k2::write(m_descriptor, buf);
 }
 
 inline auto stream::open(std::string_view target, k2::stream_kind stream_kind) noexcept -> std::expected<kphp::component::stream, int32_t> {
@@ -150,7 +150,7 @@ inline auto stream::set_blocking(bool blocking) noexcept -> void {
 
 inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
   if (m_non_blocking) {
-    co_return co_await read_non_blocking(buf);
+    co_return read_non_blocking(buf);
   }
 
   for (size_t read{}; read < buf.size();) {
@@ -186,7 +186,7 @@ auto stream::read_all(F f) const noexcept -> kphp::coro::task<std::expected<void
 
 inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
   if (m_non_blocking) {
-    co_return co_await write_non_blocking(buf);
+    co_return write_non_blocking(buf);
   }
 
   for (size_t written{}; written < buf.size();) {
