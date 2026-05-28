@@ -197,6 +197,8 @@ inline bool f$stream_set_blocking(const resource& stream, bool mode) noexcept {
     socket.get()->set_blocking(mode);
     return true;
   }
+  
+  kphp::log::warning("unexpected resource in stream_set_blocking -> {}", stream.to_string().c_str());
   return false;
 }
 
