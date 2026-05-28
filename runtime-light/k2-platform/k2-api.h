@@ -45,6 +45,7 @@ TLS_INITIAL_EXEC inline thread_local InstanceState* instance_state_ptr{};       
 
 inline constexpr int32_t errno_ok = 0;
 inline constexpr int32_t errno_e2big = E2BIG;
+inline constexpr int32_t errno_ebadfd = EBADF;
 inline constexpr int32_t errno_ebusy = EBUSY;
 inline constexpr int32_t errno_enodev = ENODEV;
 inline constexpr int32_t errno_einval = EINVAL;

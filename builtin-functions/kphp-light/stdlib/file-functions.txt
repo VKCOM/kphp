@@ -18,6 +18,7 @@ define('STREAM_CLIENT_CONNECT', 1);
 define('DEFAULT_SOCKET_TIMEOUT', 60);
 
 function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context ::: mixed = null) ::: mixed;
+function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
 
 function fopen ($filename ::: string, $mode ::: string): mixed;
 /** @kphp-extern-func-info interruptible */

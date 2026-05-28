@@ -658,6 +658,8 @@ public:
 
   static auto open(std::string_view scheme) noexcept -> std::expected<socket, int32_t>;
 
+  auto set_blocking(bool blocking) noexcept -> void;
+
   auto write(std::span<const std::byte> buf) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> override;
   auto read(std::span<std::byte> buf) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> override;
   auto get_contents() noexcept -> kphp::coro::task<std::expected<string, int32_t>> override;
@@ -687,6 +689,10 @@ inline auto socket::open(std::string_view scheme) noexcept -> std::expected<sock
     });
   }
   return expected;
+}
+
+inline auto socket::set_blocking(bool blocking) noexcept -> void {
+  m_stream.set_blocking(blocking);
 }
 
 inline auto socket::write(std::span<const std::byte> buf) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
