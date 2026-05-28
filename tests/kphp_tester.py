@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import argparse
+import csv
+import dataclasses
 import math
 import multiprocessing
 import os
@@ -9,6 +11,7 @@ import signal
 import sys
 from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
+import time
 import typing
 import uuid
 
@@ -85,6 +88,12 @@ class TestFile:
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
         self.env_vars["KPHP_PROFILER"] = "0"
         self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
+
+
+@dataclasses.dataclass
+class TimeStats:
+    compile_time_ns: int
+    run_time_ns: int
 
 
 def make_test_file(file_path, test_tmp_dir, test_tags):
@@ -343,23 +352,44 @@ def run_runtime_warn_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_ok_test(test: TestFile, runner):
+def run_ok_test(test: TestFile, runner, time_stats: typing.Dict[str, TimeStats]):
+    class Timer:
+        def __init__(self):
+            self._last_meansurement = time.perf_counter_ns()
+
+        def meansure(self) -> int:
+            meansurement = time.perf_counter_ns()
+            delta = meansurement - self._last_meansurement
+            self._last_meansurement = meansurement
+            return delta
+
+
     # Run kphp test twice to check correctness in web-server alike environment with per request runtime reinitialization
     runs_cnt = 2 if test.is_idempotent() else 1
     if not runner.run_with_php(runs_cnt=runs_cnt):
         return TestResult.failed(test, runner.artifacts, "got php error")
+    timer = Timer()
     if not runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
+    compile_time_ns = timer.meansure()
     if not runner.run_with_kphp(runs_cnt=runs_cnt):
         return TestResult.failed(test, runner.artifacts, "got kphp runtime error")
+    run_time_ns = timer.meansure()
     if not runner.compare_php_and_kphp_stdout():
         return TestResult.failed(test, runner.artifacts, "got php and kphp diff")
+    
+    time_stats[test.file_path] = TimeStats(compile_time_ns, run_time_ns)
 
     return TestResult.passed(test, runner.artifacts)
 
 
 def run_test(
-        use_nocc, cxx_name, k2_bin, std_function_invocations: typing.Optional[std_function.Invocations], test: TestFile
+        use_nocc,
+        cxx_name,
+        k2_bin,
+        std_function_invocations: typing.Optional[std_function.Invocations],
+        time_stats: typing.Dict[str, TimeStats],
+        test: TestFile
 ):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
@@ -383,7 +413,7 @@ def run_test(
         elif test.is_kphp_runtime_should_not_warn():
             test_result = run_runtime_not_warn_test(test, runner)
         elif test.is_ok():
-            test_result = run_ok_test(test, runner)
+            test_result = run_ok_test(test, runner, time_stats)
         else:
             test_result = TestResult.skipped(test)
 
@@ -392,7 +422,7 @@ def run_test(
     return test_result
 
 
-def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, use_nocc, cxx_name, k2_bin):
+def run_all_tests(tests_dir, test_tags, no_report, passed_list, test_list, use_nocc, cxx_name, k2_bin):
     hack_reference_exit = []
     signal.signal(signal.SIGINT, lambda sig, frame: hack_reference_exit.append(1))
 
@@ -408,10 +438,12 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
     else:
         std_function_invocations = None
 
+    time_stats: typing.Dict[str, TimeStats] = {}
+
     results = []
-    with ThreadPool(jobs) as pool:
+    with ThreadPool(2) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin, std_function_invocations), tests):
+        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin, std_function_invocations, time_stats), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
@@ -419,15 +451,24 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             test_result.print_short_report(len(tests), tests_completed)
             results.append(test_result)
 
-    if std_function_invocations:
-        std_function_invocations_output_dir = TMP_DIR / "artifacts"
-        std_function_invocations_output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = TMP_DIR / "artifacts"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
+    if std_function_invocations:
         std_function_invocations_filename = f"{uuid.uuid4()}.json"
-        std_function_invocations_output_path = std_function_invocations_output_dir / std_function_invocations_filename
+        std_function_invocations_output_path = output_dir / std_function_invocations_filename
 
         with open(std_function_invocations_output_path, "w", encoding="utf-8") as f:
             std_function_invocations.dump(f)
+
+    time_stats_filename = f"{uuid.uuid4()}.csv"
+    time_stats_output_path = output_dir / time_stats_filename
+
+    with open(time_stats_output_path, "w", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["test_file_path", "compile_time_ns", "run_time_ns"])
+        for test_file_path, stats in sorted(time_stats.items()):
+            writer.writerow([test_file_path, stats.compile_time_ns, stats.run_time_ns])
 
     print("\nTesting results:", flush=True)
 
@@ -555,7 +596,6 @@ def main():
         sys.exit(1)
 
     run_all_tests(tests_dir=os.path.normpath(args.tests_dir),
-                  jobs=args.jobs,
                   test_tags=args.test_tags,
                   no_report=args.no_report,
                   passed_list=args.passed_list,
