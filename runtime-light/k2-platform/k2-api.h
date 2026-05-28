@@ -37,6 +37,7 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 
 inline constexpr int32_t errno_ok = 0;
 inline constexpr int32_t errno_e2big = E2BIG;
+inline constexpr int32_t errno_ebadfd = EBADF;
 inline constexpr int32_t errno_ebusy = EBUSY;
 inline constexpr int32_t errno_enodev = ENODEV;
 inline constexpr int32_t errno_einval = EINVAL;

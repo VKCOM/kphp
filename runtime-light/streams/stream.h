@@ -78,17 +78,25 @@ public:
 // ================================================================================================
 
 inline auto stream::read_non_blocking(std::span<std::byte> buf) const noexcept -> std::expected<size_t, int32_t> {
-  if (status().read_status != k2::IOStatus::IOAvailable) {
+  switch (status().read_status) {
+  case k2::IOStatus::IOBlocked:
     return std::expected<size_t, int32_t>{0};
+  case k2::IOStatus::IOClosed:
+    return std::unexpected{k2::errno_ebadfd};
+  case k2::IOStatus::IOAvailable:
+    return k2::read(m_descriptor, buf);
   }
-  return k2::read(m_descriptor, buf);
 }
 
 inline auto stream::write_non_blocking(std::span<const std::byte> buf) const noexcept -> std::expected<size_t, int32_t> {
-  if (status().write_status != k2::IOStatus::IOAvailable) {
+  switch (status().write_status) {
+  case k2::IOStatus::IOBlocked:
     return std::expected<size_t, int32_t>{0};
+  case k2::IOStatus::IOClosed:
+    return std::unexpected{k2::errno_ebadfd};
+  case k2::IOStatus::IOAvailable:
+    return k2::write(m_descriptor, buf);
   }
-  return k2::write(m_descriptor, buf);
 }
 
 inline auto stream::open(std::string_view target, k2::stream_kind stream_kind) noexcept -> std::expected<kphp::component::stream, int32_t> {
