@@ -12,7 +12,6 @@
 #include "compiler/debug.h"
 #include "compiler/inferring/primitive-type.h"
 
-
 // do not confuse TypeHint with TypeData!
 // TypeData is a part of _type inferring_; it's mutable and plain, it represents current inferred state of every vertex
 class TypeData;
@@ -45,6 +44,7 @@ class TypeHint {
 
   // this field is calculated only once on need, see to_type_data()
   mutable const TypeData *cached_typedata_if_constexpr{nullptr};
+  mutable std::mutex mutex_for_cache;
 
 protected:
   enum flag_mask {

@@ -6,6 +6,7 @@
 
 #include <forward_list>
 
+#include "common/wrappers/copyable-atomic.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/threading/data-stream.h"
@@ -14,7 +15,7 @@
 class SortAndInheritClassesF {
 private:
   struct wait_list {
-    bool done;
+    vk::copyable_atomic<bool> done;
     std::forward_list<ClassPtr> waiting;
   };
 
