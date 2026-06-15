@@ -19,14 +19,16 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 
+// TODO куды ?
 namespace уберите_меня_отсюда {
 
 struct rpc_request_info {
   k2::descriptor rpc_d;
+  std::chrono::nanoseconds deadline;
   bool collect_responses_extra_info;
 };
 
-}
+} // namespace уберите_меня_отсюда
 
 struct RpcClientInstanceState final : private vk::not_copyable {
   CurrentTlQuery current_client_query{};
