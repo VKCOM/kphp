@@ -34,6 +34,7 @@
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/stdlib/rpc/rpc-request-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/streams/read-ext.h"
@@ -192,9 +193,9 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  std::optional<уберите_меня_отсюда::rpc_request_info> opt_rpc_request_info{};
+  std::optional<kphp::rpc::request_info> opt_rpc_request_info{};
 
-  {
+ {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
     const auto it_rpc_request_info{rpc_client_instance_st.rpc_requests_infos.find(query_id)};
     const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher, it_rpc_request_info] noexcept {
@@ -274,7 +275,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  std::optional<уберите_меня_отсюда::rpc_request_info> opt_rpc_request_info{};
+  std::optional<kphp::rpc::request_info> opt_rpc_request_info{};
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
@@ -364,7 +365,6 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
       std::swap(tl_storer, rpc_server_instance_st.tl_storer);
     }
   }};
-  // TODO make special (may be resource) type for rpc request;
   auto rpc_d_exp{k2::rpc_send_request(actor, tl_storer.view())};
   if (!rpc_d_exp) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
@@ -414,7 +414,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   std::chrono::nanoseconds timeout_ns{duration_cast<std::chrono::nanoseconds>(timeout)};
   std::chrono::nanoseconds deadline{now_ns + timeout_ns};
 
-  rpc_client_instance_st.rpc_requests_infos.emplace(query_id, уберите_меня_отсюда::rpc_request_info{rpc_d, deadline, collect_responses_extra_info});
+  rpc_client_instance_st.rpc_requests_infos.emplace(query_id, kphp::rpc::request_info{rpc_d, deadline, collect_responses_extra_info});
   return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
