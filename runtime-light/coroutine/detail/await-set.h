@@ -15,6 +15,7 @@
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
+#include "runtime-light/stdlib/cpu-info/cpu-info-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -53,15 +54,18 @@ public:
 
   template<typename... Args>
   void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
+    auto writer{CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().coro_alloc_cycles)};
     return kphp::coro::detail::memory::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
+    auto writer{CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().coro_alloc_cycles)};
     return kphp::coro::detail::memory::alloc_aligned(n, al);
   }
 
   void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
+    auto writer{CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().coro_free_cycles)};
     kphp::coro::detail::memory::free(ptr);
   }
 
