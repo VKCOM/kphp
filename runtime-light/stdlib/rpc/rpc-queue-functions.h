@@ -18,11 +18,12 @@
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-queue-state.h"
+#include "runtime-light/stdlib/rpc/rpc-request-info.h"
 
 namespace kphp::rpc {
 
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
-  static constexpr auto rpc_queue_wrapper_task{[](уберите_меня_отсюда::rpc_request_info request_info, int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
+  static constexpr auto rpc_queue_wrapper_task{[](kphp::rpc::request_info request_info, int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
     k2::TimePoint now_instant{};
     // TODO call k2::instant once for all sending requests in batch
     k2::instant(std::addressof(now_instant));
