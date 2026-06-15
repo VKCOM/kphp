@@ -26,7 +26,9 @@ public:
   }
 
   double get_percent(uint64_t cycles) const noexcept {
-    kphp::log::assertion(cycles <= total_cycles);
+    if (cycles > total_cycles) {
+      kphp::log::warning("CpuInfo. Something wrong: cycles {} > total_cycles {}", cycles, total_cycles);
+    }
     return 100.0 * cycles / total_cycles;
   }
 
