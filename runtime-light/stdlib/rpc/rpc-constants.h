@@ -11,6 +11,7 @@ namespace kphp::rpc {
 inline constexpr int64_t VALID_QUERY_ID_RANGE_START = 1;
 inline constexpr int64_t INVALID_QUERY_ID = 0;
 inline constexpr int64_t IGNORED_ANSWER_QUERY_ID = -1;
+inline constexpr int64_t INTERNAL_ERROR = 2;
 
 enum class error : int32_t {
   // stream errors

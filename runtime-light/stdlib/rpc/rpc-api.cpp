@@ -159,35 +159,29 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
 
 namespace {
 
-static std::optional<string> get_rpc_response(int64_t query_id, k2::descriptor rpc_d, bool collect_responses_extra_info) {
-  std::optional<string> opt_response{std::nullopt};
-
-  size_t first_response_size{k2::rpc_get_response_size(rpc_d)};
-  if (first_response_size == 0) {
-    // TODO ERROR
-    k2::exit(148);
+static std::expected<string, std::pair<int, string>> get_rpc_response(int64_t query_id, k2::descriptor rpc_d, bool collect_responses_extra_info) {
+  std::expected<size_t, int32_t> first_response_size{k2::rpc_get_response_size(rpc_d)};
+  if (!first_response_size) {
+    return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
   }
-  string response{reinterpret_cast<char*>(k2::alloc(first_response_size)), static_cast<string::size_type>(first_response_size)};
-  size_t new_response_size = k2::rpc_fetch_response(rpc_d, {reinterpret_cast<std::byte*>(response.buffer()), response.size()});
-  if (new_response_size != first_response_size) {
-    // TODO ERROR
-    k2::exit(69);
+  string response{reinterpret_cast<char*>(k2::alloc(*first_response_size)), static_cast<string::size_type>(*first_response_size)};
+  std::expected<void, int32_t> new_response_size{k2::rpc_fetch_response(rpc_d, {reinterpret_cast<std::byte*>(response.buffer()), response.size()})};
+  if (!new_response_size) {
+    return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
   }
-  opt_response = std::move(response);
   // update response extra info if needed
   if (collect_responses_extra_info) {
     auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
     if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
       const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-      const auto response_size{opt_response.transform([](const string& response) noexcept { return static_cast<int64_t>(response.size()); }).value_or(0)};
-      it_extra_info->second.second = std::make_tuple(response_size, timestamp - std::get<1>(it_extra_info->second.second));
+      it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
       it_extra_info->second.first = response_extra_info_status::ready;
     } else {
       kphp::log::warning("can't find extra info for RPC query {}", query_id);
     }
   }
 
-  return opt_response;
+  return {response};
 }
 } // namespace
 
@@ -202,22 +196,18 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
-//    const auto it_fork_task{rpc_client_instance_st.response_awaiter_tasks.find(query_id)};
     const auto it_rpc_request_info{rpc_client_instance_st.rpc_requests_infos.find(query_id)};
-    const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher/*, it_fork_task*/, it_rpc_request_info] noexcept {
+    const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher, it_rpc_request_info] noexcept {
       if (it_response_fetcher != rpc_client_instance_st.response_fetcher_instances.end()) [[likely]] {
         rpc_client_instance_st.response_fetcher_instances.erase(it_response_fetcher);
       }
-//      if (it_fork_task != rpc_client_instance_st.response_awaiter_tasks.end()) [[likely]] {
-//        rpc_client_instance_st.response_awaiter_tasks.erase(it_fork_task);
-//      }
       if (it_rpc_request_info != rpc_client_instance_st.rpc_requests_infos.end()) [[likely]] {
         rpc_client_instance_st.rpc_requests_infos.erase(it_rpc_request_info);
       }
     }};
 
-    if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end() /*|| it_fork_task == rpc_client_instance_st.response_awaiter_tasks.end()*/ || it_rpc_request_info == rpc_client_instance_st.rpc_requests_infos.end())
-        [[unlikely]] {
+    if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end() ||
+        it_rpc_request_info == rpc_client_instance_st.rpc_requests_infos.end()) [[unlikely]] {
       co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"unexpectedly could not find query in pending queries"});
     }
     rpc_query = std::move(it_response_fetcher->second);
@@ -238,20 +228,29 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
 
   kphp::log::assertion(opt_rpc_request_info.has_value());
   auto rpc_request_info{*opt_rpc_request_info};
+  k2::TimePoint now_instant{};
+  k2::instant(std::addressof(now_instant));
+  std::chrono::nanoseconds now_ns{now_instant.time_point_ns};
+  std::chrono::nanoseconds timeout{rpc_request_info.deadline - now_ns};
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-  switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, std::chrono::milliseconds(1000))) {
+  switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event: {
-    opt_response = get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info);
+    std::expected<string, std::pair<int, string>> response_expected{get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
+    if (!response_expected) {
+      // TODO std::move ??????????????????????
+      std::pair<int, string> error{response_expected.error()};
+      co_return TlRpcError::make_error(error.first, error.second);
+    }
+    opt_response = *response_expected;
     break;
   }
   case kphp::coro::poll_status::closed:
-    k2::exit(70);
+    co_return TlRpcError::make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   case kphp::coro::poll_status::error:
-    k2::exit(71);
+    co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"error fetching rpc response"});
   case kphp::coro::poll_status::timeout:
-    k2::exit(79);
+    co_return TlRpcError::make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
-//  auto opt_response{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
   if (!opt_response) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
@@ -279,24 +278,18 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
-//    const auto it_fork_task{rpc_client_instance_st.response_awaiter_tasks.find(query_id)};
     const auto it_rpc_request_info{rpc_client_instance_st.rpc_requests_infos.find(query_id)};
-    const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher/*, it_fork_task*/, it_rpc_request_info] noexcept {
+    const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher, it_rpc_request_info] noexcept {
       if (it_response_fetcher != rpc_client_instance_st.response_fetcher_instances.end()) [[likely]] {
         rpc_client_instance_st.response_fetcher_instances.erase(it_response_fetcher);
       }
-//      if (it_fork_task != rpc_client_instance_st.response_awaiter_tasks.end()) [[likely]] {
-//        rpc_client_instance_st.response_awaiter_tasks.erase(it_fork_task);
-//      }
       if (it_rpc_request_info != rpc_client_instance_st.rpc_requests_infos.end()) [[likely]] {
         rpc_client_instance_st.rpc_requests_infos.erase(it_rpc_request_info);
       }
     }};
 
-//    kphp::log::warning("AAA");
-    if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end()/* || it_fork_task == rpc_client_instance_st.response_awaiter_tasks.end()*/ || it_rpc_request_info == rpc_client_instance_st.rpc_requests_infos.end())
-        [[unlikely]] {
-//      kphp::log::warning("A");
+    if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end() ||
+        it_rpc_request_info == rpc_client_instance_st.rpc_requests_infos.end()) [[unlikely]] {
       co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"unexpectedly could not find query in pending queries"});
     }
     rpc_query = std::move(it_response_fetcher->second);
@@ -304,15 +297,12 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   if (rpc_query.is_null()) [[unlikely]] {
-//    kphp::log::warning("B");
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't use rpc_tl_query_result for non-TL query"});
   }
   if (!rpc_query.get()->result_fetcher || rpc_query.get()->result_fetcher->empty()) [[unlikely]] {
-//    kphp::log::warning("C");
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"rpc query has empty result fetcher"});
   }
   if (!rpc_query.get()->result_fetcher->is_typed) [[unlikely]] {
-//    kphp::log::warning("D");
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't get typed result from untyped TL query. Use consistent API for that"});
   }
 
@@ -320,33 +310,41 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
   kphp::log::assertion(opt_rpc_request_info.has_value());
   auto rpc_request_info{*opt_rpc_request_info};
+  k2::TimePoint now_instant{};
+  // TODO call k2::instant once for all sending requests in batch
+  k2::instant(std::addressof(now_instant));
+  std::chrono::nanoseconds now_ns{now_instant.time_point_ns};
+  std::chrono::nanoseconds timeout{rpc_request_info.deadline - now_ns};
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-  switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, std::chrono::milliseconds(1000))) {
+  switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event: {
-    opt_response = get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info);
+    std::expected<string, std::pair<int, string>> response_expected{get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
+    if (!response_expected) {
+      // TODO std::move ??????????????????????
+      std::pair<int, string> error{response_expected.error()};
+      co_return error_factory.make_error(error.first, error.second);
+    }
+    opt_response = *response_expected;
     break;
   }
   case kphp::coro::poll_status::closed:
-    k2::exit(70);
+    co_return error_factory.make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   case kphp::coro::poll_status::error:
-    k2::exit(71);
+    co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"error fetching rpc response"});
   case kphp::coro::poll_status::timeout:
-    k2::exit(79);
+    co_return error_factory.make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
-  //  auto opt_response{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
   if (!opt_response) [[unlikely]] {
-//    kphp::log::warning("E");
     co_return error_factory.make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
 
-  auto response{*std::move(opt_response)}; // don't check response's emptyness; will throw if it's empty, indicating a fetch error
+  auto response{*std::move(opt_response)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
 
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
-//    kphp::log::warning("F");
     co_return std::move(err);
   }
   co_return std::move(res);
@@ -359,38 +357,6 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   const size_t request_size{rpc_server_instance_st.tl_storer.view().size_bytes()};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-  /*
-
-    auto expected_stream{kphp::component::stream::open(actor, k2::stream_kind::component)};
-    if (!expected_stream) [[unlikely]] {
-      co_return kphp::rpc::query_info{
-          .id = kphp::rpc::INVALID_QUERY_ID, .request_size = rpc_server_instance_st.tl_storer.view().size_bytes(), .timestamp = timestamp};
-    }
-
-    auto stream{*std::move(expected_stream)};
-    {
-      auto tl_storer{std::exchange(rpc_server_instance_st.tl_storer, tl::storer{0})};
-      const vk::final_action finalizer{[&tl_storer, &rpc_server_instance_st] noexcept {
-        if (tl_storer.capacity() > rpc_server_instance_st.tl_storer.capacity()) {
-          std::swap(tl_storer, rpc_server_instance_st.tl_storer);
-        }
-      }};
-
-      // prepare and send RPC request
-      // 'request_buf' will look like this:
-      //    [ RpcExtraHeaders (optional) ] [ payload ]
-      if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(tl_storer.view(), ignore_answer)}; opt_new_extra_header)
-    { std::span<const std::byte> request_body{tl_storer.view().subspan(cur_extra_header_size)}; std::span<const std::byte> new_header{reinterpret_cast<const
-    std::byte*>(std::addressof(*opt_new_extra_header)), sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
-
-        if (!co_await stream.write_all(new_header) || !co_await kphp::component::send_request(stream, request_body)) [[unlikely]] {
-          co_return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
-        }
-      } else if (!co_await kphp::component::send_request(stream, tl_storer.view())) [[unlikely]] {
-        co_return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
-      }
-    }
-  */
 
   auto tl_storer{std::exchange(rpc_server_instance_st.tl_storer, tl::storer{0})};
   const vk::final_action finalizer{[&tl_storer, &rpc_server_instance_st] noexcept {
@@ -401,7 +367,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   // TODO make special (may be resource) type for rpc request;
   auto rpc_d_exp{k2::rpc_send_request(actor, tl_storer.view())};
   if (!rpc_d_exp) {
-    k2::exit(123);
+    return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
 
   // TODO why is query_id incremented here but not before the request ???
@@ -413,68 +379,6 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }
 
   k2::descriptor rpc_d{*rpc_d_exp};
-
-  // create a task to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
-  // that the stream will not be closed too early. otherwise, platform may even not send RPC request
-  /*static constexpr auto awaiter_coroutine{[](int64_t query_id, k2::descriptor rpc_d, std::chrono::milliseconds timeout,
-                                             bool collect_responses_extra_info) noexcept -> kphp::coro::shared_task<std::optional<string>> {
-    std::optional<string> opt_response{std::nullopt};
-
-    kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-    switch (co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout)) {
-    case kphp::coro::poll_status::event: {
-      size_t response_size{k2::rpc_get_response_size(rpc_d)};
-      if (response_size == 0) {
-        // TODO ERROR
-        k2::exit(148);
-      }
-      string response{reinterpret_cast<char*>(k2::alloc(response_size)), static_cast<string::size_type>(response_size)};
-      size_t new_response_size = k2::rpc_fetch_response(rpc_d, {reinterpret_cast<std::byte*>(response.buffer()), response.size()});
-      if (new_response_size != response_size) {
-        // TODO ERROR
-        k2::exit(69);
-      }
-      opt_response = std::move(response);
-      break;
-    }
-    case kphp::coro::poll_status::closed:
-      k2::exit(70);
-      // TODO really nothing ?
-      // fallthrough
-    case kphp::coro::poll_status::error:
-      k2::exit(71);
-      // TODO ERROR ???
-      // nothing
-      // fallthrough
-    case kphp::coro::poll_status::timeout:
-      k2::exit(79);
-      // nothing
-      // fallthrough
-    }
-
-    *//*
-        std::optional<string> opt_response{std::in_place};
-        auto fetch_task{kphp::component::fetch_response(stream, kphp::component::read_ext::append(*opt_response))};
-        if (auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout)}; !expected) [[unlikely]] {
-          opt_response = std::nullopt;
-        }
-    *//*
-
-    // update response extra info if needed
-    if (collect_responses_extra_info) {
-      auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
-      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
-        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-        const auto response_size{opt_response.transform([](const string& response) noexcept { return static_cast<int64_t>(response.size()); }).value_or(0)};
-        it_extra_info->second.second = std::make_tuple(response_size, timestamp - std::get<1>(it_extra_info->second.second));
-        it_extra_info->second.first = response_extra_info_status::ready;
-      } else {
-        kphp::log::warning("can't find extra info for RPC query {}", query_id);
-      }
-    }
-
-    co_return std::move(opt_response);
-  }};*/
 
   static constexpr auto ignore_answer_awaiter_coroutine{[](k2::descriptor rpc_d, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> {
     auto fetch_task{kphp::coro::io_scheduler::get().poll(rpc_d, kphp::coro::poll_op::read, timeout)};
@@ -503,13 +407,14 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
   // start awaiter task
-  // TODO need to move rpc_d ?
-//  auto awaiter_task{awaiter_coroutine(query_id, std::move(rpc_d), timeout, collect_responses_extra_info)};
-//  kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
 
-//  rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
+  k2::TimePoint now_instant{};
+  k2::instant(std::addressof(now_instant));
+  std::chrono::nanoseconds now_ns{now_instant.time_point_ns};
+  std::chrono::nanoseconds timeout_ns{duration_cast<std::chrono::nanoseconds>(timeout)};
+  std::chrono::nanoseconds deadline{now_ns + timeout_ns};
 
-  rpc_client_instance_st.rpc_requests_infos.emplace(query_id, уберите_меня_отсюда::rpc_request_info{rpc_d, collect_responses_extra_info});
+  rpc_client_instance_st.rpc_requests_infos.emplace(query_id, уберите_меня_отсюда::rpc_request_info{rpc_d, deadline, collect_responses_extra_info});
   return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
