@@ -90,9 +90,9 @@ VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
     uint64_t coro_alloc_free_cycles{coro_alloc_cycles + coro_free_cycles};
 
     kphp::log::info("\ntotal cpu cycles -> {}\n"
-                    "coro_alloc_cycles -> {} ({}%)\n"
-                    "coro_free_cycles -> {} ({}%)\n"
-                    "coro_alloc+free_cycles -> {} ({}%)",
+                    "coro alloc cycles -> {} ({}%)\n"
+                    "coro free cycles -> {} ({}%)\n"
+                    "coro alloc+free cycles -> {} ({}%)\n",
                     cpu_info_instance_state.total_cycles, coro_alloc_cycles, cpu_info_instance_state.get_percent(coro_alloc_cycles), coro_free_cycles,
                     cpu_info_instance_state.get_percent(coro_free_cycles), coro_alloc_free_cycles, cpu_info_instance_state.get_percent(coro_alloc_free_cycles));
   }
