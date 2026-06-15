@@ -65,6 +65,11 @@ VISIBILITY_DEFAULT void k2_init_instance() {
   k2::details::instance_state_ptr = k2_instance_state();
   kphp::log::debug("start instance state init");
   new (k2::instance_state()) InstanceState{};
+
+  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
+  cpu_info_instance_state.init();
+  cpu_info_instance_state.total_cycles = -CpuInfoInstanceState::rdtsc();
+
   k2::instance_state()->init_script_execution();
   kphp::log::debug("finish instance state init");
 }
@@ -75,6 +80,22 @@ VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
   k2::details::instance_state_ptr = k2_instance_state();
   kphp::log::debug("k2_poll started");
   const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
+
+  if (poll_status == k2::PollStatus::PollFinishedOk) {
+    auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
+    cpu_info_instance_state.total_cycles += CpuInfoInstanceState::rdtsc();
+
+    uint64_t coro_alloc_cycles{cpu_info_instance_state.coro_alloc_cycles};
+    uint64_t coro_free_cycles{cpu_info_instance_state.coro_free_cycles};
+    uint64_t coro_alloc_free_cycles{coro_alloc_cycles + coro_free_cycles};
+
+    kphp::log::info("\ntotal cpu cycles -> {}\n"
+                    "coro_alloc_cycles -> {} ({}%)\n"
+                    "coro_free_cycles -> {} ({}%)\n"
+                    "coro_alloc+free_cycles -> {} ({}%)",
+                    cpu_info_instance_state.total_cycles, coro_alloc_cycles, cpu_info_instance_state.get_percent(coro_alloc_cycles), coro_free_cycles,
+                    cpu_info_instance_state.get_percent(coro_free_cycles), coro_alloc_free_cycles, cpu_info_instance_state.get_percent(coro_alloc_free_cycles));
+  }
   kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));
   return poll_status;
 }
