@@ -22,16 +22,22 @@
 namespace kphp::rpc {
 
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
-  static constexpr auto rpc_queue_wrapper_task{[](kphp::coro::shared_task<> awaiter_task, int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
-    co_await std::move(awaiter_task).when_ready();
+  static constexpr auto rpc_queue_wrapper_task{[](уберите_меня_отсюда::rpc_request_info request_info, int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
+    k2::TimePoint now_instant{};
+    // TODO call k2::instant once for all sending requests in batch
+    k2::instant(std::addressof(now_instant));
+    std::chrono::nanoseconds now_ns{now_instant.time_point_ns};
+    std::chrono::nanoseconds timeout{request_info.deadline - now_ns};
+    kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
+    co_await m_scheduler.poll(request_info.rpc_d, kphp::coro::poll_op::read, timeout);
     co_return request_id;
   }};
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
 
-  const auto it_awaiter_task{rpc_client_instance_st.response_awaiter_tasks.find(request_id)};
-  if (it_awaiter_task == rpc_client_instance_st.response_awaiter_tasks.end()) [[unlikely]] {
-    kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
+  const auto it_rpc_request_info{rpc_client_instance_st.rpc_requests_infos.find(request_id)};
+  if (it_rpc_request_info == rpc_client_instance_st.rpc_requests_infos.end()) [[unlikely]] {
+    kphp::log::warning("could not find rpc query with id {} in pending requests", queue_id);
     return;
   }
 
@@ -43,7 +49,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   }
 
   auto& await_set{(*opt_await_set).get()};
-  await_set.push(rpc_queue_wrapper_task(static_cast<kphp::coro::shared_task<>>(it_awaiter_task->second), request_id));
+  await_set.push(rpc_queue_wrapper_task(it_rpc_request_info->second, request_id));
 }
 
 inline int64_t rpc_queue_create(std::span<int64_t> request_ids) noexcept {
