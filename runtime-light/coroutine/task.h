@@ -11,8 +11,8 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/coro-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -66,16 +66,16 @@ struct promise_base : kphp::coro::async_stack_element {
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc(n);
+    return kphp::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    return kphp::coro::alloc_aligned(n, al);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::memory::script::free(ptr);
+    kphp::coro::free(ptr);
   }
 
   void* m_next{};
