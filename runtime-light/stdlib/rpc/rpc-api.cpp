@@ -195,7 +195,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   class_instance<RpcTlQuery> rpc_query{};
   std::optional<kphp::rpc::request_info> opt_rpc_request_info{};
 
- {
+  {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
     const auto it_rpc_request_info{rpc_client_instance_st.rpc_requests_infos.find(query_id)};
     const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher, it_rpc_request_info] noexcept {
@@ -236,7 +236,8 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
   switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event: {
-    std::expected<string, std::pair<int, string>> response_expected{get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
+    std::expected<string, std::pair<int, string>> response_expected{
+        get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
     if (!response_expected) {
       // TODO std::move ??????????????????????
       std::pair<int, string> error{response_expected.error()};
@@ -319,7 +320,8 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
   switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event: {
-    std::expected<string, std::pair<int, string>> response_expected{get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
+    std::expected<string, std::pair<int, string>> response_expected{
+        get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
     if (!response_expected) {
       // TODO std::move ??????????????????????
       std::pair<int, string> error{response_expected.error()};
