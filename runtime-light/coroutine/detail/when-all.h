@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
@@ -185,6 +186,7 @@ public:
 
   auto unhandled_exception() const noexcept -> void {
     kphp::log::error("internal unhandled exception");
+    php_assert(0);
   }
 
   auto start(when_all_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept {
@@ -218,8 +220,9 @@ private:
       return when_all_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
-    static auto get_return_object_on_allocation_failure() noexcept -> when_all_task {
+    [[noreturn]] static auto get_return_object_on_allocation_failure() noexcept -> when_all_task {
       kphp::log::error("cannot allocate memory for when_all_task");
+      php_assert(0);
     }
   };
 

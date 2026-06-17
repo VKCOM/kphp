@@ -256,6 +256,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
     kphp::log::warning("can't store RPC error: {}", expected.error());
   }
   kphp::log::error("store_error called. error_code: {}, error_msg: {}", error_code, error_msg.c_str());
+  php_assert(0);
 }
 
 inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$RpcFunctionReturnResult> response) noexcept {

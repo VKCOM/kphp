@@ -189,6 +189,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   tl::K2InvokeRpc invoke_rpc{};
   if (!invoke_rpc.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous rpc request");
+    php_assert(0);
   }
 
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
@@ -200,6 +201,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   tl::magic request_magic{};
   if (tl::fetcher tlf{rpc_server_instance_st.tl_storer.view()}; !request_magic.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous rpc request");
+    php_assert(0);
   }
 
   auto& superglobals{PhpScriptMutableGlobals::current().get_superglobals()};

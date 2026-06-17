@@ -19,6 +19,7 @@ RuntimeContext& RuntimeContext::get() noexcept {
     return instance_state_ptr->runtime_context;
   }
   kphp::log::error("unexpected access to RuntimeContext");
+  php_assert(0);
 }
 
 void RuntimeContext::init() noexcept {

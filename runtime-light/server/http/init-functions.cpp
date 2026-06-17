@@ -79,6 +79,7 @@ string get_server_protocol(const tl::HttpVersion& http_version, const std::optio
       protocol_name = HTTPS;
     } else if (scheme != HTTP_SCHEME) [[unlikely]] {
       kphp::log::error("unexpected http scheme: {}", scheme);
+      php_assert(0);
     }
   }
   string protocol{};
@@ -172,6 +173,7 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
         http_server_instance_st.connection_kind = kphp::http::connection_kind::close;
       } else {
         kphp::log::error("unexpected connection header: {}", h_value);
+        php_assert(0);
       }
     } else if (h_name == kphp::http::headers::COOKIE) {
       process_cookie_header(h_value, superglobals);
@@ -187,6 +189,7 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
       const auto [_, ec]{std::from_chars(h_value.data(), std::next(h_value.data(), h_value.size()), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
         kphp::log::error("content-length expected to be {}, but it's {}", content_length, invoke_http.body.size());
+        php_assert(0);
       }
       continue;
     }
@@ -245,6 +248,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   tl::K2InvokeHttp invoke_http{};
   if (!invoke_http.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous http request");
+    php_assert(0);
   }
 
   auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
@@ -255,6 +259,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     auto expected_connection{kphp::component::connection::from_stream(std::move(request_stream))};
     if (!expected_connection) [[unlikely]] {
       kphp::log::error("failed to create HTTP connection: error code -> {}", expected_connection.error());
+      php_assert(0);
     }
 
     static constexpr auto user_abort_handler{[] noexcept -> kphp::coro::task<> {
@@ -268,6 +273,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     http_server_instance_st.connection = *std::move(expected_connection);
     if (auto expected{http_server_instance_st.connection->register_abort_handler(user_abort_handler)}; !expected) [[unlikely]] {
       kphp::log::error("failed to register user abort handler: error code -> {}", expected.error());
+      php_assert(0);
     }
   }
 
@@ -468,6 +474,7 @@ kphp::coro::task<> finalize_server() noexcept {
 
     if (auto expected{co_await kphp::component::send_response(http_server_instance_st.connection->get_stream(), tls.view())}; !expected) [[unlikely]] {
       kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
+      php_assert(0);
     }
     http_server_instance_st.response_state = kphp::http::response_state::completed;
     [[fallthrough]];

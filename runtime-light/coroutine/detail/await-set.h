@@ -11,6 +11,7 @@
 #include <optional>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/type-traits.h"
@@ -207,6 +208,7 @@ public:
 
   void unhandled_exception() const noexcept {
     kphp::log::error("internal unhandled exception");
+    php_assert(0);
   }
 
   auto start(detail::await_set::await_broker<return_type>& await_broker,
@@ -247,8 +249,9 @@ private:
       return await_set_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
-    static await_set_task get_return_object_on_allocation_failure() {
+    [[noreturn]] static await_set_task get_return_object_on_allocation_failure() {
       kphp::log::error("cannot allocate memory for await_set_task");
+      php_assert(0);
     }
   };
 

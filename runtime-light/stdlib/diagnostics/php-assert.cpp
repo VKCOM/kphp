@@ -87,12 +87,18 @@ void runtime_error(char const* message, ...) {
   va_end(args);
 }
 
+[[noreturn]] void fake_exit() {
+  exit(0);
+}
+
 void php_assert__(const char* msg, const char* file, int line) {
   php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
   critical_error_handler();
   k2::exit(1);
+  fake_exit();
 }
 
 void critical_error_handler() {
   k2::exit(1);
+  fake_exit();
 }

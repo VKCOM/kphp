@@ -77,7 +77,7 @@ inline void assertion(bool condition, const std::source_location& location = std
 }
 
 template<typename... Args>
-[[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (const auto& error_handling_state_opt{ErrorHandlingState::try_get()};
       error_handling_state_opt.has_value() && !(*error_handling_state_opt).get().log_level_enabled(E_ERROR)) {
   } else if (std::to_underlying(level::error) <= k2::log_level_enabled()) {

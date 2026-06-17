@@ -111,15 +111,18 @@ bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
 template<typename F>
 void f$kphp_extended_instance_cache_metrics_init(F&& /*callback*/) {
   kphp::log::error("call to unsupported function");
+  php_assert(0);
 }
 
 inline int64_t f$system(const string& /*command*/, int64_t& /*result_code*/ = SystemInstanceState::get().result_code_dummy) {
   kphp::log::error("call to unsupported function");
+  php_assert(0);
 }
 
 inline Optional<array<mixed>> f$getopt(const string& /*options*/, const array<string>& /*longopts*/ = {},
                                        Optional<int64_t>& /*rest_index*/ = SystemInstanceState::get().rest_index_dummy) {
   kphp::log::error("call to unsupported function");
+  php_assert(0);
 }
 
 inline int64_t f$numa_get_bound_node() noexcept {

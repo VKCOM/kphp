@@ -40,6 +40,7 @@ RpcRequestResultUntyped::RpcRequestResultUntyped(std::unique_ptr<tl_func_base>&&
 
 class_instance<C$VK$TL$RpcResponse> RpcRequestResultUntyped::fetch_typed_response() {
   kphp::log::error("Forbidden to call for non typed rpc requests");
+  php_assert(0);
 }
 
 std::unique_ptr<tl_func_base> RpcRequestResultUntyped::extract_untyped_fetcher() {

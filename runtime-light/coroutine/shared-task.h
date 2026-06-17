@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -68,6 +69,7 @@ struct promise_base : kphp::coro::async_stack_element {
 
   auto unhandled_exception() const noexcept -> void {
     kphp::log::error("internal unhandled exception");
+    php_assert(0);
   }
 
   auto done() const noexcept -> bool {
@@ -289,8 +291,9 @@ struct shared_task final {
       return shared_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
-    static auto get_return_object_on_allocation_failure() noexcept -> shared_task {
+    [[noreturn]] static auto get_return_object_on_allocation_failure() noexcept -> shared_task {
       kphp::log::error("cannot allocate memory for shared_task");
+      php_assert(0);
     }
   };
 

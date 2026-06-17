@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
@@ -46,7 +47,7 @@ struct promise_self_deleting : kphp::coro::async_stack_element {
 
   auto get_return_object() noexcept -> task_self_deleting;
 
-  static auto get_return_object_on_allocation_failure() noexcept -> task_self_deleting;
+  [[noreturn]] static auto get_return_object_on_allocation_failure() noexcept -> task_self_deleting;
 
   auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
@@ -60,6 +61,7 @@ struct promise_self_deleting : kphp::coro::async_stack_element {
 
   auto unhandled_exception() const noexcept -> void {
     kphp::log::error("internal unhandled exception");
+    php_assert(0);
   }
 };
 
@@ -93,8 +95,9 @@ inline auto promise_self_deleting::get_return_object() noexcept -> task_self_del
   return task_self_deleting{*this};
 }
 
-inline auto promise_self_deleting::get_return_object_on_allocation_failure() noexcept -> task_self_deleting {
+[[noreturn]] inline auto promise_self_deleting::get_return_object_on_allocation_failure() noexcept -> task_self_deleting {
   kphp::log::error("cannot allocate memory for task_self_deleting");
+  php_assert(0);
 }
 
 } // namespace task_self_deleting

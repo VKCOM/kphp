@@ -125,7 +125,7 @@ inline void free_checked(void* ptr, size_t size, size_t align) noexcept {
   k2_free_checked(ptr, size, align);
 }
 
-[[noreturn]] inline void exit(int32_t exit_code) noexcept {
+inline void exit(int32_t exit_code) noexcept {
   k2_exit(exit_code);
 }
 

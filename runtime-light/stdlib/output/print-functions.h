@@ -90,4 +90,5 @@ inline kphp::coro::task<Optional<int64_t>> f$fprintf(resource stream, string for
 inline Optional<int64_t> f$fputcsv(const mixed& /*unused*/, const array<mixed>& /*unused*/, const string& /*unused*/ = string(",", 1),
                                    const string& /*unused*/ = string("\"", 1), const string& /*unused*/ = string("\\", 1)) {
   kphp::log::error("call to unsupported function");
+  php_assert(0);
 }

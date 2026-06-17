@@ -188,6 +188,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       return window;
     default:
       kphp::log::error("deflate_init: unknown encoding {}", encoding);
+      php_assert(0);
     }
   }()};
 

@@ -36,6 +36,7 @@ inline kphp::coro::task<> finalize_cli_server() noexcept {
   auto& cli_instance_state{CLIInstanceInstance::get()};
   if (!cli_instance_state.output_stream) [[unlikely]] {
     kphp::log::error("tried to write output to unset CLI output stream");
+    php_assert(0);
   }
 
   static constexpr auto transformer{[](const string_buffer& buffer) noexcept { return std::as_bytes(std::span<const char>{buffer.buffer(), buffer.size()}); }};
@@ -46,6 +47,7 @@ inline kphp::coro::task<> finalize_cli_server() noexcept {
   auto& output_stream{*cli_instance_state.output_stream};
   if (auto expected{co_await output_stream.write(system_buffer)}; !expected) [[unlikely]] {
     kphp::log::error("can't write system buffer to output: stream -> {}, error code -> {}", output_stream.descriptor(), expected.error());
+    php_assert(0);
   }
 
   auto user_buffers{output_instance_state.output_buffers.user_buffers() |
@@ -53,6 +55,7 @@ inline kphp::coro::task<> finalize_cli_server() noexcept {
   for (const auto& buffer : user_buffers) {
     if (auto expected{co_await output_stream.write(buffer)}; !expected) [[unlikely]] {
       kphp::log::error("can't write user buffer to output: stream -> {}, error code -> {}", output_stream.descriptor(), expected.error());
+      php_assert(0);
     }
   }
   output_stream.shutdown_write();

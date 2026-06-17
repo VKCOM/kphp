@@ -346,6 +346,7 @@ inline auto io_scheduler::update_timer() noexcept -> void {
   if (!m_timer_handle.reset(time_point)) [[unlikely]] {
     kphp::log::error("error resetting timer handle, unable to set time point -> {}, current time point -> {}", time_point.time_point_ns,
                      m_timer_handle.time_point().time_point_ns);
+    php_assert(0);
   }
 }
 

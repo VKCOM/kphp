@@ -171,7 +171,7 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  * `exit_code` == 0 => `FinishedOk`,
  * `exit_code` != 0 => `FinishedError`,
  */
-[[noreturn]] void k2_exit(int32_t exit_code);
+void k2_exit(int32_t exit_code);
 
 /**
  * Semantically equivalent to libc's `sysconf` function.

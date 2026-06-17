@@ -19,6 +19,7 @@ const AllocatorState& AllocatorState::get() noexcept {
     return image_state_ptr->image_allocator_state;
   }
   kphp::log::error("can't find allocator state");
+  php_assert(0);
 }
 
 AllocatorState& AllocatorState::get_mutable() noexcept {
