@@ -4,6 +4,7 @@
 
 #include "runtime-light/state/instance-state.h"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -195,6 +196,9 @@ kphp::coro::task<> InstanceState::finalize_server_instance() const noexcept {
 }
 
 kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
+  epilogue_start_tp = std::chrono::system_clock::now();
+
+  const auto shutdown_functions_start_tp{epilogue_start_tp};
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
     for (auto& sf : shutdown_functions) {
       co_await sf;
@@ -205,6 +209,8 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   if (shutdown_state_ == shutdown_state::finished) [[unlikely]] {
     co_return;
   }
+  const auto shutdown_function_end_tp{std::chrono::system_clock::now()};
+  shutdown_functions_duration = std::chrono::duration_cast<std::chrono::milliseconds>(shutdown_function_end_tp - shutdown_functions_start_tp);
 
   switch (image_kind()) {
   case image_kind::oneshot:
@@ -220,6 +226,9 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));
   }
   shutdown_state_ = shutdown_state::finished;
+
+  const auto server_finalize_end_tp{std::chrono::system_clock::now()};
+  server_finalize_duration = std::chrono::duration_cast<std::chrono::milliseconds>(server_finalize_end_tp - shutdown_function_end_tp);
 
   /*
    * Unlike regular RPC requests whose results the user code waits for via rpc_fetch_responses,
@@ -240,6 +249,9 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
       co_await ignore_answer_request_await_set.next();
     }
   }
+
+  const auto noresult_rpc_end_tp{std::chrono::system_clock::now()};
+  noresult_rpc_duration = std::chrono::duration_cast<std::chrono::milliseconds>(noresult_rpc_end_tp - server_finalize_end_tp);
 
   // Stop session with internal Web component
   if (auto& web_state{WebInstanceState::get()}; web_state.session.has_value()) {
