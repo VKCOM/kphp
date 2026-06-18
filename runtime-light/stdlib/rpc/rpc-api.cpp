@@ -160,7 +160,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
 
 namespace {
 
-static std::expected<string, std::pair<int, string>> get_rpc_response(int64_t query_id, k2::descriptor rpc_d, bool collect_responses_extra_info) {
+std::expected<string, std::pair<int32_t, string>> get_rpc_response(int64_t query_id, k2::descriptor rpc_d, bool collect_responses_extra_info) {
   std::expected<size_t, int32_t> first_response_size{k2::rpc_get_response_size(rpc_d)};
   if (!first_response_size) {
     return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
@@ -236,11 +236,11 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
   switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event: {
-    std::expected<string, std::pair<int, string>> response_expected{
+    std::expected<string, std::pair<int32_t, string>> response_expected{
         get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
     if (!response_expected) {
       // TODO std::move ??????????????????????
-      std::pair<int, string> error{response_expected.error()};
+      std::pair<int32_t, string> error{response_expected.error()};
       co_return TlRpcError::make_error(error.first, error.second);
     }
     opt_response = *response_expected;
@@ -320,11 +320,11 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
   switch (co_await m_scheduler.poll(rpc_request_info.rpc_d, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event: {
-    std::expected<string, std::pair<int, string>> response_expected{
+    std::expected<string, std::pair<int32_t, string>> response_expected{
         get_rpc_response(query_id, rpc_request_info.rpc_d, rpc_request_info.collect_responses_extra_info)};
     if (!response_expected) {
       // TODO std::move ??????????????????????
-      std::pair<int, string> error{response_expected.error()};
+      std::pair<int32_t, string> error{response_expected.error()};
       co_return error_factory.make_error(error.first, error.second);
     }
     opt_response = *response_expected;
@@ -389,7 +389,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   // normalize timeout
   using namespace std::chrono_literals;
-  static constexpr auto DEFAULT_TIMEOUT{/*TODO RETURN 300ms BEFORE MERGE*/ 3000ms};
+  static constexpr auto DEFAULT_TIMEOUT{300ms};
   static constexpr auto MIN_TIMEOUT{1ms};
   static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(24h)};
   static_assert(MIN_TIMEOUT <= MAX_TIMEOUT, "calling std::clamp will lead to undefined behavior");
