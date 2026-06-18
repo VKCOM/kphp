@@ -137,6 +137,7 @@ struct RunInterruptedFunction {
     std::string script_finish = "co_await InstanceState::get().run_instance_epilogue();";
     FunctionSignatureGenerator(W) << "kphp::coro::task<> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << try_wrapper << await_prefix
                                   << FunctionName(function) << "());" << NL << script_finish << NL;
+    W << "const auto& instance_st{InstanceState::get()}; const auto epilogue_duration{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - instance_st.epilogue_start_tp)}; kphp::log::info(\"Epilogue stats: epilogue -> {}, shutdown functions -> {}, server finalize -> {}, noresult rpc -> {}\", epilogue_duration.count(), instance_st.shutdown_functions_duration.count(), instance_st.server_finalize_duration.count(), instance_st.noresult_rpc_duration.count());";
     W << "// Do not wait for all coroutines to complete if requested not to" << NL << "if (ComponentState::get().exit_after_response)" << BEGIN
       << "k2::exit(0);" << NL << END << NL << "co_return;" << NL << END;
     W << NL;
