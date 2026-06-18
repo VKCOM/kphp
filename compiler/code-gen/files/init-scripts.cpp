@@ -298,13 +298,12 @@ void CppMainFile::compile(CodeGenerator &W) const {
 }
 
 void ComponentInfoFile::compile(CodeGenerator &W) const {
-  auto build_time{std::chrono::system_clock::to_time_t(G->settings().build_tp)};
-  auto date_str{fmt::format("{:%b %e %Y %T %Z}", fmt::localtime(build_time))};
-
   kphp_assert(G->is_output_mode_k2());
   W << OpenFile("image_info.cpp");
   W << ExternInclude(G->settings().runtime_headers.get());
-  W << "__attribute__((visibility(\"default\"))) const ImageInfo *k2_describe() " << BEGIN << "static ImageInfo imageInfo {\""
+  W << "__attribute__((visibility(\"default\"))) const ImageInfo *k2_describe() " << BEGIN
+    << R"(static std::array extraInfo {ImageInfo::KeyValuePair{.key = "compiler_version", .value = ")"
+    << G->settings().get_version() << "\"}};" << NL << "static ImageInfo imageInfo {\""
     << G->settings().k2_component_name.get() << "\"" << ","
     << (G->is_output_mode_k2_multishot() ? "0" : "1") << ","
     << std::to_string(
@@ -312,10 +311,9 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
     ) << ","
     << "K2_PLATFORM_HEADER_H_VERSION, "
     << "{}," // todo:k2 add commit hash
-    << "\"" << G->settings().k2_component_name.get() << " compiled at " << date_str << " by " // todo:k2 add commit hash of target into version
-    << G->settings().get_version() << "\","
-    << "0" << ","
-    << "nullptr"
+    << "\"" << G->settings().php_code_version.get() << "\","
+    << "extraInfo.size()" << ","
+    << "extraInfo.data()"
     << "};" << NL << "return &imageInfo;" << NL << END;
   W << CloseFile();
 }
