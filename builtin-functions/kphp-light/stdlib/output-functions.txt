@@ -24,4 +24,3 @@ function write_metric_value ($metric_name ::: string, $tags ::: string[], $value
 function write_metric_values_array ($metric_name ::: string, $tags ::: string[], $values ::: float[], $timestamp ::: int = 0, $monitoring_system ::: int = 0) ::: void;
 function write_metric_count ($metric_name ::: string, $tags ::: string[], $count ::: float, $timestamp ::: int = 0, $monitoring_system ::: int = 0) ::: void;
 function write_metric_increment ($metric_name ::: string, $tags ::: string[], $timestamp ::: int = 0, $monitoring_system ::: int = 0) ::: void;
-function flush_metrics ($monitoring_system ::: int = 0) ::: void;

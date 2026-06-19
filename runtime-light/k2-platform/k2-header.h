@@ -386,14 +386,15 @@ void* k2_mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t fla
  * Semantically equivalent to libc's `madvise` function.
  */
 int32_t k2_madvise(void* addr, size_t length, int32_t advise);
+
 /**
+ * ...
  *
  * @param buf
  * @param buf_len
  * @param ms
  */
 void k2_write_serialized_metric(uint8_t* buf, size_t buf_len, MonitoringSystem ms);
-void k2_flush_metrics(enum MonitoringSystem ms);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
