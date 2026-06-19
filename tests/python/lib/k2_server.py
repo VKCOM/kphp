@@ -71,6 +71,7 @@ class K2Server(WebServer):
         log_record.pop("file", "")
         log_record.pop("line", "")
         log_record.pop("hostname", "")
+        log_record.pop("cluster", "")
 
         # convert raw string to python dict
         tags = log_record.get("tags")
