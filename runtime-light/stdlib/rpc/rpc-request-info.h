@@ -87,7 +87,7 @@ public:
 
     switch (co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout)) {
     case kphp::coro::poll_status::event:
-      co_return impl::get_ready_response(query_id, rpc_d, collect_responses_extra_info);
+      co_return get_ready_response();
     case kphp::coro::poll_status::closed:
     case kphp::coro::poll_status::timeout:
       co_return std::unexpected{std::make_pair(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"})};
@@ -95,6 +95,9 @@ public:
       co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
     }
   }
+
+private:
+  std::expected<string, std::pair<int32_t, string>> get_ready_response() noexcept;
 };
 
 std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
