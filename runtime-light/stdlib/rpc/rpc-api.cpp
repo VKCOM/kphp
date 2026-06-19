@@ -293,24 +293,11 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
       std::swap(tl_storer, rpc_server_instance_st.tl_storer);
     }
   }};
-  auto rpc_d_exp{k2::rpc_send_request(actor, tl_storer.view())};
-  if (!rpc_d_exp) {
-    return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
-  }
 
-  // TODO why is query_id incremented here but not before the request ???
   const auto query_id{rpc_client_instance_st.current_query_id++};
 
-  // create response extra info
-  if (collect_responses_extra_info) {
-    rpc_client_instance_st.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
-  }
-
-  k2::descriptor rpc_d{*rpc_d_exp};
-
-  static constexpr auto ignore_answer_awaiter_coroutine{[](k2::descriptor rpc_d, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> {
-    auto fetch_task{kphp::coro::io_scheduler::get().poll(rpc_d, kphp::coro::poll_op::read, timeout)};
-    std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout);
+  static constexpr auto ignore_answer_awaiter_coroutine{[](query_handle handle, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> {
+    std::ignore = co_await handle.get_response();
   }};
 
   // normalize timeout
@@ -325,9 +312,16 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                     })
                                     .value_or(DEFAULT_TIMEOUT),
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
+
+  auto query_handle_expected{kphp::rpc::send_and_get_handle(actor, collect_responses_extra_info, timeout, query_id, tl_storer.view())};
+  if (!query_handle_expected) {
+    return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
+  }
+  auto query_handle{std::move(*query_handle_expected)};
+
   if (ignore_answer) {
     // start ignore answer awaiter task
-    auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(rpc_d), timeout)};
+    auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(query_handle), timeout)};
     kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
 
     rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(ignore_answer_awaiter_task));
@@ -335,8 +329,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }
   // start awaiter task
 
-  std::chrono::nanoseconds deadline{timeout_to_deadline(timeout)};
-  rpc_client_instance_st.rpc_query_handles.emplace(query_id, kphp::rpc::query_handle{std::move(rpc_d), query_id, deadline, collect_responses_extra_info});
+  rpc_client_instance_st.rpc_query_handles.emplace(query_id, std::move(query_handle));
   return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
