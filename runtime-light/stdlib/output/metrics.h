@@ -23,7 +23,7 @@ private:
   kphp::stl::unordered_map<string, string, kphp::memory::script_allocator, hasher_type> tags;
   size_t msg_size{0};
 
-  MetricsBuffer(std::string_view metric_name) noexcept
+  explicit MetricsBuffer(std::string_view metric_name) noexcept
       : metric_name{metric_name.data(), static_cast<string::size_type>(metric_name.length())} {
     this->msg_size += MetricsBuffer::string_sizeof(metric_name);
   }
@@ -61,20 +61,6 @@ public:
   static MetricsBuffer metric(std::string_view metric_name) noexcept {
     return MetricsBuffer{metric_name};
   }
-
-  // -----------------------------------------------------------------
-  static MetricsBuffer from_php(const string& metric_name, const array<string>& tags) noexcept {
-    auto builder = MetricsBuffer::metric({metric_name.c_str(), metric_name.size()});
-    for (const auto& it : tags) {
-      if (it.is_string_key()) {
-        const auto& tag_key = it.get_string_key();
-        const auto& tag_val = it.get_value();
-        builder.tag({tag_key.c_str(), tag_key.size()}, {tag_val.c_str(), tag_val.size()});
-      }
-    }
-    return builder;
-  }
-  // -----------------------------------------------------------------
 
   MetricsBuffer& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
     this->tags[string{tag_name.data(), static_cast<string::size_type>(tag_name.size())}] =
@@ -141,32 +127,3 @@ public:
     return buf;
   }
 };
-
-// -----------------------------------------------------------------
-
-inline void f$write_metric_value(const string& metric_name, const array<string>& tags, double value, uint32_t timestamp = 0,
-                                 int64_t monitoring_system = 0) noexcept {
-  auto builder = MetricsBuffer::from_php(metric_name, tags);
-  k2::write_serialized_metric(builder.build_value(value, static_cast<uint32_t>(timestamp)), static_cast<k2::MonitoringSystem>(monitoring_system));
-}
-
-inline void f$write_metric_values_array(const string& metric_name, const array<string>& tags, const array<double>& values, uint32_t timestamp = 0,
-                                        int64_t monitoring_system = 0) noexcept {
-  auto builder = MetricsBuffer::from_php(metric_name, tags);
-  kphp::stl::vector<double, kphp::memory::script_allocator> vec{};
-  for (const auto& it : values) {
-    vec.push_back(it.get_value());
-  }
-  k2::write_serialized_metric(builder.build_values_array(vec, static_cast<uint32_t>(timestamp)), static_cast<k2::MonitoringSystem>(monitoring_system));
-}
-
-inline void f$write_metric_count(const string& metric_name, const array<string>& tags, double count, uint32_t timestamp = 0,
-                                 int64_t monitoring_system = 0) noexcept {
-  auto builder = MetricsBuffer::from_php(metric_name, tags);
-  k2::write_serialized_metric(builder.build_count(count, static_cast<uint32_t>(timestamp)), static_cast<k2::MonitoringSystem>(monitoring_system));
-}
-
-inline void f$write_metric_increment(const string& metric_name, const array<string>& tags, uint32_t timestamp = 0, int64_t monitoring_system = 0) noexcept {
-  auto builder = MetricsBuffer::from_php(metric_name, tags);
-  k2::write_serialized_metric(builder.build_increment(static_cast<uint32_t>(timestamp)), static_cast<k2::MonitoringSystem>(monitoring_system));
-}
