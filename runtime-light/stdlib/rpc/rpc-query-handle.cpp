@@ -46,5 +46,27 @@ std::expected<string, std::pair<int32_t, string>> get_ready_response(int64_t que
   return {response};
 }
 
+// TODO naming ??
+std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
+                                          int64_t query_id, std::span<const std::byte> request_buffer) noexcept {
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+
+  auto rpc_d_exp{k2::rpc_send_request(actor, request_buffer)};
+  if (!rpc_d_exp) {
+    return std::unexpected{rpc_d_exp.error()};
+  }
+  k2::descriptor rpc_d{*rpc_d_exp};
+
+
+  // create response extra info
+  if (collect_responses_extra_info) {
+    rpc_client_instance_st.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
+  }
+
+  std::chrono::nanoseconds deadline{timeout_to_deadline(timeout)};
+
+  return {query_handle{std::move(rpc_d), query_id, deadline, collect_responses_extra_info}};
+}
+
 } // namespace impl
 } // namespace kphp::rpc

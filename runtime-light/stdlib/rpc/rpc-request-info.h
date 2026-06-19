@@ -15,8 +15,8 @@
 #include "common/rpc-error-codes.h"
 #include "rpc-client-state.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/io-scheduler.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
@@ -78,6 +78,10 @@ public:
   }
 
   kphp::coro::task<std::expected<string, std::pair<int32_t, string>>> get_response() noexcept {
+    if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
+      co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"fetching rpc response from empty handle"})};
+    }
+
     kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
     std::chrono::nanoseconds timeout{deadline_to_timeout(deadline)};
 
@@ -85,13 +89,15 @@ public:
     case kphp::coro::poll_status::event:
       co_return impl::get_ready_response(query_id, rpc_d, collect_responses_extra_info);
     case kphp::coro::poll_status::closed:
+    case kphp::coro::poll_status::timeout:
       co_return std::unexpected{std::make_pair(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"})};
     case kphp::coro::poll_status::error:
       co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
-    case kphp::coro::poll_status::timeout:
-      co_return std::unexpected{std::make_pair(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"})};
     }
   }
 };
+
+std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
+                                                         int64_t query_id, std::span<const std::byte> request_buffer) noexcept;
 
 } // namespace kphp::rpc
