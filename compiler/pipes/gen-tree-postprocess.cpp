@@ -4,11 +4,16 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/name-gen.h"
 #include "compiler/vertex-util.h"
+#include "runtime/php_assert.h"
 
 namespace {
 template <typename F>
@@ -234,6 +239,61 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
     if (as_var->str_val[0] == '_' && VarData::does_name_eq_any_language_superglobal(as_var->str_val)) {
       as_var->extra_type = op_ex_var_superglobal;
     }
+  }
+
+  // Transformation of expr?->field_or_func_call to
+  // {
+  //   $tmp_unique_name = expr;
+  //   $tmp_unique_name === null ? null : $tmp_unique_name->field_or_func_call;
+  // }
+  // We use op_seq_rval for State Exprs extension (the last statement in the block 
+  // is used as value of whole block)
+  // Naive implementation could look like
+  // $expr === null? null : $expr->field_or_func_call
+  // But in case of foo()?->field_or_func_call it could call "foo()" twice
+  // That is why we store "expr" to temporary variable
+  auto transform_nullsufe = [](VertexPtr root) {
+    const auto before_nullsafe_arrow = [&root]() {
+      if (root->type() == op_instance_prop) {
+        return root.as<op_instance_prop>()->instance();
+      }
+      kphp_assert_msg(root->type() == op_func_call, "Internal compiler error: transformation of nullsafe operator failf");
+      return *root.as<op_func_call>()->begin();
+    }();
+    auto tmp_var = VertexAdaptor<op_var>::create().set_location(root);
+    tmp_var->str_val = gen_unique_name("tmp_before_nullsafe_arrow");
+    tmp_var->extra_type = op_ex_var_superlocal_inplace;
+
+    auto assignment = VertexAdaptor<op_set>::create(tmp_var, before_nullsafe_arrow).set_location(root);
+    auto cond = VertexAdaptor<op_eq3>::create(VertexAdaptor<op_null>::create(), tmp_var).set_location(root);
+
+    VertexPtr transformed_vertex {};
+    if (auto as_instance_prop = root.try_as<op_instance_prop>()) {
+      transformed_vertex = VertexAdaptor<op_instance_prop>::create(tmp_var).set_location(root);
+      transformed_vertex.as<op_instance_prop>()->str_val = as_instance_prop->str_val;
+    }
+    else if (auto as_call = root.try_as<op_func_call>()) {
+      transformed_vertex = as_call.clone();
+      *transformed_vertex->begin() = tmp_var;
+    }
+    else {
+      kphp_fail_msg("Internal compiler error: transformation of nullsafe operator fail");
+    }
+
+    auto ternary = VertexAdaptor<op_ternary>::create(VertexAdaptor<op_conv_bool>::create(cond), 
+                                                       VertexAdaptor<op_null>::create(), 
+                                                       transformed_vertex).set_location(root);
+
+    return VertexAdaptor<op_seq_rval>::create(assignment, ternary).set_location(root);
+  };
+  
+  auto is_nullsafe_construction = [](VertexPtr vertex) {
+    return (vertex->type() == op_instance_prop && vertex.as<op_instance_prop>()->is_null_safe)||
+           (vertex->type() == op_func_call && vertex.as<op_func_call>()->is_null_safe);
+  };
+
+  if (is_nullsafe_construction(root)) {
+    return transform_nullsufe(root);
   }
 
   if (auto call = root.try_as<op_func_call>()) {
