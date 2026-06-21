@@ -16,7 +16,7 @@
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
-#include "runtime-light/stdlib/rpc/rpc-request-info.h"
+#include "runtime-light/stdlib/rpc/rpc-query-handle.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 

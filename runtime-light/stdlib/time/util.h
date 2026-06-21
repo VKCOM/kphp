@@ -5,6 +5,7 @@
 #pragma once
 
 #include <memory>
+#include <chrono>
 
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/metaprogramming/concepts.h"

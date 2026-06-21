@@ -24,12 +24,6 @@
 
 namespace kphp::rpc {
 
-namespace impl {
-
-std::expected<string, std::pair<int32_t, string>> get_ready_response(int64_t query_id, k2::descriptor rpc_d, bool collect_responses_extra_info) noexcept;
-
-} // namespace impl
-
 // TODO is it appropriate naming? May be query_handle?
 class query_handle {
   k2::descriptor rpc_d{k2::INVALID_PLATFORM_DESCRIPTOR};
@@ -40,24 +34,24 @@ class query_handle {
 public:
   query_handle() = delete;
 
-  query_handle(k2::descriptor _rpc_d, int64_t query_id, std::chrono::nanoseconds _deadline, bool _collect_responses_extra_info) noexcept
+  query_handle(k2::descriptor _rpc_d, int64_t _query_id, std::chrono::nanoseconds _deadline, bool _collect_responses_extra_info) noexcept
       : rpc_d{_rpc_d},
-        query_id{query_id},
+        query_id{_query_id},
         deadline{_deadline},
         collect_responses_extra_info{_collect_responses_extra_info} {}
 
   query_handle(query_handle&& other) noexcept
       : rpc_d{std::exchange(other.rpc_d, k2::INVALID_PLATFORM_DESCRIPTOR)},
         query_id{other.query_id},
-        deadline{std::exchange(other.deadline, {})},
+        deadline{other.deadline},
         collect_responses_extra_info{other.collect_responses_extra_info} {}
 
   query_handle& operator=(query_handle&& other) noexcept {
     if (this != std::addressof(other)) {
-      close();
+      drop();
       rpc_d = std::exchange(other.rpc_d, k2::INVALID_PLATFORM_DESCRIPTOR);
       query_id = other.query_id;
-      deadline = std::exchange(other.deadline, {});
+      deadline = other.deadline;
       collect_responses_extra_info = other.collect_responses_extra_info;
     }
     return *this;
@@ -68,10 +62,10 @@ public:
   query_handle& operator=(const query_handle& other) = delete;
 
   ~query_handle() noexcept {
-    close();
+    drop();
   }
 
-  void close() noexcept {
+  void drop() noexcept {
     if (rpc_d != k2::INVALID_PLATFORM_DESCRIPTOR) {
       k2::free_descriptor(std::exchange(rpc_d, k2::INVALID_PLATFORM_DESCRIPTOR));
     }
@@ -101,6 +95,6 @@ private:
 };
 
 std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
-                                                         int64_t query_id, std::span<const std::byte> request_buffer) noexcept;
+                                                         double timestamp, int64_t query_id, std::span<const std::byte> request_buffer) noexcept;
 
 } // namespace kphp::rpc

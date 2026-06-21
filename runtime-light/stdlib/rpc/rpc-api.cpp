@@ -34,7 +34,7 @@
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
-#include "runtime-light/stdlib/rpc/rpc-request-info.h"
+#include "runtime-light/stdlib/rpc/rpc-query-handle.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/time/util.h"
@@ -199,11 +199,10 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   kphp::log::assertion(opt_rpc_request_handle.has_value());
-  auto rpc_request_handle{std::move(*opt_rpc_request_handle)};
-  auto response_expected = co_await rpc_request_handle.get_response();
+  auto response_expected{co_await opt_rpc_request_handle->get_response()};
   if (!response_expected) [[unlikely]] {
-    std::pair<int32_t, string> error{response_expected.error()};
-    co_return TlRpcError::make_error(error.first, error.second);
+    std::pair<int32_t, string> error{std::move(response_expected.error())};
+    co_return TlRpcError::make_error(error.first, std::move(error.second));
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptyness; will throw if it's empty, indicating a fetch error
@@ -257,14 +256,11 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't get typed result from untyped TL query. Use consistent API for that"});
   }
 
-  std::optional<string> opt_response{std::nullopt};
-
   kphp::log::assertion(opt_rpc_request_handle.has_value());
-  auto rpc_request_handle{std::move(*opt_rpc_request_handle)};
-  auto response_expected = co_await rpc_request_handle.get_response();
+  auto response_expected{co_await opt_rpc_request_handle->get_response()};
   if (!response_expected) [[unlikely]] {
-    std::pair<int32_t, string> error{response_expected.error()};
-    co_return error_factory.make_error(error.first, error.second);
+    std::pair<int32_t, string> error{std::move(response_expected.error())};
+    co_return error_factory.make_error(error.first, std::move(error.second));
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
@@ -296,9 +292,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   const auto query_id{rpc_client_instance_st.current_query_id++};
 
-  static constexpr auto ignore_answer_awaiter_coroutine{[](query_handle handle, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> {
-    std::ignore = co_await handle.get_response();
-  }};
+  static constexpr auto ignore_answer_awaiter_coroutine{
+      [](query_handle handle, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> { std::ignore = co_await handle.get_response(); }};
 
   // normalize timeout
   using namespace std::chrono_literals;
@@ -313,7 +308,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                     .value_or(DEFAULT_TIMEOUT),
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
 
-  auto query_handle_expected{kphp::rpc::send_and_get_handle(actor, collect_responses_extra_info, timeout, query_id, tl_storer.view())};
+  auto query_handle_expected{kphp::rpc::send_and_get_handle(actor, collect_responses_extra_info, timeout, timestamp, query_id, tl_storer.view())};
   if (!query_handle_expected) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
@@ -327,7 +322,6 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(ignore_answer_awaiter_task));
     return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
-  // start awaiter task
 
   rpc_client_instance_st.rpc_query_handles.emplace(query_id, std::move(query_handle));
   return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
