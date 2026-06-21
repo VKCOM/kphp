@@ -251,8 +251,8 @@ inline std::expected<void, int32_t> madvise(void* addr, size_t length, int32_t a
   return {};
 }
 
-inline void write_serialized_metric(kphp::stl::vector<uint8_t, kphp::memory::script_allocator> serialized_metric, k2::MonitoringSystem ms) noexcept {
-  k2_write_serialized_metric(serialized_metric.data(), serialized_metric.size(), ms);
+inline void write_metric(const kphp::stl::vector<uint8_t, kphp::memory::script_allocator>& serialized_metric, k2::MonitoringSystem ms) noexcept {
+  k2_write_metric(serialized_metric.data(), serialized_metric.size(), ms);
 }
 
 inline void please_shutdown(k2::descriptor descriptor) noexcept {

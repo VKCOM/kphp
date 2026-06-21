@@ -99,6 +99,16 @@ enum UpdateStatus {
 
 enum MonitoringSystem { StatsHouse };
 
+/*
+ * Serialized metric format:
+ *   <timestamp_u32><value_format><msg_size><metric_name_len><metric_name><tag1_name_len><tag1_name><tag1_value_len><tag1_value>...
+ *
+ * value_format:
+ *   <VALUE_MASK><f64>                                     - single float value
+ *   <VALUES_ARRAY_MASK><array_len><f64_1><f64_2>...       - array of float values
+ *   <COUNT_MASK><f64>                                     - count value
+ *   <INC_MASK>                                            - counter increment (no payload)
+ */
 enum MetricValueMask : uint32_t { VALUE_MASK = 0, VALUES_ARRAY_MASK = 1, COUNT_MASK = 2, INC_MASK = 3 };
 
 struct ImageInfo {
@@ -388,13 +398,15 @@ void* k2_mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t fla
 int32_t k2_madvise(void* addr, size_t length, int32_t advise);
 
 /**
- * ...
+ * Writes a pre-serialized metric to the specified monitoring system.
+ * The buffer must contain a metric serialized according to the format described above
+ * (see `MetricValueMask` and the serialized metric format comment).
  *
- * @param buf
- * @param buf_len
- * @param ms
+ * @param `buf` A pointer to the serialized metric data.
+ * @param `buf_len` The length of the serialized metric data in bytes.
+ * @param `ms` The target monitoring system.
  */
-void k2_write_serialized_metric(uint8_t* buf, size_t buf_len, MonitoringSystem ms);
+void k2_write_metric(const uint8_t* buf, size_t buf_len, enum MonitoringSystem ms);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the

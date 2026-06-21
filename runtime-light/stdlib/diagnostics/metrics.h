@@ -10,21 +10,19 @@
 
 #include "common/mixin/movable_only.h"
 #include "runtime-common/core/allocator/script-allocator.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 struct MetricsBuffer final : vk::movable_only {
 private:
   using bytes_vector = kphp::stl::vector<uint8_t, kphp::memory::script_allocator>;
-  using hasher_type = decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); });
 
-  string metric_name;
-  kphp::stl::unordered_map<string, string, kphp::memory::script_allocator, hasher_type> tags;
+  std::string metric_name;
+  kphp::stl::unordered_map<std::string, std::string, kphp::memory::script_allocator> tags;
   size_t msg_size{0};
 
   explicit MetricsBuffer(std::string_view metric_name) noexcept
-      : metric_name{metric_name.data(), static_cast<string::size_type>(metric_name.length())} {
+      : metric_name{metric_name} {
     this->msg_size += MetricsBuffer::string_sizeof(metric_name);
   }
 
@@ -63,8 +61,7 @@ public:
   }
 
   MetricsBuffer& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
-    this->tags[string{tag_name.data(), static_cast<string::size_type>(tag_name.size())}] =
-        string{tag_value.data(), static_cast<string::size_type>(tag_value.size())};
+    this->tags[std::string{tag_name}] = std::string{tag_value};
     this->msg_size += MetricsBuffer::string_sizeof(tag_name) + MetricsBuffer::string_sizeof(tag_value);
     return *this;
   }
