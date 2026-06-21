@@ -17,7 +17,6 @@
 
 namespace kphp::rpc {
 
-// TODO naming ??
 std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
                                                          double timestamp, int64_t query_id, std::span<const std::byte> request_buffer) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
@@ -35,7 +34,7 @@ std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor,
 
   std::chrono::nanoseconds deadline{timeout_to_deadline(timeout)};
 
-  return {query_handle{std::move(rpc_d), query_id, deadline, collect_responses_extra_info}};
+  return {query_handle{rpc_d, query_id, deadline, collect_responses_extra_info}};
 }
 
 std::expected<string, std::pair<int32_t, string>> query_handle::get_ready_response() noexcept {

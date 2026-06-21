@@ -205,7 +205,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
     co_return TlRpcError::make_error(error.first, std::move(error.second));
   }
 
-  auto response{*std::move(response_expected)}; // don't check response's emptyness; will throw if it's empty, indicating a fetch error
+  auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
 
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};

@@ -33,7 +33,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
 
   const auto it_rpc_request_info{rpc_client_instance_st.rpc_query_handles.find(request_id)};
   if (it_rpc_request_info == rpc_client_instance_st.rpc_query_handles.end()) [[unlikely]] {
-    kphp::log::warning("could not find rpc query with id {} in pending requests", queue_id);
+    kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
     return;
   }
 
