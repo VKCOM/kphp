@@ -17,8 +17,8 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
+#include "runtime-light/stdlib/rpc/rpc-query-handle.h"
 #include "runtime-light/stdlib/rpc/rpc-queue-state.h"
-#include "runtime-light/stdlib/rpc/rpc-request-info.h"
 #include "runtime-light/stdlib/time/util.h"
 
 namespace kphp::rpc {
