@@ -333,23 +333,26 @@ int32_t k2_component_access(size_t name_len, const char* name);
 int32_t k2_rpc_send(const char* actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, enum RpcKind rpc_kind, uint64_t* rpc_d);
 
 /**
- * Get response size for corresponding request of this `rpc_d`. Write 0 to `response_size` if response is not ready.
+ * Get response size for corresponding request of this `rpc_d`. Write 0 to `response_size` and return `EAGAIN` if response is not ready.
  * Write response size value to `response_size` if response is ready.
  *
  * @return return `0` on success. libc-like `errno` otherwise
  *
  * Possible `errno` values:
  * `EINVAL` => invalid `rpc_d` descriptor, for example, it is unknown descriptor, or not rpc descriptor.
+ * `EAGAIN` => response is not ready yet.
  */
 int32_t k2_rpc_get_response_size(uint64_t rpc_d, size_t* response_size);
 
 /**
- * Write response for corresponding request of this `rpc_d` to `buf`. Does nothing if response is not ready.
+ * Write response for corresponding request of this `rpc_d` to `buf`. Return `EAGAIN` if response is not ready.
+ * If `buf_size` < response size, then write first `buf_size` bytes of response to `buf`.
  *
  * @return return `0` on success. libc-like `errno` otherwise
  *
  * Possible `errno` values:
  * `EINVAL` => invalid `rpc_d` descriptor, for example, it is unknown descriptor, or not rpc descriptor.
+ * `EAGAIN` => response is not ready yet.
  */
 int32_t k2_rpc_fetch_response(uint64_t rpc_d, void* buf, size_t buf_size);
 

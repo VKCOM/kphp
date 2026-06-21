@@ -24,7 +24,6 @@
 
 namespace kphp::rpc {
 
-// TODO is it appropriate naming? May be query_handle?
 class query_handle {
   k2::descriptor rpc_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   int64_t query_id;
