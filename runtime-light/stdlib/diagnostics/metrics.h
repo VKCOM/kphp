@@ -68,13 +68,13 @@ public:
 
   bytes_vector build_value(double value, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
     bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(double) + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_mask_u32 + value_f64 + msg_size_usize + msg_len
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
+                this->msg_size); // timestamp_u32 + value_mask_u8 + value_f64 + msg_size_usize + msg_len
 
     uint32_t s_timestamp{timestamp.value_or(MetricBuilder::s_timestamp_now())};
 
     MetricBuilder::store_number(buf, s_timestamp);
-    MetricBuilder::store_number(buf, static_cast<uint32_t>(k2::MetricValueMask::VALUE_MASK));
+    MetricBuilder::store_number(buf, static_cast<uint8_t>(k2::MetricValueMask::VALUE_MASK));
     MetricBuilder::store_number(buf, value);
     this->store_msg(buf);
     return buf;
@@ -83,13 +83,13 @@ public:
   bytes_vector build_values_array(const kphp::stl::vector<double, kphp::memory::script_allocator>& values,
                                   std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
     bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_mask_u32 + array_len_usize + value_f64*array_len + msg_size_usize + msg_len
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
+                this->msg_size); // timestamp_u32 + value_mask_u8 + array_len_usize + value_f64*array_len + msg_size_usize + msg_len
 
     uint32_t s_timestamp{timestamp.value_or(MetricBuilder::s_timestamp_now())};
 
     MetricBuilder::store_number(buf, s_timestamp);
-    MetricBuilder::store_number(buf, static_cast<uint32_t>(k2::MetricValueMask::VALUES_ARRAY_MASK));
+    MetricBuilder::store_number(buf, static_cast<uint8_t>(k2::MetricValueMask::VALUES_ARRAY_MASK));
     MetricBuilder::store_number(buf, values.size());
     for (const auto& value : values) {
       MetricBuilder::store_number(buf, value);
@@ -100,13 +100,13 @@ public:
 
   bytes_vector build_count(double count, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
     bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(double) + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_mask_u32 + count_f64 + msg_size_usize + msg_len
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
+                this->msg_size); // timestamp_u32 + value_mask_u8 + count_f64 + msg_size_usize + msg_len
 
     uint32_t s_timestamp{timestamp.value_or(MetricBuilder::s_timestamp_now())};
 
     MetricBuilder::store_number(buf, s_timestamp);
-    MetricBuilder::store_number(buf, static_cast<uint32_t>(k2::MetricValueMask::COUNT_MASK));
+    MetricBuilder::store_number(buf, static_cast<uint8_t>(k2::MetricValueMask::COUNT_MASK));
     MetricBuilder::store_number(buf, count);
     this->store_msg(buf);
     return buf;
@@ -114,12 +114,12 @@ public:
 
   bytes_vector build_increment(std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
     bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint32_t) + sizeof(size_t) + this->msg_size); // timestamp_u32 + value_mask_u32 + msg_size_usize + msg_len
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + this->msg_size); // timestamp_u32 + value_mask_u8 + msg_size_usize + msg_len
 
     uint32_t s_timestamp{timestamp.value_or(MetricBuilder::s_timestamp_now())};
 
     MetricBuilder::store_number(buf, s_timestamp);
-    MetricBuilder::store_number(buf, static_cast<uint32_t>(k2::MetricValueMask::INC_MASK));
+    MetricBuilder::store_number(buf, static_cast<uint8_t>(k2::MetricValueMask::INC_MASK));
     this->store_msg(buf);
     return buf;
   }

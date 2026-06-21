@@ -109,7 +109,7 @@ enum MonitoringSystem { StatsHouse };
  *   <COUNT_MASK><f64>                                     - count value
  *   <INC_MASK>                                            - counter increment (no payload)
  */
-enum MetricValueMask : uint32_t { VALUE_MASK = 0, VALUES_ARRAY_MASK = 1, COUNT_MASK = 2, INC_MASK = 3 };
+enum MetricValueMask : uint8_t { VALUE_MASK = 0, VALUES_ARRAY_MASK = 1, COUNT_MASK = 2, INC_MASK = 3 };
 
 struct ImageInfo {
   // Base
