@@ -37,3 +37,10 @@ class TestComposer(KphpCompilerAutoTestCase):
                 "KPHP_COMPOSER_ROOT": os.path.join(self.test_dir, "php/test_autoload_files"),
                 "KPHP_COMPOSER_AUTOLOAD_DEV": "1",
             })
+
+    def test_classmap_autoloading(self):
+        self.build_and_compare_with_php(
+            php_script_path="php/test_autoload_classmap/index.php",
+            kphp_env={
+                "KPHP_COMPOSER_ROOT": os.path.join(self.test_dir, "php/test_autoload_classmap"),
+            })

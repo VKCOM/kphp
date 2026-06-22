@@ -43,7 +43,15 @@ public:
     std::string file_name;
     bool is_dev;                // whether it's in "autoload-dev"
   };
-  
+
+  // "autoload/classmap" entry: a directory or .php file listed under composer.json "classmap"
+  // composer.json format: "autoload": { "classmap": ["src/", "lib/Foo.php"] }
+  // Each entry is a raw path from composer.json (absolute after resolving against the package root).
+  // The actual class→file scanning is performed by ComposerAutoloader when loading the file.
+  struct AutoloadClassmapEntry {
+    std::string path;           // absolute path: a directory to scan or a single .php file
+    bool is_dev;                // whether it's in "autoload-dev"
+  };
 
   explicit ComposerJsonData(const std::string &json_filename);
 
@@ -64,4 +72,8 @@ public:
 
   // "autoload/files" and "autoload-dev/files", e.g. [ {"file.php", true}, ... ]
   std::vector<AutoloadFileItem> autoload_files;
+
+  // "autoload/classmap" and "autoload-dev/classmap" (see #49)
+  // Each entry is a raw path (directory or .php file) to be scanned by ComposerAutoloader.
+  std::vector<AutoloadClassmapEntry> autoload_classmap;
 };
