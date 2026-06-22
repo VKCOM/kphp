@@ -9,17 +9,149 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <ranges>
 #include <span>
 #include <string_view>
+#include <utility>
 
-#include "common/containers/final_action.h"
-#include "common/mixin/movable_only.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace kphp::diagnostics {
-struct metric_builder final : vk::movable_only {
+struct metric final {
+public:
+  using bytes_vector = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
+
+private:
+  const bytes_vector buffer;
+  k2::MonitoringSystem ms;
+
+  explicit metric(bytes_vector buffer, k2::MonitoringSystem ms) noexcept
+      : buffer{std::move(buffer)},
+        ms{ms} {}
+
+  template<typename T>
+  requires std::is_arithmetic_v<T>
+  static void store_number(bytes_vector& buf, const T& number) noexcept {
+    const auto* src{static_cast<const std::byte*>(static_cast<const void*>(std::addressof(number)))};
+    buf.insert(buf.end(), src, src + sizeof(T));
+  }
+
+  static void store_string(bytes_vector& buf, const std::string_view& string) noexcept {
+    metric::store_number(buf, string.size());
+    buf.append_range(std::as_bytes(std::span{string.data(), string.size()}));
+  }
+
+  static void store_tag(bytes_vector& buf, std::string_view tag_name, std::string_view tag_value) noexcept {
+    metric::store_string(buf, tag_name);
+    metric::store_string(buf, tag_value);
+  }
+
+  static void store_msg(bytes_vector& buf, std::string_view metric_name, size_t msg_size,
+                        std::span<std::pair<std::string_view, std::string_view>> tags) noexcept {
+    metric::store_number(buf, msg_size);
+    metric::store_string(buf, metric_name);
+    for (const auto& [tag_name, tag_value] : tags) {
+      metric::store_tag(buf, tag_name, tag_value);
+    }
+  }
+
+  static size_t string_sizeof(const std::string_view& string) noexcept {
+    return sizeof(size_t) + string.size();
+  }
+
+  static uint32_t s_timestamp_now() noexcept {
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  }
+
+  static size_t calc_msg_size(std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags) noexcept {
+    size_t result{string_sizeof(metric_name)};
+    for (const auto& [tag_name, tag_value] : tags) {
+      result += metric::string_sizeof(tag_name) + metric::string_sizeof(tag_value);
+    }
+    return result;
+  }
+
+public:
+  static metric from_value(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags, double value,
+                           std::optional<uint32_t> timestamp = std::nullopt) noexcept {
+    size_t msg_size{metric::calc_msg_size(metric_name, tags)};
+
+    bytes_vector buf{};
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
+                msg_size); // timestamp_u32 + value_kind_u8 + value_f64 + msg_size_usize + msg_len
+
+    uint32_t s_timestamp{timestamp.value_or(metric::s_timestamp_now())};
+
+    metric::store_number(buf, s_timestamp);
+    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUE));
+    metric::store_number(buf, value);
+    metric::store_msg(buf, metric_name, msg_size, tags);
+    return metric{buf, ms};
+  }
+
+  static metric from_values_array(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags,
+                                  std::span<double> values, std::optional<uint32_t> timestamp = std::nullopt) noexcept {
+    size_t msg_size{metric::calc_msg_size(metric_name, tags)};
+
+    bytes_vector buf{};
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
+                msg_size); // timestamp_u32 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_size_usize + msg_len
+
+    uint32_t s_timestamp{timestamp.value_or(metric::s_timestamp_now())};
+
+    metric::store_number(buf, s_timestamp);
+    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUES_ARRAY));
+    metric::store_number(buf, values.size());
+    for (const auto& value : values) {
+      metric::store_number(buf, value);
+    }
+    metric::store_msg(buf, metric_name, msg_size, tags);
+    return metric{buf, ms};
+  }
+
+  static metric from_count(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags, uint32_t count,
+                           std::optional<uint32_t> timestamp = std::nullopt) noexcept {
+    size_t msg_size{metric::calc_msg_size(metric_name, tags)};
+
+    bytes_vector buf{};
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) +
+                msg_size); // timestamp_u32 + value_kind_u8 + count_u32 + msg_size_usize + msg_len
+
+    uint32_t s_timestamp{timestamp.value_or(metric::s_timestamp_now())};
+
+    metric::store_number(buf, s_timestamp);
+    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::COUNT));
+    metric::store_number(buf, count);
+    metric::store_msg(buf, metric_name, msg_size, tags);
+
+    return metric{buf, ms};
+  }
+
+  static metric from_increment(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags,
+                               std::optional<uint32_t> timestamp = std::nullopt) noexcept {
+    size_t msg_size{metric::calc_msg_size(metric_name, tags)};
+
+    bytes_vector buf{};
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + msg_size); // timestamp_u32 + value_kind_u8 + msg_size_usize + msg_len
+
+    uint32_t s_timestamp{timestamp.value_or(metric::s_timestamp_now())};
+
+    metric::store_number(buf, s_timestamp);
+    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::INC));
+    metric::store_msg(buf, metric_name, msg_size, tags);
+    return metric{buf, ms};
+  }
+
+  std::expected<void, int32_t> send() {
+    return k2::write_metric(this->buffer, this->ms);
+  }
+};
+
+// ---------------------------------------------------------------------------------------------------------
+
+struct metric_builder final {
 public:
   using bytes_vector = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
 
@@ -37,46 +169,20 @@ private:
     this->msg_size += metric_builder::string_sizeof(metric_name);
   }
 
-  template<typename T>
-  requires std::is_arithmetic_v<T>
-  static void store_number(bytes_vector& buf, const T& number) noexcept {
-    const auto* src{static_cast<const std::byte*>(static_cast<const void*>(std::addressof(number)))};
-    buf.insert(buf.end(), src, src + sizeof(T));
-  }
+  kphp::stl::vector<std::pair<std::string_view, std::string_view>, kphp::memory::script_allocator> convert_tags() const noexcept {
+    auto tags_view{this->tags |
+                   std::views::transform(
+                       [](const std::pair<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>>& tag) noexcept
+                       -> std::pair<std::string_view, std::string_view> { return std::pair{tag.first, tag.second}; })};
 
-  static void store_string(bytes_vector& buf, const std::string_view& string) noexcept {
-    metric_builder::store_number(buf, string.size());
-    buf.append_range(std::as_bytes(std::span{string.data(), string.size()}));
-  }
-
-  static void store_tag(bytes_vector& buf, std::pair<std::string_view, std::string_view> tag) noexcept {
-    metric_builder::store_string(buf, tag.first);
-    metric_builder::store_string(buf, tag.second);
-  }
-
-  void store_msg(bytes_vector& buf) const noexcept {
-    metric_builder::store_number(buf, this->msg_size);
-    metric_builder::store_string(buf, std::string_view{this->metric_name.c_str(), this->metric_name.size()});
-    for (const auto& [tag_name, tag_value] : this->tags) {
-      metric_builder::store_tag(buf, {std::string_view{tag_name.c_str(), tag_name.size()}, std::string_view{tag_value.c_str(), tag_value.size()}});
-    }
-  }
-
-  auto send_helper(const std::span<std::pair<std::string_view, std::string_view>>& tags) noexcept {
-    size_t tags_size{};
-    for (const auto& [tag_name, tag_value] : tags) {
-      tags_size += metric_builder::string_sizeof(tag_name) + metric_builder::string_sizeof(tag_value);
-    }
-    this->msg_size += tags_size;
-    return vk::final_action{[tags_size, this]() noexcept { this->msg_size -= tags_size; }};
+    kphp::stl::vector<std::pair<std::string_view, std::string_view>, kphp::memory::script_allocator> tags{};
+    tags.reserve(this->tags.size());
+    std::ranges::copy(tags_view, std::back_inserter(tags));
+    return tags;
   }
 
   static size_t string_sizeof(const std::string_view& string) noexcept {
     return sizeof(size_t) + string.size();
-  }
-
-  static uint32_t s_timestamp_now() noexcept {
-    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   }
 
 public:
@@ -94,109 +200,24 @@ public:
     return *this;
   }
 
-  bytes_vector build_value(double value, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_kind_u8 + value_f64 + msg_size_usize + msg_len
-
-    uint32_t s_timestamp{timestamp.value_or(metric_builder::s_timestamp_now())};
-
-    metric_builder::store_number(buf, s_timestamp);
-    metric_builder::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUE));
-    metric_builder::store_number(buf, value);
-    this->store_msg(buf);
-    return buf;
+  kphp::diagnostics::metric build_value(double value, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+    auto sv_tags{this->convert_tags()};
+    return metric::from_value(this->ms, this->metric_name, sv_tags, value, timestamp);
   }
 
-  bytes_vector build_values_array(std::span<double> values, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_size_usize + msg_len
-
-    uint32_t s_timestamp{timestamp.value_or(metric_builder::s_timestamp_now())};
-
-    metric_builder::store_number(buf, s_timestamp);
-    metric_builder::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUES_ARRAY));
-    metric_builder::store_number(buf, values.size());
-    for (const auto& value : values) {
-      metric_builder::store_number(buf, value);
-    }
-    this->store_msg(buf);
-    return buf;
+  kphp::diagnostics::metric build_values_array(std::span<double> values, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+    auto sv_tags{this->convert_tags()};
+    return metric::from_values_array(this->ms, this->metric_name, sv_tags, values, timestamp);
   }
 
-  bytes_vector build_count(uint32_t count, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_kind_u8 + count_u32 + msg_size_usize + msg_len
-
-    uint32_t s_timestamp{timestamp.value_or(metric_builder::s_timestamp_now())};
-
-    metric_builder::store_number(buf, s_timestamp);
-    metric_builder::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::COUNT));
-    metric_builder::store_number(buf, count);
-    this->store_msg(buf);
-    return buf;
+  kphp::diagnostics::metric build_count(uint32_t count, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+    auto sv_tags{this->convert_tags()};
+    return metric::from_count(this->ms, this->metric_name, sv_tags, count, timestamp);
   }
 
-  bytes_vector build_increment(std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + this->msg_size); // timestamp_u32 + value_kind_u8 + msg_size_usize + msg_len
-
-    uint32_t s_timestamp{timestamp.value_or(metric_builder::s_timestamp_now())};
-
-    metric_builder::store_number(buf, s_timestamp);
-    metric_builder::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::INC));
-    this->store_msg(buf);
-    return buf;
-  }
-
-  std::expected<void, int32_t> send_value(double value, std::span<std::pair<std::string_view, std::string_view>> tags = {},
-                                          std::optional<uint32_t> timestamp = std::nullopt) noexcept {
-    auto final_action{send_helper(tags)};
-
-    auto buf{this->build_value(value, timestamp)};
-    for (const auto& tag : tags) {
-      metric_builder::store_tag(buf, tag);
-    }
-
-    return metric_builder::send(buf, this->ms);
-  }
-
-  std::expected<void, int32_t> send_values_array(std::span<double> values, std::span<std::pair<std::string_view, std::string_view>> tags = {},
-                                                 std::optional<uint32_t> timestamp = std::nullopt) noexcept {
-    auto final_action{send_helper(tags)};
-
-    auto buf{this->build_values_array(values, timestamp)};
-    for (const auto& tag : tags) {
-      metric_builder::store_tag(buf, tag);
-    }
-
-    return metric_builder::send(buf, this->ms);
-  }
-
-  std::expected<void, int32_t> send_count(uint32_t count, std::span<std::pair<std::string_view, std::string_view>> tags = {},
-                                          std::optional<uint32_t> timestamp = std::nullopt) noexcept {
-    auto final_action{send_helper(tags)};
-
-    auto buf{this->build_count(count, timestamp)};
-    for (const auto& tag : tags) {
-      metric_builder::store_tag(buf, tag);
-    }
-
-    return metric_builder::send(buf, this->ms);
-  }
-
-  std::expected<void, int32_t> send_increment(std::span<std::pair<std::string_view, std::string_view>> tags = {},
-                                              std::optional<uint32_t> timestamp = std::nullopt) noexcept {
-    auto final_action{send_helper(tags)};
-
-    auto buf{this->build_increment(timestamp)};
-    for (const auto& tag : tags) {
-      metric_builder::store_tag(buf, tag);
-    }
-
-    return metric_builder::send(buf, this->ms);
+  kphp::diagnostics::metric build_increment(std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+    auto sv_tags{this->convert_tags()};
+    return metric::from_increment(this->ms, this->metric_name, sv_tags, timestamp);
   }
 };
 } // namespace kphp::diagnostics

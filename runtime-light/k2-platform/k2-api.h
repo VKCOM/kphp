@@ -249,7 +249,7 @@ inline std::expected<void, int32_t> madvise(void* addr, size_t length, int32_t a
   return {};
 }
 
-inline std::expected<void, int32_t> write_metric(const std::span<std::byte> serialized_metric, k2::MonitoringSystem ms) noexcept {
+inline std::expected<void, int32_t> write_metric(const std::span<const std::byte> serialized_metric, k2::MonitoringSystem ms) noexcept {
   if (auto error_code{k2_write_metric(serialized_metric.data(), serialized_metric.size(), ms)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
