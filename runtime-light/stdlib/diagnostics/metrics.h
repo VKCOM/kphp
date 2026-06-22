@@ -44,7 +44,7 @@ private:
 
   static void store_string(bytes_vector& buf, const std::string_view& string) noexcept {
     metric_builder::store_number(buf, string.size());
-    std::transform(string.begin(), string.end(), std::back_inserter(buf), [](char c) { return std::byte(c); });
+    std::transform(string.begin(), string.end(), std::back_inserter(buf), [](char c) noexcept { return std::byte(c); });
   }
 
   static void store_tag(bytes_vector& buf, std::pair<std::string_view, std::string_view> tag) noexcept {
