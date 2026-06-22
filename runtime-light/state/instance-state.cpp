@@ -258,4 +258,8 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session_is_finished = true;
     web_state.session.reset();
   }
+
+  const auto epilogue_duration{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - epilogue_start_tp)};
+  kphp::log::info("Epilogue stats: epilogue -> {}, shutdown functions -> {}, server finalize -> {}, noresult rpc -> {}", epilogue_duration.count(),
+                  shutdown_functions_duration.count(), server_finalize_duration.count(), noresult_rpc_duration.count());
 }
