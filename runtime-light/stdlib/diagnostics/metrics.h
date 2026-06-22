@@ -19,11 +19,23 @@
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace kphp::diagnostics {
+
+namespace details {
+inline size_t string_sizeof(const std::string_view& string) noexcept {
+  return sizeof(size_t) + string.size();
+}
+
+template<typename T>
+concept tag_range = std::ranges::range<T> && requires(const std::ranges::range_value_t<T>& tag) {
+  std::string_view{tag.first};
+  std::string_view{tag.second};
+};
+} // namespace details
+
 struct metric final {
-public:
+private:
   using bytes_vector = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
 
-private:
   const bytes_vector buffer;
   k2::MonitoringSystem ms;
 
@@ -48,33 +60,31 @@ private:
     metric::store_string(buf, tag_value);
   }
 
-  static void store_msg(bytes_vector& buf, std::string_view metric_name, size_t msg_size,
-                        std::span<std::pair<std::string_view, std::string_view>> tags) noexcept {
+  template<details::tag_range TagRange>
+  static void store_msg(bytes_vector& buf, std::string_view metric_name, size_t msg_size, TagRange&& tags) noexcept {
     metric::store_number(buf, msg_size);
     metric::store_string(buf, metric_name);
     for (const auto& [tag_name, tag_value] : tags) {
-      metric::store_tag(buf, tag_name, tag_value);
+      metric::store_tag(buf, std::string_view{tag_name}, std::string_view{tag_value});
     }
-  }
-
-  static size_t string_sizeof(const std::string_view& string) noexcept {
-    return sizeof(size_t) + string.size();
   }
 
   static uint32_t s_timestamp_now() noexcept {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   }
 
-  static size_t calc_msg_size(std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags) noexcept {
-    size_t result{string_sizeof(metric_name)};
+  template<details::tag_range TagRange>
+  static size_t calc_msg_size(std::string_view metric_name, TagRange&& tags) noexcept {
+    size_t result{kphp::diagnostics::details::string_sizeof(metric_name)};
     for (const auto& [tag_name, tag_value] : tags) {
-      result += metric::string_sizeof(tag_name) + metric::string_sizeof(tag_value);
+      result += kphp::diagnostics::details::string_sizeof(std::string_view{tag_name}) + kphp::diagnostics::details::string_sizeof(std::string_view{tag_value});
     }
     return result;
   }
 
 public:
-  static metric from_value(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags, double value,
+  template<details::tag_range TagRange>
+  static metric from_value(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags, double value,
                            std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     size_t msg_size{metric::calc_msg_size(metric_name, tags)};
 
@@ -88,11 +98,12 @@ public:
     metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUE));
     metric::store_number(buf, value);
     metric::store_msg(buf, metric_name, msg_size, tags);
-    return metric{buf, ms};
+    return metric{std::move(buf), ms};
   }
 
-  static metric from_values_array(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags,
-                                  std::span<double> values, std::optional<uint32_t> timestamp = std::nullopt) noexcept {
+  template<details::tag_range TagRange>
+  static metric from_values_array(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
+                                  std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     size_t msg_size{metric::calc_msg_size(metric_name, tags)};
 
     bytes_vector buf{};
@@ -108,10 +119,11 @@ public:
       metric::store_number(buf, value);
     }
     metric::store_msg(buf, metric_name, msg_size, tags);
-    return metric{buf, ms};
+    return metric{std::move(buf), ms};
   }
 
-  static metric from_count(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags, uint32_t count,
+  template<details::tag_range TagRange>
+  static metric from_count(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags, uint32_t count,
                            std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     size_t msg_size{metric::calc_msg_size(metric_name, tags)};
 
@@ -126,10 +138,11 @@ public:
     metric::store_number(buf, count);
     metric::store_msg(buf, metric_name, msg_size, tags);
 
-    return metric{buf, ms};
+    return metric{std::move(buf), ms};
   }
 
-  static metric from_increment(k2::MonitoringSystem ms, std::string_view metric_name, std::span<std::pair<std::string_view, std::string_view>> tags,
+  template<details::tag_range TagRange>
+  static metric from_increment(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags,
                                std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     size_t msg_size{metric::calc_msg_size(metric_name, tags)};
 
@@ -141,10 +154,10 @@ public:
     metric::store_number(buf, s_timestamp);
     metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::INC));
     metric::store_msg(buf, metric_name, msg_size, tags);
-    return metric{buf, ms};
+    return metric{std::move(buf), ms};
   }
 
-  std::expected<void, int32_t> send() {
+  std::expected<void, int32_t> send() noexcept {
     return k2::write_metric(this->buffer, this->ms);
   }
 };
@@ -152,72 +165,41 @@ public:
 // ---------------------------------------------------------------------------------------------------------
 
 struct metric_builder final {
-public:
-  using bytes_vector = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
-
 private:
   kphp::stl::string<kphp::memory::script_allocator> metric_name;
   kphp::stl::vector<std::pair<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>>,
                     kphp::memory::script_allocator>
       tags;
-  size_t msg_size{0};
   k2::MonitoringSystem ms;
 
   explicit metric_builder(std::string_view metric_name, k2::MonitoringSystem ms) noexcept
       : metric_name{metric_name},
-        ms{ms} {
-    this->msg_size += metric_builder::string_sizeof(metric_name);
-  }
-
-  kphp::stl::vector<std::pair<std::string_view, std::string_view>, kphp::memory::script_allocator> convert_tags() const noexcept {
-    auto tags_view{this->tags |
-                   std::views::transform(
-                       [](const std::pair<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>>& tag) noexcept
-                       -> std::pair<std::string_view, std::string_view> { return std::pair{tag.first, tag.second}; })};
-
-    kphp::stl::vector<std::pair<std::string_view, std::string_view>, kphp::memory::script_allocator> tags{};
-    tags.reserve(this->tags.size());
-    std::ranges::copy(tags_view, std::back_inserter(tags));
-    return tags;
-  }
-
-  static size_t string_sizeof(const std::string_view& string) noexcept {
-    return sizeof(size_t) + string.size();
-  }
+        ms{ms} {}
 
 public:
-  static std::expected<void, int32_t> send(bytes_vector& buf, k2::MonitoringSystem ms) noexcept {
-    return k2::write_metric(std::span{buf.data(), buf.size()}, ms);
-  }
-
   static metric_builder metric(std::string_view metric_name, k2::MonitoringSystem ms) noexcept {
     return metric_builder{metric_name, ms};
   }
 
   metric_builder& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
     this->tags.emplace_back(tag_name, tag_value);
-    this->msg_size += metric_builder::string_sizeof(tag_name) + metric_builder::string_sizeof(tag_value);
     return *this;
   }
 
   kphp::diagnostics::metric build_value(double value, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    auto sv_tags{this->convert_tags()};
-    return metric::from_value(this->ms, this->metric_name, sv_tags, value, timestamp);
+    return metric::from_value(this->ms, this->metric_name, this->tags, value, timestamp);
   }
 
-  kphp::diagnostics::metric build_values_array(std::span<double> values, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    auto sv_tags{this->convert_tags()};
-    return metric::from_values_array(this->ms, this->metric_name, sv_tags, values, timestamp);
+  kphp::diagnostics::metric build_values_array(std::span<const double> values, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+    return metric::from_values_array(this->ms, this->metric_name, this->tags, values, timestamp);
   }
 
   kphp::diagnostics::metric build_count(uint32_t count, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    auto sv_tags{this->convert_tags()};
-    return metric::from_count(this->ms, this->metric_name, sv_tags, count, timestamp);
+    return metric::from_count(this->ms, this->metric_name, this->tags, count, timestamp);
   }
 
   kphp::diagnostics::metric build_increment(std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
-    auto sv_tags{this->convert_tags()};
-    return metric::from_increment(this->ms, this->metric_name, sv_tags, timestamp);
+    return metric::from_increment(this->ms, this->metric_name, this->tags, timestamp);
   }
 };
 } // namespace kphp::diagnostics

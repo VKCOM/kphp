@@ -110,6 +110,9 @@ enum MonitoringSystem { StatsHouse };
  *   <INC>                                            - counter increment
  *
  * msg_size: sizeof(metric_name_len) + sizeof(metric_name) + sizeof(tag1_name_len) + sizeof(tag1_name) + sizeof(tag1_value_len) + sizeof(tag1_value) + ...
+ *
+ * All numeric fields are stored in native byte order
+ * All string length fields are stored as size_t
  */
 enum MetricValueKind : uint8_t { VALUE, VALUES_ARRAY, COUNT, INC };
 
