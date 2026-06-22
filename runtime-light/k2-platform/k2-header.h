@@ -106,7 +106,7 @@ enum MonitoringSystem { StatsHouse };
  * value_format:
  *   <VALUE><f64>                                     - single float value
  *   <VALUES_ARRAY><array_len><f64_1><f64_2>...       - array of float values
- *   <COUNT><f64>                                     - count value
+ *   <COUNT><u32>                                     - count value
  *   <INC>                                            - counter increment
  *
  * msg_size: sizeof(metric_name_len) + sizeof(metric_name) + sizeof(tag1_name_len) + sizeof(tag1_name) + sizeof(tag1_value_len) + sizeof(tag1_value) + ...

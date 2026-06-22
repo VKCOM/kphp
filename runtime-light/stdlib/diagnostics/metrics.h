@@ -8,8 +8,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <initializer_list>
 #include <memory>
+#include <span>
 #include <string_view>
 
 #include "common/containers/final_action.h"
@@ -29,9 +29,11 @@ private:
                     kphp::memory::script_allocator>
       tags;
   size_t msg_size{0};
+  k2::MonitoringSystem ms;
 
-  explicit metric_builder(std::string_view metric_name) noexcept
-      : metric_name{metric_name} {
+  explicit metric_builder(std::string_view metric_name, k2::MonitoringSystem ms) noexcept
+      : metric_name{metric_name},
+        ms{ms} {
     this->msg_size += metric_builder::string_sizeof(metric_name);
   }
 
@@ -44,7 +46,7 @@ private:
 
   static void store_string(bytes_vector& buf, const std::string_view& string) noexcept {
     metric_builder::store_number(buf, string.size());
-    std::transform(string.begin(), string.end(), std::back_inserter(buf), [](char c) noexcept { return std::byte(c); });
+    buf.append_range(std::as_bytes(std::span{string.data(), string.size()}));
   }
 
   static void store_tag(bytes_vector& buf, std::pair<std::string_view, std::string_view> tag) noexcept {
@@ -60,7 +62,7 @@ private:
     }
   }
 
-  auto send_helper(const std::initializer_list<std::pair<std::string_view, std::string_view>>& tags) noexcept {
+  auto send_helper(const std::span<std::pair<std::string_view, std::string_view>>& tags) noexcept {
     size_t tags_size{};
     for (const auto& [tag_name, tag_value] : tags) {
       tags_size += metric_builder::string_sizeof(tag_name) + metric_builder::string_sizeof(tag_value);
@@ -82,8 +84,8 @@ public:
     return k2::write_metric(std::span{buf.data(), buf.size()}, ms);
   }
 
-  static metric_builder metric(std::string_view metric_name) noexcept {
-    return metric_builder{metric_name};
+  static metric_builder metric(std::string_view metric_name, k2::MonitoringSystem ms) noexcept {
+    return metric_builder{metric_name, ms};
   }
 
   metric_builder& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
@@ -106,7 +108,7 @@ public:
     return buf;
   }
 
-  bytes_vector build_values_array(std::initializer_list<double> values, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+  bytes_vector build_values_array(std::span<double> values, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
     bytes_vector buf{};
     buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
                 this->msg_size); // timestamp_u32 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_size_usize + msg_len
@@ -123,10 +125,10 @@ public:
     return buf;
   }
 
-  bytes_vector build_count(double count, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
+  bytes_vector build_count(uint32_t count, std::optional<uint32_t> timestamp = std::nullopt) const noexcept {
     bytes_vector buf{};
-    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
-                this->msg_size); // timestamp_u32 + value_kind_u8 + count_f64 + msg_size_usize + msg_len
+    buf.reserve(sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) +
+                this->msg_size); // timestamp_u32 + value_kind_u8 + count_u32 + msg_size_usize + msg_len
 
     uint32_t s_timestamp{timestamp.value_or(metric_builder::s_timestamp_now())};
 
@@ -149,7 +151,7 @@ public:
     return buf;
   }
 
-  std::expected<void, int32_t> send_value(double value, k2::MonitoringSystem ms, std::initializer_list<std::pair<std::string_view, std::string_view>> tags = {},
+  std::expected<void, int32_t> send_value(double value, std::span<std::pair<std::string_view, std::string_view>> tags = {},
                                           std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     auto final_action{send_helper(tags)};
 
@@ -158,11 +160,10 @@ public:
       metric_builder::store_tag(buf, tag);
     }
 
-    return metric_builder::send(buf, ms);
+    return metric_builder::send(buf, this->ms);
   }
 
-  std::expected<void, int32_t> send_values_array(std::initializer_list<double> values, k2::MonitoringSystem ms,
-                                                 std::initializer_list<std::pair<std::string_view, std::string_view>> tags = {},
+  std::expected<void, int32_t> send_values_array(std::span<double> values, std::span<std::pair<std::string_view, std::string_view>> tags = {},
                                                  std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     auto final_action{send_helper(tags)};
 
@@ -171,10 +172,10 @@ public:
       metric_builder::store_tag(buf, tag);
     }
 
-    return metric_builder::send(buf, ms);
+    return metric_builder::send(buf, this->ms);
   }
 
-  std::expected<void, int32_t> send_count(double count, k2::MonitoringSystem ms, std::initializer_list<std::pair<std::string_view, std::string_view>> tags = {},
+  std::expected<void, int32_t> send_count(uint32_t count, std::span<std::pair<std::string_view, std::string_view>> tags = {},
                                           std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     auto final_action{send_helper(tags)};
 
@@ -183,10 +184,10 @@ public:
       metric_builder::store_tag(buf, tag);
     }
 
-    return metric_builder::send(buf, ms);
+    return metric_builder::send(buf, this->ms);
   }
 
-  std::expected<void, int32_t> send_increment(k2::MonitoringSystem ms, std::initializer_list<std::pair<std::string_view, std::string_view>> tags = {},
+  std::expected<void, int32_t> send_increment(std::span<std::pair<std::string_view, std::string_view>> tags = {},
                                               std::optional<uint32_t> timestamp = std::nullopt) noexcept {
     auto final_action{send_helper(tags)};
 
@@ -195,7 +196,7 @@ public:
       metric_builder::store_tag(buf, tag);
     }
 
-    return metric_builder::send(buf, ms);
+    return metric_builder::send(buf, this->ms);
   }
 };
 } // namespace kphp::diagnostics
