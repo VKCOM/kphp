@@ -24,8 +24,6 @@
 #include <utility>
 
 #define K2_API_HEADER_H
-#include "runtime-common/core/allocator/script-allocator.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-header.h"
 #undef K2_API_HEADER_H
 
@@ -76,7 +74,7 @@ using UpdateStatus = UpdateStatus;
 
 using MonitoringSystem = MonitoringSystem;
 
-using MetricValueMask = MetricValueMask;
+using MetricValueKind = MetricValueKind;
 
 using TimePoint = TimePoint;
 
@@ -251,8 +249,11 @@ inline std::expected<void, int32_t> madvise(void* addr, size_t length, int32_t a
   return {};
 }
 
-inline void write_metric(const kphp::stl::vector<uint8_t, kphp::memory::script_allocator>& serialized_metric, k2::MonitoringSystem ms) noexcept {
-  k2_write_metric(serialized_metric.data(), serialized_metric.size(), ms);
+inline std::expected<void, int32_t> write_metric(const std::span<std::byte> serialized_metric, k2::MonitoringSystem ms) noexcept {
+  if (auto error_code{k2_write_metric(serialized_metric.data(), serialized_metric.size(), ms)}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+  return {};
 }
 
 inline void please_shutdown(k2::descriptor descriptor) noexcept {
