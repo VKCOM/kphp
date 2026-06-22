@@ -402,11 +402,12 @@ int32_t k2_madvise(void* addr, size_t length, int32_t advise);
 /**
  * Writes a pre-serialized metric to the specified monitoring system.
  * The buffer must contain a metric serialized according to the format described above
- * (see `MetricValueMask` and the serialized metric format comment).
+ * (see `MetricValueKind` and the serialized metric format comment).
  *
  * @param `buf` A pointer to the serialized metric data.
  * @param `buf_len` The length of the serialized metric data in bytes.
  * @param `ms` The target monitoring system.
+ * @return returns 0 if everything is fine, otherwise error_code
  */
 int32_t k2_write_metric(const void* buf, size_t buf_len, enum MonitoringSystem ms);
 
