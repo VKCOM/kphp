@@ -26,4 +26,5 @@ struct C$VK$TL$RpcFunction;
 struct C$VK$TL$RpcFunctionReturnResult;
 
 class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
+class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request2(const class_instance<C$VK$TL$RpcFunctionFactory>& factory) noexcept;
 void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept;
