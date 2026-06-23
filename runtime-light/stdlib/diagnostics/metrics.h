@@ -12,6 +12,7 @@
 #include <ranges>
 #include <span>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -27,10 +28,7 @@ inline size_t string_sizeof(const std::string_view& string) noexcept {
 } // namespace details
 
 template<typename T>
-concept tag_range = std::ranges::range<T> && requires(const std::ranges::range_value_t<T>& tag) {
-  std::string_view{tag.first};
-  std::string_view{tag.second};
-};
+concept tag_range = std::ranges::range<T> && std::is_convertible_v<std::ranges::range_value_t<T>, std::pair<std::string_view, std::string_view>>;
 
 struct metric final {
 private:
