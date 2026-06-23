@@ -403,16 +403,16 @@ void* k2_mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t fla
 int32_t k2_madvise(void* addr, size_t length, int32_t advise);
 
 /**
- * Writes a pre-serialized metric to the specified monitoring system.
- * The buffer must contain a metric serialized according to the format described above
+ * Writes a pre-serialized metrics to the specified monitoring system.
+ * The buffer must contain a metrics serialized according to the format described above
  * (see `MetricValueKind` and the serialized metric format comment).
  *
- * @param `buf` A pointer to the serialized metric data.
- * @param `buf_len` The length of the serialized metric data in bytes.
+ * @param `buf` A pointer to the serialized metrics data.
+ * @param `buf_len` The length of the serialized metrics data in bytes.
  * @param `ms` The target monitoring system.
  * @return returns 0 if everything is fine, otherwise error code
  */
-int32_t k2_write_metric(const void* buf, size_t buf_len, enum MonitoringSystem ms);
+int32_t k2_write_metrics(const void* buf, size_t buf_len, enum MonitoringSystem ms);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
