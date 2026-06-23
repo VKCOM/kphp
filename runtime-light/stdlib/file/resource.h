@@ -648,9 +648,9 @@ public:
   }
 
   ~socket() override {
-    if (!finalized()) {
-      kphp::coro::io_scheduler::get().spawn(finalizer(std::move(m_stream), std::move(m_buf)));
-    }
+    // if (!finalized()) {
+      // kphp::coro::io_scheduler::get().spawn(finalizer(std::move(m_stream), std::move(m_buf)));
+    // }
   }
 
   socket(const socket&) = delete;
@@ -672,7 +672,8 @@ inline auto socket::finalized() const noexcept -> bool {
 }
 
 inline auto socket::finalizer(kphp::component::stream stream, kphp::stl::vector<std::byte, kphp::memory::script_allocator> buf) noexcept -> kphp::coro::task<> {
-  std::ignore = co_await stream.write_all({buf});
+  // std::ignore = co_await stream.write_all({buf});
+  co_return;
 }
 
 inline auto socket::open(std::string_view scheme) noexcept -> std::expected<socket, int32_t> {
@@ -719,9 +720,6 @@ inline auto socket::flush() noexcept -> kphp::coro::task<std::expected<void, int
     co_return std::unexpected{k2::errno_enodev};
   }
 
-  if (auto expected{co_await m_stream.write_all({m_buf})}; !expected) [[unlikely]] {
-    co_return std::move(expected);
-  }
   m_buf.clear();
   co_return std::expected<void, int32_t>{};
 }
