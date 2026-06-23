@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
-#include <optional>
 #include <ranges>
 #include <span>
 #include <string_view>
@@ -19,7 +18,6 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::diagnostics {
 
@@ -34,39 +32,41 @@ concept tag_range = std::ranges::range<T> && std::is_constructible_v<std::pair<s
 
 struct metric final {
 public:
-  using bytes_vector = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
+  using serialize_buffer = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
 
 private:
-  std::optional<bytes_vector> buffer;
+  serialize_buffer buffer;
   k2::MonitoringSystem ms;
 
   explicit metric(k2::MonitoringSystem ms) noexcept
-      : buffer{bytes_vector{}},
+      : buffer{serialize_buffer{}},
         ms{ms} {}
 
-  metric(bytes_vector&& buffer, k2::MonitoringSystem ms) noexcept
+  metric(serialize_buffer&& buffer, k2::MonitoringSystem ms) noexcept
       : buffer{std::move(buffer)},
-        ms{ms} {}
+        ms{ms} {
+    this->buffer.clear();
+  }
 
   template<typename T>
   requires std::is_arithmetic_v<T>
-  static void store_number(bytes_vector& buf, const T& number) noexcept {
+  static void store_number(serialize_buffer& buf, const T& number) noexcept {
     const auto* src{static_cast<const std::byte*>(static_cast<const void*>(std::addressof(number)))};
     buf.insert(buf.end(), src, src + sizeof(T));
   }
 
-  static void store_string(bytes_vector& buf, const std::string_view& string) noexcept {
+  static void store_string(serialize_buffer& buf, const std::string_view& string) noexcept {
     metric::store_number(buf, string.size());
     buf.append_range(std::as_bytes(std::span{string.data(), string.size()}));
   }
 
-  static void store_tag(bytes_vector& buf, std::string_view tag_name, std::string_view tag_value) noexcept {
+  static void store_tag(serialize_buffer& buf, std::string_view tag_name, std::string_view tag_value) noexcept {
     metric::store_string(buf, tag_name);
     metric::store_string(buf, tag_value);
   }
 
   template<tag_range TagRange>
-  static void store_msg(bytes_vector& buf, std::string_view metric_name, size_t msg_len, TagRange&& tags) noexcept {
+  static void store_msg(serialize_buffer& buf, std::string_view metric_name, size_t msg_len, TagRange&& tags) noexcept {
     metric::store_number(buf, msg_len);
     metric::store_string(buf, metric_name);
     for (const auto& [tag_name, tag_value] : std::forward<TagRange>(tags)) {
@@ -92,92 +92,84 @@ public:
     return metric{ms};
   }
 
-  static metric with_buffer(bytes_vector& buffer, k2::MonitoringSystem ms) noexcept {
+  static metric with_buffer(serialize_buffer& buffer, k2::MonitoringSystem ms) noexcept {
     return metric{std::move(buffer), ms};
   }
 
-  template<tag_range TagRange>
-  metric build_value(std::string_view metric_name, TagRange&& tags, double value, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    kphp::log::assertion(this->buffer.has_value());
-    bytes_vector& buf{this->buffer.value()};
-
+  template<typename Self, tag_range TagRange>
+  decltype(auto) build_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value,
+                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    buf.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) + msg_len); // timestamp_u64 + value_kind_u8 + value_f64 + msg_len + msg
+    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
+                        msg_len); // timestamp_u64 + value_kind_u8 + value_f64 + msg_len + msg
 
     uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
 
-    metric::store_number(buf, ns_timestamp);
-    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUE));
-    metric::store_number(buf, value);
-    metric::store_msg(buf, metric_name, msg_len, std::forward<TagRange>(tags));
-    return *this;
+    metric::store_number(self.buffer, ns_timestamp);
+    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::VALUE));
+    metric::store_number(self.buffer, value);
+    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
+    return std::forward<Self>(self);
   }
 
-  template<tag_range TagRange>
-  metric build_values_array(std::string_view metric_name, TagRange&& tags, std::span<const double> values,
-                            std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    kphp::log::assertion(this->buffer.has_value());
-    bytes_vector& buf{this->buffer.value()};
-
+  template<typename Self, tag_range TagRange>
+  decltype(auto) build_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
+                                    std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    buf.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
-                msg_len); // timestamp_u64 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_len + msg
+    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
+                        msg_len); // timestamp_u64 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_len + msg
 
     uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
 
-    metric::store_number(buf, ns_timestamp);
-    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::VALUES_ARRAY));
-    metric::store_number(buf, values.size());
+    metric::store_number(self.buffer, ns_timestamp);
+    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::VALUES_ARRAY));
+    metric::store_number(self.buffer, values.size());
     for (const auto& value : values) {
-      metric::store_number(buf, value);
+      metric::store_number(self.buffer, value);
     }
-    metric::store_msg(buf, metric_name, msg_len, std::forward<TagRange>(tags));
-    return *this;
+    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
+    return std::forward<Self>(self);
   }
 
-  template<tag_range TagRange>
-  metric build_count(std::string_view metric_name, TagRange&& tags, uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    kphp::log::assertion(this->buffer.has_value());
-    bytes_vector& buf{this->buffer.value()};
-
+  template<typename Self, tag_range TagRange>
+  decltype(auto) build_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count,
+                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    buf.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) + msg_len); // timestamp_u64 + value_kind_u8 + count_u32 + msg_len + msg
+    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) +
+                        msg_len); // timestamp_u64 + value_kind_u8 + count_u32 + msg_len + msg
 
     uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
 
-    metric::store_number(buf, ns_timestamp);
-    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::COUNT));
-    metric::store_number(buf, count);
-    metric::store_msg(buf, metric_name, msg_len, std::forward<TagRange>(tags));
+    metric::store_number(self.buffer, ns_timestamp);
+    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::COUNT));
+    metric::store_number(self.buffer, count);
+    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
 
-    return *this;
+    return std::forward<Self>(self);
   }
 
-  template<tag_range TagRange>
-  metric build_increment(std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    kphp::log::assertion(this->buffer.has_value());
-    bytes_vector& buf{this->buffer.value()};
-
+  template<typename Self, tag_range TagRange>
+  decltype(auto) build_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    buf.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + msg_len); // timestamp_u64 + value_kind_u8 + msg_len + msg
+    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + msg_len); // timestamp_u64 + value_kind_u8 + msg_len + msg
 
     uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
 
-    metric::store_number(buf, ns_timestamp);
-    metric::store_number(buf, static_cast<uint8_t>(k2::MetricValueKind::INC));
-    metric::store_msg(buf, metric_name, msg_len, std::forward<TagRange>(tags));
-    return *this;
+    metric::store_number(self.buffer, ns_timestamp);
+    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::INC));
+    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
+    return std::forward<Self>(self);
   }
 
   std::expected<void, int32_t> send() const noexcept {
-    kphp::log::assertion(this->buffer.has_value());
-    return k2::write_metric(this->buffer.value(), this->ms);
+    return k2::write_metric(this->buffer, this->ms);
   }
 
-  std::expected<bytes_vector, int32_t> send() && noexcept {
-    kphp::log::assertion(this->buffer.has_value());
-    bytes_vector& buf{this->buffer.value()};
-    return k2::write_metric(buf, this->ms).transform([&buf]() noexcept { return std::move(buf); });
+  std::expected<serialize_buffer, int32_t> send() && noexcept {
+    return k2::write_metric(this->buffer, this->ms).transform([this]() noexcept {
+      this->buffer.clear();
+      return std::move(this->buffer);
+    });
   }
 };
 
