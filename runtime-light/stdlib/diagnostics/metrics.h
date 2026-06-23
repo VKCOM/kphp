@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -74,7 +73,9 @@ private:
   }
 
   static uint64_t ns_timestamp_now() noexcept {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    k2::SystemTime st{};
+    k2::system_time(std::addressof(st));
+    return st.since_epoch_ns;
   }
 
   template<tag_range TagRange>
