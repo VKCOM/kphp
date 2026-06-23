@@ -88,7 +88,7 @@ private:
   }
 
 public:
-  static metric initial(k2::MonitoringSystem ms) noexcept {
+  static metric empty(k2::MonitoringSystem ms) noexcept {
     return metric{ms};
   }
 
@@ -206,19 +206,19 @@ public:
   }
 
   kphp::diagnostics::metric build_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::initial(this->ms).build_value(this->metric_name, this->tags, value, timestamp);
+    return metric::empty(this->ms).build_value(this->metric_name, this->tags, value, timestamp);
   }
 
   kphp::diagnostics::metric build_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::initial(this->ms).build_values_array(this->metric_name, this->tags, values, timestamp);
+    return metric::empty(this->ms).build_values_array(this->metric_name, this->tags, values, timestamp);
   }
 
   kphp::diagnostics::metric build_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::initial(this->ms).build_count(this->metric_name, this->tags, count, timestamp);
+    return metric::empty(this->ms).build_count(this->metric_name, this->tags, count, timestamp);
   }
 
   kphp::diagnostics::metric build_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::initial(this->ms).build_increment(this->metric_name, this->tags, timestamp);
+    return metric::empty(this->ms).build_increment(this->metric_name, this->tags, timestamp);
   }
 };
 } // namespace kphp::diagnostics
