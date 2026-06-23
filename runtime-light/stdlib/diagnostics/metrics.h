@@ -60,7 +60,7 @@ private:
     metric::store_string(buf, tag_value);
   }
 
-  template<details::tag_range TagRange>
+  template<tag_range TagRange>
   static void store_msg(bytes_vector& buf, std::string_view metric_name, size_t msg_len, TagRange&& tags) noexcept {
     metric::store_number(buf, msg_len);
     metric::store_string(buf, metric_name);
@@ -73,7 +73,7 @@ private:
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   }
 
-  template<details::tag_range TagRange>
+  template<tag_range TagRange>
   static size_t calc_msg_len(std::string_view metric_name, TagRange&& tags) noexcept {
     size_t result{kphp::diagnostics::details::string_sizeof(metric_name)};
     for (const auto& [tag_name, tag_value] : std::forward<TagRange>(tags)) {
@@ -83,7 +83,7 @@ private:
   }
 
 public:
-  template<details::tag_range TagRange>
+  template<tag_range TagRange>
   static metric from_value(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags, double value,
                            std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
@@ -100,7 +100,7 @@ public:
     return metric{std::move(buf), ms};
   }
 
-  template<details::tag_range TagRange>
+  template<tag_range TagRange>
   static metric from_values_array(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
                                   std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
@@ -121,7 +121,7 @@ public:
     return metric{std::move(buf), ms};
   }
 
-  template<details::tag_range TagRange>
+  template<tag_range TagRange>
   static metric from_count(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags, uint32_t count,
                            std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
@@ -139,7 +139,7 @@ public:
     return metric{std::move(buf), ms};
   }
 
-  template<details::tag_range TagRange>
+  template<tag_range TagRange>
   static metric from_increment(k2::MonitoringSystem ms, std::string_view metric_name, TagRange&& tags,
                                std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
