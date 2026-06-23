@@ -292,9 +292,6 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   const auto query_id{rpc_client_instance_st.current_query_id++};
 
-  static constexpr auto ignore_answer_awaiter_coroutine{
-      [](query_handle handle, std::chrono::milliseconds timeout) noexcept -> kphp::coro::shared_task<> { std::ignore = co_await handle.get_response(); }};
-
   // normalize timeout
   using namespace std::chrono_literals;
   static constexpr auto DEFAULT_TIMEOUT{300ms};
@@ -315,11 +312,6 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   auto query_handle{std::move(*query_handle_expected)};
 
   if (ignore_answer) {
-    // start ignore answer awaiter task
-    auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(query_handle), timeout)};
-    kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
-
-    rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(ignore_answer_awaiter_task));
     return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
