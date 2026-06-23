@@ -221,26 +221,6 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   }
   shutdown_state_ = shutdown_state::finished;
 
-  /*
-   * Unlike regular RPC requests whose results the user code waits for via rpc_fetch_responses,
-   * thereby guaranteeing they are sent, the user code does not wait for requests sent with the
-   * ignore_answer flag. Therefore, we can’t guarantee that the coroutines responsible for
-   * sending ignore_answer requests have finished. This means the requests might not be sent
-   * if the instance terminates.
-   *
-   * This await suspends the current coroutine until all pending ignore_answer requests are
-   * fully sent. While suspended, other forks and coroutines may continue running.
-   *
-   * After this call completes, delivery of all ignore_answer requests is guaranteed.
-   */
-  {
-    auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-    auto ignore_answer_request_await_set{std::exchange(rpc_client_instance_st.ignore_answer_request_awaiter_tasks, kphp::coro::await_set<void>{})};
-    while (!ignore_answer_request_await_set.empty()) {
-      co_await ignore_answer_request_await_set.next();
-    }
-  }
-
   // Stop session with internal Web component
   if (auto& web_state{WebInstanceState::get()}; web_state.session.has_value()) {
     web_state.session_is_finished = true;
