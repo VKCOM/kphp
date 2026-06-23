@@ -44,9 +44,7 @@ private:
 
   metric(serialize_buffer&& buffer, k2::MonitoringSystem ms) noexcept
       : buffer{std::move(buffer)},
-        ms{ms} {
-    this->buffer.clear();
-  }
+        ms{ms} {}
 
   template<typename T>
   requires std::is_arithmetic_v<T>
@@ -92,13 +90,14 @@ public:
     return metric{ms};
   }
 
-  static metric with_buffer(serialize_buffer& buffer, k2::MonitoringSystem ms) noexcept {
+  static metric with_buffer(serialize_buffer&& buffer, k2::MonitoringSystem ms) noexcept {
     return metric{std::move(buffer), ms};
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) build_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value,
                              std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    self.buffer.clear();
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
     self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
                         msg_len); // timestamp_u64 + value_kind_u8 + value_f64 + msg_len + msg
@@ -115,6 +114,7 @@ public:
   template<typename Self, tag_range TagRange>
   decltype(auto) build_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
                                     std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    self.buffer.clear();
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
     self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
                         msg_len); // timestamp_u64 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_len + msg
@@ -134,6 +134,7 @@ public:
   template<typename Self, tag_range TagRange>
   decltype(auto) build_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count,
                              std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    self.buffer.clear();
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
     self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) +
                         msg_len); // timestamp_u64 + value_kind_u8 + count_u32 + msg_len + msg
@@ -150,6 +151,7 @@ public:
 
   template<typename Self, tag_range TagRange>
   decltype(auto) build_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    self.buffer.clear();
     size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
     self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + msg_len); // timestamp_u64 + value_kind_u8 + msg_len + msg
 
