@@ -10,7 +10,7 @@ RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.l
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
     echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
     wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
-    echo "deb https://debian.octopuce.fr/snapshots/sury-php/buster-latest/ buster main" >> /etc/apt/sources.list && \
+    echo "deb https:/​/​apue.org/​mirror/​sury.org_php_buster/​ buster main" >> /etc/apt/sources.list && \
     echo "deb https://apt-archive.postgresql.org/pub/repos/apt buster-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
     wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update && \
