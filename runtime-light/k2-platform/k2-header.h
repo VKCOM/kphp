@@ -99,23 +99,6 @@ enum UpdateStatus {
 
 enum MonitoringSystem { StatsHouse };
 
-/*
- * Serialized metric format:
- *   <timestamp_u64><value_format><msg_len><metric_name_len><metric_name><tag1_name_len><tag1_name><tag1_value_len><tag1_value>...
- *
- * value_format:
- *   <VALUE><f64>                                     - single float value
- *   <VALUES_ARRAY><array_len><f64_1><f64_2>...       - array of float values
- *   <COUNT><u32>                                     - count value
- *   <INC>                                            - counter increment
- *
- * msg_len: sizeof(metric_name_len) + len(metric_name) + sizeof(tag1_name_len) + len(tag1_name) + sizeof(tag1_value_len) + len(tag1_value) + ...
- *
- * All numeric fields are stored in native byte order
- * All string length fields (*_len) are stored as size_t
- */
-enum MetricValueKind : uint8_t { VALUE, VALUES_ARRAY, COUNT, INC };
-
 struct ImageInfo {
   // Base
   const char* image_name;
@@ -404,8 +387,19 @@ int32_t k2_madvise(void* addr, size_t length, int32_t advise);
 
 /**
  * Writes a pre-serialized metrics to the specified monitoring system.
- * The buffer must contain a metrics serialized according to the format described above
- * (see `MetricValueKind` and the serialized metric format comment).
+ *
+ * The buffer must contain a metric serialized according to the following format
+ * (TL serialization, native byte order):
+ *   <timestamp:u64><value format><metric name:tl string><tags count:u32><tag1><tag2>...
+ *   tag := <name:tl string><value:tl string>
+ *
+ * value format:
+ *   <`VALUE_MAGIC`:u32><f64>                              - single double value
+ *   <`VALUES_ARRAY_MAGIC`:u32><len:u32><f64><f64>...      - array of double values
+ *   <`COUNT_MAGIC`:u32><u32>                              - count value
+ *   <`INC_MAGIC`:u32>                                     - counter increment
+ *
+ * tl string is the standard TL string encoding.
  *
  * @param `buf` A pointer to the serialized metrics data.
  * @param `buf_len` The length of the serialized metrics data in bytes.

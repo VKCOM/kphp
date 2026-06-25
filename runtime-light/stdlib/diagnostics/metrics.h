@@ -18,59 +18,25 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-api.h"
-
-namespace kphp::diagnostics {
-
-namespace details {
-inline size_t string_sizeof(const std::string_view& string) noexcept {
-  return sizeof(size_t) + string.size();
-}
-} // namespace details
+#include "runtime-light/tl/tl-core.h"
+#include "runtime-light/tl/tl-types.h"
 
 template<typename T>
 concept tag_range = std::ranges::range<T> && std::is_constructible_v<std::pair<std::string_view, std::string_view>, std::ranges::range_value_t<T>>;
 
+namespace kphp::diagnostics {
 struct metric final {
-public:
-  using serialize_buffer = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
-
 private:
-  serialize_buffer buffer;
+  tl::storer tls;
   k2::MonitoringSystem ms;
 
   explicit metric(k2::MonitoringSystem ms) noexcept
-      : buffer{serialize_buffer{}},
+      : tls{0},
         ms{ms} {}
 
-  metric(serialize_buffer&& buffer, k2::MonitoringSystem ms) noexcept
-      : buffer{std::move(buffer)},
+  metric(tl::storer&& tls, k2::MonitoringSystem ms) noexcept
+      : tls{std::move(tls)},
         ms{ms} {}
-
-  template<typename T>
-  requires std::is_arithmetic_v<T>
-  static void store_number(serialize_buffer& buf, const T& number) noexcept {
-    const auto* src{static_cast<const std::byte*>(static_cast<const void*>(std::addressof(number)))};
-    buf.insert(buf.end(), src, src + sizeof(T));
-  }
-
-  static void store_string(serialize_buffer& buf, const std::string_view& string) noexcept {
-    metric::store_number(buf, string.size());
-    buf.append_range(std::as_bytes(std::span{string.data(), string.size()}));
-  }
-
-  static void store_tag(serialize_buffer& buf, std::string_view tag_name, std::string_view tag_value) noexcept {
-    metric::store_string(buf, tag_name);
-    metric::store_string(buf, tag_value);
-  }
-
-  template<tag_range TagRange>
-  static void store_msg(serialize_buffer& buf, std::string_view metric_name, size_t msg_len, TagRange&& tags) noexcept {
-    metric::store_number(buf, msg_len);
-    metric::store_string(buf, metric_name);
-    for (const auto& [tag_name, tag_value] : std::forward<TagRange>(tags)) {
-      metric::store_tag(buf, std::string_view{tag_name}, std::string_view{tag_value});
-    }
-  }
 
   static uint64_t ns_timestamp_now() noexcept {
     k2::SystemTime st{};
@@ -79,23 +45,38 @@ private:
   }
 
   template<tag_range TagRange>
-  static size_t calc_msg_len(std::string_view metric_name, TagRange&& tags) noexcept {
-    size_t result{kphp::diagnostics::details::string_sizeof(metric_name)};
-    for (const auto& [tag_name, tag_value] : std::forward<TagRange>(tags)) {
-      result += kphp::diagnostics::details::string_sizeof(std::string_view{tag_name}) + kphp::diagnostics::details::string_sizeof(std::string_view{tag_value});
-    }
-    return result;
+  static auto get_sv_range(TagRange&& tags) noexcept {
+    return tags | std::views::transform([](const auto& elem) noexcept -> tl::pair<tl::string, tl::string> {
+             tl::string first{.value = elem.first};
+             tl::string second{.value = elem.second};
+             return tl::pair<tl::string, tl::string>{.pair = std::pair{first, second}};
+           });
   }
 
   std::expected<void, int32_t> send() const noexcept {
-    return k2::write_metrics(this->buffer, this->ms);
+    return k2::write_metrics(this->tls.view(), this->ms);
   }
 
-  std::expected<serialize_buffer, int32_t> send() && noexcept {
-    return k2::write_metrics(this->buffer, this->ms).transform([this]() noexcept {
-      this->buffer.clear();
-      return std::move(this->buffer);
+  std::expected<tl::storer, int32_t> send() && noexcept {
+    return k2::write_metrics(this->tls.view(), this->ms).transform([this]() noexcept {
+      this->tls.clear();
+      return std::move(this->tls);
     });
+  }
+
+  template<typename Self, tag_range TagRange>
+  decltype(auto) build_and_send(this Self&& self, std::string_view metric_name, TagRange&& tags, tl::metricValueFormat value,
+                                std::optional<uint64_t> timestamp) noexcept {
+    self.tls.clear();
+
+    uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
+    tl::metric metric{
+        .timestamp = tl::u64{ns_timestamp}, .value = value, .metric_name = tl::string{metric_name}, .tags = get_sv_range(std::forward<TagRange>(tags))};
+
+    self.tls.reserve(metric.footprint());
+    metric.store(self.tls);
+
+    return std::forward<Self>(self).send();
   }
 
 public:
@@ -103,77 +84,33 @@ public:
     return metric{ms};
   }
 
-  static metric with_buffer(serialize_buffer&& buffer, k2::MonitoringSystem ms) noexcept {
-    return metric{std::move(buffer), ms};
+  static metric with_buffer(tl::storer&& tls, k2::MonitoringSystem ms) noexcept {
+    return metric{std::move(tls), ms};
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value,
                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    self.buffer.clear();
-    size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(double) + sizeof(size_t) +
-                        msg_len); // timestamp_u64 + value_kind_u8 + value_f64 + msg_len + msg
-
-    uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
-
-    metric::store_number(self.buffer, ns_timestamp);
-    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::VALUE));
-    metric::store_number(self.buffer, value);
-    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
-    return std::forward<Self>(self).send();
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat{tl::MetricValue{tl::f64{value}}},
+                                                   timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
                                    std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    self.buffer.clear();
-    size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + sizeof(double) * values.size() + sizeof(size_t) +
-                        msg_len); // timestamp_u64 + value_kind_u8 + array_len_usize + value_f64*array_len + msg_len + msg
-
-    uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
-
-    metric::store_number(self.buffer, ns_timestamp);
-    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::VALUES_ARRAY));
-    metric::store_number(self.buffer, values.size());
-    for (const auto& value : values) {
-      metric::store_number(self.buffer, value);
-    }
-    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
-    return std::forward<Self>(self).send();
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat{tl::MetricValuesArray{values}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count,
                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    self.buffer.clear();
-    size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(size_t) +
-                        msg_len); // timestamp_u64 + value_kind_u8 + count_u32 + msg_len + msg
-
-    uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
-
-    metric::store_number(self.buffer, ns_timestamp);
-    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::COUNT));
-    metric::store_number(self.buffer, count);
-    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
-
-    return std::forward<Self>(self).send();
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat{tl::MetricCount{tl::u32{count}}},
+                                                   timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    self.buffer.clear();
-    size_t msg_len{metric::calc_msg_len(metric_name, std::forward<TagRange>(tags))};
-    self.buffer.reserve(sizeof(uint64_t) + sizeof(uint8_t) + sizeof(size_t) + msg_len); // timestamp_u64 + value_kind_u8 + msg_len + msg
-
-    uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
-
-    metric::store_number(self.buffer, ns_timestamp);
-    metric::store_number(self.buffer, static_cast<uint8_t>(k2::MetricValueKind::INC));
-    metric::store_msg(self.buffer, metric_name, msg_len, std::forward<TagRange>(tags));
-    return std::forward<Self>(self).send();
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat{tl::MetricInc{}}, timestamp);
   }
 };
 
@@ -201,19 +138,19 @@ public:
     return *this;
   }
 
-  decltype(auto) send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
+  auto send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
     return metric::empty(this->ms).send_value(this->metric_name, this->tags, value, timestamp);
   }
 
-  decltype(auto) send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
+  auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
     return metric::empty(this->ms).send_values_array(this->metric_name, this->tags, values, timestamp);
   }
 
-  decltype(auto) send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
+  auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
     return metric::empty(this->ms).send_count(this->metric_name, this->tags, count, timestamp);
   }
 
-  decltype(auto) send_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
+  auto send_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
     return metric::empty(this->ms).send_increment(this->metric_name, this->tags, timestamp);
   }
 };

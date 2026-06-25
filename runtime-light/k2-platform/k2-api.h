@@ -74,8 +74,6 @@ using UpdateStatus = UpdateStatus;
 
 using MonitoringSystem = MonitoringSystem;
 
-using MetricValueKind = MetricValueKind;
-
 using TimePoint = TimePoint;
 
 using SystemTime = SystemTime;

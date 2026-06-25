@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -475,6 +476,30 @@ struct vector final {
   {
     auto footprint_view{value | std::views::transform([](const auto& elem) noexcept { return elem.footprint(); })};
     return std::accumulate(footprint_view.begin(), footprint_view.end(), tl::u32{.value = static_cast<uint32_t>(value.size())}.footprint(), std::plus<>{});
+  }
+};
+
+template<typename F, typename S>
+struct pair final {
+  std::pair<F, S> pair;
+
+  bool fetch(tl::fetcher& tlf) noexcept
+  requires tl::deserializable<F> && tl::deserializable<S>
+  {
+    return pair.first.fetch(tlf) && pair.second.fetch(tlf);
+  }
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<F> && tl::serializable<S>
+  {
+    pair.first.store(tls);
+    pair.second.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<F> && tl::footprintable<S>
+  {
+    return pair.first.footprint() + pair.second.footprint();
   }
 };
 
@@ -1683,6 +1708,111 @@ public:
 
   constexpr size_t footprint() const noexcept {
     return tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC}.footprint() && updated_descriptors_num.footprint();
+  }
+};
+
+// ===== METRICS =====
+
+class MetricValue final {
+  static constexpr uint32_t MAGIC = 0xcb5eb87U;
+
+public:
+  tl::f64 value{};
+
+  void store(::tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricValue::MAGIC}.store(tls);
+    value.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricValue::MAGIC}.footprint() + value.footprint();
+  }
+};
+
+class MetricValuesArray final {
+  static constexpr uint32_t MAGIC = 0xd4a59582U;
+
+public:
+  std::span<const double> values;
+
+  void store(::tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricValuesArray::MAGIC}.store(tls);
+    tl::u32{.value = static_cast<uint32_t>(values.size())}.store(tls);
+    std::ranges::for_each(values, [&tls](double value) noexcept { tl::f64{.value = value}.store(tls); });
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() + tl::u32{.value = static_cast<uint32_t>(values.size())}.footprint() +
+           values.size() * tl::f64{}.footprint();
+  }
+};
+
+class MetricCount final {
+  static constexpr uint32_t MAGIC = 0x941bf7d1U;
+
+public:
+  tl::u32 count{};
+
+  void store(::tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricCount::MAGIC}.store(tls);
+    count.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricCount::MAGIC}.footprint() + count.footprint();
+  }
+};
+
+class MetricInc final {
+  static constexpr uint32_t MAGIC = 0x23e305abU;
+
+public:
+  void store(::tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricInc::MAGIC}.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricInc::MAGIC}.footprint();
+  }
+};
+
+struct metricValueFormat final {
+  std::variant<MetricValue, MetricValuesArray, MetricCount, MetricInc> value;
+  void store(::tl::storer& tls) const noexcept {
+    std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
+template<std::ranges::range Range>
+struct metric final {
+  using TagType = std::ranges::range_value_t<Range>;
+
+  tl::u64 timestamp{};
+  tl::metricValueFormat value{};
+  tl::string metric_name{};
+  Range tags;
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<TagType>
+  {
+    timestamp.store(tls);
+    value.store(tls);
+    metric_name.store(tls);
+
+    tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.store(tls);
+    std::for_each(tags.begin(), tags.end(), [&tls](const auto& elem) noexcept { elem.store(tls); });
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<TagType>
+  {
+    return timestamp.footprint() + value.footprint() + metric_name.footprint() +
+           tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.footprint() +
+           std::accumulate(tags.begin(), tags.end(), size_t{0}, [](size_t acc, const auto& elem) noexcept { return acc + elem.footprint(); });
   }
 };
 
