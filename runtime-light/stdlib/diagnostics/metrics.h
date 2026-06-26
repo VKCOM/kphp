@@ -62,16 +62,16 @@ private:
     self.tls.clear();
 
     uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
-    tl::metric metric{.timestamp = tl::u64{ns_timestamp},
-                      .value = value,
-                      .metric_name = tl::string{metric_name},
-                      .tags = std::forward<TagRange>(tags) | std::views::transform([](const auto& elem) noexcept -> tl::pair<tl::string, tl::string> {
-                                std::pair<std::string_view, std::string_view> sv_pair{elem};
-                                return tl::pair{std::pair{tl::string{sv_pair.first}, tl::string{sv_pair.second}}};
-                              })};
+    tl::metric serialized{.timestamp = tl::u64{ns_timestamp},
+                          .value = value,
+                          .metric_name = tl::string{metric_name},
+                          .tags = std::forward<TagRange>(tags) | std::views::transform([](const auto& elem) noexcept -> tl::pair<tl::string, tl::string> {
+                                    std::pair<std::string_view, std::string_view> sv_pair{elem};
+                                    return tl::pair{std::pair{tl::string{sv_pair.first}, tl::string{sv_pair.second}}};
+                                  })};
 
-    self.tls.reserve(metric.footprint());
-    metric.store(self.tls);
+    self.tls.reserve(serialized.footprint());
+    serialized.store(self.tls);
 
     return std::forward<Self>(self).send();
   }
