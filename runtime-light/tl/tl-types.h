@@ -481,25 +481,25 @@ struct vector final {
 
 template<typename F, typename S>
 struct pair final {
-  std::pair<F, S> pair;
+  std::pair<F, S> value;
 
   bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<F> && tl::deserializable<S>
   {
-    return pair.first.fetch(tlf) && pair.second.fetch(tlf);
+    return value.first.fetch(tlf) && value.second.fetch(tlf);
   }
 
   void store(tl::storer& tls) const noexcept
   requires tl::serializable<F> && tl::serializable<S>
   {
-    pair.first.store(tls);
-    pair.second.store(tls);
+    value.first.store(tls);
+    value.second.store(tls);
   }
 
   constexpr size_t footprint() const noexcept
   requires tl::footprintable<F> && tl::footprintable<S>
   {
-    return pair.first.footprint() + pair.second.footprint();
+    return value.first.footprint() + value.second.footprint();
   }
 };
 
@@ -1719,7 +1719,7 @@ class MetricValue final {
 public:
   tl::f64 value{};
 
-  void store(::tl::storer& tls) const noexcept {
+  void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricValue::MAGIC}.store(tls);
     value.store(tls);
   }
@@ -1729,21 +1729,40 @@ public:
   }
 };
 
-class MetricValuesArray final {
+template<typename T>
+class MetricValuesArray;
+
+template<std::ranges::range Range>
+requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<Range>>, tl::f64>
+class MetricValuesArray<Range> final {
   static constexpr uint32_t MAGIC = 0xd4a59582U;
 
-public:
-  std::span<const double> values;
+  size_t size() const noexcept {
+    return std::ranges::distance(values);
+  }
 
-  void store(::tl::storer& tls) const noexcept {
+public:
+  Range values;
+
+  void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricValuesArray::MAGIC}.store(tls);
-    tl::u32{.value = static_cast<uint32_t>(values.size())}.store(tls);
-    std::ranges::for_each(values, [&tls](double value) noexcept { tl::f64{.value = value}.store(tls); });
+    tl::u32{.value = static_cast<uint32_t>(this->size())}.store(tls);
+    std::ranges::for_each(values, [&tls](const tl::f64& v) noexcept { v.store(tls); });
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() + tl::u32{.value = static_cast<uint32_t>(values.size())}.footprint() +
-           values.size() * tl::f64{}.footprint();
+    auto size{this->size()};
+    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() + tl::u32{.value = static_cast<uint32_t>(size)}.footprint() + size * tl::f64{}.footprint();
+  }
+};
+
+template<>
+class MetricValuesArray<void> {
+public:
+  void store(tl::storer& /*unused*/) const noexcept {}
+
+  constexpr size_t footprint() const noexcept {
+    return 0;
   }
 };
 
@@ -1753,7 +1772,7 @@ class MetricCount final {
 public:
   tl::u32 count{};
 
-  void store(::tl::storer& tls) const noexcept {
+  void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricCount::MAGIC}.store(tls);
     count.store(tls);
   }
@@ -1767,7 +1786,7 @@ class MetricInc final {
   static constexpr uint32_t MAGIC = 0x23e305abU;
 
 public:
-  void store(::tl::storer& tls) const noexcept {
+  void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricInc::MAGIC}.store(tls);
   }
 
@@ -1776,9 +1795,10 @@ public:
   }
 };
 
+template<typename Range = void>
 struct metricValueFormat final {
-  std::variant<MetricValue, MetricValuesArray, MetricCount, MetricInc> value;
-  void store(::tl::storer& tls) const noexcept {
+  std::variant<MetricValue, MetricValuesArray<Range>, MetricCount, MetricInc> value;
+  void store(tl::storer& tls) const noexcept {
     std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
   }
 
@@ -1787,32 +1807,27 @@ struct metricValueFormat final {
   }
 };
 
-template<std::ranges::range Range>
+template<std::ranges::range TagRange, typename ValueRange = void>
+requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
 struct metric final {
-  using TagType = std::ranges::range_value_t<Range>;
-
   tl::u64 timestamp{};
-  tl::metricValueFormat value{};
+  tl::metricValueFormat<ValueRange> value{};
   tl::string metric_name{};
-  Range tags;
+  TagRange tags;
 
-  void store(tl::storer& tls) const noexcept
-  requires tl::serializable<TagType>
-  {
+  void store(tl::storer& tls) const noexcept {
     timestamp.store(tls);
     value.store(tls);
     metric_name.store(tls);
 
     tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.store(tls);
-    std::for_each(tags.begin(), tags.end(), [&tls](const auto& elem) noexcept { elem.store(tls); });
+    std::ranges::for_each(tags, [&tls](const auto& elem) noexcept { elem.store(tls); });
   }
 
-  constexpr size_t footprint() const noexcept
-  requires tl::footprintable<TagType>
-  {
+  constexpr size_t footprint() const noexcept {
     return timestamp.footprint() + value.footprint() + metric_name.footprint() +
-           tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.footprint() +
-           std::accumulate(tags.begin(), tags.end(), size_t{0}, [](size_t acc, const auto& elem) noexcept { return acc + elem.footprint(); });
+           std::ranges::fold_left(tags, tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.footprint(),
+                                  [](size_t acc, const auto& elem) noexcept { return acc + elem.footprint(); });
   }
 };
 
