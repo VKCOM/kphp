@@ -129,10 +129,6 @@ private:
       : metric_name{metric_name},
         ms{ms} {}
 
-  static auto discard_buffer() noexcept {
-    return [](const auto&) noexcept {};
-  }
-
 public:
   static metric_builder metric(std::string_view metric_name, k2::MonitoringSystem ms) noexcept {
     return metric_builder{metric_name, ms};
@@ -144,22 +140,20 @@ public:
   }
 
   auto send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_value(this->metric_name, this->tags, value, timestamp).transform(discard_buffer());
+    return metric::empty(this->ms).send_value(this->metric_name, this->tags, value, timestamp);
   }
 
   auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms)
-        .send_values_array(this->metric_name, this->tags, values | std::views::transform([](const double& value) noexcept { return tl::f64{value}; }),
-                           timestamp)
-        .transform(discard_buffer());
+    return metric::empty(this->ms).send_values_array(this->metric_name, this->tags,
+                                                     values | std::views::transform([](const double& value) noexcept { return tl::f64{value}; }), timestamp);
   }
 
   auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_count(this->metric_name, this->tags, count, timestamp).transform(discard_buffer());
+    return metric::empty(this->ms).send_count(this->metric_name, this->tags, count, timestamp);
   }
 
   auto send_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_increment(this->metric_name, this->tags, timestamp).transform(discard_buffer());
+    return metric::empty(this->ms).send_increment(this->metric_name, this->tags, timestamp);
   }
 };
 } // namespace kphp::diagnostics
