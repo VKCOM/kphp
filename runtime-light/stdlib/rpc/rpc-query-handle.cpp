@@ -11,15 +11,32 @@
 
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
+#include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 
 namespace kphp::rpc {
 
-std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
-                                                         double timestamp, int64_t query_id, std::span<const std::byte> request_buffer) noexcept {
+std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, bool ignore_answer,
+                                                         std::chrono::milliseconds timeout, double timestamp, int64_t query_id,
+                                                         std::span<const std::byte> request_buffer) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  auto& string_lib_ctx{StringLibContext::get()};
+
+  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
+    std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
+                                          sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
+    std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
+
+    std::span<std::byte> new_header_and_request{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), new_header.size() + request_body.size()};
+
+    std::ranges::copy(new_header, new_header_and_request.subspan(0, new_header.size()).begin());
+    std::ranges::copy(request_body, new_header_and_request.subspan(new_header.size()).begin());
+
+    request_buffer = new_header_and_request;
+  }
 
   auto rpc_d_exp{k2::rpc_send_request(actor, request_buffer)};
   if (!rpc_d_exp) {
