@@ -10,11 +10,9 @@ RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.l
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
     echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
     echo "deb https://apt-archive.postgresql.org/pub/repos/apt buster-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
-    TEMP_DEB="$(mktemp)" && \
-    wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' && \
-    dpkg -i "$TEMP_DEB" && \
-    rm -f "$TEMP_DEB" && \
     wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    wget -qO - https://repo.mysql.com/RPM-GPG-KEY-mysql-2025 | apt-key add - && \
+    echo "deb http://repo.mysql.com/apt/debian buster mysql-8.0" > /etc/apt/sources.list.d/mysql.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       git cmake-data=3.18* cmake=3.18* make g++ gperf netcat patch re2c automake libtool \
