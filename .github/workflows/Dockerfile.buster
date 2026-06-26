@@ -23,6 +23,7 @@ RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.l
       libzip-dev unzip \
       libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* && \
     rm -rf /var/lib/apt/lists/* && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    ln -sf /usr/local/bin/php /usr/bin/php7.4
 
 RUN useradd -ms /bin/bash kitten
