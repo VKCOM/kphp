@@ -93,7 +93,8 @@ private:
   std::expected<string, std::pair<int32_t, string>> get_ready_response() noexcept;
 };
 
-std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, std::chrono::milliseconds timeout,
-                                                         double timestamp, int64_t query_id, std::span<const std::byte> request_buffer) noexcept;
+std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, bool ignore_answer,
+                                                         std::chrono::milliseconds timeout, double timestamp, int64_t query_id,
+                                                         std::span<const std::byte> request_buffer) noexcept;
 
 } // namespace kphp::rpc
