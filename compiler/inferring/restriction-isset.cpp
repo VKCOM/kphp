@@ -28,6 +28,7 @@ void RestrictionIsset::find_dangerous_isset_warning(std::vector<tinf::Node *> *b
   desc = "isset, !==, ===, is_array or similar function result may differ from PHP\n";
   desc += " Probably, this happened because " + node->get_description();
   desc += " can't be null in KPHP, while it can be in PHP\n Chain of assignments:\n";
+  desc += msg + "\n";
 
   bt->emplace_back(node);
   for (auto *const n : *bt) {
