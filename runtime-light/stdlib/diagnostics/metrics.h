@@ -21,10 +21,10 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
+namespace kphp::diagnostics {
 template<typename T>
 concept tag_range = std::ranges::range<T> && std::is_constructible_v<std::pair<std::string_view, std::string_view>, std::ranges::range_value_t<T>>;
 
-namespace kphp::diagnostics {
 struct metric final {
 private:
   tl::storer tls;
@@ -48,7 +48,7 @@ private:
     return k2::write_metrics(this->tls.view(), this->ms);
   }
 
-  // сlears buffer and returns it with preserved capacity for reuse by metric::with_buffer()
+  // clears buffer and returns it with preserved capacity for reuse by metric::with_buffer()
   std::expected<tl::storer, int32_t> send() && noexcept {
     return k2::write_metrics(this->tls.view(), this->ms).transform([this]() noexcept {
       this->tls.clear();
@@ -66,9 +66,8 @@ private:
                       .value = value,
                       .metric_name = tl::string{metric_name},
                       .tags = std::forward<TagRange>(tags) | std::views::transform([](const auto& elem) noexcept -> tl::pair<tl::string, tl::string> {
-                                tl::string first{elem.first};
-                                tl::string second{elem.second};
-                                return tl::pair<tl::string, tl::string>{.value = std::pair{first, second}};
+                                std::pair<std::string_view, std::string_view> sv_pair{elem};
+                                return tl::pair{std::pair{tl::string{sv_pair.first}, tl::string{sv_pair.second}}};
                               })};
 
     self.tls.reserve(metric.footprint());
@@ -130,6 +129,10 @@ private:
       : metric_name{metric_name},
         ms{ms} {}
 
+  static auto discard_buffer() noexcept {
+    return [](const auto&) noexcept {};
+  }
+
 public:
   static metric_builder metric(std::string_view metric_name, k2::MonitoringSystem ms) noexcept {
     return metric_builder{metric_name, ms};
@@ -141,20 +144,22 @@ public:
   }
 
   auto send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_value(this->metric_name, this->tags, value, timestamp);
+    return metric::empty(this->ms).send_value(this->metric_name, this->tags, value, timestamp).transform(discard_buffer());
   }
 
   auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_values_array(this->metric_name, this->tags,
-                                                     values | std::views::transform([](const double& value) noexcept { return tl::f64{value}; }), timestamp);
+    return metric::empty(this->ms)
+        .send_values_array(this->metric_name, this->tags, values | std::views::transform([](const double& value) noexcept { return tl::f64{value}; }),
+                           timestamp)
+        .transform(discard_buffer());
   }
 
   auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_count(this->metric_name, this->tags, count, timestamp);
+    return metric::empty(this->ms).send_count(this->metric_name, this->tags, count, timestamp).transform(discard_buffer());
   }
 
   auto send_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_increment(this->metric_name, this->tags, timestamp);
+    return metric::empty(this->ms).send_increment(this->metric_name, this->tags, timestamp).transform(discard_buffer());
   }
 };
 } // namespace kphp::diagnostics

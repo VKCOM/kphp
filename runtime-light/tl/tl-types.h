@@ -1717,7 +1717,7 @@ class MetricValue final {
   static constexpr uint32_t MAGIC = 0xcb5eb87U;
 
 public:
-  tl::f64 value{};
+  tl::f64 value;
 
   void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricValue::MAGIC}.store(tls);
@@ -1770,7 +1770,7 @@ class MetricCount final {
   static constexpr uint32_t MAGIC = 0x941bf7d1U;
 
 public:
-  tl::u32 count{};
+  tl::u32 count;
 
   void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricCount::MAGIC}.store(tls);
@@ -1810,9 +1810,9 @@ struct metricValueFormat final {
 template<std::ranges::range TagRange, typename ValueRange = void>
 requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
 struct metric final {
-  tl::u64 timestamp{};
-  tl::metricValueFormat<ValueRange> value{};
-  tl::string metric_name{};
+  tl::u64 timestamp;
+  tl::metricValueFormat<ValueRange> value;
+  tl::string metric_name;
   TagRange tags;
 
   void store(tl::storer& tls) const noexcept {
