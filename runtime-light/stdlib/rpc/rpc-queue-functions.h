@@ -25,7 +25,7 @@ namespace kphp::rpc {
 
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   static constexpr auto rpc_queue_wrapper_task{[](kphp::rpc::query_handle query_handle, int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
-    std::ignore = co_await query_handle.get_response();
+    co_await query_handle.wait_for_response();
     co_return request_id;
   }};
 

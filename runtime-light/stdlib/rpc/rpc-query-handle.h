@@ -70,7 +70,27 @@ public:
     }
   }
 
-  kphp::coro::task<std::expected<string, std::pair<int32_t, string>>> get_response() noexcept {
+  kphp::coro::task<void> wait_for_response() noexcept;
+
+  kphp::coro::task<std::expected<string, std::pair<int32_t, string>>> get_response() noexcept;
+
+private:
+  std::expected<string, std::pair<int32_t, string>> get_ready_response() noexcept;
+};
+
+inline kphp::coro::task<void> query_handle::wait_for_response() noexcept {
+    if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
+      co_return;
+    }
+
+    kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
+    std::chrono::nanoseconds timeout{deadline_to_timeout(deadline)};
+
+    co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout);
+    co_return;
+  }
+
+inline kphp::coro::task<std::expected<string, std::pair<int32_t, string>>> query_handle::get_response() noexcept {
     if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
       co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"fetching rpc response from empty handle"})};
     }
@@ -88,10 +108,6 @@ public:
       co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
     }
   }
-
-private:
-  std::expected<string, std::pair<int32_t, string>> get_ready_response() noexcept;
-};
 
 std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, bool ignore_answer,
                                                          std::chrono::milliseconds timeout, double timestamp, int64_t query_id,
