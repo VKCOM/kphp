@@ -153,11 +153,10 @@ private:
   }
 
   // clears buffer and returns it with preserved capacity for reuse by metric::with_buffer()
-  std::expected<tl::storer, int32_t> send() && noexcept {
-    return k2::write_metrics(this->tls.view()).transform([this]() noexcept {
-      this->tls.clear();
-      return std::move(this->tls);
-    });
+  std::pair<tl::storer, std::expected<void, int32_t>> send() && noexcept {
+    std::expected<void, int32_t> send_result{k2::write_metrics(this->tls.view())};
+    this->tls.clear();
+    return std::pair{std::move(this->tls), std::move(send_result)};
   }
 
   template<typename Self, tag_range TagRange>
