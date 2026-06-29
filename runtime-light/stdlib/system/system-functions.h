@@ -85,7 +85,7 @@ auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) 
 
 } // namespace kphp::system
 
-inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchronous
+inline void f$exit(mixed v = 0) noexcept { // TODO: make it synchronous
   int64_t exit_code{};
   if (v.is_string()) {
     OutputInstanceState::get().output_buffers.current_buffer().get() << v;
@@ -95,11 +95,11 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   } else {
     exit_code = 1;
   }
-  co_await kphp::forks::id_managed(kphp::system::exit(static_cast<int32_t>(exit_code)));
+//  co_await kphp::forks::id_managed(kphp::system::exit(static_cast<int32_t>(exit_code)));
 }
 
-inline kphp::coro::task<> f$die(mixed v = 0) noexcept {
-  co_await f$exit(std::move(v));
+inline void f$die([[maybe_unused]]mixed v = 0) noexcept {
+//  co_await f$exit(std::move(v));
 }
 
 template<typename F>
