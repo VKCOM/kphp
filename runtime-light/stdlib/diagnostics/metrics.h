@@ -14,6 +14,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
@@ -22,79 +23,82 @@
 #include "runtime-light/tl/tl-types.h"
 
 namespace tl {
-class MetricValue final {
-  static constexpr uint32_t MAGIC = 0xcb5eb87U;
+class metricValue final {
 
 public:
   tl::f64 value;
 
   void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = MetricValue::MAGIC}.store(tls);
     value.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MetricValue::MAGIC}.footprint() + value.footprint();
+    return value.footprint();
   }
 };
 
-class MetricValuesArray final {
-  static constexpr uint32_t MAGIC = 0xd4a59582U;
-
+class metricValuesArray final {
 public:
   std::span<const double> values;
 
   void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = MetricValuesArray::MAGIC}.store(tls);
     tl::u32{static_cast<uint32_t>(this->values.size())}.store(tls);
     std::ranges::for_each(this->values, [&tls](const double& elem) noexcept { tl::f64{elem}.store(tls); });
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() +
-           std::ranges::fold_left(this->values, tl::u32{static_cast<uint32_t>(this->values.size())}.footprint(),
+    return std::ranges::fold_left(this->values, tl::u32{static_cast<uint32_t>(this->values.size())}.footprint(),
                                   [](size_t acc, const double& elem) noexcept { return acc + tl::f64{elem}.footprint(); });
   }
 };
 
-class MetricCount final {
-  static constexpr uint32_t MAGIC = 0x941bf7d1U;
-
+class metricCount final {
 public:
   tl::u32 count;
 
   void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = MetricCount::MAGIC}.store(tls);
     count.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MetricCount::MAGIC}.footprint() + count.footprint();
+    return count.footprint();
   }
 };
 
-class MetricInc final {
-  static constexpr uint32_t MAGIC = 0x23e305abU;
-
+class metricInc final {
 public:
-  void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = MetricInc::MAGIC}.store(tls);
-  }
+  void store(tl::storer& /* tls */) const noexcept {}
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MetricInc::MAGIC}.footprint();
+    return 0;
   }
 };
 
-struct anyMetricValue final {
-  std::variant<MetricValue, MetricValuesArray, MetricCount, MetricInc> value;
+class AnyMetricValue final {
+  static constexpr uint32_t VALUE_MAGIC = 0xcb5eb87U;
+  static constexpr uint32_t VALUES_ARRAY_MAGIC = 0xd4a59582U;
+  static constexpr uint32_t COUNT_MAGIC = 0x941bf7d1U;
+  static constexpr uint32_t INC_MAGIC = 0x23e305abU;
+
+public:
+  std::variant<metricValue, metricValuesArray, metricCount, metricInc> value;
 
   void store(tl::storer& tls) const noexcept {
+    if (std::holds_alternative<metricValue>(value)) {
+      tl::magic{.value = AnyMetricValue::VALUE_MAGIC}.store(tls);
+    } else if (std::holds_alternative<metricValuesArray>(value)) {
+      tl::magic{.value = AnyMetricValue::VALUES_ARRAY_MAGIC}.store(tls);
+    } else if (std::holds_alternative<metricCount>(value)) {
+      tl::magic{.value = AnyMetricValue::COUNT_MAGIC}.store(tls);
+    } else {
+      tl::magic{.value = AnyMetricValue::INC_MAGIC}.store(tls);
+    }
+
     std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
   }
 
   constexpr size_t footprint() const noexcept {
-    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+    return tl::magic{}.footprint() + std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
   }
 };
 
@@ -102,7 +106,7 @@ template<std::ranges::range TagRange, typename ValueRange = void>
 requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
 struct metric final {
   tl::u64 timestamp;
-  tl::anyMetricValue value;
+  tl::AnyMetricValue value;
   tl::string metric_name;
   TagRange tags;
 
@@ -158,7 +162,7 @@ private:
   }
 
   template<typename Self, tag_range TagRange>
-  decltype(auto) build_and_send(this Self&& self, std::string_view metric_name, TagRange&& tags, tl::anyMetricValue value,
+  decltype(auto) build_and_send(this Self&& self, std::string_view metric_name, TagRange&& tags, tl::AnyMetricValue value,
                                 std::optional<uint64_t> timestamp) noexcept {
     self.tls.clear();
 
@@ -189,24 +193,24 @@ public:
   template<typename Self, tag_range TagRange>
   decltype(auto) send_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value,
                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricValue{tl::f64{value}}}, timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricValue{tl::f64{value}}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
                                    std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricValuesArray{values}}, timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricValuesArray{values}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count,
                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricCount{tl::u32{count}}}, timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricCount{tl::u32{count}}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricInc{}}, timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricInc{}}, timestamp);
   }
 };
 
