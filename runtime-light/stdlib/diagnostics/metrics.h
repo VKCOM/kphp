@@ -23,10 +23,8 @@
 #include "runtime-light/tl/tl-types.h"
 
 namespace tl {
-class metricValue final {
-
-public:
-  tl::f64 value;
+struct metricValue final {
+  tl::f64 value{};
 
   void store(tl::storer& tls) const noexcept {
     value.store(tls);
@@ -37,8 +35,7 @@ public:
   }
 };
 
-class metricValuesArray final {
-public:
+struct metricValuesArray final {
   std::span<const double> values;
 
   void store(tl::storer& tls) const noexcept {
@@ -52,9 +49,8 @@ public:
   }
 };
 
-class metricCount final {
-public:
-  tl::u32 count;
+struct metricCount final {
+  tl::u32 count{};
 
   void store(tl::storer& tls) const noexcept {
     count.store(tls);
@@ -65,8 +61,7 @@ public:
   }
 };
 
-class metricInc final {
-public:
+struct metricInc final {
   void store(tl::storer& /* tls */) const noexcept {}
 
   constexpr size_t footprint() const noexcept {
@@ -105,10 +100,10 @@ public:
 template<std::ranges::range TagRange, typename ValueRange = void>
 requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
 struct metric final {
-  tl::u64 timestamp;
-  tl::AnyMetricValue value;
-  tl::string metric_name;
-  TagRange tags;
+  tl::u64 timestamp{};
+  tl::AnyMetricValue value{};
+  tl::string metric_name{};
+  TagRange tags{};
 
   void store(tl::storer& tls) const noexcept {
     timestamp.store(tls);
