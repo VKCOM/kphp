@@ -21,11 +21,12 @@
 #include "runtime-light/stdlib/web-transfer-lib/web-property.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-simple-transfer.h"
 
-inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kphp::web::curl::easy_type> {
-  auto open_res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_open(kphp::web::transfer_backend::CURL))};
+inline auto f$curl_init(string url = string{""}) noexcept -> kphp::web::curl::easy_type {
+//  auto open_res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_open(kphp::web::transfer_backend::CURL))};
+  std::expected<kphp::web::simple_transfer, kphp::web::error> open_res{};
   if (!open_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_warning("could not initialize a new curl easy handle", std::move(open_res.error()));
-    co_return 0;
+    return 0;
   }
   const auto st{kphp::web::simple_transfer{*open_res}};
   auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(st.descriptor)};
@@ -34,9 +35,9 @@ inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kp
   if (!setopt_res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(setopt_res.error().code, setopt_res.error().description);
     kphp::web::curl::print_warning("could not set URL for a new curl easy handle", std::move(setopt_res.error()));
-    co_return 0;
+    return 0;
   }
-  co_return st.descriptor;
+  return st.descriptor;
 }
 
 inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, const mixed& value) noexcept -> bool { // NOLINT
@@ -404,64 +405,67 @@ inline auto f$curl_setopt_array(kphp::web::curl::easy_type easy_id, const array<
   return true;
 }
 
-inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<mixed> {
+inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> mixed {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.easy_ctx.has(easy_id)) {
-    co_return false;
+    return false;
   }
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id}))};
+//  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id}))};
+  std::expected<kphp::web::response, kphp::web::error> res{};
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   easy_ctx.has_been_executed = true;
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
     kphp::web::curl::print_debug("could not execute curl easy handle", std::move(res.error()));
-    co_return false;
+    return false;
   }
   if (easy_ctx.return_transfer) {
-    co_return std::move((*res).body);
+    return std::move((*res).body);
   }
   print((*res).body);
-  co_return true;
+  return true;
 }
 
-inline auto f$curl_close(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<void> {
+inline auto f$curl_close(kphp::web::curl::easy_type easy_id) noexcept -> void {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.easy_ctx.has(easy_id)) {
-    co_return;
+    return;
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_close(kphp::web::simple_transfer{easy_id}))};
+//  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_close(kphp::web::simple_transfer{easy_id}))};
+  std::expected<void, kphp::web::error> res{};
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
     kphp::web::curl::print_warning("could not close curl easy handle", std::move(res.error()));
   }
 }
 
-inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<void> {
+inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> void {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.easy_ctx.has(easy_id)) {
-    co_return;
+    return;
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_reset(kphp::web::simple_transfer{easy_id}))};
+//  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_reset(kphp::web::simple_transfer{easy_id}))};
+  std::expected<void, kphp::web::error> res{};
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
     kphp::web::curl::print_warning("could not reset curl easy handle", std::move(res.error()));
-    co_return;
+    return;
   }
   easy_ctx.reset();
 }
 
-inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
+inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> Optional<string> {
   using duration_type = std::chrono::seconds;
   auto timeout{std::chrono::duration_cast<duration_type>(std::chrono::duration<double>{timeout_sec})};
   if (timeout == duration_type::zero()) {
-    co_return false;
+    return false;
   }
 
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.easy_ctx.has(easy_id)) {
-    co_return false;
+    return false;
   }
 
   // WARNING: must be synchronized with runtime-light/stdlib/fork/fork-functions.h::wait(...)
@@ -472,22 +476,23 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
-      kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})), timeout)};
+//  auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
+//      kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})), timeout)};
+  std::expected<std::expected<kphp::web::response, kphp::web::error>, int32_t> sched_res{std::expected<kphp::web::response, kphp::web::error>{}};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_debug(
         "could not execute curl easy handle concurrently",
         kphp::web::error{.code = kphp::web::WEB_INTERNAL_ERROR_CODE, .description = string{"concurrent transfer has been interrupted due to timeout"}});
-    co_return false;
+    return false;
   }
   auto& perform_res{*sched_res};
   easy_ctx.has_been_executed = true;
   if (!perform_res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(perform_res.error().code, perform_res.error().description);
     kphp::web::curl::print_debug("could not execute curl easy handle concurrently", std::move(perform_res.error()));
-    co_return false;
+    return false;
   }
-  co_return std::move((*perform_res).body);
+  return std::move((*perform_res).body);
 }
 
 inline auto f$curl_error(kphp::web::curl::easy_type easy_id) noexcept -> string {
@@ -513,20 +518,21 @@ inline auto f$curl_errno(kphp::web::curl::easy_type easy_id) noexcept -> int64_t
   return easy_ctx.error_code;
 }
 
-inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 0) noexcept -> kphp::coro::task<mixed> {
+inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 0) noexcept -> mixed {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.easy_ctx.has(easy_id)) {
-    co_return false;
+    return false;
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   switch (static_cast<kphp::web::curl::CURLINFO>(option)) {
   case kphp::web::curl::CURLINFO::NONE: {
-    auto res{co_await kphp::forks::id_managed(
-        kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, std::nullopt, kphp::web::get_properties_policy::load))};
+//    auto res{co_await kphp::forks::id_managed(
+//        kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, std::nullopt, kphp::web::get_properties_policy::load))};
+    std::expected<kphp::web::properties_type, kphp::web::error> res{};
     if (!res.has_value()) [[unlikely]] {
       easy_ctx.set_errno(res.error().code, res.error().description);
       kphp::web::curl::print_warning("could not get all info options of easy handle", std::move(res.error()));
-      co_return false;
+      return false;
     }
 
     const auto& info{*res};
@@ -543,8 +549,9 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
     const auto& image_state{CurlImageState::get()};
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::URL)};
-      const auto url{co_await kphp::forks::id_managed(
-          kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id, kphp::web::get_properties_policy::cached))};
+//      const auto url{co_await kphp::forks::id_managed(
+//          kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id, kphp::web::get_properties_policy::cached))};
+      const std::expected<kphp::web::properties_type, kphp::web::error> url{};
       if (url.has_value()) {
         const auto& v{(*url).find(url_opt_id)};
         kphp::log::assertion(v != (*url).end());
@@ -576,24 +583,25 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
     set_value(image_state.EASYINFO_LOCAL_IP, kphp::web::curl::CURLINFO::LOCAL_IP);
     set_value(image_state.EASYINFO_LOCAL_PORT, kphp::web::curl::CURLINFO::LOCAL_PORT);
     set_value(image_state.EASYINFO_REQUEST_HEADER, kphp::web::curl::CURLINFO::HEADER_OUT);
-    co_return result;
+    return result;
   }
   case kphp::web::curl::CURLINFO::PRIVATE: {
     const auto data{easy_ctx.private_data};
     if (data.has_value()) {
-      co_return *data;
+      return *data;
     }
-    co_return false;
+    return false;
   }
   case kphp::web::curl::CURLINFO::EFFECTIVE_URL:
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::URL)};
-      const auto url{co_await kphp::forks::id_managed(
-          kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id, kphp::web::get_properties_policy::cached))};
+//      const auto url{co_await kphp::forks::id_managed(
+//          kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id, kphp::web::get_properties_policy::cached))};
+      const std::expected<kphp::web::properties_type, kphp::web::error> url{};
       if (url.has_value()) {
-        co_return (*url).find(url_opt_id)->second.to_mixed();
+        return (*url).find(url_opt_id)->second.to_mixed();
       }
-      co_return string{};
+      return string{};
     }
   case kphp::web::curl::CURLINFO::CONTENT_TYPE:
   case kphp::web::curl::CURLINFO::RESPONSE_CODE:
@@ -621,18 +629,19 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   case kphp::web::curl::CURLINFO::CONDITION_UNMET:
   case kphp::web::curl::CURLINFO::NUM_CONNECTS:
   case kphp::web::curl::CURLINFO::HEADER_OUT: {
-    auto res{co_await kphp::forks::id_managed(
-        kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, option, kphp::web::get_properties_policy::load))};
+//    auto res{co_await kphp::forks::id_managed(
+//        kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, option, kphp::web::get_properties_policy::load))};
+    std::expected<kphp::web::properties_type, kphp::web::error> res{};
     if (!res.has_value()) [[unlikely]] {
       easy_ctx.set_errno(res.error().code, res.error().description);
       kphp::web::curl::print_warning("could not get a specific info of easy handle", std::move(res.error()));
-      co_return 0;
+      return 0;
     }
     const auto& v{(*res).find(option)};
     kphp::log::assertion(v != (*res).end());
-    co_return v->second.to_mixed();
+    return v->second.to_mixed();
   }
   default:
-    co_return false;
+    return false;
   }
 }
