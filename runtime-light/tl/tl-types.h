@@ -618,6 +618,18 @@ public:
     return this->m_size.footprint() + this->m_data.size();
   }
 
+  void from_bytes(std::span<const std::byte> serialized_data) noexcept {
+    tl::fetcher tlf{this->m_data};
+    size_t size{};
+    while (T{}.fetch(tlf)) {
+      size++;
+    }
+
+    kphp::log::assertion(tlf.remaining() == 0);
+    this->m_data = serialized_data;
+    this->m_size = size;
+  }
+
   std::span<const std::byte> into_bytes() const noexcept {
     return this->m_data;
   }
