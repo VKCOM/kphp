@@ -30,7 +30,7 @@ function preg_replace(
   $limit ::: int = -1,
   &$replace_count ::: int = TODO): string | ^3 | false | null;
 
-/** @kphp-extern-func-info interruptible */
+
 function preg_replace_callback(
   $regex ::: string | array,
   callable(string[] $x):string $callback,

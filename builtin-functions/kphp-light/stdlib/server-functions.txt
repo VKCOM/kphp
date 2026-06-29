@@ -10,7 +10,6 @@ function kphp_get_runtime_config() ::: mixed;
 
 function register_shutdown_function (callable():void $callback) ::: void;
 
-/** @kphp-extern-func-info interruptible */
 function ignore_user_abort ($enable ::: ?bool = null) ::: int;
 
 // === URL ========================================================================================

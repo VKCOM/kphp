@@ -168,7 +168,7 @@ function random_bytes($length ::: int) ::: string | false;
 
 function random_int($l ::: int, $r ::: int) ::: int | false;
 
-/** @kphp-extern-func-info interruptible */
+
 function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
 /** @kphp-pure-function */
