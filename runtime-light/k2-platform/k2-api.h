@@ -72,8 +72,6 @@ using StreamStatus = StreamStatus;
 
 using UpdateStatus = UpdateStatus;
 
-using MonitoringSystem = MonitoringSystem;
-
 using TimePoint = TimePoint;
 
 using SystemTime = SystemTime;
@@ -247,8 +245,8 @@ inline std::expected<void, int32_t> madvise(void* addr, size_t length, int32_t a
   return {};
 }
 
-inline std::expected<void, int32_t> write_metrics(std::span<const std::byte> serialized_metric, k2::MonitoringSystem ms) noexcept {
-  if (auto error_code{k2_write_metrics(serialized_metric.data(), serialized_metric.size(), ms)}; error_code != k2::errno_ok) [[unlikely]] {
+inline std::expected<void, int32_t> write_metrics(std::span<const std::byte> serialized_metric) noexcept {
+  if (auto error_code{k2_write_metrics(serialized_metric.data(), serialized_metric.size())}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};

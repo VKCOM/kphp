@@ -132,15 +132,12 @@ concept tag_range = std::ranges::range<T> && std::is_constructible_v<std::pair<s
 struct metric final {
 private:
   tl::storer tls;
-  k2::MonitoringSystem ms;
 
-  explicit metric(k2::MonitoringSystem ms) noexcept
-      : tls{0},
-        ms{ms} {}
+  metric() noexcept
+      : tls{0} {}
 
-  metric(tl::storer&& tls, k2::MonitoringSystem ms) noexcept
-      : tls{std::move(tls)},
-        ms{ms} {}
+  explicit metric(tl::storer&& tls) noexcept
+      : tls{std::move(tls)} {}
 
   static uint64_t ns_timestamp_now() noexcept {
     k2::SystemTime st{};
@@ -149,12 +146,12 @@ private:
   }
 
   std::expected<void, int32_t> send() const noexcept {
-    return k2::write_metrics(this->tls.view(), this->ms);
+    return k2::write_metrics(this->tls.view());
   }
 
   // clears buffer and returns it with preserved capacity for reuse by metric::with_buffer()
   std::expected<tl::storer, int32_t> send() && noexcept {
-    return k2::write_metrics(this->tls.view(), this->ms).transform([this]() noexcept {
+    return k2::write_metrics(this->tls.view()).transform([this]() noexcept {
       this->tls.clear();
       return std::move(this->tls);
     });
@@ -181,12 +178,12 @@ private:
   }
 
 public:
-  static metric empty(k2::MonitoringSystem ms) noexcept {
-    return metric{ms};
+  static metric empty() noexcept {
+    return metric{};
   }
 
-  static metric with_buffer(tl::storer&& tls, k2::MonitoringSystem ms) noexcept {
-    return metric{std::move(tls), ms};
+  static metric with_buffer(tl::storer&& tls) noexcept {
+    return metric{std::move(tls)};
   }
 
   template<typename Self, tag_range TagRange>
@@ -221,15 +218,13 @@ private:
   kphp::stl::vector<std::pair<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>>,
                     kphp::memory::script_allocator>
       tags;
-  k2::MonitoringSystem ms;
 
-  metric_builder(std::string_view metric_name, k2::MonitoringSystem ms) noexcept
-      : metric_name{metric_name},
-        ms{ms} {}
+  explicit metric_builder(std::string_view metric_name) noexcept
+      : metric_name{metric_name} {}
 
 public:
-  static metric_builder metric(std::string_view metric_name, k2::MonitoringSystem ms) noexcept {
-    return metric_builder{metric_name, ms};
+  static metric_builder metric(std::string_view metric_name) noexcept {
+    return metric_builder{metric_name};
   }
 
   metric_builder& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
@@ -238,19 +233,19 @@ public:
   }
 
   auto send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_value(this->metric_name, this->tags, value, timestamp);
+    return metric::empty().send_value(this->metric_name, this->tags, value, timestamp);
   }
 
   auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_values_array(this->metric_name, this->tags, values, timestamp);
+    return metric::empty().send_values_array(this->metric_name, this->tags, values, timestamp);
   }
 
   auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_count(this->metric_name, this->tags, count, timestamp);
+    return metric::empty().send_count(this->metric_name, this->tags, count, timestamp);
   }
 
   auto send_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_increment(this->metric_name, this->tags, timestamp);
+    return metric::empty().send_increment(this->metric_name, this->tags, timestamp);
   }
 };
 } // namespace kphp::diagnostics
