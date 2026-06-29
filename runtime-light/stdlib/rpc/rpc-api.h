@@ -281,7 +281,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
 // === client =====================================================================================
 
 inline int64_t f$rpc_tl_pending_queries_count() noexcept {
-  return RpcClientInstanceState::get().response_awaiter_tasks.size();
+  return RpcClientInstanceState::get().rpc_query_handles.size();
 }
 
 // === client untyped =============================================================================
