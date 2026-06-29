@@ -53,16 +53,16 @@ function rpc_send_typed_query_requests($actor ::: string, @tl\RpcFunction[] $que
                                        \KphpRpcRequestsExtraInfo $requests_extra_info,
                                        $need_responses_extra_info ::: bool) ::: int[];
 
-/** @kphp-extern-func-info */
+/** @kphp-extern-func-info interruptible */
 function rpc_fetch_responses($query_ids ::: array) ::: mixed[][];
 
-/** @kphp-extern-func-info tl_common_h_dep */
+/** @kphp-extern-func-info interruptible tl_common_h_dep */
 function rpc_fetch_typed_responses(int[] $query_ids) ::: @tl\RpcResponse[];
 
-/** @kphp-extern-func-info */
+/** @kphp-extern-func-info interruptible*/
 function rpc_fetch_responses_synchronously($query_ids ::: array) ::: mixed[][];
 
-/** @kphp-extern-func-info tl_common_h_dep */
+/** @kphp-extern-func-info interruptible tl_common_h_dep */
 function rpc_fetch_typed_responses_synchronously(int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info can_throw */
