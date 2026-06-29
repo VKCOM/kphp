@@ -20,17 +20,17 @@ define('DEFAULT_SOCKET_TIMEOUT', 60);
 function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context ::: mixed = null) ::: mixed;
 
 function fopen ($filename ::: string, $mode ::: string): mixed;
-/** @kphp-extern-func-info interruptible */
+
 function fwrite ($stream ::: mixed, $text ::: string): int | false;
-/** @kphp-extern-func-info interruptible */
+
 function vfprintf ($stream, $format ::: string, $args ::: array) ::: int | false;
-/** @kphp-extern-func-info interruptible */
+
 function fprintf ($stream, $format ::: string, ...$args) ::: int | false;
- /** @kphp-extern-func-info interruptible */
+ 
 function fread ($stream ::: mixed, $length ::: int): string | false;
-/** @kphp-extern-func-info interruptible */
+
 function fflush ($stream ::: mixed): bool;
-/** @kphp-extern-func-info interruptible */
+
 function fclose ($stream ::: mixed): bool;
 function unlink ($name ::: string) ::: bool;
 
