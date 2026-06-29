@@ -9,7 +9,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <ranges>
@@ -500,6 +502,155 @@ struct pair final {
   requires tl::footprintable<F> && tl::footprintable<S>
   {
     return value.first.footprint() + value.second.footprint();
+  }
+};
+
+template<typename T>
+class span {
+  static constexpr bool supports_iteration = tl::deserializable<T> && std::default_initializable<T>;
+  std::span<const std::byte> m_data;
+  tl::u32 m_size;
+
+public:
+  struct const_iterator {
+  private:
+    tl::fetcher tlf;
+    std::optional<T> value;
+
+  public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = const T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const T*;
+    using reference = const T&;
+
+    explicit const_iterator(tl::fetcher tlf, std::optional<T> value) noexcept
+        : tlf{std::move(tlf)},
+          value{std::move(value)} {}
+
+    reference operator*() const noexcept {
+      kphp::log::assertion(this->value.has_value());
+      return this->value.value();
+    }
+
+    pointer operator->() const noexcept {
+      kphp::log::assertion(this->value.has_value());
+      return std::addressof(this->value.value());
+    }
+
+    const_iterator& operator++() noexcept {
+      if (tlf.remaining() == 0) { // the end
+        this->value = std::nullopt;
+        return *this;
+      }
+
+      kphp::log::assertion(this->value.has_value());
+      kphp::log::assertion(this->value->fetch(this->tlf));
+      return *this;
+    }
+
+    const_iterator operator++(int) noexcept { // NOLINT
+      const_iterator tmp{*this};
+      ++*this;
+      return tmp;
+    }
+
+    // are equal if the same data and the same position, and both (or none of them) are end() (latter is checked by comparing with has_value())
+    bool operator==(const const_iterator& other) const noexcept {
+      return this->tlf.view().data() == other.tlf.view().data() && this->tlf.pos() == other.tlf.pos() && this->value.has_value() == other.value.has_value();
+    }
+  };
+
+  span() noexcept = default;
+
+  template<typename Y>
+  requires std::constructible_from<T, Y> && tl::deserializable<T> && std::default_initializable<T>
+  explicit span(std::span<const Y> items) noexcept
+      : m_data{std::as_bytes(items)},
+        m_size{tl::u32{static_cast<uint32_t>(items.size())}} {
+    tl::fetcher tlf{this->m_data};
+    size_t count{};
+    while (T{}.fetch(tlf)) {
+      count++;
+    }
+
+    kphp::log::assertion(tlf.remaining() == 0);
+    kphp::log::assertion(items.size() == count);
+  }
+
+  bool fetch(tl::fetcher& tlf) noexcept
+  requires tl::deserializable<T> && std::default_initializable<T>
+  {
+    // fetch data len
+    tl::u32 size{};
+    if (!size.fetch(tlf)) {
+      return false;
+    }
+
+    const std::byte* tlf_data{tlf.view().data()};
+    size_t pos_start{tlf.pos()};
+
+    // skip objects
+    T tmp{};
+    if (!std::ranges::fold_left(std::ranges::iota_view(uint32_t{0}, size.value), true,
+                                [&tmp, &tlf](bool acc, const auto&) noexcept { return acc && tmp.fetch(tlf); })) {
+      return false;
+    }
+
+    // write data
+    size_t pos_end{tlf.pos()};
+    this->m_data = std::span{tlf_data + pos_start, pos_end - pos_start};
+    this->m_size = size;
+    return true;
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    this->m_size.store(tls);
+    tls.store_bytes(this->m_data);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return this->m_size.footprint() + this->m_data.size();
+  }
+
+  std::span<const std::byte> into_bytes() const noexcept {
+    return this->m_data;
+  }
+
+  size_t size() const noexcept {
+    return this->m_size.value;
+  }
+
+  const_iterator begin() const noexcept
+  requires supports_iteration
+  {
+    return this->cbegin();
+  }
+
+  const_iterator end() const noexcept
+  requires supports_iteration
+  {
+    return this->cend();
+  }
+
+  const_iterator cbegin() const noexcept
+  requires supports_iteration
+  {
+    tl::fetcher tlf{m_data};
+    if (this->m_data.empty()) [[unlikely]] {
+      return const_iterator{tlf, std::nullopt};
+    }
+    T value{};
+    kphp::log::assertion(value.fetch(tlf));
+    return const_iterator{std::move(tlf), std::move(value)};
+  }
+
+  const_iterator cend() const noexcept
+  requires supports_iteration
+  {
+    tl::fetcher tlf{m_data};
+    tlf.adjust(tlf.remaining());
+    return const_iterator{tlf, std::nullopt};
   }
 };
 
@@ -1729,40 +1880,19 @@ public:
   }
 };
 
-template<typename T>
-class MetricValuesArray;
-
-template<std::ranges::range Range>
-requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<Range>>, tl::f64>
-class MetricValuesArray<Range> final {
+class MetricValuesArray final {
   static constexpr uint32_t MAGIC = 0xd4a59582U;
 
-  size_t size() const noexcept {
-    return std::ranges::distance(values);
-  }
-
 public:
-  Range values;
+  tl::span<tl::f64> values;
 
   void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MetricValuesArray::MAGIC}.store(tls);
-    tl::u32{.value = static_cast<uint32_t>(this->size())}.store(tls);
-    std::ranges::for_each(values, [&tls](const tl::f64& v) noexcept { v.store(tls); });
+    values.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    auto size{this->size()};
-    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() + tl::u32{.value = static_cast<uint32_t>(size)}.footprint() + size * tl::f64{}.footprint();
-  }
-};
-
-template<>
-class MetricValuesArray<void> {
-public:
-  void store(tl::storer& /*unused*/) const noexcept {}
-
-  constexpr size_t footprint() const noexcept {
-    return 0;
+    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() + values.footprint();
   }
 };
 
@@ -1795,9 +1925,9 @@ public:
   }
 };
 
-template<typename Range = void>
-struct metricValueFormat final {
-  std::variant<MetricValue, MetricValuesArray<Range>, MetricCount, MetricInc> value;
+struct anyMetricValue final {
+  std::variant<MetricValue, MetricValuesArray, MetricCount, MetricInc> value;
+
   void store(tl::storer& tls) const noexcept {
     std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
   }
@@ -1811,7 +1941,7 @@ template<std::ranges::range TagRange, typename ValueRange = void>
 requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
 struct metric final {
   tl::u64 timestamp;
-  tl::metricValueFormat<ValueRange> value;
+  tl::anyMetricValue value;
   tl::string metric_name;
   TagRange tags;
 

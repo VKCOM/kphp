@@ -1,10 +1,13 @@
 ---types---
 
+pair {X:Type} {Y:Type} a:X b:Y = Pair X Y;
+span#dad3ae87 {t:Type} count:# data:count*[t] = Span t;
+
 // Metric
 
-metricValue#0cb5eb87 value:double = MetricValueFormat;
-metricValuesArray#d4a59582 values:%(Vector double) = MetricValueFormat;
-metricCount#941bf7d1 count:int = MetricValueFormat;
-metricInc#23e305ab = MetricValueFormat;
+metricValue#0cb5eb87 value:double = MetricValue;
+metricValuesArray#d4a59582 values:%(Span double) = MetricValue;
+metricCount#941bf7d1 count:int = MetricValue;
+metricInc#23e305ab = MetricValue;
 
-metric timestamp:long value:MetricValueFormat matric_name:string tags:%(Vector %(Pair string string)) = Metric;
+metric#87d62ee3 timestamp:long value:MetricValue metric_name:string tags:%(Span %(Pair string string)) = Metric;

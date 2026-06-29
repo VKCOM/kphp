@@ -56,8 +56,8 @@ private:
     });
   }
 
-  template<typename Self, tag_range TagRange, typename ValueRange = void>
-  decltype(auto) build_and_send(this Self&& self, std::string_view metric_name, TagRange&& tags, tl::metricValueFormat<ValueRange> value,
+  template<typename Self, tag_range TagRange>
+  decltype(auto) build_and_send(this Self&& self, std::string_view metric_name, TagRange&& tags, tl::anyMetricValue value,
                                 std::optional<uint64_t> timestamp) noexcept {
     self.tls.clear();
 
@@ -88,30 +88,25 @@ public:
   template<typename Self, tag_range TagRange>
   decltype(auto) send_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value,
                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat<>{tl::MetricValue{tl::f64{value}}},
-                                                   timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricValue{tl::f64{value}}}, timestamp);
   }
 
-  template<typename Self, tag_range TagRange, std::ranges::range ValueRange>
-  requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<ValueRange>>, tl::f64>
-  decltype(auto) send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, ValueRange&& values,
+  template<typename Self, tag_range TagRange>
+  decltype(auto) send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
                                    std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    using range_t = std::remove_cvref_t<ValueRange>;
     return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags),
-                                                   tl::metricValueFormat<range_t>{tl::MetricValuesArray<range_t>{.values = std::forward<ValueRange>(values)}},
-                                                   timestamp);
+                                                   tl::anyMetricValue{tl::MetricValuesArray{tl::span<tl::f64>{values}}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count,
                             std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat<>{tl::MetricCount{tl::u32{count}}},
-                                                   timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricCount{tl::u32{count}}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
   decltype(auto) send_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::metricValueFormat<>{tl::MetricInc{}}, timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricInc{}}, timestamp);
   }
 };
 
@@ -144,8 +139,7 @@ public:
   }
 
   auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty(this->ms).send_values_array(this->metric_name, this->tags,
-                                                     values | std::views::transform([](const double& value) noexcept { return tl::f64{value}; }), timestamp);
+    return metric::empty(this->ms).send_values_array(this->metric_name, this->tags, values, timestamp);
   }
 
   auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {

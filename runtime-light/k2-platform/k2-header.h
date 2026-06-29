@@ -401,8 +401,12 @@ int32_t k2_madvise(void* addr, size_t length, int32_t advise);
  *
  * tl string is the standard TL string encoding.
  *
- * @param `buf` A pointer to the serialized metrics data.
- * @param `buf_len` The length of the serialized metrics data in bytes.
+ * Multiple metrics can be sent in a single call by concatenating them sequentially:
+ *   <metric1><metric2>...
+ * Each metric is serialized independently using the format described above.
+ *
+ * @param `buf` A pointer to the serialized metric(s) data.
+ * @param `buf_len` The length of the serialized metric(s) data in bytes.
  * @param `ms` The target monitoring system.
  * @return returns 0 if everything is fine, otherwise error code
  */
