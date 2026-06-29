@@ -15,10 +15,10 @@ inline bool f$is_confdata_loaded() noexcept {
   return k2::component_access(kphp::confdata::COMPONENT_NAME) == k2::errno_ok;
 }
 
-kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept;
+mixed f$confdata_get_value(string key) noexcept;
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept;
+array<mixed> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept;
 
-inline kphp::coro::task<array<mixed>> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
-  co_return co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard));
+inline array<mixed> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
+  return f$confdata_get_values_by_any_wildcard(std::move(wildcard));
 }

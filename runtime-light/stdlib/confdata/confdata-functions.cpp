@@ -46,15 +46,15 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
 
 } // namespace
 
-kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
+mixed f$confdata_get_value(string key) noexcept {
   if (key.empty()) [[unlikely]] {
     kphp::log::warning("empty key is not supported");
-    co_return mixed{};
+    return mixed{};
   }
 
   auto& confdata_key_cache{ConfdataInstanceState::get().key_cache()};
   if (auto it{confdata_key_cache.find(key)}; it != confdata_key_cache.end()) {
-    co_return it->second;
+    return it->second;
   }
 
   tl::ConfdataGet confdata_get{.key = {.value = {key.c_str(), key.size()}}};
@@ -63,39 +63,39 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
 
   auto expected_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return mixed{};
+    return mixed{};
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
-    co_return mixed{};
-  }
+//  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+//    co_return mixed{};
+//  }
 
   tl::fetcher tlf{response};
   tl::Maybe<tl::confdataValue> maybe_confdata_value{};
   kphp::log::assertion(maybe_confdata_value.fetch(tlf));
 
   if (!maybe_confdata_value.opt_value) { // no such key
-    co_return mixed{};
+    return mixed{};
   }
 
   auto value{extract_confdata_value(*maybe_confdata_value.opt_value)}; // the key exists
   confdata_key_cache.emplace(std::move(key), value);
-  co_return std::move(value);
+  return std::move(value);
 }
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
+array<mixed> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
   static constexpr size_t CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY = 1 << 20;
 
   if (wildcard.empty()) [[unlikely]] {
     kphp::log::warning("empty wildcard is not supported");
-    co_return array<mixed>{};
+    return array<mixed>{};
   }
 
   auto& confdata_wildcard_cache{ConfdataInstanceState::get().wildcard_cache()};
   if (auto it{confdata_wildcard_cache.find(wildcard)}; it != confdata_wildcard_cache.end()) {
-    co_return it->second;
+    return it->second;
   }
 
   const std::string_view wildcard_view{wildcard.c_str(), wildcard.size()};
@@ -106,15 +106,15 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
 
   auto expected_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return array<mixed>{};
+    return array<mixed>{};
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
   response.reserve(CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY);
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
-    co_return array<mixed>{};
-  }
+//  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+//    co_return array<mixed>{};
+//  }
 
   tl::fetcher tlf{response};
   tl::Dictionary<tl::confdataValue> dict_confdata_value{};
@@ -129,5 +129,5 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
                      extract_confdata_value(dict_field.value));
   });
   confdata_wildcard_cache.emplace(std::move(wildcard), result);
-  co_return std::move(result);
+  return std::move(result);
 }
