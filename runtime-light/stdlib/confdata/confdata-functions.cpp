@@ -82,7 +82,7 @@ mixed f$confdata_get_value(string key) noexcept {
 
   auto value{extract_confdata_value(*maybe_confdata_value.opt_value)}; // the key exists
   confdata_key_cache.emplace(std::move(key), value);
-  return std::move(value);
+  return value;
 }
 
 array<mixed> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
@@ -129,5 +129,5 @@ array<mixed> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
                      extract_confdata_value(dict_field.value));
   });
   confdata_wildcard_cache.emplace(std::move(wildcard), result);
-  return std::move(result);
+  return result;
 }
