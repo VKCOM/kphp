@@ -36,9 +36,9 @@ constexpr std::string_view CRYPTO_COMPONENT_NAME = "crypto";
 
 } // namespace
 
-kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
+Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   tl::GetCryptosecurePseudorandomBytes get_pseudorandom_bytes{.size = {.value = static_cast<int32_t>(length)}};
@@ -47,43 +47,43 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response};
   tl::magic magic{};
   tl::string str{};
   kphp::log::assertion(magic.fetch(tlf) && magic.expect(TL_MAYBE_TRUE) && str.fetch(tlf));
-  co_return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
+  return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
-kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
+Optional<array<mixed>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
   tl::GetPemCertInfo get_perm_cert_info{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}};
   tl::storer tls{get_perm_cert_info.footprint()};
   get_perm_cert_info.store(tls);
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items{};
   kphp::log::assertion(cert_items.fetch(tlf));
   if (!cert_items.opt_value) {
-    co_return false;
+    return false;
   }
 
   array<mixed> response{array_size{static_cast<int64_t>((*cert_items.opt_value).size()), false}};
@@ -104,11 +104,11 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
     tl::CertInfoItem val{std::move(cert_kv.value)};
     response[string{cert_kv.key.value.data(), static_cast<string::size_type>(cert_kv.key.value.size())}] = std::visit(item_to_mixed, val.data);
   }
-  co_return std::move(response);
+  return std::move(response);
 }
 
 // FIXME it isn't safe to accept signature by reference
-kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string private_key, int64_t algo) noexcept {
+bool f$openssl_sign(string data, string& signature, string private_key, int64_t algo) noexcept {
   tl::DigestSign digest_sign{.data = {.value = {data.c_str(), data.size()}},
                              .private_key = {.value = {private_key.c_str(), private_key.size()}},
                              .algorithm = static_cast<tl::HashAlgorithm>(algo)};
@@ -117,24 +117,24 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::magic magic{};
   tl::string str{};
   kphp::log::assertion(magic.fetch(tlf) && magic.expect(TL_MAYBE_TRUE) && str.fetch(tlf));
   signature = string{str.value.data(), static_cast<string::size_type>(str.value.size())};
-  co_return true;
+  return true;
 }
 
-kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string pub_key, int64_t algo) noexcept {
+int64_t f$openssl_verify(string data, string signature, string pub_key, int64_t algo) noexcept {
   tl::DigestVerify digest_verify{.data = {.value = {data.c_str(), data.size()}},
                                  .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
                                  .algorithm = static_cast<tl::HashAlgorithm>(algo),
@@ -144,22 +144,22 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return 0;
+    return 0;
   }
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::magic{}.footprint()> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
-    co_return 0;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
+//    return 0;
+//  }
 
   tl::fetcher tlf{response};
   // For now returns only 1 or 0, -1 is never returned
   // Because it's currently impossible to distiguish error from negative verification
   if (tl::magic magic{}; !magic.fetch(tlf) || !magic.expect(TL_BOOL_TRUE)) {
-    co_return 0;
+    return 0;
   }
-  co_return 1;
+  return 1;
 }
 
 namespace {
@@ -281,19 +281,18 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv,
-                                                     std::optional<std::reference_wrapper<string>> tag, string aad,
-                                                     [[maybe_unused]] int64_t tag_length) noexcept {
+Optional<string> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv,
+                                   std::optional<std::reference_wrapper<string>> tag, string aad, [[maybe_unused]] int64_t tag_length) noexcept {
   auto algorithm{parse_cipher_algorithm(method)};
   if (!algorithm) {
     kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
-    co_return false;
+    return false;
   }
 
   bool aead{is_aead_algorithm(*algorithm)};
   if (aead && (!tag.has_value() || tag_length == 0)) {
     kphp::log::warning("A tag must be provided when using AEAD mode");
-    co_return false;
+    return false;
   }
   if (tag.has_value() && !aead) {
     kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
@@ -307,7 +306,7 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
   if (!key_iv.has_value()) {
-    co_return false;
+    return false;
   }
 
   tl::BlockPadding padding{tl::BlockPadding::PKCS7};
@@ -326,20 +325,20 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::tuple<tl::string, 2>> response{};
   kphp::log::assertion(response.fetch(tlf));
   if (!response.opt_value) {
-    co_return false;
+    return false;
   }
 
   string result{(*response.opt_value).value[0].value.data(), static_cast<string::size_type>((*response.opt_value).value[0].value.size())};
@@ -348,16 +347,15 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
     string received_tag{(*response.opt_value).value[1].value.data(), static_cast<string::size_type>((*response.opt_value).value[1].value.size())};
     tag.value().get() = std::move(received_tag);
   }
-  co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(result) : f$base64_encode(result);
+  return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(result) : f$base64_encode(result);
 }
 
-kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag,
-                                                     string aad) noexcept {
+Optional<string> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag, string aad) noexcept {
   if (!(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA))) {
     Optional<string> decoding_data{f$base64_decode(data, true)};
     if (!decoding_data.has_value()) {
       kphp::log::warning("Failed to base64 decode the input");
-      co_return false;
+      return false;
     }
     data = std::move(decoding_data.val());
   }
@@ -365,7 +363,7 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   auto algorithm{parse_cipher_algorithm(method)};
   if (!algorithm.has_value()) {
     kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
-    co_return false;
+    return false;
   }
 
   bool aead{is_aead_algorithm(*algorithm)};
@@ -378,7 +376,7 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
   if (!key_iv.has_value()) {
-    co_return false;
+    return false;
   }
 
   tl::BlockPadding padding{tl::BlockPadding::PKCS7};
@@ -397,52 +395,52 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::string> response{};
   kphp::log::assertion(response.fetch(tlf));
   if (!response.opt_value) {
-    co_return false;
+    return false;
   }
 
-  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
+  return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept {
+Optional<string> f$openssl_pkey_get_public(string key) noexcept {
   tl::GetPublicKey get_public_key{.key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{get_public_key.footprint()};
   get_public_key.store(tls);
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::string> response;
   kphp::log::assertion(response.fetch(tlf));
   if (!response.opt_value) {
-    co_return false;
+    return false;
   }
 
-  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
+  return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string passphrase) noexcept {
+Optional<string> f$openssl_pkey_get_private(string key, string passphrase) noexcept {
   tl::GetPrivateKey get_private_key{
       .key = {.value = {key.c_str(), key.size()}},
       .passphrase = {.value = {passphrase.c_str(), passphrase.size()}},
@@ -452,26 +450,26 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::string> response;
   kphp::log::assertion(response.fetch(tlf));
   if (!response.opt_value) {
-    co_return false;
+    return false;
   }
 
-  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
+  return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_data, string public_key) noexcept {
+bool f$openssl_public_encrypt(string data, string& encrypted_data, string public_key) noexcept {
   tl::PublicEncrypt public_encrypt{
       .key = {.value = {public_key.c_str(), public_key.size()}},
       .data = {.value = {data.c_str(), data.size()}},
@@ -481,37 +479,37 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_d
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::string> response{};
   kphp::log::assertion(response.fetch(tlf));
   if (!response.opt_value) {
-    co_return false;
+    return false;
   }
 
   encrypted_data = {(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
-  co_return true;
+  return true;
 }
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string data, mixed& result, string key) noexcept {
+bool f$openssl_public_encrypt(string data, mixed& result, string key) noexcept {
   string result_string;
-  if (co_await f$openssl_public_encrypt(data, result_string, key)) {
+  if (f$openssl_public_encrypt(data, result_string, key)) {
     result = std::move(result_string);
-    co_return true;
+    return true;
   }
   result = mixed{};
-  co_return false;
+  return false;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_data, string private_key) noexcept {
+bool f$openssl_private_decrypt(string data, string& decrypted_data, string private_key) noexcept {
   tl::PrivateDecrypt private_decrypt{
       .key = {.value = {private_key.c_str(), private_key.size()}},
       .data = {.value = {data.c_str(), data.size()}},
@@ -521,34 +519,34 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::string> response{};
   kphp::log::assertion(response.fetch(tlf));
   if (!response.opt_value) {
-    co_return false;
+    return false;
   }
 
   decrypted_data = {(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
-  co_return true;
+  return true;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
+bool f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
   string result_string;
-  if (co_await f$openssl_private_decrypt(data, result_string, key)) {
+  if (f$openssl_private_decrypt(data, result_string, key)) {
     result = std::move(result_string);
-    co_return true;
+    return true;
   }
   result = mixed{};
-  co_return false;
+  return false;
 }
 
 namespace {
@@ -571,35 +569,35 @@ std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo
   return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
 
-kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output) noexcept {
+string send_and_get_string(tl::storer tls, bool raw_output) noexcept {
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+//  if (kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+//    return false;
+//  }
 
   tl::fetcher tlf{response_bytes};
   tl::String response{};
   kphp::log::assertion(response.fetch(tlf));
 
   if (!raw_output) {
-    co_return kphp::strings::bin2hex(response.inner.value);
+    return kphp::strings::bin2hex(response.inner.value);
   }
   // Important to pass size because response.inner.value is binary so
   // it may contain zero in any position, not only in the end
-  co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
 
-kphp::coro::task<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
+string hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
   tl::Hash hash{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
   tl::storer tls{hash.footprint()};
   hash.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output);
+  return send_and_get_string(std::move(tls), raw_output);
 }
 
 } // namespace
@@ -616,15 +614,15 @@ array<string> f$hash_hmac_algos() noexcept {
   return f$hash_algos();
 }
 
-kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
+string f$hash(string algo_str, string s, bool raw_output) noexcept {
   const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
   if (!algo) [[unlikely]] {
     kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
   }
-  co_return co_await hash_impl(*algo, s, raw_output);
+  return hash_impl(*algo, s, raw_output);
 }
 
-kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
+string f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
   const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
   if (!algo) [[unlikely]] {
     kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
@@ -633,11 +631,11 @@ kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool
   tl::HashHmac hash_hmac{.algorithm = *algo, .data = {.value = {s.c_str(), s.size()}}, .secret_key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{hash_hmac.footprint()};
   hash_hmac.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output);
+  return send_and_get_string(std::move(tls), raw_output);
 }
 
-kphp::coro::task<string> f$sha1(string s, bool raw_output) noexcept {
-  co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
+string f$sha1(string s, bool raw_output) noexcept {
+  return hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
 int64_t f$crc32(const string& s) noexcept {
