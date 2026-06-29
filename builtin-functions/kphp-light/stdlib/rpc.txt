@@ -59,10 +59,10 @@ function rpc_fetch_responses($query_ids ::: array) ::: mixed[][];
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses(int[] $query_ids) ::: @tl\RpcResponse[];
 
-/** @kphp-extern-func-info interruptible */
+/** @kphp-extern-func-info */
 function rpc_fetch_responses_synchronously($query_ids ::: array) ::: mixed[][];
 
-/** @kphp-extern-func-info tl_common_h_dep interruptible */
+/** @kphp-extern-func-info tl_common_h_dep */
 function rpc_fetch_typed_responses_synchronously(int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info can_throw */
