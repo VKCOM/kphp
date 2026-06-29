@@ -287,7 +287,7 @@ inline int64_t f$rpc_tl_pending_queries_count() noexcept {
 
 // === client untyped =============================================================================
 
-inline kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
+inline array<int64_t> f$rpc_send_requests([[maybe_unused]] string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
                                                             class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
                                                             bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
@@ -299,17 +299,17 @@ inline kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<
   array<kphp::rpc::request_extra_info> req_extra_info_arr{tl_objects.size()};
   auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-  for (const auto& it : std::as_const(tl_objects)) {
-    const auto query_info{co_await kphp::forks::id_managed(
-        kphp::rpc::detail::rpc_tl_query_one_impl({actor.c_str(), actor.size()}, it.get_value(), opt_timeout, collect_resp_extra_info, ignore_answer))};
-    query_ids.set_value(it.get_key(), query_info.id);
-    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
-  }
+//  for (const auto& it : std::as_const(tl_objects)) {
+//    const auto query_info{co_await kphp::forks::id_managed(
+//        kphp::rpc::detail::rpc_tl_query_one_impl({actor.c_str(), actor.size()}, it.get_value(), opt_timeout, collect_resp_extra_info, ignore_answer))};
+//    query_ids.set_value(it.get_key(), query_info.id);
+//    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
+//  }
 
   if (!requests_extra_info.is_null()) {
     requests_extra_info->extra_info_arr = std::move(req_extra_info_arr);
   }
-  co_return std::move(query_ids);
+  return {};
 }
 
 inline kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
@@ -337,7 +337,7 @@ kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<
 // === client typed ===============================================================================
 
 template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_type, std::same_as<KphpRpcRequest> rpc_request_type = KphpRpcRequest>
-kphp::coro::task<array<int64_t>>
+array<int64_t>
 f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_type>> query_functions, Optional<double> timeout, bool ignore_answer,
                                 class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
@@ -349,17 +349,17 @@ f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_
   array<kphp::rpc::request_extra_info> req_extra_info_arr{query_functions.size()};
   auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-  for (const auto& it : std::as_const(query_functions)) {
-    const auto query_info{co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_one_impl(
-        {actor.c_str(), actor.size()}, rpc_request_type{it.get_value()}, opt_timeout, collect_resp_extra_info, ignore_answer))};
-    query_ids.set_value(it.get_key(), query_info.id);
-    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
-  }
+//  for (const auto& it : std::as_const(query_functions)) {
+//    const auto query_info{co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_one_impl(
+//        {actor.c_str(), actor.size()}, rpc_request_type{it.get_value()}, opt_timeout, collect_resp_extra_info, ignore_answer))};
+//    query_ids.set_value(it.get_key(), query_info.id);
+//    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
+//  }
 
   if (!requests_extra_info.is_null()) {
     requests_extra_info->extra_info_arr = std::move(req_extra_info_arr);
   }
-  co_return std::move(query_ids);
+  return {};
 }
 
 template<std::same_as<int64_t> query_id_type = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_type = RpcResponseErrorFactory>

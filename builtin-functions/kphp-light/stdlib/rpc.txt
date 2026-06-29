@@ -40,7 +40,6 @@ final class KphpRpcRequestsExtraInfo {
     public function get ();
 }
 
-/** @kphp-extern-func-info interruptible */
 function rpc_send_requests($actor ::: string,
                            $arr ::: array,
                            $timeout ::: ?float,
@@ -48,7 +47,6 @@ function rpc_send_requests($actor ::: string,
                            \KphpRpcRequestsExtraInfo $requests_extra_info,
                            $need_responses_extra_info ::: bool) ::: int[];
 
-/** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_send_typed_query_requests($actor ::: string, @tl\RpcFunction[] $query_functions,
                                        $timeout ::: ?float,
                                        $ignore_answer ::: bool,
