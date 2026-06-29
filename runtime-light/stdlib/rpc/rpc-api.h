@@ -241,6 +241,9 @@ inline bool f$rpc_parse(const Optional<string>& new_rpc_data) noexcept {
 //    2. switch over all @kphp functions
 //    3. tl_func_state storing inside the CurrentRpcServerQuery
 class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
+// calls user-provided factory, if it returns !null, sets up returned function for processing,
+// otherwise, calls f$rpc_server_fetch_request()
+class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request2(const class_instance<C$VK$TL$RpcFunctionFactory>& factory) noexcept;
 
 inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
   if (tl::is_int32_overflow(error_code)) [[unlikely]] {

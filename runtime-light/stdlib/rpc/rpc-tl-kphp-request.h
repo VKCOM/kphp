@@ -15,6 +15,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
+class_instance<C$VK$TL$RpcFunction> f$VK$TL$RpcFunctionFactory$$createFunction(class_instance<C$VK$TL$RpcFunctionFactory> const& arg, int64_t magic) noexcept;
 int64_t f$VK$TL$RpcFunction$$getTLFunctionMagic(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
 string f$VK$TL$RpcFunction$$getTLFunctionName(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
 class_instance<C$VK$TL$RpcFunctionFetcher> f$VK$TL$RpcFunction$$typedStore(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;

@@ -1010,6 +1010,13 @@ interface RpcFunction {
   public function typedFetch() : @tl\RpcFunctionFetcher;
 }
 
+/**
+ * @kphp-required
+ */
+interface VK\TL\RpcFunctionFactory {
+  public function createFunction(int $magic) : @tl\RpcFunction;
+}
+
 /** @kphp-tl-class */
 interface RpcFunctionReturnResult {}
 
@@ -1035,6 +1042,8 @@ function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcR
 
 /** @kphp-extern-func-info can_throw */
 function rpc_server_fetch_request() ::: @tl\RpcFunction;
+/** @kphp-extern-func-info can_throw */
+function rpc_server_fetch_request2(VK\TL\RpcFunctionFactory $factory) ::: @tl\RpcFunction;
 /** @kphp-extern-func-info can_throw */
 function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
