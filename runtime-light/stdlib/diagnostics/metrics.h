@@ -22,7 +22,6 @@
 #include "runtime-light/tl/tl-types.h"
 
 namespace tl {
-
 class MetricValue final {
   static constexpr uint32_t MAGIC = 0xcb5eb87U;
 
