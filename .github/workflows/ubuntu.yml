@@ -17,12 +17,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: focal
+          - os: jammy
             compiler: clang++
             cpp: 17
             asan: off
             ubsan: on
-          - os: focal
+          - os: jammy
             compiler: g++-10
             cpp: 20
             asan: on
