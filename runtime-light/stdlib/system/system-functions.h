@@ -95,6 +95,7 @@ inline void f$exit(mixed v = 0) noexcept { // TODO: make it synchronous
   } else {
     exit_code = 1;
   }
+  (void) exit_code;
 //  co_await kphp::forks::id_managed(kphp::system::exit(static_cast<int32_t>(exit_code)));
 }
 
