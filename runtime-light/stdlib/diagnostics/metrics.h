@@ -21,6 +21,111 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
+namespace tl {
+
+class MetricValue final {
+  static constexpr uint32_t MAGIC = 0xcb5eb87U;
+
+public:
+  tl::f64 value;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricValue::MAGIC}.store(tls);
+    value.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricValue::MAGIC}.footprint() + value.footprint();
+  }
+};
+
+class MetricValuesArray final {
+  static constexpr uint32_t MAGIC = 0xd4a59582U;
+
+public:
+  std::span<const double> values;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricValuesArray::MAGIC}.store(tls);
+    tl::u32{static_cast<uint32_t>(this->values.size())}.store(tls);
+    std::ranges::for_each(this->values, [&tls](const double& elem) noexcept { tl::f64{elem}.store(tls); });
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricValuesArray::MAGIC}.footprint() +
+           std::ranges::fold_left(this->values, tl::u32{static_cast<uint32_t>(this->values.size())}.footprint(),
+                                  [](size_t acc, const double& elem) noexcept { return acc + tl::f64{elem}.footprint(); });
+  }
+};
+
+class MetricCount final {
+  static constexpr uint32_t MAGIC = 0x941bf7d1U;
+
+public:
+  tl::u32 count;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricCount::MAGIC}.store(tls);
+    count.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricCount::MAGIC}.footprint() + count.footprint();
+  }
+};
+
+class MetricInc final {
+  static constexpr uint32_t MAGIC = 0x23e305abU;
+
+public:
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MetricInc::MAGIC}.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MetricInc::MAGIC}.footprint();
+  }
+};
+
+struct anyMetricValue final {
+  std::variant<MetricValue, MetricValuesArray, MetricCount, MetricInc> value;
+
+  void store(tl::storer& tls) const noexcept {
+    std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
+template<std::ranges::range TagRange, typename ValueRange = void>
+requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
+struct metric final {
+  tl::u64 timestamp;
+  tl::anyMetricValue value;
+  tl::string metric_name;
+  TagRange tags;
+
+  void store(tl::storer& tls) const noexcept {
+    timestamp.store(tls);
+    value.store(tls);
+    metric_name.store(tls);
+
+    tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.store(tls);
+    std::ranges::for_each(tags, [&tls](const auto& elem) noexcept { elem.store(tls); });
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return timestamp.footprint() + value.footprint() + metric_name.footprint() +
+           std::ranges::fold_left(tags, tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.footprint(),
+                                  [](size_t acc, const auto& elem) noexcept { return acc + elem.footprint(); });
+  }
+};
+} // namespace tl
+
+// ---------------------------------------------------------------------------------------------------------
+
 namespace kphp::diagnostics {
 template<typename T>
 concept tag_range = std::ranges::range<T> && std::is_constructible_v<std::pair<std::string_view, std::string_view>, std::ranges::range_value_t<T>>;
@@ -94,8 +199,7 @@ public:
   template<typename Self, tag_range TagRange>
   decltype(auto) send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
                                    std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags),
-                                                   tl::anyMetricValue{tl::MetricValuesArray{tl::span<tl::f64>{values}}}, timestamp);
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::anyMetricValue{tl::MetricValuesArray{values}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
