@@ -7,8 +7,6 @@
 #include <chrono>
 #include <string>
 
-#include <fmt/chrono.h>
-
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
