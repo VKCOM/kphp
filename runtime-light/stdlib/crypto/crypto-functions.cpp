@@ -569,10 +569,10 @@ std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo
   return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
 
-string send_and_get_string(tl::storer tls, bool raw_output) noexcept {
+string send_and_get_string([[maybe_unused]]tl::storer tls, bool raw_output) noexcept {
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-    return false;
+    return {};
   }
 
   auto stream{*std::move(expected_stream)};
