@@ -266,6 +266,8 @@ int main(int argc, char *argv[]) {
              "kphp-version-override", "KPHP_VERSION_OVERRIDE");
   parser.add("Specify the compiled php code version", settings->php_code_version,
              "php-code-version", "KPHP_PHP_CODE_VERSION", "unknown");
+  parser.add("Specify the compiled php code commit hash", settings->php_code_commit_hash,
+             "php-code-commit-hash", "KPHP_PHP_CODE_COMMIT_HASH", "0000000000000000000000000000000000000000");
   parser.add("C++ compiler for building the output binary", settings->cxx,
              "cxx", "KPHP_CXX", get_default_cxx());
   parser.add("Directory for c++ compiler toolchain. Will be passed to cxx via -B option", settings->cxx_toolchain_dir,
