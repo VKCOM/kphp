@@ -44,10 +44,8 @@ function exit($code = 0) ::: void;
  */
 function die($code = 0) ::: void;
 
-/** @kphp-extern-func-info interruptible */
 function usleep ($micro_seconds ::: int) ::: void;
 
-/** @kphp-extern-func-info interruptible */
 function sleep ($seconds ::: int) ::: void;
 
 function function_exists ($func_name ::: mixed) ::: bool;
