@@ -294,11 +294,6 @@ inline array<int64_t> f$rpc_send_requests([[maybe_unused]] string actor, array<m
     kphp::log::warning("both $ignore_answer and $need_responses_extra_info are 'true'. Metrics won't be collected");
   }
 
-  const bool collect_resp_extra_info{!ignore_answer && need_responses_extra_info};
-  array<int64_t> query_ids{tl_objects.size()};
-  array<kphp::rpc::request_extra_info> req_extra_info_arr{tl_objects.size()};
-  auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
-
 //  for (const auto& it : std::as_const(tl_objects)) {
 //    const auto query_info{co_await kphp::forks::id_managed(
 //        kphp::rpc::detail::rpc_tl_query_one_impl({actor.c_str(), actor.size()}, it.get_value(), opt_timeout, collect_resp_extra_info, ignore_answer))};
@@ -306,9 +301,7 @@ inline array<int64_t> f$rpc_send_requests([[maybe_unused]] string actor, array<m
 //    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
 //  }
 
-  if (!requests_extra_info.is_null()) {
-    requests_extra_info->extra_info_arr = std::move(req_extra_info_arr);
-  }
+
   return {};
 }
 
@@ -344,21 +337,7 @@ f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_
     kphp::log::warning("both $ignore_answer and $need_responses_extra_info are 'true'. Metrics won't be collected");
   }
 
-  const bool collect_resp_extra_info{!ignore_answer && need_responses_extra_info};
-  array<int64_t> query_ids{query_functions.size()};
-  array<kphp::rpc::request_extra_info> req_extra_info_arr{query_functions.size()};
-  auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-//  for (const auto& it : std::as_const(query_functions)) {
-//    const auto query_info{co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_one_impl(
-//        {actor.c_str(), actor.size()}, rpc_request_type{it.get_value()}, opt_timeout, collect_resp_extra_info, ignore_answer))};
-//    query_ids.set_value(it.get_key(), query_info.id);
-//    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
-//  }
-
-  if (!requests_extra_info.is_null()) {
-    requests_extra_info->extra_info_arr = std::move(req_extra_info_arr);
-  }
   return {};
 }
 
