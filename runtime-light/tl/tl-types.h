@@ -562,6 +562,11 @@ public:
   };
 
   span() noexcept = default;
+  span(const span&) noexcept = default;
+  span(span&&) noexcept = default;
+  span& operator=(const span&) noexcept = default;
+  span& operator=(span&&) noexcept = default;
+  ~span() = default;
 
   template<typename Y>
   requires std::constructible_from<T, Y> && tl::deserializable<T> && std::default_initializable<T>
