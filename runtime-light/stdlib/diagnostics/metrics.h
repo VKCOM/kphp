@@ -105,7 +105,9 @@ struct metric final {
   tl::string metric_name{};
   TagRange tags{};
 
-  void store(tl::storer& tls) const noexcept {
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<std::ranges::range_value_t<TagRange>>
+  {
     timestamp.store(tls);
     value.store(tls);
     metric_name.store(tls);
@@ -114,7 +116,9 @@ struct metric final {
     std::ranges::for_each(tags, [&tls](const auto& elem) noexcept { elem.store(tls); });
   }
 
-  constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<std::ranges::range_value_t<TagRange>>
+  {
     return timestamp.footprint() + value.footprint() + metric_name.footprint() +
            std::ranges::fold_left(tags, tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.footprint(),
                                   [](size_t acc, const auto& elem) noexcept { return acc + elem.footprint(); });
