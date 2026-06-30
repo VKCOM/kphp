@@ -97,7 +97,7 @@ public:
   }
 };
 
-template<std::ranges::range TagRange, typename ValueRange = void>
+template<std::ranges::range TagRange>
 requires std::same_as<std::remove_cvref_t<std::ranges::range_value_t<TagRange>>, tl::pair<tl::string, tl::string>>
 struct metric final {
   tl::u64 timestamp{};
@@ -129,6 +129,10 @@ struct metric final {
 // ---------------------------------------------------------------------------------------------------------
 
 namespace kphp::diagnostics {
+template<typename ValuesRange>
+concept values_range = std::ranges::range<ValuesRange> && std::same_as<std::remove_cvref_t<std::ranges::range_value_t<ValuesRange>>, double> &&
+                       std::is_constructible_v<std::span<const double>, ValuesRange>;
+
 template<typename T>
 concept tag_range = std::ranges::range<T> && std::is_constructible_v<std::pair<std::string_view, std::string_view>, std::ranges::range_value_t<T>>;
 
@@ -189,25 +193,24 @@ public:
   }
 
   template<typename Self, tag_range TagRange>
-  decltype(auto) send_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value,
-                            std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+  auto send_value(this Self&& self, std::string_view metric_name, TagRange&& tags, double value, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricValue{tl::f64{value}}}, timestamp);
   }
 
-  template<typename Self, tag_range TagRange>
-  decltype(auto) send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, std::span<const double> values,
-                                   std::optional<uint64_t> timestamp = std::nullopt) noexcept {
-    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricValuesArray{values}}, timestamp);
+  template<typename Self, tag_range TagRange, values_range ValuesRange>
+  auto send_values_array(this Self&& self, std::string_view metric_name, TagRange&& tags, ValuesRange&& values,
+                         std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags),
+                                                   tl::AnyMetricValue{tl::metricValuesArray{std::forward<ValuesRange>(values)}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
-  decltype(auto) send_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count,
-                            std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+  auto send_count(this Self&& self, std::string_view metric_name, TagRange&& tags, uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricCount{tl::u32{count}}}, timestamp);
   }
 
   template<typename Self, tag_range TagRange>
-  decltype(auto) send_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+  auto send_increment(this Self&& self, std::string_view metric_name, TagRange&& tags, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     return std::forward<Self>(self).build_and_send(metric_name, std::forward<TagRange>(tags), tl::AnyMetricValue{tl::metricInc{}}, timestamp);
   }
 };
@@ -238,8 +241,9 @@ public:
     return metric::empty().send_value(this->metric_name, this->tags, value, timestamp);
   }
 
-  auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
-    return metric::empty().send_values_array(this->metric_name, this->tags, values, timestamp);
+  template<values_range ValuesRange>
+  auto send_values_array(ValuesRange&& values, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
+    return metric::empty().send_values_array(this->metric_name, this->tags, std::forward<ValuesRange>(values), timestamp);
   }
 
   auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
