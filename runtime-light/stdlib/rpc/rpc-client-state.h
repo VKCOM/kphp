@@ -16,6 +16,7 @@
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/stdlib/rpc/rpc-query-handle.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 
@@ -23,11 +24,11 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   CurrentTlQuery current_client_query{};
   int64_t current_query_id{kphp::rpc::VALID_QUERY_ID_RANGE_START};
 
+  kphp::stl::unordered_map<int64_t, kphp::rpc::query_handle, kphp::memory::script_allocator> rpc_query_handles;
   kphp::stl::unordered_map<int64_t, kphp::coro::shared_task<std::optional<string>>, kphp::memory::script_allocator> response_awaiter_tasks;
   kphp::stl::unordered_map<int64_t, class_instance<RpcTlQuery>, kphp::memory::script_allocator> response_fetcher_instances;
   kphp::stl::unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>, kphp::memory::script_allocator>
       rpc_responses_extra_info;
-  kphp::coro::await_set<void> ignore_answer_request_awaiter_tasks;
 
   RpcClientInstanceState() noexcept = default;
 
