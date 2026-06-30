@@ -137,7 +137,6 @@ VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex) {
   return vertex;
 }
 
-
 DepData CalcFuncDepPass::get_data() {
   my_unique(&data.dep);
   my_unique(&data.modified_global_vars);

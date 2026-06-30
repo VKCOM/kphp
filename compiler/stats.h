@@ -14,6 +14,7 @@ class Stats {
 public:
   void on_var_inserting(VarData::Type type);
   void on_function_processed(FunctionPtr function);
+  void on_interruptible_null_coalescing();
 
   void update_memory_stats();
 
@@ -69,6 +70,7 @@ private:
   std::atomic<std::uint64_t> total_resumable_functions_{0u};
   std::atomic<std::uint64_t> total_interruptible_functions_{0u};
   std::atomic<std::uint64_t> total_inline_functions_{0u};
+  std::atomic<std::uint64_t> interruptible_null_coalescings_{0u};
 
   std::atomic<std::uint64_t> memory_rss_{0};
   std::atomic<std::uint64_t> memory_rss_peak_{0};

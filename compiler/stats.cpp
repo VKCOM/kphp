@@ -52,6 +52,10 @@ void Stats::on_function_processed(FunctionPtr function) {
   }
 }
 
+void Stats::on_interruptible_null_coalescing() {
+  ++interruptible_null_coalescings_;
+}
+
 void Stats::update_memory_stats() {
   const mem_info_t mem_info = get_self_mem_stats();
   memory_rss_ = mem_info.rss;
@@ -82,6 +86,7 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "functions.total_throwing: " << total_throwing_functions_ << std::endl;
   out << indent << "functions.total_resumable: " << total_resumable_functions_ << std::endl;
   out << indent << "functions.total_interruptible: " << total_interruptible_functions_ << std::endl;
+  out << indent << "codegen.interruptible_null_coalescings: " << interruptible_null_coalescings_ << std::endl;
   out << block_sep;
   out << indent << "memory.rss: " << memory_rss_ * 1024 << std::endl;
   out << indent << "memory.rss_peak: " << memory_rss_peak_ * 1024 << std::endl;
