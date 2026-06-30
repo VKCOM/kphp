@@ -22,6 +22,11 @@ jobs:
             cpp: 17
             asan: off
             ubsan: off
+          - os: bullseye
+            compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
 
     name: "${{matrix.os}} / ${{matrix.compiler}} / c++${{matrix.cpp}} / asan=${{matrix.asan}} / ubsan=${{matrix.ubsan}}"
 
