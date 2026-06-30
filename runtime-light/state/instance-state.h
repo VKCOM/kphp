@@ -125,7 +125,7 @@ struct InstanceState final : vk::not_copyable {
 
   list<kphp::coro::task<>> shutdown_functions;
 
-  std::chrono::time_point<std::chrono::system_clock> epilogue_start_tp;
+  std::chrono::time_point<std::chrono::steady_clock> epilogue_start_tp;
   std::chrono::milliseconds shutdown_functions_duration;
   std::chrono::milliseconds server_finalize_duration;
   std::chrono::milliseconds noresult_rpc_duration;

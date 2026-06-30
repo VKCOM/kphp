@@ -196,7 +196,7 @@ kphp::coro::task<> InstanceState::finalize_server_instance() const noexcept {
 }
 
 kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
-  epilogue_start_tp = std::chrono::system_clock::now();
+  epilogue_start_tp = std::chrono::steady_clock::now();
 
   const auto shutdown_functions_start_tp{epilogue_start_tp};
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
@@ -209,7 +209,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   if (shutdown_state_ == shutdown_state::finished) [[unlikely]] {
     co_return;
   }
-  const auto shutdown_function_end_tp{std::chrono::system_clock::now()};
+  const auto shutdown_function_end_tp{std::chrono::steady_clock::now()};
   shutdown_functions_duration = std::chrono::duration_cast<std::chrono::milliseconds>(shutdown_function_end_tp - shutdown_functions_start_tp);
 
   switch (image_kind()) {
@@ -227,7 +227,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   }
   shutdown_state_ = shutdown_state::finished;
 
-  const auto server_finalize_end_tp{std::chrono::system_clock::now()};
+  const auto server_finalize_end_tp{std::chrono::steady_clock::now()};
   server_finalize_duration = std::chrono::duration_cast<std::chrono::milliseconds>(server_finalize_end_tp - shutdown_function_end_tp);
 
   /*
@@ -250,7 +250,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     }
   }
 
-  const auto noresult_rpc_end_tp{std::chrono::system_clock::now()};
+  const auto noresult_rpc_end_tp{std::chrono::steady_clock::now()};
   noresult_rpc_duration = std::chrono::duration_cast<std::chrono::milliseconds>(noresult_rpc_end_tp - server_finalize_end_tp);
 
   // Stop session with internal Web component
@@ -259,7 +259,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session.reset();
   }
 
-  const auto epilogue_duration{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - epilogue_start_tp)};
+  const auto epilogue_duration{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - epilogue_start_tp)};
   kphp::log::info("Epilogue stats: epilogue -> {}, shutdown functions -> {}, server finalize -> {}, noresult rpc -> {}", epilogue_duration.count(),
                   shutdown_functions_duration.count(), server_finalize_duration.count(), noresult_rpc_duration.count());
 }
