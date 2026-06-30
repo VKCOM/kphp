@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <optional>
 
 #include "common/dl-utils-lite.h"
@@ -112,6 +113,12 @@ public:
 
   static script_time_stats_t script_time_stats;
   process_rusage_t script_init_rusage;
+
+  std::chrono::time_point<std::chrono::steady_clock> epilogue_start_tp;
+  std::chrono::time_point<std::chrono::steady_clock> server_finalize_start_tp;
+  std::chrono::milliseconds shutdown_functions_duration;
+  std::chrono::milliseconds server_finalize_duration;
+  std::chrono::milliseconds noresult_rpc_duration;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};

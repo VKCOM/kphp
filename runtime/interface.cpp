@@ -6,6 +6,7 @@
 
 #include <arpa/inet.h>
 #include <cassert>
+#include <chrono>
 #include <clocale>
 #include <csetjmp>
 #include <csignal>
@@ -734,11 +735,16 @@ void register_header_handler_impl(headers_custom_handler_function_type&& f) {
 
 void finish(int64_t exit_code, bool from_exit) {
   check_script_timeout();
+  PhpScript::current_script->epilogue_start_tp = std::chrono::steady_clock::now();
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
     run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
   }
+
+  PhpScript::current_script->shutdown_functions_duration =
+    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - PhpScript::current_script->epilogue_start_tp);
+  PhpScript::current_script->server_finalize_start_tp = std::chrono::steady_clock::now();
 
   f$fastcgi_finish_request(exit_code);
 
