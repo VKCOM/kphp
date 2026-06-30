@@ -17,14 +17,14 @@ define('PREG_SPLIT_DELIM_CAPTURE', 16);
 define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 define('PREG_UNMATCHED_AS_NULL', 64);
 
-function preg_match ($regex ::: string, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0): int | false;
+function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0): int | false;
 
-function preg_match_all ($regex ::: string, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0): int | false;
+function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0): int | false;
 
 function preg_quote ($str ::: string, $delimiter ::: string = ''): string;
 
 function preg_replace(
-  $regex ::: string | array,
+  $regex ::: regexp,
   $replace_val ::: string | array,
   $subject ::: string | array,
   $limit ::: int = -1,
@@ -32,14 +32,14 @@ function preg_replace(
 
 /** @kphp-extern-func-info interruptible */
 function preg_replace_callback(
-  $regex ::: string | array,
+  $regex ::: regexp,
   callable(string[] $x):string $callback,
   $subject ::: string | array,
   $limit ::: int = -1,
   &$replace_count ::: int = TODO,
   $flags ::: int = 0): string | ^3 | null;
 
-function preg_split ($pattern ::: string, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
+function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
 
 // ===== UNSUPPORTED =====
 
