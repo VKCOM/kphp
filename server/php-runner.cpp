@@ -251,6 +251,12 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
 
+  epilogue_start_tp = {};
+  server_finalize_start_tp = {};
+  shutdown_functions_duration = {};
+  server_finalize_duration = {};
+  noresult_rpc_duration = {};
+
   PhpScript::memory_limit_exceeded = false;
 }
 
@@ -384,6 +390,12 @@ void PhpScript::finish() noexcept {
 
   vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_max_running_interval, script_init_time_sec, connection_process_time_sec,
                                                       queries_cnt, long_queries_cnt, script_mem_stats, runtime_builtins_stats::request_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
+  if (save_state == run_state_t::finished && epilogue_start_tp.time_since_epoch().count() != 0) {
+    const auto epilogue_duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - epilogue_start_tp);
+    kprintf("Epilogue stats: epilogue -> %lld, shutdown functions -> %lld, server finalize -> %lld, noresult rpc -> %lld\n",
+            static_cast<long long>(epilogue_duration.count()), static_cast<long long>(shutdown_functions_duration.count()),
+            static_cast<long long>(server_finalize_duration.count()), static_cast<long long>(noresult_rpc_duration.count()));
+  }
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -453,6 +465,9 @@ void PhpScript::ask_query(php_query_base_t *q) noexcept {
 void PhpScript::set_script_result(script_result *res_to_set) noexcept {
   assert_state(run_state_t::running);
   res = res_to_set;
+  if (server_finalize_start_tp.time_since_epoch().count() != 0) {
+    server_finalize_duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - server_finalize_start_tp);
+  }
   state = run_state_t::finished;
   pause();
 }
