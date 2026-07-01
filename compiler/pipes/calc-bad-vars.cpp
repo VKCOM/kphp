@@ -575,8 +575,10 @@ class CalcBadVars {
   }
 
   static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
+    uint64_t resumables = 0;
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
+        resumables++;
         fork->is_resumable = true;
       }
     }
@@ -590,10 +592,13 @@ class CalcBadVars {
     for (const auto &func : call_graph.functions) {
       func->can_be_implicitly_interrupted_by_other_resumable = into_resumable[func];
       if (into_resumable[func]) {
+        resumables++;
         func->is_resumable = true;
         func->wait_prev = to_parents[func];
       }
     }
+
+    kphp_notice(fmt_format("Resumable functions {}", resumables));
 
     for (const auto &func : call_graph.functions) {
       if (func->class_id && func->class_id == G->get_class("ArrayAccess") && func->can_be_implicitly_interrupted_by_other_resumable) {
