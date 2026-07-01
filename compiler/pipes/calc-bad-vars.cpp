@@ -580,21 +580,17 @@ class CalcBadVars {
         fork->is_resumable = true;
       }
     }
-    IdMap<char> from_resumable(call_graph.n); // char to prevent std::vector<bool> inside
     IdMap<char> into_resumable(call_graph.n);
-    IdMap<FunctionPtr> from_parents(call_graph.n);
     IdMap<FunctionPtr> to_parents(call_graph.n);
     for (const auto &func : call_graph.functions) {
       if (func->is_resumable) {
-        mark(call_graph.graph, from_resumable, func, from_parents);
         mark(call_graph.rev_graph, into_resumable, func, to_parents);
       }
     }
     for (const auto &func : call_graph.functions) {
       func->can_be_implicitly_interrupted_by_other_resumable = into_resumable[func];
-      if (from_resumable[func] && into_resumable[func]) {
+      if (into_resumable[func]) {
         func->is_resumable = true;
-        func->fork_prev = from_parents[func];
         func->wait_prev = to_parents[func];
       }
     }
