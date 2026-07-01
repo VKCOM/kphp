@@ -603,8 +603,8 @@ class CalcBadVars {
       }
       if (func->is_resumable) {
         if (func->should_be_sync) {
-          kphp_error (0, fmt_format("Function [{}] marked with @kphp-sync, but turn up to be resumable\n"
-                                    "Function is resumable because of calls chain:\n{}\n", func->name, func->get_resumable_path()));
+//          kphp_error (0, fmt_format("Function [{}] marked with @kphp-sync, but turn up to be resumable\n"
+//                                    "Function is resumable because of calls chain:\n{}\n", func->name, func->get_resumable_path()));
         }
         if (func->is_inline) {
           func->is_inline = false;
