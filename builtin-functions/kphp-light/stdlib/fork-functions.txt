@@ -20,10 +20,10 @@ function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
 
 // === Fork =======================================================================================
 
-/** @kphp-extern-func-info */
+/** @kphp-extern-func-info interruptible */
 function sched_yield() ::: void;
 
-/** @kphp-extern-func-info */
+/** @kphp-extern-func-info interruptible */
 function sched_yield_sleep($duration ::: float) ::: void;
 
 function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
