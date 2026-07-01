@@ -478,6 +478,30 @@ struct vector final {
   }
 };
 
+template<typename F, typename S>
+struct pair final {
+  std::pair<F, S> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept
+  requires tl::deserializable<F> && tl::deserializable<S>
+  {
+    return value.first.fetch(tlf) && value.second.fetch(tlf);
+  }
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<F> && tl::serializable<S>
+  {
+    value.first.store(tls);
+    value.second.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<F> && tl::footprintable<S>
+  {
+    return value.first.footprint() + value.second.footprint();
+  }
+};
+
 template<typename T>
 struct Vector final {
   tl::vector<T> inner{};
