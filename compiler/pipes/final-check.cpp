@@ -407,9 +407,9 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       kphp_error(callback_of_builtin->size() == 0, "FFI callbacks should not capture any variables");
     }
 
-    kphp_error(!f_passed_to_builtin->is_resumable, fmt_format("Callbacks passed to builtin functions must not be resumable.\n"
-                                                              "But '{}' became resumable because of the calls chain:\n"
-                                                              "{}", f_passed_to_builtin->as_human_readable(), f_passed_to_builtin->get_resumable_path()));
+//    kphp_error(!f_passed_to_builtin->is_resumable, fmt_format("Callbacks passed to builtin functions must not be resumable.\n"
+//                                                              "But '{}' became resumable because of the calls chain:\n"
+//                                                              "{}", f_passed_to_builtin->as_human_readable(), f_passed_to_builtin->get_resumable_path()));
 
     if (auto name = f_passed_to_builtin->local_name(); name == "to_array_debug" || name == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
