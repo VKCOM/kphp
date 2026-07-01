@@ -30,7 +30,7 @@ VertexPtr ExtractAsyncPass::on_exit_vertex(VertexPtr vertex) {
       if (auto lhs_var = set->lhs().try_as<op_var>()) {
         return VertexAdaptor<op_async>::create(func_call, lhs_var).set_location(func_call);
       } else {
-        raise_cant_save_result_of_resumable_func(func_call->func_id);
+//        raise_cant_save_result_of_resumable_func(func_call->func_id);
       }
     }
   }
