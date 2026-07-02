@@ -5,7 +5,10 @@
 #include "compiler/code-gen/files/init-scripts.h"
 
 #include <chrono>
+#include <cstdint>
 #include <string>
+
+#include "common/algorithms/string-algorithms.h"
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
@@ -297,6 +300,7 @@ void CppMainFile::compile(CodeGenerator &W) const {
 
 void ComponentInfoFile::compile(CodeGenerator &W) const {
   kphp_assert(G->is_output_mode_k2());
+  kphp_assert(G->settings().php_code_commit_hash.get().size() == 40);
   W << OpenFile("image_info.cpp");
   W << ExternInclude(G->settings().runtime_headers.get());
   W << "__attribute__((visibility(\"default\"))) const ImageInfo *k2_describe() " << BEGIN
@@ -308,7 +312,7 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
       std::chrono::duration_cast<std::chrono::seconds>(G->settings().build_tp.time_since_epoch()).count()
     ) << ","
     << "K2_PLATFORM_HEADER_H_VERSION, "
-    << "{}," // todo:k2 add commit hash
+    << "{" << vk::join(G->settings().php_code_commit_hash.get(), ", ", [](auto c) { return std::to_string(static_cast<uint8_t>(c)); }) << "},"
     << "\"" << G->settings().php_code_version.get() << "\","
     << "extraInfo.size()" << ","
     << "extraInfo.data()"
