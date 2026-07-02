@@ -5,10 +5,10 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <optional>
 #include <span>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -22,20 +22,18 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
-namespace kphp::web {
+namespace kphp::web::property {
 
-enum class get_properties_policy : uint8_t { cached, load };
-
-inline auto set_transfer_property(std::variant<simple_transfer, composite_transfer> transfer, property_id prop_id,
-                                  property_value prop_value) -> std::expected<void, error> {
+template<typename Transfer>
+requires std::same_as<std::remove_cvref_t<Transfer>, simple::transfer> || std::same_as<std::remove_cvref_t<Transfer>, composite::transfer>
+inline auto set(Transfer transfer, property::id prop_id, property::value prop_value) -> std::expected<void, error> {
   // Simple
-  if (std::holds_alternative<simple_transfer>(transfer)) {
-    const auto simple{std::get<simple_transfer>(transfer)};
+  if constexpr (std::is_same_v<std::remove_cvref_t<Transfer>, simple::transfer>) {
     auto& simple2config{WebInstanceState::get().simple_transfer2config};
-    if (!simple2config.contains(simple.descriptor)) {
+    if (!simple2config.contains(transfer.descriptor)) {
       return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("Unknown simple transfer id")}};
     }
-    auto& props{simple2config[simple.descriptor].properties};
+    auto& props{simple2config[transfer.descriptor].properties};
     if (const auto& prop{props.find(prop_id)}; prop != props.end()) {
       prop->second = std::move(prop_value);
     } else {
@@ -44,12 +42,11 @@ inline auto set_transfer_property(std::variant<simple_transfer, composite_transf
     return std::expected<void, error>{};
   }
   // Composite
-  const auto composite{std::get<composite_transfer>(transfer)};
   auto& composite2config{WebInstanceState::get().composite_transfer2config};
-  if (!composite2config.contains(composite.descriptor)) {
+  if (!composite2config.contains(transfer.descriptor)) {
     return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("Unknown composite transfer id")}};
   }
-  auto& props{composite2config[composite.descriptor].properties};
+  auto& props{composite2config[transfer.descriptor].properties};
   if (const auto& prop{props.find(prop_id)}; prop != props.end()) {
     prop->second = std::move(prop_value);
   } else {
@@ -58,15 +55,15 @@ inline auto set_transfer_property(std::variant<simple_transfer, composite_transf
   return std::expected<void, error>{};
 }
 
-inline auto get_transfer_properties(std::variant<simple_transfer, composite_transfer> transfer, std::optional<property_id> prop_id,
-                                    get_properties_policy policy) -> kphp::coro::task<std::expected<properties_type, error>> {
+template<typename Transfer>
+requires std::same_as<std::remove_cvref_t<Transfer>, simple::transfer> || std::same_as<std::remove_cvref_t<Transfer>, composite::transfer>
+inline auto get(Transfer transfer, std::optional<property::id> prop_id, get_policy policy) -> kphp::coro::task<std::expected<properties_type, error>> {
   // Try to get a cached prop
-  if (prop_id.has_value() && policy == get_properties_policy::cached) {
+  if (prop_id.has_value() && policy == get_policy::cached) {
     const auto p{prop_id.value()};
     const auto& web_state{WebInstanceState::get()};
-    if (std::holds_alternative<simple_transfer>(transfer)) {
-      auto s{std::get<simple_transfer>(transfer).descriptor};
-      const auto& config{web_state.simple_transfer2config.find(s)};
+    if constexpr (std::is_same_v<std::remove_cvref_t<Transfer>, simple::transfer>) {
+      const auto& config{web_state.simple_transfer2config.find(transfer.descriptor)};
       if (config != web_state.simple_transfer2config.end()) {
         const auto& props{config->second.properties};
         if (const auto& prop{props.find(p)}; prop != props.end()) {
@@ -76,8 +73,7 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
         }
       }
     } else {
-      auto c{std::get<composite_transfer>(transfer).descriptor};
-      const auto& config{web_state.composite_transfer2config.find(c)};
+      const auto& config{web_state.composite_transfer2config.find(transfer.descriptor)};
       if (config != web_state.composite_transfer2config.end()) {
         const auto& props{config->second.properties};
         if (const auto& prop{props.find(p)}; prop != props.end()) {
@@ -98,11 +94,10 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     kphp::log::error("session with Web components has been closed");
   }
 
-  tl::WebTransferGetProperties web_transfer_get_properties_req{
-      .is_simple = tl::u8{std::holds_alternative<simple_transfer>(transfer)},
-      .descriptor = tl::u64{(std::holds_alternative<simple_transfer>(transfer)) ? std::get<simple_transfer>(transfer).descriptor
-                                                                                : std::get<composite_transfer>(transfer).descriptor},
-      .property_id = (prop_id.has_value()) ? tl::Maybe<tl::u64>{tl::u64{(*prop_id)}} : tl::Maybe<tl::u64>{std::nullopt}};
+  tl::WebTransferGetProperties web_transfer_get_properties_req{.is_simple = tl::u8{std::is_same_v<std::remove_cvref_t<Transfer>, simple::transfer>},
+                                                               .descriptor = tl::u64{transfer.descriptor},
+                                                               .property_id = (prop_id.has_value()) ? tl::Maybe<tl::u64>{tl::u64{(*prop_id)}}
+                                                                                                    : tl::Maybe<tl::u64>{std::nullopt}};
   tl::storer tls{web_transfer_get_properties_req.footprint()};
   web_transfer_get_properties_req.store(tls);
 
@@ -127,7 +122,7 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     auto& tl_props{std::get<tl::WebTransferGetPropertiesResultOk>(r).properties};
     for (const auto& p : tl_props) {
       auto k{p.id.value};
-      auto v{property_value::deserialize(p.value)};
+      auto v{property::value::deserialize(p.value)};
       props.emplace(k, std::move(v));
     }
     if (prop_id.has_value() && !props.contains(*prop_id)) {
@@ -139,4 +134,4 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
   }
 }
 
-} // namespace kphp::web
+} // namespace kphp::web::property

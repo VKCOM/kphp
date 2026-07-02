@@ -20,9 +20,9 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
-namespace kphp::web {
+namespace kphp::web::composite {
 
-inline auto composite_transfer_open(transfer_backend backend) noexcept -> kphp::coro::task<std::expected<composite_transfer, error>> {
+inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::expected<composite::transfer, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto session{web_state.session_get_or_init()};
@@ -64,16 +64,16 @@ inline auto composite_transfer_open(transfer_backend backend) noexcept -> kphp::
 
   auto& composite2config{web_state.composite_transfer2config};
   kphp::log::assertion(composite2config.contains(descriptor) == false); // NOLINT
-  composite2config.emplace(descriptor, composite_transfer_config{});
+  composite2config.emplace(descriptor, composite::config{});
 
   auto& composite2simple_transfers{web_state.composite_transfer2simple_transfers};
   kphp::log::assertion(composite2simple_transfers.contains(descriptor) == false); // NOLINT
   composite2simple_transfers.emplace(descriptor, simple_transfers{});
 
-  co_return std::expected<composite_transfer, error>{descriptor};
+  co_return std::expected<composite::transfer, error>{descriptor};
 }
 
-inline auto composite_transfer_add(composite_transfer ct, simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto add(composite::transfer ct, simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -145,7 +145,7 @@ inline auto composite_transfer_add(composite_transfer ct, simple_transfer st) no
   co_return std::expected<void, error>{};
 }
 
-inline auto composite_transfer_remove(composite_transfer ct, simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto remove(composite::transfer ct, simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -210,7 +210,7 @@ inline auto composite_transfer_remove(composite_transfer ct, simple_transfer st)
   co_return std::expected<void, error>{};
 }
 
-inline auto composite_transfer_perform(composite_transfer ct) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
+inline auto perform(composite::transfer ct) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -268,7 +268,7 @@ inline auto composite_transfer_perform(composite_transfer ct) noexcept -> kphp::
   co_return std::expected<uint64_t, error>{remaining};
 }
 
-inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -289,7 +289,7 @@ inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::co
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
   auto it_simple_transfer{simple_transfers.begin()};
   while (simple_transfers.size()) {
-    if (auto remove_res{co_await kphp::web::composite_transfer_remove(ct, kphp::web::simple_transfer{*it_simple_transfer})}; !remove_res.has_value()) {
+    if (auto remove_res{co_await kphp::web::composite::remove(ct, kphp::web::simple::transfer{*it_simple_transfer})}; !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
   }
@@ -323,8 +323,8 @@ inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::co
 }
 
 template<typename rep_type, typename period_type>
-inline auto composite_transfer_wait_updates(composite_transfer ct,
-                                            std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
+inline auto wait_updates(composite::transfer ct,
+                         std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -373,4 +373,4 @@ inline auto composite_transfer_wait_updates(composite_transfer ct,
   co_return std::expected<uint64_t, error>{updated_descriptors_num};
 }
 
-} // namespace kphp::web
+} // namespace kphp::web::composite
