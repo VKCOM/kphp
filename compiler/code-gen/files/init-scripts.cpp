@@ -9,7 +9,6 @@
 #include <string>
 
 #include "common/algorithms/string-algorithms.h"
-
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
@@ -300,7 +299,16 @@ void CppMainFile::compile(CodeGenerator &W) const {
 
 void ComponentInfoFile::compile(CodeGenerator &W) const {
   kphp_assert(G->is_output_mode_k2());
-  kphp_assert(G->settings().php_code_commit_hash.get().size() == 40);
+  std::string php_code_commit_hash;
+  if (!G->settings().php_code_commit_hash.get().empty()) {
+    php_code_commit_hash.reserve(40 * 3 + 39 * 2);
+    php_code_commit_hash.append(std::to_string(static_cast<uint8_t>(G->settings().php_code_commit_hash.get().front())));
+    for (size_t i{1}; i != 40 && i != G->settings().php_code_commit_hash.get().size(); ++i) {
+      php_code_commit_hash
+        .append(", ")
+        .append(std::to_string(static_cast<uint8_t>(G->settings().php_code_commit_hash.get()[i])));
+    }
+  }
   W << OpenFile("image_info.cpp");
   W << ExternInclude(G->settings().runtime_headers.get());
   W << "__attribute__((visibility(\"default\"))) const ImageInfo *k2_describe() " << BEGIN
@@ -312,7 +320,7 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
       std::chrono::duration_cast<std::chrono::seconds>(G->settings().build_tp.time_since_epoch()).count()
     ) << ","
     << "K2_PLATFORM_HEADER_H_VERSION, "
-    << "{" << vk::join(G->settings().php_code_commit_hash.get(), ", ", [](auto c) { return std::to_string(static_cast<uint8_t>(c)); }) << "},"
+    << "{" << php_code_commit_hash << "},"
     << "\"" << G->settings().php_code_version.get() << "\","
     << "extraInfo.size()" << ","
     << "extraInfo.data()"
