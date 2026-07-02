@@ -309,13 +309,12 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   if (!query_handle_expected) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
-  auto query_handle{std::move(*query_handle_expected)};
 
   if (ignore_answer) {
     return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
-  rpc_client_instance_st.rpc_query_handles.emplace(query_id, std::move(query_handle));
+  rpc_client_instance_st.rpc_query_handles.emplace(query_id, std::move(*query_handle_expected));
   return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 

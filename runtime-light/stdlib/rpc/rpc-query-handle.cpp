@@ -59,6 +59,7 @@ std::expected<string, std::pair<int32_t, string>> query_handle::get_ready_respon
   if (!first_response_size) {
     return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
   }
+  // TODO remove allocation
   string response{reinterpret_cast<char*>(k2::alloc(*first_response_size)), static_cast<string::size_type>(*first_response_size)};
   std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(rpc_d, {reinterpret_cast<std::byte*>(response.buffer()), response.size()})};
   if (!response_fetch_result) {
