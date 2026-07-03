@@ -138,3 +138,14 @@ if(COMPILE_RUNTIME_LIGHT)
     endif()
     file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
 endif()
+
+# Per-third-party extra compile flags. These are consumed by make_third_party_configuration.
+set(THIRD_PARTY_EXTRA_FLAGS_ZSTD       "")
+set(THIRD_PARTY_EXTRA_FLAGS_UBER_H3    "")
+set(THIRD_PARTY_EXTRA_FLAGS_KPHP_TIMELIB "")
+
+if(COMPILE_RUNTIME_LIGHT)
+    set(THIRD_PARTY_EXTRA_FLAGS_ZSTD       "-O3")
+    set(THIRD_PARTY_EXTRA_FLAGS_UBER_H3    "-O3")
+    set(THIRD_PARTY_EXTRA_FLAGS_KPHP_TIMELIB "-O3")
+endif()

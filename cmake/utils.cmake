@@ -289,6 +289,14 @@ function(make_third_party_configuration PIC_ENABLED PROJECT_GENERIC_NAME PROJECT
         set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} ${RUNTIME_LIGHT_VISIBILITY}")
     endif()
 
+    set(_project_extra_flags "")
+    if(DEFINED THIRD_PARTY_EXTRA_FLAGS_${PROJECT_GENERIC_NAMESPACE})
+        set(_project_extra_flags "${THIRD_PARTY_EXTRA_FLAGS_${PROJECT_GENERIC_NAMESPACE}}")
+    endif()
+    if(_project_extra_flags)
+        set(EXTRA_COMPILE_FLAGS "${_project_extra_flags} ${EXTRA_COMPILE_FLAGS}")
+    endif()
+
     set(${OUT_EXTRA_COMPILE_FLAGS} ${EXTRA_COMPILE_FLAGS} PARENT_SCOPE)
 endfunction()
 
