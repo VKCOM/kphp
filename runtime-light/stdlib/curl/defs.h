@@ -16,8 +16,8 @@ enum class PHPCURL : uint64_t {
   RETURNTRANSFER = 1234567,
 };
 
-using easy_type = simple_transfer::descriptor_type;
-using multi_type = composite_transfer::descriptor_type;
+using easy_type = simple::transfer::descriptor_type;
+using multi_type = composite::transfer::descriptor_type;
 
 constexpr auto CURL_DIAGNOSTICS_MSG_SIZE = 256;
 
