@@ -384,6 +384,32 @@ void* k2_mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t fla
 int32_t k2_madvise(void* addr, size_t length, int32_t advise);
 
 /**
+ * Writes a pre-serialized metrics to the specified monitoring system.
+ *
+ * The buffer must contain a metric serialized according to the following format
+ * (TL serialization, native byte order):
+ *   <timestamp:u64><metric name:tl string><value format><tags count:u32><tag1><tag2>...
+ *   tag := <name:tl string><value:tl string>
+ *
+ * value format:
+ *   <`VALUE_MAGIC`:u32><f64>                              - single double value
+ *   <`VALUES_ARRAY_MAGIC`:u32><len:u32><f64><f64>...      - array of double values
+ *   <`COUNT_MAGIC`:u32><u32>                              - count value
+ *   <`INC_MAGIC`:u32>                                     - counter increment
+ *
+ * tl string is the standard TL string encoding.
+ *
+ * Multiple metrics can be sent in a single call by concatenating them sequentially:
+ *   <metric1><metric2>...
+ * Each metric is serialized independently using the format described above.
+ *
+ * @param `buf` A pointer to the serialized metric(s) data.
+ * @param `buf_len` The length of the serialized metric(s) data in bytes.
+ * @return returns 0 if everything is fine, otherwise error code
+ */
+int32_t k2_write_metrics(const void* buf, size_t buf_len);
+
+/**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
  * opposite side (does not affect `StreamStatus` on your side).
  * Does not disable the ability to read from the stream.
