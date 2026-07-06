@@ -41,7 +41,7 @@ jobs:
           brew install python@3.13 re2c coreutils libiconv googletest shivammathur/php/php@7.4
           brew link --overwrite --force shivammathur/php/php@7.4
           brew link --overwrite --force python@3.13
-          /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --user --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema six cmake==3.31.6
+          /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --user --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema cmake==3.31.6
 
       - name: Run cmake
         run: |
