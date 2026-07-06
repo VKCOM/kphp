@@ -4,6 +4,8 @@
 require_once 'kphp_tester_include.php';
 
 function test_long_options() {
+  echo 'test_long_options';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 10));
@@ -23,6 +25,8 @@ function test_long_options() {
 }
 
 function test_string_options() {
+  echo 'test_string_options';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_URL, "who care"));
@@ -36,6 +40,8 @@ function test_string_options() {
 }
 
 function test_linked_list_options() {
+  echo 'test_linked_list_options';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_RESOLVE, ["who", "care"]));
@@ -55,6 +61,8 @@ function test_linked_list_options() {
 }
 
 function test_proxy_type_option() {
+  echo 'test_proxy_type_option';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_PROXYTYPE, CURLPROXY_HTTP));
@@ -72,6 +80,8 @@ function test_proxy_type_option() {
 }
 
 function test_ssl_version_option() {
+  echo 'test_ssl_version_option';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT));
@@ -90,6 +100,8 @@ function test_ssl_version_option() {
 }
 
 function test_auth_option() {
+  echo 'test_auth_option';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_BASIC));
@@ -105,6 +117,8 @@ function test_auth_option() {
 }
 
 function test_ip_resolve_option() {
+  echo 'test_ip_resolve_option';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER));
@@ -119,6 +133,8 @@ function test_ip_resolve_option() {
 }
 
 function test_post_fields_option() {
+  echo 'test_post_fields_option';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_POSTFIELDS, []));
@@ -129,6 +145,8 @@ function test_post_fields_option() {
 }
 
 function test_max_recv_speed() {
+  echo 'test_max_recv_speed';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_MAX_RECV_SPEED_LARGE, 98787));
@@ -138,6 +156,8 @@ function test_max_recv_speed() {
 }
 
 function test_special_options() {
+  echo 'test_special_options';
+
   $c = curl_init();
 
   var_dump(curl_setopt($c, CURLOPT_RETURNTRANSFER, 1));
@@ -147,6 +167,8 @@ function test_special_options() {
 }
 
 function test_setopt_array() {
+  echo 'test_setopt_array';
+
   $c = curl_init();
 
   var_dump(curl_setopt_array($c, [
@@ -165,6 +187,8 @@ function test_setopt_array() {
 }
 
 function test_bad_option() {
+  echo 'test_bad_option';
+
   $c = curl_init();
 
   var_dump(kphp && curl_setopt($c, -123, 1));
