@@ -50,9 +50,11 @@ size_t async_backtrace(std::span<void*> addresses) noexcept {
     auto* const start_sync_frame{reinterpret_cast<kphp::coro::stack_frame*>(STACK_FRAME_ADDRESS)};
     auto* const stop_sync_frame{async_stack_root.stop_sync_stack_frame};
 
-    const size_t num_sync_frames{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
-    const size_t num_async_frames{async_frames(addresses.subspan(num_sync_frames), async_stack_root.top_async_stack_frame)};
-    return num_sync_frames + num_async_frames;
+    size_t frames_count{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
+    if (frames_count < addresses.size()) {
+      frames_count += async_frames(addresses.subspan(frames_count), async_stack_root.top_async_stack_frame);
+    }
+    return frames_count;
   }
   return 0;
 }
