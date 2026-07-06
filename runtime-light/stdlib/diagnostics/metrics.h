@@ -109,8 +109,8 @@ struct metric final {
   requires tl::serializable<std::ranges::range_value_t<TagRange>>
   {
     timestamp.store(tls);
-    value.store(tls);
     metric_name.store(tls);
+    value.store(tls);
 
     tl::u32{.value = static_cast<uint32_t>(std::ranges::distance(tags))}.store(tls);
     std::ranges::for_each(tags, [&tls](const auto& elem) noexcept { elem.store(tls); });

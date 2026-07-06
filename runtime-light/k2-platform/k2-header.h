@@ -388,7 +388,7 @@ int32_t k2_madvise(void* addr, size_t length, int32_t advise);
  *
  * The buffer must contain a metric serialized according to the following format
  * (TL serialization, native byte order):
- *   <timestamp:u64><value format><metric name:tl string><tags count:u32><tag1><tag2>...
+ *   <timestamp:u64><metric name:tl string><value format><tags count:u32><tag1><tag2>...
  *   tag := <name:tl string><value:tl string>
  *
  * value format:
