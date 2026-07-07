@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -13,8 +14,9 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/shared-task.h"
-#include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-storage.h"
@@ -49,29 +51,8 @@ public:
 
   static ForkInstanceState& get() noexcept;
 
-  template<typename return_type>
-  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(kphp::coro::task<return_type> task) noexcept {
-    static constexpr auto fork_coroutine{
-        [](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
-          ForkInstanceState::get().current_id = fork_id;
-
-          kphp::forks::details::storage s{};
-          if constexpr (std::same_as<return_type, void>) {
-            co_await std::move(task);
-            s.store();
-          } else {
-            s.store<return_type>(co_await std::move(task));
-          }
-          co_return s;
-        }};
-
-    const int64_t fork_id{next_fork_id--};
-    auto fork_task{std::invoke(fork_coroutine, std::move(task), fork_id)};
-    forks.emplace(
-        fork_id,
-        fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(fork_task)});
-    return std::make_pair(fork_id, std::move(fork_task));
-  }
+  template<kphp::coro::concepts::awaitable awaitable_type>
+  auto create_fork(awaitable_type awaitable) noexcept -> std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>>;
 
   std::optional<std::reference_wrapper<fork_info>> get_info(int64_t fork_id) noexcept {
     if (auto it{forks.find(fork_id)}; it != forks.end()) [[likely]] {
@@ -86,3 +67,25 @@ public:
     return *opt_fork_info;
   }
 };
+
+template<kphp::coro::concepts::awaitable awaitable_type>
+auto ForkInstanceState::create_fork(awaitable_type awaitable) noexcept -> std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> {
+  static constexpr auto fork_coroutine{
+      [](awaitable_type awaitable, int64_t fork_id, ForkInstanceState& fork_instance_state) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
+        fork_instance_state.current_id = fork_id;
+
+        kphp::forks::details::storage s{};
+        if constexpr (std::same_as<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type, void>) {
+          co_await std::move(awaitable);
+          s.store();
+        } else {
+          s.store<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>(co_await std::move(awaitable));
+        }
+        co_return s;
+      }};
+
+  const int64_t fork_id{next_fork_id--};
+  auto fork_task{std::invoke(fork_coroutine, std::move(awaitable), fork_id, *this)};
+  forks.emplace(fork_id, fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = fork_task});
+  return std::make_pair(fork_id, std::move(fork_task));
+}

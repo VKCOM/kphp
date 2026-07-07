@@ -24,6 +24,7 @@ void f$set_timer(int64_t timeout_ms, T&& on_timer_callback) noexcept {
   // TODO choose from:
   // 1. someone should pop that fork from ForkInstanceState since it will stay there unless we perform f$wait on fork
   // 2. start timer_task via kphp::coro::io_scheduler::spawn (it won't have distinct fork id)
+  // FIXME it doesn't work with async `on_timer_callback`
   auto timer_task{std::invoke(
       [](std::chrono::milliseconds duration, T on_timer_callback) noexcept -> kphp::coro::task<> {
         co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(duration));

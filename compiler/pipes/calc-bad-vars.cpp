@@ -538,17 +538,17 @@ class CalcBadVars {
     }
   }
 
-  static void calc_interruptible(const FuncCallGraph &call_graph) {
+  static void calc_interruptible(const FuncCallGraph& call_graph) {
     IdMap<char> into_interruptible(call_graph.n);
     IdMap<FunctionPtr> to_parents(call_graph.n);
 
-    for (const auto &func : call_graph.functions) {
+    for (const auto& func : call_graph.functions) {
       if (func->is_interruptible) {
         mark(call_graph.rev_graph, into_interruptible, func, to_parents);
       }
     }
 
-    for (const auto &func : call_graph.functions) {
+    for (const auto& func : call_graph.functions) {
       if (into_interruptible[func]) {
         func->is_interruptible = true;
         if (unlikely(func->class_id && func->class_id == G->get_class("ArrayAccess"))) {
@@ -562,12 +562,11 @@ class CalcBadVars {
 
   static void calc_k2_fork(const FuncCallGraph& call_graph, const std::vector<DepData>& dep_data) {
     for (int i = 0; i < call_graph.n; ++i) {
-      for (const auto& fork : dep_data[i].forks) {
-        fork->is_interruptible = true;
-        if (!std::exchange(fork->is_k2_fork, true)) { // check only once
-          for (VarPtr param : fork->param_ids) {
-            kphp_error(!param->is_reference, fmt_format("Function '{}' cannot be forked since it has a reference parameter '{}'\n", fork->as_human_readable(),
-                                                        param->as_human_readable()));
+      for (const auto& forked_function : dep_data[i].forks) {
+        if (!std::exchange(forked_function->is_k2_fork, true)) { // check only once
+          for (VarPtr param : forked_function->param_ids) {
+            kphp_error(!param->is_reference, fmt_format("Function '{}' cannot be forked since it has a reference parameter '{}'\n",
+                                                        forked_function->as_human_readable(), param->as_human_readable()));
           }
         }
       }
