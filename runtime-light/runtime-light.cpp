@@ -2,6 +2,8 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <array>
+#include <string_view>
 #include <utility>
 
 #include "runtime-light/core/globals/php-init-scripts.h"
@@ -12,6 +14,7 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/metrics.h"
 
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))
 
@@ -66,36 +69,49 @@ VISIBILITY_DEFAULT void k2_init_instance() {
   kphp::log::debug("start instance state init");
   new (k2::instance_state()) InstanceState{};
 
-  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
-  cpu_info_instance_state.init();
-  cpu_info_instance_state.total_cycles = -CpuInfoInstanceState::rdtsc();
+  {
+    auto guard = CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().processing_cycles);
+    k2::instance_state()->init_script_execution();
+  }
 
-  k2::instance_state()->init_script_execution();
   kphp::log::debug("finish instance state init");
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
+  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
+
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = k2_instance_state();
   kphp::log::debug("k2_poll started");
-  const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
+
+  k2::PollStatus poll_status{};
+  {
+    auto guard = CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().processing_cycles);
+    poll_status = kphp::coro::io_scheduler::get().process_events();
+  }
 
   if (poll_status == k2::PollStatus::PollFinishedOk) {
-    auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
-    cpu_info_instance_state.total_cycles += CpuInfoInstanceState::rdtsc();
+    constexpr std::string_view metric_name{"instance_cpu_cycles"};
+    constexpr std::string_view tag_name{"kind"};
 
-    uint64_t coro_alloc_cycles{cpu_info_instance_state.coro_alloc_cycles};
-    uint64_t coro_free_cycles{cpu_info_instance_state.coro_free_cycles};
-    uint64_t coro_alloc_free_cycles{coro_alloc_cycles + coro_free_cycles};
+    auto result{
+        kphp::diagnostics::metric::empty().send_value(metric_name, std::array{std::pair{tag_name, "total"}}, cpu_info_instance_state.processing_cycles)};
+    if (!result.second.has_value()) {
+      kphp::log::warning("failed to send metric {} (kind=total): error {}", metric_name, result.second.error());
+    }
 
-    kphp::log::info("\ntotal cpu cycles -> {}\n"
-                    "coro alloc cycles -> {} ({}%)\n"
-                    "coro free cycles -> {} ({}%)\n"
-                    "coro alloc+free cycles -> {} ({}%)\n",
-                    cpu_info_instance_state.total_cycles, coro_alloc_cycles, cpu_info_instance_state.get_percent(coro_alloc_cycles), coro_free_cycles,
-                    cpu_info_instance_state.get_percent(coro_free_cycles), coro_alloc_free_cycles, cpu_info_instance_state.get_percent(coro_alloc_free_cycles));
+    auto send = [&result, metric_name, tag_name](std::string_view tag_value, uint64_t value) noexcept {
+      result = kphp::diagnostics::metric::with_buffer(std::move(result.first)).send_value(metric_name, std::array{std::pair{tag_name, tag_value}}, value);
+      if (!result.second.has_value()) {
+        kphp::log::warning("failed to send metric {} (kind={}): error {}", metric_name, tag_value, result.second.error());
+      }
+    };
+
+    send("coro_alloc", cpu_info_instance_state.coro_alloc_cycles);
+    send("coro_free", cpu_info_instance_state.coro_free_cycles);
   }
+
   kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));
   return poll_status;
 }
