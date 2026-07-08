@@ -363,6 +363,24 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   co_return std::move(result);
 }
 
+template<class T, std::invocable<T, typename array<T>::key_type> F>
+kphp::coro::task<bool> f$array_all(array<T> a, F f) noexcept {
+  bool result = false;
+  for (const auto& it : std::as_const(a)) {
+    if constexpr (kphp::coro::is_async_function_v<F, T, typename array<T>::key_type>) {
+      result = co_await std::invoke(f, it.get_value(), it.get_key());
+    } else {
+      result = std::invoke(f, it.get_value(), it.get_key());
+    }
+
+    if (!result) {
+      co_return false;
+    }
+  }
+
+  co_return true;
+}
+
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>)
 kphp::coro::task<> f$usort(array<T>& a, Comparator compare) noexcept {
