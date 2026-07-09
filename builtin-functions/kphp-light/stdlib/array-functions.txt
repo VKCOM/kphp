@@ -115,6 +115,7 @@ function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[
 /** @kphp-extern-func-info cpp_template_call interruptible */
 function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
 
+/** @kphp-extern-func-info interruptible */
 function array_all ($a ::: array, callable(^1[*] $value, mixed $key):bool $callback) ::: bool;
 
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
