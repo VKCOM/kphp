@@ -363,7 +363,8 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   co_return std::move(result);
 }
 
-template<class T, std::invocable<T, typename array<T>::key_type> F>
+template<class T, class F>
+requires std::is_invocable_r_v<bool, F, T, typename array<T>::key_type>
 kphp::coro::task<bool> f$array_all(array<T> a, F f) noexcept {
   bool result = false;
   for (const auto& it : std::as_const(a)) {
