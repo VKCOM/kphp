@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -366,20 +367,16 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
 template<class T, class F>
 requires std::is_invocable_r_v<bool, F, T, typename array<T>::key_type>
 kphp::coro::task<bool> f$array_all(array<T> a, F f) noexcept {
-  bool result = false;
-  for (const auto& it : std::as_const(a)) {
-    if constexpr (kphp::coro::is_async_function_v<F, T, typename array<T>::key_type>) {
-      result = co_await std::invoke(f, it.get_value(), it.get_key());
-    } else {
-      result = std::invoke(f, it.get_value(), it.get_key());
+  if constexpr (kphp::coro::is_async_function_v<F, T, typename array<T>::key_type>) {
+    for (const auto& it : std::as_const(a)) {
+      if (!(co_await std::invoke(f, it.get_value(), it.get_key()))) {
+        co_return false;
+      }
     }
-
-    if (!result) {
-      co_return false;
-    }
+    co_return true;
+  } else {
+    co_return array_functions_impl_::array_all_sync(a, f);
   }
-
-  co_return true;
 }
 
 template<class T, class Comparator>

@@ -49,6 +49,17 @@ array<T> array_diff(const array<T>& a1, const array<T1>& a2, const Proj& key_pro
   return result;
 }
 
+template<class T, class CallbackT>
+bool array_all_sync(const array<T>& a, const CallbackT& callback) noexcept {
+  for (const auto& it : a) {
+    if (!std::invoke(callback, it.get_value(), it.get_key())) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 template<class T>
 struct sort_compare {
   bool operator()(const T& h1, const T& h2) const {
