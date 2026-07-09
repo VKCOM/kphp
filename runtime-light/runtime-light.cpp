@@ -78,16 +78,15 @@ VISIBILITY_DEFAULT void k2_init_instance() {
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
-  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
-
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = k2_instance_state();
   kphp::log::debug("k2_poll started");
 
+  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
   k2::PollStatus poll_status{};
   {
-    auto guard = CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().processing_cycles);
+    auto guard = CpuInfoInstanceState::write_cycles(cpu_info_instance_state.processing_cycles);
     poll_status = kphp::coro::io_scheduler::get().process_events();
   }
 
