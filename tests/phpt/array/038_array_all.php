@@ -10,9 +10,8 @@ function contains_a($str) {
 }
 
 function test_array_all_empty() {
-    /** @var int[] */
     $arr1 = [];
-    var_dump(array_all($arr1, function (int $v, $k) { return is_even($v); }));
+    var_dump(array_all($arr1, function ($v, $k) { return is_even($v); }));
 }
 
 function test_array_all_ints() {
@@ -53,7 +52,6 @@ function test_array_all_with_keys() {
 }
 
 function test_array_all_empty_async_callback() {
-    /** @var int[] */
     $arr1 = [];
     var_dump(array_all($arr1, function ($v, $k) {
         sleep(0.001);
