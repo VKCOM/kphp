@@ -365,7 +365,8 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
 }
 
 template<class T, class F>
-requires std::is_invocable_r_v<bool, F, T, typename array<T>::key_type>
+requires std::is_invocable_v<F, T, typename array<T>::key_type> &&
+         std::same_as<kphp::coro::async_function_return_type_t<F, T, typename array<T>::key_type>, bool>
 kphp::coro::task<bool> f$array_all(array<T> a, F f) noexcept {
   if constexpr (kphp::coro::is_async_function_v<F, T, typename array<T>::key_type>) {
     for (const auto& it : std::as_const(a)) {
