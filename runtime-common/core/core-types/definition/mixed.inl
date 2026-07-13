@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstddef>
-#include <typeindex>
+#include <new>
 
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/intrusive_ptr.h"
@@ -183,59 +183,45 @@ inline void swap(mixed& lhs, mixed& rhs) {
 template<typename T>
 T& mixed::empty_value() noexcept {
   static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, mixed, array<mixed>>{} || is_type_acceptable_for_mixed<T>::value, "unsupported type");
-
   auto& ctx{RuntimeContext::get()};
+
+  const auto init_empty_value{[](T*& v) noexcept -> T& {
+    if (v == nullptr) {
+      auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
+      php_assert(raw_mem);
+      v = new (raw_mem) T{};
+    }
+    *reinterpret_cast<T*>(v) = T{};
+    return *reinterpret_cast<T*>(v);
+  }};
+
   if constexpr (std::is_same_v<T, bool>) {
-    if (ctx.empty_value.bool_v == nullptr) {
-      ctx.empty_value.bool_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
-    }
-    *reinterpret_cast<T*>(ctx.empty_value.bool_v) = T{};
-    return *reinterpret_cast<T*>(ctx.empty_value.bool_v);
+    return init_empty_value(ctx.empty_value.bool_v);
   } else if constexpr (std::is_same_v<T, int64_t>) {
-    if (ctx.empty_value.int64_v == nullptr) {
-      ctx.empty_value.int64_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
-    }
-    *reinterpret_cast<T*>(ctx.empty_value.int64_v) = T{};
-    return *reinterpret_cast<T*>(ctx.empty_value.int64_v);
+    return init_empty_value(ctx.empty_value.int64_v);
   } else if constexpr (std::is_same_v<T, double>) {
-    if (ctx.empty_value.double_v == nullptr) {
-      ctx.empty_value.double_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
-    }
-    *reinterpret_cast<T*>(ctx.empty_value.double_v) = T{};
-    return *reinterpret_cast<T*>(ctx.empty_value.double_v);
+    return init_empty_value(ctx.empty_value.double_v);
   } else if constexpr (std::is_same_v<T, string>) {
-    if (ctx.empty_value.string_v == nullptr) {
-      ctx.empty_value.string_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
-    }
-    *reinterpret_cast<T*>(ctx.empty_value.string_v) = T{};
-    return *reinterpret_cast<T*>(ctx.empty_value.string_v);
+    return init_empty_value(ctx.empty_value.string_v);
   } else if constexpr (std::is_same_v<T, mixed>) {
-    if (ctx.empty_value.mixed_v == nullptr) {
-      ctx.empty_value.mixed_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
-    }
-    *reinterpret_cast<T*>(ctx.empty_value.mixed_v) = T{};
-    return *reinterpret_cast<T*>(ctx.empty_value.mixed_v);
+    return init_empty_value(ctx.empty_value.mixed_v);
   } else if constexpr (std::is_same_v<T, array<mixed>>) {
-    if (ctx.empty_value.array_v == nullptr) {
-      ctx.empty_value.array_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
-    }
-    *reinterpret_cast<T*>(ctx.empty_value.array_v) = T{};
-    return *reinterpret_cast<T*>(ctx.empty_value.array_v);
+    return init_empty_value(ctx.empty_value.array_v);
   } else {
-    using type2value_t = kphp::stl::unordered_map<std::type_index, void*, kphp::memory::script_allocator>;
+    using type2value_t = kphp::stl::unordered_map<const void*, void*, kphp::memory::script_allocator>;
     if (ctx.empty_value.objects == nullptr) {
       auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(type2value_t))};
       php_assert(raw_mem);
       ctx.empty_value.objects = new (raw_mem) type2value_t{};
     }
 
-    auto* type2value{reinterpret_cast<type2value_t*>(ctx.empty_value.objects)};
-    const auto type_id{std::type_index{typeid(T)}};
-    const auto it{type2value->find(type_id)};
-    if (it == type2value->end()) {
+    static const char dummy = 0;
+    const void* type_id{&dummy};
+    const auto it{ctx.empty_value.objects->find(type_id)};
+    if (it == ctx.empty_value.objects->end()) {
       auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
       php_assert(raw_mem);
-      return *reinterpret_cast<T*>(type2value->insert({type_id, new (raw_mem) T{}}).first->second);
+      return *reinterpret_cast<T*>(ctx.empty_value.objects->insert({type_id, new (raw_mem) T{}}).first->second);
     }
 
     *reinterpret_cast<T*>(it->second) = T{};
