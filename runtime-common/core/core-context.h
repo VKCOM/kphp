@@ -17,7 +17,15 @@ struct RuntimeContext final : vk::not_copyable {
   int32_t show_migration_php8_warning{};
   int32_t php_disable_warnings{};
   uint32_t empty_obj_count{};
-  void* empty_values{nullptr};
+  struct {
+    void* bool_v{};
+    void* int64_v{};
+    void* double_v{};
+    void* string_v{};
+    void* mixed_v{};
+    void* array_v{};
+    void* objects{};
+  } empty_value;
 
   string_buffer_lib_context sb_lib_context{};
   string_buffer static_SB{};

@@ -9,6 +9,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/intrusive_ptr.h"
+#include "common/type_traits/dependent_false.h"
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
@@ -185,29 +186,75 @@ T& mixed::empty_value() noexcept {
   static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, mixed, array<mixed>>{} || is_type_acceptable_for_mixed<T>::value, "unsupported type");
 
   auto& ctx{RuntimeContext::get()};
+  if constexpr (std::is_same_v<T, bool>) {
+    if (ctx.empty_value.bool_v == nullptr) {
+      ctx.empty_value.bool_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
+    }
+    *reinterpret_cast<T*>(ctx.empty_value.bool_v) = T{};
+    return *reinterpret_cast<T*>(ctx.empty_value.bool_v);
+  } else if constexpr (std::is_same_v<T, int64_t>) {
+    if (ctx.empty_value.int64_v == nullptr) {
+      ctx.empty_value.int64_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
+    }
+    *reinterpret_cast<T*>(ctx.empty_value.int64_v) = T{};
+    return *reinterpret_cast<T*>(ctx.empty_value.int64_v);
+  } else if constexpr (std::is_same_v<T, double>) {
+    if (ctx.empty_value.double_v == nullptr) {
+      ctx.empty_value.double_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
+    }
+    *reinterpret_cast<T*>(ctx.empty_value.double_v) = T{};
+    return *reinterpret_cast<T*>(ctx.empty_value.double_v);
+  } else if constexpr (std::is_same_v<T, string>) {
+    if (ctx.empty_value.string_v == nullptr) {
+      ctx.empty_value.string_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
+    }
+    *reinterpret_cast<T*>(ctx.empty_value.string_v) = T{};
+    return *reinterpret_cast<T*>(ctx.empty_value.string_v);
+  } else if constexpr (std::is_same_v<T, mixed>) {
+    if (ctx.empty_value.mixed_v == nullptr) {
+      ctx.empty_value.mixed_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
+    }
+    *reinterpret_cast<T*>(ctx.empty_value.mixed_v) = T{};
+    return *reinterpret_cast<T*>(ctx.empty_value.mixed_v);
+  } else if constexpr (std::is_same_v<T, array<mixed>>) {
+    if (ctx.empty_value.array_v == nullptr) {
+      ctx.empty_value.array_v = new (RuntimeAllocator::get().alloc_script_memory(sizeof(T))) T{};
+    }
+    *reinterpret_cast<T*>(ctx.empty_value.array_v) = T{};
+    return *reinterpret_cast<T*>(ctx.empty_value.array_v);
+  } else if constexpr (is_type_acceptable_for_mixed<T>::value) {
+    using type2value_t = kphp::stl::unordered_map<std::type_index, void*, kphp::memory::script_allocator>;
+    if (ctx.empty_value.objects == nullptr) {
+      auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(type2value_t))};
+      php_assert(raw_mem);
+      ctx.empty_value.objects = new (raw_mem) type2value_t{};
+    }
 
-  using type2value_t = kphp::stl::unordered_map<std::type_index, void*, kphp::memory::script_allocator>;
-  if (ctx.empty_values == nullptr) {
-    auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(type2value_t))};
+    auto* type2value{reinterpret_cast<type2value_t*>(ctx.empty_value.objects)};
+    const auto type_id{std::type_index{typeid(T)}};
+    const auto it{type2value->find(type_id)};
+    if (it != type2value->end()) {
+      *reinterpret_cast<T*>(it->second) = T{};
+      return *reinterpret_cast<T*>(it->second);
+    }
+
+    auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
     php_assert(raw_mem);
-    ctx.empty_values = new (raw_mem) type2value_t{};
-    reinterpret_cast<type2value_t*>(ctx.empty_values)->reserve(6); // bool, int64_t, double, string, mixed, array<mixed>
+    return *reinterpret_cast<T*>(type2value->insert({type_id, new (raw_mem) T{}}).first->second);
+  } else {
+    static_assert(vk::dependent_false_v<T>, "Unsupported type provided");
   }
-
-  auto* type2value{reinterpret_cast<type2value_t*>(ctx.empty_values)};
-  const auto it{type2value->find(std::type_index(typeid(T)))};
-  if (it != type2value->end()) {
-    *reinterpret_cast<T*>(it->second) = T{};
-    return *reinterpret_cast<T*>(it->second);
-  }
-
-  auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
-  php_assert(raw_mem);
-  return *reinterpret_cast<T*>(type2value->insert({std::type_index(typeid(T)), new (raw_mem) T{}}).first->second);
 }
 
 inline void mixed::reset_empty_values() noexcept {
-  RuntimeContext::get().empty_values = nullptr;
+  auto& ctx{RuntimeContext::get()};
+  ctx.empty_value.bool_v = nullptr;
+  ctx.empty_value.int64_v = nullptr;
+  ctx.empty_value.double_v = nullptr;
+  ctx.empty_value.string_v = nullptr;
+  ctx.empty_value.mixed_v = nullptr;
+  ctx.empty_value.array_v = nullptr;
+  ctx.empty_value.objects = nullptr;
 }
 
 template<class T>
