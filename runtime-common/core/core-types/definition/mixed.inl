@@ -232,14 +232,14 @@ T& mixed::empty_value() noexcept {
     auto* type2value{reinterpret_cast<type2value_t*>(ctx.empty_value.objects)};
     const auto type_id{std::type_index{typeid(T)}};
     const auto it{type2value->find(type_id)};
-    if (it != type2value->end()) {
-      *reinterpret_cast<T*>(it->second) = T{};
-      return *reinterpret_cast<T*>(it->second);
+    if (it == type2value->end()) {
+      auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
+      php_assert(raw_mem);
+      return *reinterpret_cast<T*>(type2value->insert({type_id, new (raw_mem) T{}}).first->second);
     }
 
-    auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
-    php_assert(raw_mem);
-    return *reinterpret_cast<T*>(type2value->insert({type_id, new (raw_mem) T{}}).first->second);
+    *reinterpret_cast<T*>(it->second) = T{};
+    return *reinterpret_cast<T*>(it->second);
   }
 }
 
