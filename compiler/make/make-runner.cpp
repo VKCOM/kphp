@@ -90,7 +90,7 @@ void MakeRunner::require_target(Target *target) {
 }
 
 static int run_cmd(const std::string &cmd) {
-  // fmt_print("{}\n", cmd);
+  fmt_print("{}\n", cmd);
   std::vector<std::string> args = split(cmd);
   std::vector<char *> argv(args.size() + 1);
   for (int i = 0; i < (int)args.size(); i++) {
