@@ -40,7 +40,6 @@ def make_test_tmp_dir(tmp_dir_root):
 
 class BaseTestCase(TestCase):
     kphp_build_working_dir = ""
-    web_server_working_dir = ""
     artifacts_dir = ""
     test_dir = ""
 
@@ -49,11 +48,9 @@ class BaseTestCase(TestCase):
         self,
         request: pytest.FixtureRequest,
         kphp_build_working_dir: pathlib.Path,
-        kphp_server_working_dir: pathlib.Path,
         artifacts_dir: pathlib.Path,
     ):
         request.cls.kphp_build_working_dir = str(kphp_build_working_dir)
-        request.cls.web_server_working_dir = str(kphp_server_working_dir)
         request.cls.artifacts_dir = str(artifacts_dir)
         request.cls.test_dir = str(pathlib.Path(request.module.__file__).parent)
 
@@ -146,6 +143,7 @@ class WebServerAutoTestCase(BaseTestCase):
     :type web_server: WebServer
     """
     web_server = None
+    web_server_working_dir = ""
     web_server_bin = ""
     kphp_builder = None
     sanitizer_pattern = None
@@ -154,6 +152,10 @@ class WebServerAutoTestCase(BaseTestCase):
     @pytest.fixture(scope="class", autouse=True)
     def web_server_std_functions_updater(self, request, std_function_invocations):
         request.cls.std_function_invocations = std_function_invocations
+
+    @pytest.fixture(scope="class", autouse=True)
+    def set_web_server_working_dir(self, request, kphp_server_working_dir: pathlib.Path):
+        request.cls.web_server_working_dir = str(kphp_server_working_dir)
 
     @classmethod
     def custom_setup(cls):
@@ -303,6 +305,10 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def kphp_compiler_std_functions(self, request, std_function_invocations):
         request.cls.std_function_invocations = std_function_invocations
 
+    @pytest.fixture(autouse=True)
+    def set_artifacts_dir(self, request: pytest.FixtureRequest, artifacts_dir: pathlib.Path):
+        self.artifacts_dir = str(artifacts_dir / request.node.name)
+
     def __init__(self, method_name):
         super().__init__(method_name)
         self.php_version = "php7.4"
@@ -364,7 +370,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def make_kphp_once_runner(self, php_script_path):
         once_runner = KphpRunOnce(
             php_script_path=os.path.join(self.test_dir, php_script_path),
-            artifacts_dir=self.web_server_working_dir,
+            artifacts_dir=self.artifacts_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
             std_function_invocations=self.std_function_invocations,
