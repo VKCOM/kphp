@@ -152,6 +152,7 @@ std::string debugTokenName(TokenType t) {
     {tok_double_arrow, "tok_double_arrow"},
     {tok_double_colon, "tok_double_colon"},
     {tok_arrow, "tok_arrow"},
+    {tok_nullsafe_arrow, "tok_nullsafe_arrow"},
     {tok_class_c, "tok_class_c"},
     {tok_file_c, "tok_file_c"},
     {tok_file_relative_c, "tok_file_relative_c"},
