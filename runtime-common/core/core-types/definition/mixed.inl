@@ -9,7 +9,6 @@
 
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/intrusive_ptr.h"
-#include "common/type_traits/dependent_false.h"
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
@@ -222,7 +221,7 @@ T& mixed::empty_value() noexcept {
     }
     *reinterpret_cast<T*>(ctx.empty_value.array_v) = T{};
     return *reinterpret_cast<T*>(ctx.empty_value.array_v);
-  } else if constexpr (is_type_acceptable_for_mixed<T>::value) {
+  } else {
     using type2value_t = kphp::stl::unordered_map<std::type_index, void*, kphp::memory::script_allocator>;
     if (ctx.empty_value.objects == nullptr) {
       auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(type2value_t))};
@@ -241,8 +240,6 @@ T& mixed::empty_value() noexcept {
     auto* raw_mem{RuntimeAllocator::get().alloc_script_memory(sizeof(T))};
     php_assert(raw_mem);
     return *reinterpret_cast<T*>(type2value->insert({type_id, new (raw_mem) T{}}).first->second);
-  } else {
-    static_assert(vk::dependent_false_v<T>, "Unsupported type provided");
   }
 }
 
