@@ -11,6 +11,9 @@ TEST(lexer_test, test_php_tokens) {
     std::vector<std::string> expected;
   };
   std::vector<testCase> tests = {
+    {"0x10, 0X10", {"tok_int_const(0x10)", "tok_comma(,)", "tok_int_const(0X10)"}},
+    {"0b10, 0B10", {"tok_int_const(0b10)", "tok_comma(,)", "tok_int_const(0B10)"}},
+
     {"exit", {"tok_func_name(exit)"}},
     {"exit()", {"tok_func_name(exit)", "tok_oppar(()", "tok_clpar())"}},
     {"die", {"tok_func_name(die)"}},
