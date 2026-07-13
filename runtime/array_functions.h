@@ -96,7 +96,13 @@ R f$array_reduce(const array<T>& a, const CallbackT& callback, InitialT initial)
 
 template<class T, class CallbackT>
 bool f$array_all(const array<T>& a, const CallbackT& callback) noexcept {
-  return array_functions_impl_::array_all_sync(a, callback);
+  for (const auto& it : a) {
+    if (!std::invoke(callback, it.get_value(), it.get_key())) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 template<class T, class T1, class Proj>
