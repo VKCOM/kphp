@@ -72,16 +72,16 @@ def class_tmp_dir(request: pytest.FixtureRequest, session_tmp_dir: pathlib.Path)
 
 
 @pytest.fixture(scope="class")
-def kphp_build_working_dir(class_tmp_dir: pathlib.Path):
-    res = class_tmp_dir / "working_dir"
+def artifacts_dir(request: pytest.FixtureRequest, class_tmp_dir: pathlib.Path):
+    test_suite_name = pathlib.Path(request.module.__file__).stem
+    res = class_tmp_dir / "artifacts" / "tmp_{}".format(test_suite_name)
     res.mkdir(parents=True, exist_ok=True)
     return res
 
 
 @pytest.fixture(scope="class")
-def artifacts_dir(request: pytest.FixtureRequest, class_tmp_dir: pathlib.Path):
-    test_suite_name = pathlib.Path(request.module.__file__).stem
-    res = class_tmp_dir / "artifacts" / "tmp_{}".format(test_suite_name)
+def kphp_build_working_dir(artifacts_dir: pathlib.Path):
+    res = artifacts_dir / "working_dir"
     res.mkdir(parents=True, exist_ok=True)
     return res
 
