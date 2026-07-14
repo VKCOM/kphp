@@ -436,7 +436,9 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="functional-tests",
         description="run kphp functional tests with cxx={}".format("gcc"),
-        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+        "KPHP_CXX={cxx_name} "
+        "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
@@ -482,6 +484,7 @@ if __name__ == "__main__":
             "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
             "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
             "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
+            "KPHP_CXX={cxx_name} "
             "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
