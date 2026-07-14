@@ -50,7 +50,7 @@ class BaseTestCase(TestCase):
         kphp_build_working_dir: pathlib.Path,
         artifacts_dir: pathlib.Path,
     ):
-        request.cls.kphp_build_working_dir = str(kphp_build_working_dir)
+        request.cls.kphp_build_working_dir = str(artifacts_dir / "working_dir")
         request.cls.artifacts_dir = str(artifacts_dir)
         request.cls.test_dir = str(pathlib.Path(request.module.__file__).parent)
 
@@ -334,8 +334,8 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     @classmethod
     def custom_teardown(cls):
         cls.extra_class_teardown()
-        for once_runner in cls.once_runner_trash_bin:
-            once_runner.try_remove_kphp_build_trash()
+        # for once_runner in cls.once_runner_trash_bin:
+        #     once_runner.try_remove_kphp_build_trash()
 
     @classmethod
     def should_use_nocc(cls):
