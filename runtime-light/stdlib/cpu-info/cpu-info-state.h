@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #if defined(__x86_64__) || defined(__i386__)
 #include <x86intrin.h>
@@ -27,12 +28,27 @@ public:
 
   static CpuInfoInstanceState& get() noexcept;
 
-  [[nodiscard]] static auto write_cycles(uint64_t& cycles_accumulator) noexcept {
-    uint64_t start{CpuInfoInstanceState::rdtsc()};
+  [[nodiscard]] auto write_cycles(uint64_t& cycles_accumulator, uint64_t start = CpuInfoInstanceState::rdtsc()) const noexcept {
     return vk::final_action([start, &cycles_accumulator]() noexcept { cycles_accumulator += CpuInfoInstanceState::rdtsc() - start; });
+  }
+
+  void write_k2_poll_start() noexcept {
+    this->k2_poll_start = CpuInfoInstanceState::rdtsc();
+  }
+
+  void write_k2_poll_finish() noexcept {
+    this->k2_poll_start = std::nullopt;
+  }
+
+  void write_exit() noexcept {
+    if (this->k2_poll_start.has_value()) {
+      this->processing_cycles += CpuInfoInstanceState::rdtsc() - this->k2_poll_start.value();
+    }
   }
 
   uint64_t processing_cycles{0};
   uint64_t coro_alloc_cycles{0};
   uint64_t coro_free_cycles{0};
+
+  std::optional<uint64_t> k2_poll_start{std::nullopt};
 };

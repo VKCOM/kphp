@@ -70,7 +70,8 @@ VISIBILITY_DEFAULT void k2_init_instance() {
   new (k2::instance_state()) InstanceState{};
 
   {
-    auto guard = CpuInfoInstanceState::write_cycles(CpuInfoInstanceState::get().processing_cycles);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto guard{ciis.write_cycles(ciis.processing_cycles)};
     k2::instance_state()->init_script_execution();
   }
 
@@ -86,29 +87,10 @@ VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
   auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
   k2::PollStatus poll_status{};
   {
-    auto guard = CpuInfoInstanceState::write_cycles(cpu_info_instance_state.processing_cycles);
+    cpu_info_instance_state.write_k2_poll_start();
+    auto guard{cpu_info_instance_state.write_cycles(cpu_info_instance_state.processing_cycles, cpu_info_instance_state.k2_poll_start.value())};
     poll_status = kphp::coro::io_scheduler::get().process_events();
-  }
-
-  if (poll_status == k2::PollStatus::PollFinishedOk) {
-    constexpr std::string_view metric_name{"instance_cpu_cycles"};
-    constexpr std::string_view tag_name{"kind"};
-
-    auto result{
-        kphp::diagnostics::metric::empty().send_value(metric_name, std::array{std::pair{tag_name, "total"}}, cpu_info_instance_state.processing_cycles)};
-    if (!result.second.has_value()) {
-      kphp::log::warning("failed to send metric {} (kind=total): error {}", metric_name, result.second.error());
-    }
-
-    auto send = [&result, metric_name, tag_name](std::string_view tag_value, uint64_t value) noexcept {
-      result = kphp::diagnostics::metric::with_buffer(std::move(result.first)).send_value(metric_name, std::array{std::pair{tag_name, tag_value}}, value);
-      if (!result.second.has_value()) {
-        kphp::log::warning("failed to send metric {} (kind={}): error {}", metric_name, tag_value, result.second.error());
-      }
-    };
-
-    send("coro_alloc", cpu_info_instance_state.coro_alloc_cycles);
-    send("coro_free", cpu_info_instance_state.coro_free_cycles);
+    cpu_info_instance_state.write_k2_poll_finish();
   }
 
   kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));
