@@ -5,6 +5,9 @@
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/pipes/transform-to-smart-instanceof.h"
 
+#include <optional>
+#include <vector>
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/generics-mixins.h"
@@ -559,6 +562,83 @@ void DeduceImplicitTypesAndCastsPass::on_phpdoc_for_var(VertexAdaptor<op_phpdoc_
   phpdocs_for_vars.emplace_front(v_phpdoc);
 }
 
+void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call> &call, VertexRange f_called_params) {
+  auto call_args = call->args();
+
+  auto find_corresponding_param = [&f_called_params](const std::string &call_arg_name) -> std::optional<VertexAdaptor<op_func_param>> {
+  for (auto param: f_called_params) {
+    if (param.as<op_func_param>()->var()->get_string() == call_arg_name) {
+      return param.as<op_func_param>();
+    }
+  }
+  return std::nullopt;
+  };
+
+  std::vector<VertexAdaptor<op_func_param>> call_arg_to_func_param(call_args.size());
+  int call_arg_idx = 0;
+
+  // positional args
+  while (call_arg_idx < call_args.size() && call_arg_idx < f_called_params.size() && call_args[call_arg_idx]->type() != op_named_arg) {
+    call_arg_to_func_param[call_arg_idx] = f_called_params[call_arg_idx].as<op_func_param>();
+
+    if (call_arg_idx < f_called_params.size() && f_called_params[call_arg_idx]->extra_type == op_ex_param_variadic) {
+      int vararg_idx = call_arg_idx;
+      while (call_arg_idx < call_args.size()) {
+        call_arg_to_func_param[call_arg_idx++] = f_called_params[vararg_idx].as<op_func_param>();
+      }
+      break;
+    }
+    call_arg_idx++;
+  }
+
+  std::vector<int> mismatched_named_arg;
+  std::unordered_set<vk::string_view> unique_names;
+  unique_names.reserve(10);
+  mismatched_named_arg.reserve(10);
+
+  // named args
+  while (call_arg_idx < call_args.size() && call_arg_idx < f_called_params.size()) {
+    kphp_error(call_args[call_arg_idx]->type() == op_named_arg, "Positional arguments after named ones are prohibited");
+    auto as_named = call_args[call_arg_idx].as<op_named_arg>();
+
+    if (auto [_, absent] = unique_names.insert(as_named->name()->get_string()); !absent) {
+      kphp_error(false, fmt_format("Named arguments with duplicated name: \'{}\'", as_named->name()->get_string()));
+    }
+
+    std::optional<VertexAdaptor<op_func_param>> corresp_func_param = find_corresponding_param(as_named->name()->get_string());
+    if (corresp_func_param.has_value()) {
+      call_arg_to_func_param[call_arg_idx] = corresp_func_param.value();
+    } else {
+      mismatched_named_arg.push_back(call_arg_idx);
+    }
+    call_arg_idx++;
+  }
+
+  // if function declaration has variadic, then we should patch each extra named arg with it
+  if (!f_called_params.empty() && f_called_params.back()->extra_type == op_ex_param_variadic) {
+    for (auto idx: mismatched_named_arg) {
+      call_arg_to_func_param[idx] = f_called_params.back().as<op_func_param>();
+    }
+  }
+
+
+  const bool ok = mismatched_named_arg.size() == 0 || f_called_params.back()->extra_type == op_ex_param_variadic;
+
+  kphp_error(ok, fmt_format("Unknown parameter name: {}", call_args[mismatched_named_arg.front()].as<op_named_arg>()->name()->get_string()));
+
+
+  for (call_arg_idx = 0; call_arg_idx < call_args.size(); ++call_arg_idx) {
+    if (call_arg_to_func_param[call_arg_idx] && call_arg_to_func_param[call_arg_idx]->type_hint) {
+      if (auto as_named = call_args[call_arg_idx].try_as<op_named_arg>()) {
+        patch_call_arg_on_func_call(call_arg_to_func_param[call_arg_idx], as_named->expr(), call);
+      } else {
+        patch_call_arg_on_func_call(call_arg_to_func_param[call_arg_idx], call_args[call_arg_idx], call);
+      }
+    }
+  }
+
+}
+
 // for every `f(...)`, bind func_id
 // for every call argument, patch it to fit @param of f()
 // if f() is a generic function `f<T1,T2,...>(...)`, deduce instantiation Ts (save call->reifiedTs)
@@ -639,18 +719,7 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
   }
 
   // now, loop through every argument and potentially patch it
-  for (int i = 0; i < f_called_params.size() && i < call_args.size(); ++i) {
-    auto param = f_called_params[i].as<op_func_param>();
-
-    if (param->type_hint) {
-      patch_call_arg_on_func_call(param, call_args[i], call);
-      if (param->extra_type == op_ex_param_variadic) {    // all the rest arguments are meant to be passed to this param
-        for (++i; i < call_args.size(); ++i) {            // here, they are not replaced with an array: see CheckFuncCallsAndVarargPass
-          patch_call_arg_on_func_call(param, call_args[i], call);
-        }
-      }
-    }
-  }
+  patch_call_args(call, f_called_params);
 }
 
 // a helper to print a human-readable error for `f()` when f not found
