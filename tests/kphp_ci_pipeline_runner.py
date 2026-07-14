@@ -440,6 +440,7 @@ if __name__ == "__main__":
         "KPHP_CXX={cxx_name} "
         "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
+            cxx_name=args.cxx_name,
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
             base_tempdir=os.path.expanduser(
@@ -491,6 +492,7 @@ if __name__ == "__main__":
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
                 kphp_polyfills_repo=kphp_polyfills_repo,
+                cxx_name=args.cxx_name,
                 exclude_pattern=(
                     "not test_load_and_kill_worker" if args.use_asan else ""
                 ),  # TODO: ASAN behaves very strange on this test that makes it flaky
