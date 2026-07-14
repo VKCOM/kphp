@@ -305,6 +305,9 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     @pytest.fixture(autouse=True)
     def set_artifacts_dir(self, request: pytest.FixtureRequest, artifacts_dir: pathlib.Path):
         self.artifacts_dir = str(artifacts_dir / request.node.name)
+        working_dir = artifacts_dir / request.node.name / 'working_dir'
+        working_dir.mkdir(parents=True, exist_ok=True)
+        self.kphp_build_working_dir = str(working_dir)
 
     def __init__(self, method_name):
         super().__init__(method_name)
@@ -328,7 +331,6 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     @pytest.fixture(scope="class", autouse=True)
     def _custom_setup(self, request: pytest.FixtureRequest, base_setup):
-        request.cls.kphp_build_working_dir = make_test_tmp_dir(request.cls.kphp_build_working_dir)
         request.cls.extra_class_setup()
 
     @classmethod
