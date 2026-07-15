@@ -315,6 +315,7 @@ function array_filter_by_key ($a ::: array, callable(mixed $key):bool $callback)
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
 function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
+function array_all ($a ::: array, callable(mixed $value, mixed $key):bool $callback) ::: bool;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
 function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
 function array_reserve_map_int_keys (&$a ::: array, $size ::: int) ::: void;

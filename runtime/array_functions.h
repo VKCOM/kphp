@@ -94,6 +94,17 @@ R f$array_reduce(const array<T>& a, const CallbackT& callback, InitialT initial)
   return result;
 }
 
+template<class T, class CallbackT>
+bool f$array_all(const array<T>& a, const CallbackT& callback) noexcept {
+  for (const auto& it : a) {
+    if (!std::invoke(callback, it.get_value(), it.get_key())) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 template<class T, class T1, class Proj>
 array<T> array_diff_impl(const array<T>& a1, const array<T1>& a2, const Proj& projector) {
   array<T> result(a1.size());
