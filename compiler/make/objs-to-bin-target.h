@@ -21,7 +21,7 @@ public:
     std::string_view close_dep;
 #else
     std::string_view open_dep{" -Wl,--whole-archive -Wl,--start-group -Wl,--no-as-needed "};
-    std::string_view close_dep{" -Wl,--end-group -Wl,--no-whole-archive -Wl,--as-needed "};
+    std::string_view close_dep{" -Wl,--as-needed -Wl,--end-group -Wl,--no-whole-archive "};
 #endif
     std::stringstream ss;
     ss << settings->cxx.get() << " " << settings->cxx_toolchain_option.get()
