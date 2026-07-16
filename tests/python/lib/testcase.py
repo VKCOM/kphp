@@ -40,34 +40,23 @@ def make_test_tmp_dir(tmp_dir_root):
 
 class BaseTestCase(TestCase):
     kphp_build_working_dir = ""
-    web_server_working_dir = ""
     artifacts_dir = ""
     test_dir = ""
 
     @pytest.fixture(scope="class")
-    def setup_tmp_folder(
+    def base_setup(
         self,
         request: pytest.FixtureRequest,
         kphp_build_working_dir: pathlib.Path,
-        kphp_server_working_dir: pathlib.Path,
         artifacts_dir: pathlib.Path,
     ):
         request.cls.kphp_build_working_dir = str(kphp_build_working_dir)
-        request.cls.web_server_working_dir = str(kphp_server_working_dir)
         request.cls.artifacts_dir = str(artifacts_dir)
         request.cls.test_dir = str(pathlib.Path(request.module.__file__).parent)
-
-    @pytest.fixture(scope="class", autouse=True)
-    def _base_setup(self, request: pytest.FixtureRequest, setup_tmp_folder):
-        request.cls.custom_setup()
 
     @classmethod
     def teardown_class(cls):
         cls.custom_teardown()
-
-    @classmethod
-    def custom_setup(cls):
-        pass
 
     @classmethod
     def custom_teardown(cls):
@@ -146,6 +135,7 @@ class WebServerAutoTestCase(BaseTestCase):
     :type web_server: WebServer
     """
     web_server = None
+    web_server_working_dir = ""
     web_server_bin = ""
     kphp_builder = None
     sanitizer_pattern = None
@@ -155,20 +145,23 @@ class WebServerAutoTestCase(BaseTestCase):
     def web_server_std_functions_updater(self, request, std_function_invocations):
         request.cls.std_function_invocations = std_function_invocations
 
-    @classmethod
-    def custom_setup(cls):
-        if cls.should_use_nocc():
+    @pytest.fixture(scope="class", autouse=True)
+    def _custom_setup(
+        self, request: pytest.FixtureRequest, kphp_server_working_dir: pathlib.Path, base_setup
+    ):
+        request.cls.web_server_working_dir = str(kphp_server_working_dir)
+        if request.cls.should_use_nocc():
             nocc_start_daemon_in_background()
 
-        cls.kphp_builder = KphpBuilder(
-            php_script_path=os.path.join(cls.test_dir, "php/index.php"),
-            artifacts_dir=cls.artifacts_dir,
-            working_dir=cls.kphp_build_working_dir,
-            use_nocc=cls.should_use_nocc(),
+        request.cls.kphp_builder = KphpBuilder(
+            php_script_path=os.path.join(request.cls.test_dir, "php/index.php"),
+            artifacts_dir=request.cls.artifacts_dir,
+            working_dir=request.cls.kphp_build_working_dir,
+            use_nocc=request.cls.should_use_nocc(),
         )
 
-        tl_schema_required = _check_if_tl_required(os.path.join(cls.test_dir, "php/"))
-        kphp_build_lock_file = os.path.join(cls.kphp_build_working_dir, "kphp_build_lock")
+        tl_schema_required = _check_if_tl_required(os.path.join(request.cls.test_dir, "php/"))
+        kphp_build_lock_file = os.path.join(request.cls.kphp_build_working_dir, "kphp_build_lock")
         pathlib.Path(kphp_build_lock_file).touch(exist_ok=True)
         with open(kphp_build_lock_file, "r+") as lock:
             portalocker.lock(lock, portalocker.LOCK_EX)
@@ -179,39 +172,45 @@ class WebServerAutoTestCase(BaseTestCase):
             }
             if tl_schema_required:
                 kphp_env["KPHP_GEN_TL_INTERNALS"] = "1"
-                kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
+                kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(request.cls.kphp_build_working_dir)
 
-            if cls.should_use_k2():
-                kphp_env.update(cls.kphp_env_for_k2_server_component())
-            kphp_env.update(cls.extra_kphp2cpp_options())
+            if request.cls.should_use_k2():
+                kphp_env.update(request.cls.kphp_env_for_k2_server_component())
+            kphp_env.update(request.cls.extra_kphp2cpp_options())
 
             print("\nCompiling kphp")
-            if not cls.kphp_builder.compile_with_kphp(kphp_env):
+            if not request.cls.kphp_builder.compile_with_kphp(kphp_env):
                 raise RuntimeError("Can't compile php script")
 
-            if cls.should_use_k2():
-                cls.web_server_bin = os.path.abspath(search_k2_bin())
+            if request.cls.should_use_k2():
+                request.cls.web_server_bin = os.path.abspath(search_k2_bin())
             else:
-                cls.web_server_bin = os.path.join(cls.web_server_working_dir, "kphp_server")
-                os.link(cls.kphp_builder.kphp_runtime_bin, cls.web_server_bin)
+                request.cls.web_server_bin = os.path.join(
+                    request.cls.web_server_working_dir, "kphp_server"
+                )
+                os.link(request.cls.kphp_builder.kphp_runtime_bin, request.cls.web_server_bin)
 
-        cls.sanitizer_pattern = os.path.join(cls.web_server_working_dir, "engine_sanitizer_log")
-        os.environ["ASAN_OPTIONS"] = "log_path=" + cls.sanitizer_pattern
-        os.environ["UBSAN_OPTIONS"] = f"print_stacktrace=1:allow_addr2line=1:log_path={cls.sanitizer_pattern}"
+        request.cls.sanitizer_pattern = os.path.join(
+            request.cls.web_server_working_dir, "engine_sanitizer_log"
+        )
+        os.environ["ASAN_OPTIONS"] = "log_path=" + request.cls.sanitizer_pattern
+        os.environ["UBSAN_OPTIONS"] = "print_stacktrace=1:allow_addr2line=1:log_path={}".format(
+            request.cls.sanitizer_pattern
+        )
 
-        if cls.should_use_k2():
-            cls.web_server = K2Server(
-                k2_server_bin=cls.web_server_bin,
-                working_dir=cls.web_server_working_dir,
-                kphp_build_dir=cls.kphp_builder.kphp_build_tmp_dir)
+        if request.cls.should_use_k2():
+            request.cls.web_server = K2Server(
+                k2_server_bin=request.cls.web_server_bin,
+                working_dir=request.cls.web_server_working_dir,
+                kphp_build_dir=request.cls.kphp_builder.kphp_build_tmp_dir)
         else:
-            cls.web_server = KphpServer(
-                kphp_server_bin=cls.web_server_bin,
-                working_dir=cls.web_server_working_dir)
+            request.cls.web_server = KphpServer(
+                kphp_server_bin=request.cls.web_server_bin,
+                working_dir=request.cls.web_server_working_dir)
 
-        cls.extra_class_setup()
+        request.cls.extra_class_setup()
         print("\nStarting web-server")
-        cls.web_server.start()
+        request.cls.web_server.start()
 
     @classmethod
     def custom_teardown(cls):
@@ -303,6 +302,10 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def kphp_compiler_std_functions(self, request, std_function_invocations):
         request.cls.std_function_invocations = std_function_invocations
 
+    @pytest.fixture(autouse=True)
+    def set_artifacts_dir(self, request: pytest.FixtureRequest, artifacts_dir: pathlib.Path):
+        self.artifacts_dir = str(artifacts_dir / request.node.name)
+
     def __init__(self, method_name):
         super().__init__(method_name)
         self.php_version = "php7.4"
@@ -323,10 +326,10 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         """
         pass
 
-    @classmethod
-    def custom_setup(cls):
-        cls.kphp_build_working_dir = make_test_tmp_dir(cls.kphp_build_working_dir)
-        cls.extra_class_setup()
+    @pytest.fixture(scope="class", autouse=True)
+    def _custom_setup(self, request: pytest.FixtureRequest, base_setup):
+        request.cls.kphp_build_working_dir = make_test_tmp_dir(request.cls.kphp_build_working_dir)
+        request.cls.extra_class_setup()
 
     @classmethod
     def custom_teardown(cls):
@@ -364,7 +367,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def make_kphp_once_runner(self, php_script_path):
         once_runner = KphpRunOnce(
             php_script_path=os.path.join(self.test_dir, php_script_path),
-            artifacts_dir=self.web_server_working_dir,
+            artifacts_dir=self.artifacts_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
             std_function_invocations=self.std_function_invocations,
