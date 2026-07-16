@@ -952,7 +952,7 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
     END_TIMER(store_function2)
     return false;
   }
-  fprintf(stderr, "[pid=%d time=%s] store_function2 before typedStore call\n", static_cast<int>(getpid()), vkext_rpc_debug_time());
+  fprintf(stderr, "[pid=%d time=%s] store_function2 before typedStore call on PHP class %s\n", static_cast<int>(getpid()), vkext_rpc_debug_time(), VK_ZSTR_VAL(Z_OBJCE_P(arr)->name));
   if (EG(exception)) {
     fprintf(stderr, "[pid=%d time=%s] typedStore exception before\n", static_cast<int>(getpid()), vkext_rpc_debug_time());
   }
