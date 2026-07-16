@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
@@ -930,13 +931,20 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
   START_TIMER(store_function2)
   assert(arr);
   if (Z_TYPE_P(arr) != IS_OBJECT) {
+    fprintf(stderr, "[pid=%d time=%lld] store_function2 Z_TYPE not object, %d\n", static_cast<int>(getpid()),
+            static_cast<long long>(time(nullptr)), int(Z_TYPE_P(arr)));
     END_TIMER(store_function2)
     return false;
   }
+  fprintf(stderr, "[pid=%d time=%lld] store_function2 before typedStore call\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
+  if (EG(exception)) {
+    fprintf(stderr, "[pid=%d time=%lld] typedStore exception before\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
+  }
   vk_zend_call_known_instance_method(arr, "typedStore", strlen("typedStore"), fetcher, 0, NULL);
+  fprintf(stderr, "[pid=%d time=%lld] store_function2 after typedStore call\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
   if (EG(exception)) {
     // This behavior is consistent with old code, in this case, query_one will return qid 0
-    fprintf(stderr, "typedStore exception\n");
+    fprintf(stderr, "[pid=%d time=%lld] typedStore exception\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
     _zend_object* old_exception = EG(exception);
     EG(exception) = NULL;
     OBJ_RELEASE(old_exception);
@@ -946,13 +954,15 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
   if (Z_TYPE_P(fetcher) != IS_OBJECT) {
     // returned null or function not found (undef) or function returned something unexpected
     if (Z_TYPE_P(fetcher) != IS_NULL) {
-      fprintf(stderr, "typedStore fetcher unexpected type is %d\n", Z_TYPE_P(fetcher));
+      fprintf(stderr, "[pid=%d time=%lld] typedStore fetcher unexpected type is %d\n", static_cast<int>(getpid()),
+              static_cast<long long>(time(nullptr)), Z_TYPE_P(fetcher));
     }
     END_TIMER(store_function2)
     return false;
   }
   // when using fetcher, tl_current_function_name will not be accessed. But we set it anyway in case we forgot something.
   tl_current_function_name = "typedStore";
+  fprintf(stderr, "[pid=%d time=%lld] store_function2 before finish\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
   END_TIMER(store_function2)
   return true;
 }
@@ -1423,6 +1433,7 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
 zval *fetch_function2(zval *fetcher) {
   ADD_CNT(fetch_function2)
   START_TIMER(fetch_function2)
+  fprintf(stderr, "[pid=%d time=%lld] fetch_function2 start\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
 
   assert(fetcher);
   assert(Z_TYPE_P(fetcher) == IS_OBJECT);
@@ -1430,6 +1441,7 @@ zval *fetch_function2(zval *fetcher) {
   vkext_rpc::RpcError rpc_error;
   rpc_error.try_fetch();
   if (rpc_error.error.has_value()) {
+    fprintf(stderr, "[pid=%d time=%lld] fetch_function2 rpc_error.error\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
     zval *ret = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
     END_TIMER(fetch_function2)
     return ret;
@@ -1438,7 +1450,10 @@ zval *fetch_function2(zval *fetcher) {
   zval* return_value;
   VK_ALLOC_INIT_ZVAL(return_value);
   ZVAL_UNDEF(return_value);
+  fprintf(stderr, "[pid=%d time=%lld] fetch_function2 before typedFetch call\n", static_cast<int>(getpid()), static_cast<long long>(time(nullptr)));
   vk_zend_call_known_instance_method(fetcher, "typedFetch", strlen("typedFetch"), return_value, 0, NULL);
+  fprintf(stderr, "[pid=%d time=%lld] fetch_function2 after typedFetch call %d\n", static_cast<int>(getpid()),
+          static_cast<long long>(time(nullptr)), Z_TYPE_P(return_value));
   if (EG(exception)) {
     efree(return_value); // it is UNDEF
 
@@ -1451,8 +1466,11 @@ zval *fetch_function2(zval *fetcher) {
     zval *message;
     VK_ALLOC_INIT_ZVAL(message);
     ZVAL_UNDEF(message);
+    fprintf(stderr, "[pid=%d time=%lld] fetch_function2 exception before call getMessage\n", static_cast<int>(getpid()),
+            static_cast<long long>(time(nullptr)));
     vk_zend_call_known_instance_method(&exception_zval, "getMessage", strlen("getMessage"), message, 0, NULL);
-    // fprintf(stderr, "getMessage after call %d\n", Z_TYPE(message));
+    fprintf(stderr, "[pid=%d time=%lld] fetch_function2 exception after call getMessage %d\n", static_cast<int>(getpid()),
+            static_cast<long long>(time(nullptr)), Z_TYPE_P(message));
     assert(Z_TYPE_P(message) == IS_STRING);
 
     OBJ_RELEASE(old_exception);
@@ -1464,11 +1482,15 @@ zval *fetch_function2(zval *fetcher) {
     // vk_zend_update_public_property_string(_err, "error", "hren");
     vk_zend_update_public_property_long(_err, "error_code", -1000);
     END_TIMER(fetch_function2)
+    fprintf(stderr, "[pid=%d time=%lld] fetch_function2 exception return %d\n", static_cast<int>(getpid()),
+            static_cast<long long>(time(nullptr)), Z_TYPE_P(_err));
     return _err;
   }
   // TODO - will remove later when everything works
   // fprintf(stderr, "typedFetch after call %d\n", Z_TYPE_P(return_value));
   if (Z_TYPE_P(return_value) != IS_OBJECT) { // should be never, but that is user code
+    fprintf(stderr, "[pid=%d time=%lld] fetch_function2 typedFetch return_value not object\n", static_cast<int>(getpid()),
+            static_cast<long long>(time(nullptr)));
     zval *_err = create_php_instance(reqResult_error_class_name);
     vk_zend_update_public_property_string(_err, "error", "fetcher->typedFetch() did not return object, as expected");
     vk_zend_update_public_property_long(_err, "error_code", -1000);
@@ -1476,6 +1498,8 @@ zval *fetch_function2(zval *fetcher) {
     return _err;
   }
   if (rpc_error.header.has_value()) {
+    fprintf(stderr, "[pid=%d time=%lld] fetch_function2 typedFetch rpc_error.header\n", static_cast<int>(getpid()),
+            static_cast<long long>(time(nullptr)));
     zval *wrapped_err = create_php_instance(reqResult_header_class_name);
     zval *header_php_repr = convert_rpc_extra_header_to_php_repr(rpc_error.header.value());
 
@@ -1485,6 +1509,8 @@ zval *fetch_function2(zval *fetcher) {
     END_TIMER(fetch_function2)
     return wrapped_err;
   }
+  fprintf(stderr, "[pid=%d time=%lld] fetch_function2 typedFetch underscore class\n", static_cast<int>(getpid()),
+          static_cast<long long>(time(nullptr)));
   zval *wrapped_err = create_php_instance(reqResult_underscore_class_name);
   set_field(&wrapped_err, return_value, "result", -1);
   END_TIMER(fetch_function2)
