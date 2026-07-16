@@ -73,7 +73,6 @@ public:
       kphp::log::error("can't create pcre2_compile_context");
     }
   }
-  ~RegexCoreState() = default;
 
   std::optional<std::reference_wrapper<const compiled_regex>> get_compiled_regex(const string& regex) const noexcept {
     if (const auto it{regex_pcre2_code_cache.find(regex)}; it != regex_pcre2_code_cache.end()) {

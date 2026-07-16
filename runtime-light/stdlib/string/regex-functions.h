@@ -29,7 +29,7 @@ namespace kphp::regex {
 class regexp final {
 private:
   void compile_regex(kphp::regex::details::RegexCoreState& regex_state, string pattern, const string& subject = {}) noexcept {
-    if (should_skip_compile_by_cache(regex_state, pattern)) {
+    if (auto result{try_load_from_cache(regex_state, pattern)}; !result.has_value() || result.value()) {
       return;
     }
     if (pattern.empty()) {
@@ -170,9 +170,14 @@ private:
     m_re = regex_state.add_compiled_regex(std::move(pattern), this->compile_options, std::move(re))->get().regex_code;
   }
 
-  bool should_skip_compile_by_cache(const kphp::regex::details::RegexCoreState& regex_state, const string& pattern) noexcept {
+  /*
+    @return:  nullopt: no compile context (unusable)
+              true: cache hit, m_re set
+              false: cache miss, must compile
+  */
+  std::optional<bool> try_load_from_cache(const kphp::regex::details::RegexCoreState& regex_state, const string& pattern) noexcept {
     if (!regex_state.compile_context) [[unlikely]] {
-      return true;
+      return std::nullopt;
     }
     if (auto opt_ref{regex_state.get_compiled_regex(pattern)}; opt_ref.has_value()) {
       const auto& [compile_options, regex_code]{opt_ref->get()};
@@ -194,7 +199,7 @@ public:
   ~regexp() = default;
 
   explicit regexp(string pattern, const string& subject) noexcept {
-    if (should_skip_compile_by_cache(RegexImageState::get(), pattern)) {
+    if (auto result{try_load_from_cache(RegexImageState::get(), pattern)}; result.has_value() && result.value()) {
       return;
     }
     compile_regex(RegexInstanceState::get(), std::move(pattern), subject);
