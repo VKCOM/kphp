@@ -30,13 +30,14 @@ struct RegexCoreState : private vk::not_copyable {
     kphp::pcre2::regex regex_code;
   };
 
+  enum class storage_scope : uint8_t { instance, image };
+
 protected:
   using hasher_type = decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); });
   kphp::stl::unordered_map<string, compiled_regex, kphp::memory::script_allocator, hasher_type> regex_pcre2_code_cache;
 
-  virtual void set_global_const_refcnt(string& /*unused*/) noexcept {};
-
 private:
+  const storage_scope m_scope;
   static constexpr size_t MAX_SUBPATTERNS_COUNT{512};
 
   static void* regex_malloc(PCRE2_SIZE size, [[maybe_unused]] void* memory_data) noexcept {
@@ -61,8 +62,9 @@ public:
   kphp::pcre2::general_context general_context;
   kphp::pcre2::compile_context compile_context;
 
-  RegexCoreState() noexcept
-      : general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8),
+  explicit RegexCoreState(storage_scope scope) noexcept
+      : m_scope(scope),
+        general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8),
         compile_context(pcre2_compile_context_create_8(general_context.get()), pcre2_compile_context_free_8) {
     if (!general_context) [[unlikely]] {
       kphp::log::error("can't create pcre2_general_context");
@@ -71,7 +73,7 @@ public:
       kphp::log::error("can't create pcre2_compile_context");
     }
   }
-  virtual ~RegexCoreState() = default;
+  ~RegexCoreState() = default;
 
   std::optional<std::reference_wrapper<const compiled_regex>> get_compiled_regex(const string& regex) const noexcept {
     if (const auto it{regex_pcre2_code_cache.find(regex)}; it != regex_pcre2_code_cache.end()) {
@@ -82,7 +84,10 @@ public:
 
   std::optional<std::reference_wrapper<const compiled_regex>> add_compiled_regex(string regex, uint32_t compile_options,
                                                                                  kphp::pcre2::regex regex_code) noexcept {
-    set_global_const_refcnt(regex);
+    if (m_scope == storage_scope::image) {
+      kphp::log::assertion((kphp::core::set_reference_counter_recursive(regex, ExtraRefCnt::for_global_const),
+                            kphp::core::is_reference_counter_recursive(regex, ExtraRefCnt::for_global_const)));
+    }
     return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = std::move(regex_code)})
         .first->second;
   }
@@ -94,7 +99,8 @@ struct RegexInstanceState final : public kphp::regex::details::RegexCoreState {
   kphp::pcre2::match_data match_data;
 
   RegexInstanceState() noexcept
-      : match_context(pcre2_match_context_create_8(general_context.get()), pcre2_match_context_free_8),
+      : RegexCoreState(storage_scope::instance),
+        match_context(pcre2_match_context_create_8(general_context.get()), pcre2_match_context_free_8),
         match_data(pcre2_match_data_create_8(OVECTOR_SIZE, general_context.get()), pcre2_match_data_free_8) {
     if (!match_context) [[unlikely]] {
       kphp::log::error("can't create pcre2_match_context");
@@ -108,12 +114,9 @@ struct RegexInstanceState final : public kphp::regex::details::RegexCoreState {
 };
 
 struct RegexImageState final : public kphp::regex::details::RegexCoreState {
+  RegexImageState() noexcept
+      : RegexCoreState(storage_scope::image) {}
+
   static const RegexImageState& get() noexcept;
   static RegexImageState& get_mutable() noexcept;
-
-private:
-  void set_global_const_refcnt(string& obj) noexcept override {
-    kphp::log::assertion((kphp::core::set_reference_counter_recursive(obj, ExtraRefCnt::for_global_const),
-                          kphp::core::is_reference_counter_recursive(obj, ExtraRefCnt::for_global_const)));
-  }
 };

@@ -28,7 +28,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_shape:         return "shape";
     case tp_future:        return "future";
     case tp_future_queue:  return "future_queue";
-    case tp_regexp:        return G->is_output_mode_k2() ? "kphp::regex::regexp" : "regexp" ;
+    case tp_regexp:        return G->is_output_mode_k2() ? "kphp::regex::regexp" : "regexp";
     case tp_Class:         return "Class";
     case tp_object:        return "object";
     case tp_void:          return "void";
