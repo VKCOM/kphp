@@ -8,10 +8,11 @@
 #include <cstddef>
 #include <memory>
 
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/detail/coro-malloc-interface.h"
+#include "runtime-light/stdlib/cpu-info/cpu-info-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail {
@@ -32,16 +33,22 @@ struct promise_self_deleting : kphp::coro::async_stack_element {
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc(n);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc_aligned(n, al);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::memory::script::free(ptr);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_free_cycles)};
+    kphp::coro::free(ptr);
   }
 
   auto get_return_object() noexcept -> task_self_deleting;

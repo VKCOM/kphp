@@ -4,8 +4,10 @@
 
 #pragma once
 
-#include "common/mixin/not_copyable.h"
+#include <cstddef>
 
+#include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-light/coroutine/async-stack.h"
 
 struct CoroutineInstanceState final : private vk::not_copyable {
@@ -15,4 +17,6 @@ struct CoroutineInstanceState final : private vk::not_copyable {
   static CoroutineInstanceState& get() noexcept;
 
   kphp::coro::async_stack_root coroutine_stack_root;
+
+  RuntimeAllocator coro_allocator{static_cast<size_t>(1024 * 1024 * 8), static_cast<size_t>(1024 * 1024 * 8), 0};
 };
