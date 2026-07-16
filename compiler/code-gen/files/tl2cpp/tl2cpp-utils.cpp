@@ -219,6 +219,10 @@ bool is_php_class_a_tl_function(ClassPtr klass) {
   return klass->is_tl_class && klass->implements.size() == 1 && vk::string_view{klass->implements.front()->name}.ends_with("RpcFunction");
 }
 
+bool is_php_class_a_tl_function_not_in_tlo(ClassPtr klass) {
+  return !klass->is_tl_class && klass->implements.size() == 1 && vk::string_view{klass->implements.front()->name}.ends_with("RpcFunction");
+}
+
 // classes VK\TL\*\Types\* are a non-interface types that correspond to the TL-constructors
 // (or non-polymorphic types with a single constructor that was inlined)
 bool is_php_class_a_tl_constructor(ClassPtr klass) {
