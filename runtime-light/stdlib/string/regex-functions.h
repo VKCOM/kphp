@@ -198,7 +198,7 @@ public:
   regexp& operator=(regexp&&) noexcept = default;
   ~regexp() = default;
 
-  explicit regexp(string pattern, const string& subject) noexcept {
+  regexp(string pattern, const string& subject) noexcept {
     if (auto result{try_load_from_cache(RegexImageState::get(), pattern)}; result.has_value() && result.value()) {
       return;
     }
