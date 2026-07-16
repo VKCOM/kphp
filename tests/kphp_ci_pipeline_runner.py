@@ -435,9 +435,12 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="functional-tests",
-        description="run kphp functional tests with cxx={}".format("gcc"),
-        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
+        description="run kphp functional tests with cxx={}".format(args.cxx_name),
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+        "KPHP_CXX={cxx_name} "
+        "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
+            cxx_name=args.cxx_name,
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
             base_tempdir=os.path.expanduser(
@@ -477,17 +480,19 @@ if __name__ == "__main__":
     if args.engine_repo and args.kphp_tests_repo:
         runner.add_test_group(
             name="integration-tests",
-            description="run kphp integration tests with cxx={}".format("gcc"),
+            description="run kphp integration tests with cxx={}".format(args.cxx_name),
             cmd="PYTHONPATH={lib_dir} "
             "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
             "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
             "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
+            "KPHP_CXX={cxx_name} "
             "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
                 kphp_polyfills_repo=kphp_polyfills_repo,
+                cxx_name=args.cxx_name,
                 exclude_pattern=(
                     "not test_load_and_kill_worker" if args.use_asan else ""
                 ),  # TODO: ASAN behaves very strange on this test that makes it flaky
