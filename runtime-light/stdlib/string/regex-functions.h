@@ -671,7 +671,7 @@ inline match_results_wrapper::iterator::reference match_results_wrapper::iterato
   return {key_mixed, val_mixed};
 }
 
-// *** importrant ***
+// *** important ***
 // in case of a pattern order all_matches must already contain all groups as empty arrays before the first call to set_all_matches
 inline void set_all_matches(const kphp::pcre2::regex& re, const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& group_names,
                             const kphp::pcre2::match_view& match_view, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
