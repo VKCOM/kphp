@@ -79,35 +79,35 @@ private:
 };
 
 inline kphp::coro::task<void> query_handle::wait_for_response() noexcept {
-    if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
-      co_return;
-    }
-
-    kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-    std::chrono::nanoseconds timeout{kphp::time::remaining(deadline)};
-
-    co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout);
+  if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return;
   }
 
+  kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
+  std::chrono::nanoseconds timeout{kphp::time::remaining(deadline)};
+
+  co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout);
+  co_return;
+}
+
 inline kphp::coro::task<std::expected<string, std::pair<int32_t, string>>> query_handle::get_response() noexcept {
-    if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
-      co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"fetching rpc response from empty handle"})};
-    }
-
-    kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-    std::chrono::nanoseconds timeout{kphp::time::remaining(deadline)};
-
-    switch (co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout)) {
-    case kphp::coro::poll_status::event:
-      co_return get_ready_response();
-    case kphp::coro::poll_status::closed:
-    case kphp::coro::poll_status::timeout:
-      co_return std::unexpected{std::make_pair(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"})};
-    case kphp::coro::poll_status::error:
-      co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
-    }
+  if (rpc_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
+    co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"fetching rpc response from empty handle"})};
   }
+
+  kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
+  std::chrono::nanoseconds timeout{kphp::time::remaining(deadline)};
+
+  switch (co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout)) {
+  case kphp::coro::poll_status::event:
+    co_return get_ready_response();
+  case kphp::coro::poll_status::closed:
+  case kphp::coro::poll_status::timeout:
+    co_return std::unexpected{std::make_pair(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"})};
+  case kphp::coro::poll_status::error:
+    co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
+  }
+}
 
 std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, bool ignore_answer,
                                                          std::chrono::milliseconds timeout, double timestamp, int64_t query_id,
