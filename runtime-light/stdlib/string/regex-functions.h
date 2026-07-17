@@ -30,7 +30,11 @@ class regexp final {
 private:
   template<kphp::regex::details::storage_scope Scope>
   void compile_regex(kphp::regex::details::RegexCoreState<Scope>& regex_state, string pattern, const string& subject = {}) noexcept {
-    if (auto result{try_load_from_cache(regex_state, pattern)}; !result.has_value() || result.value()) {
+    if (try_load_from_cache(regex_state, pattern)) {
+      return;
+    }
+
+    if (!regex_state.compile_context) [[unlikely]] { // no compile context (unusable)
       return;
     }
     if (pattern.empty()) {
@@ -172,20 +176,16 @@ private:
   }
 
   /*
-    @return:  nullopt: no compile context (unusable)
-              true: cache hit, m_re set
+    @return:  true: cache hit, m_re set
               false: cache miss, must compile
   */
   template<kphp::regex::details::storage_scope Scope>
-  std::optional<bool> try_load_from_cache(const kphp::regex::details::RegexCoreState<Scope>& regex_state, const string& pattern) noexcept {
+  bool try_load_from_cache(const kphp::regex::details::RegexCoreState<Scope>& regex_state, const string& pattern) noexcept {
     if (auto opt_ref{regex_state.get_compiled_regex(pattern)}; opt_ref.has_value()) {
       const auto& [compile_options, regex_code]{opt_ref->get()};
       this->compile_options = compile_options;
       m_re = regex_code;
       return true;
-    }
-    if (!regex_state.compile_context) [[unlikely]] {
-      return std::nullopt;
     }
     return false;
   }
@@ -201,7 +201,7 @@ public:
   ~regexp() = default;
 
   regexp(string pattern, const string& subject) noexcept {
-    if (auto result{try_load_from_cache(RegexImageState::get(), pattern)}; result.has_value() && result.value()) {
+    if (try_load_from_cache(RegexImageState::get(), pattern)) {
       return;
     }
     compile_regex(RegexInstanceState::get(), std::move(pattern), subject);

@@ -28,7 +28,6 @@ VISIBILITY_DEFAULT void k2_init_image() {
   k2::details::instance_state_ptr = nullptr;
   new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
-  ImageState::get_mutable().regex_image_state.free_compile_context();
 }
 
 VISIBILITY_DEFAULT ComponentState* k2_create_component() {

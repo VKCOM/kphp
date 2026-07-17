@@ -118,6 +118,11 @@ void StaticInit::compile(CodeGenerator &W) const {
     }
   }
 
+  if (G->is_output_mode_k2()) {
+    W << NL;
+    W << "ImageState::get_mutable().regex_image_state.free_compile_context()" << SemicolonAndNL();
+  }
+
   W << END << NL;
 }
 
