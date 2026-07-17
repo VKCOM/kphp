@@ -16,6 +16,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
+#include "runtime-light/stdlib/time/time-functions.h"
 
 namespace kphp::rpc {
 
@@ -38,7 +39,7 @@ std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor,
     request_buffer = new_header_and_request;
   }
 
-  auto rpc_d_exp{k2::rpc_send_request(actor, request_buffer)};
+  auto rpc_d_exp{k2::rpc_send_request(actor, request_buffer, RpcKind::TL_RPC)};
   if (!rpc_d_exp) {
     return std::unexpected{rpc_d_exp.error()};
   }
@@ -49,7 +50,7 @@ std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor,
     rpc_client_instance_st.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
   }
 
-  std::chrono::nanoseconds deadline{timeout_to_deadline(timeout)};
+  std::chrono::nanoseconds deadline{kphp::time::expires_at(timeout)};
 
   return {query_handle{rpc_d, query_id, deadline, collect_responses_extra_info}};
 }

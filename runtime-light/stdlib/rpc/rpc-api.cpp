@@ -37,7 +37,6 @@
 #include "runtime-light/stdlib/rpc/rpc-query-handle.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
-#include "runtime-light/stdlib/time/util.h"
 #include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"

@@ -19,18 +19,18 @@
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-query-handle.h"
 #include "runtime-light/stdlib/rpc/rpc-queue-state.h"
-#include "runtime-light/stdlib/time/util.h"
 
 namespace kphp::rpc {
 
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   static constexpr auto rpc_queue_wrapper_task{[](int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
     auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-    const auto it_rpc_request_info{rpc_client_instance_st.rpc_query_handles.find(request_id)};
-    if (it_rpc_request_info == rpc_client_instance_st.rpc_query_handles.end()) [[unlikely]] {
+    const auto it_rpc_request_handle{rpc_client_instance_st.rpc_query_handles.find(request_id)};
+    if (it_rpc_request_handle == rpc_client_instance_st.rpc_query_handles.end()) [[unlikely]] {
       co_return request_id;;
     }
-    co_await it_rpc_request_info->second.wait_for_response();
+    // FIXME after response fetch finished `it_rpc_request_handle` will become invalid iterator
+    co_await it_rpc_request_handle->second.wait_for_response();
     co_return request_id;
   }};
 
