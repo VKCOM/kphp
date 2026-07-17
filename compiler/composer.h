@@ -42,6 +42,11 @@ public:
   std::string psr4_lookup(const std::string &class_name) const;
   std::string psr0_lookup(const std::string &class_name) const;
 
+  // classmap_lookup returns the absolute .php file path for a class that was
+  // found by scanning "autoload/classmap" directories/files (see #49);
+  // class_name uses '/' as namespace separator (same convention as psr4/psr0)
+  std::string classmap_lookup(const std::string &class_name) const;
+
   // is_autoload_file reports whether the specified absolute filename
   // is a composer-generated autoload.php file
   bool is_autoload_file(const std::string &filename) const noexcept {
@@ -63,6 +68,8 @@ private:
   PsrMap autoload_psr4_;
   PsrMap autoload_psr0_;
   std::map<std::string, std::string> autoload_psr0_classmap_;
+  // classmap: class_name_with_slashes -> absolute .php file path
+  std::unordered_map<std::string, std::string> autoload_classmap_;
   std::unordered_set<std::string> deps_;
 
   std::string autoload_filename_;
