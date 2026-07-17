@@ -27,7 +27,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
     auto& rpc_client_instance_st{RpcClientInstanceState::get()};
     const auto it_rpc_request_handle{rpc_client_instance_st.rpc_query_handles.find(request_id)};
     if (it_rpc_request_handle == rpc_client_instance_st.rpc_query_handles.end()) [[unlikely]] {
-      co_return request_id;;
+      co_return request_id;
     }
     // FIXME after response fetch finished `it_rpc_request_handle` will become invalid iterator
     co_await it_rpc_request_handle->second.wait_for_response();
