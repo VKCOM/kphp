@@ -305,7 +305,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
 
   auto query_handle_expected{
-    kphp::rpc::send_and_get_handle(actor, collect_responses_extra_info, ignore_answer, timeout, timestamp, query_id, tl_storer.view())};
+      kphp::rpc::send_and_get_handle(actor, collect_responses_extra_info, ignore_answer, timeout, timestamp, query_id, tl_storer.view())};
   if (!query_handle_expected) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
