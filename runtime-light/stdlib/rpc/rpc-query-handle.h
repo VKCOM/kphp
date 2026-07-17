@@ -20,7 +20,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
-#include "runtime-light/stdlib/time/util.h"
+#include "runtime-light/stdlib/time/time-functions.h"
 
 namespace kphp::rpc {
 
@@ -84,7 +84,7 @@ inline kphp::coro::task<void> query_handle::wait_for_response() noexcept {
     }
 
     kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-    std::chrono::nanoseconds timeout{deadline_to_timeout(deadline)};
+    std::chrono::nanoseconds timeout{kphp::time::remaining(deadline)};
 
     co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout);
     co_return;
@@ -96,7 +96,7 @@ inline kphp::coro::task<std::expected<string, std::pair<int32_t, string>>> query
     }
 
     kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-    std::chrono::nanoseconds timeout{deadline_to_timeout(deadline)};
+    std::chrono::nanoseconds timeout{kphp::time::remaining(deadline)};
 
     switch (co_await m_scheduler.poll(rpc_d, kphp::coro::poll_op::read, timeout)) {
     case kphp::coro::poll_status::event:

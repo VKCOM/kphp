@@ -80,6 +80,8 @@ using PollStatus = PollStatus;
 
 using ImageInfo = ImageInfo;
 
+using RpcKind = RpcKind;
+
 using ControlFlags = ControlFlags;
 
 inline const ImageInfo* describe() noexcept {
@@ -210,9 +212,9 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
-inline std::expected<uint64_t, int32_t> rpc_send_request(std::string_view actor_name, std::span<const std::byte> request_buffer) noexcept {
-  uint64_t rpc_d{};
-  if (auto error_code{k2_rpc_send(actor_name.data(), actor_name.size(), request_buffer.data(), request_buffer.size(), RpcKind::TL_RPC, std::addressof(rpc_d))};
+inline std::expected<k2::descriptor, int32_t> rpc_send_request(std::string_view actor_name, std::span<const std::byte> request_buffer, RpcKind rpc_kind) noexcept {
+  k2::descriptor rpc_d{};
+  if (auto error_code{k2_rpc_send_request(actor_name.data(), actor_name.size(), request_buffer.data(), request_buffer.size(), rpc_kind, std::addressof(rpc_d))};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }

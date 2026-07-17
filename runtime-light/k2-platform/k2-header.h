@@ -330,7 +330,7 @@ int32_t k2_component_access(size_t name_len, const char* name);
  * `EAI_MEMORY` => max descriptors count achieved
  * `EINVAL` => invalid `actor_name` or request, or connection pool is empty for this actor.
  */
-int32_t k2_rpc_send(const char* actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, enum RpcKind rpc_kind, uint64_t* rpc_d);
+int32_t k2_rpc_send_request(const char* actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, RpcKind rpc_kind, uint64_t* rpc_d);
 
 /**
  * Get response size for corresponding request of this `rpc_d`. Write 0 to `response_size` and return `EAGAIN` if response is not ready.
