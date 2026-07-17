@@ -33,6 +33,11 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
   }
 
   if (auto instanceof = vertex.try_as<op_instanceof>()) {
+    // mark_as_used() is required here for the same reason as in op_catch below:
+    // a class used only in instanceof may never be instantiated elsewhere,
+    // so without this call the code-gen pass would crash trying to include
+    // a header that was never generated (see #68)
+    instanceof->derived_class->mark_as_used();
     current_function->class_dep.insert(instanceof->derived_class);
   }
 
