@@ -9,7 +9,7 @@
 
 namespace kphp::coro {
 
-template<typename T>
+template<typename T = void>
 class ready final {
 private:
   T m_val;
