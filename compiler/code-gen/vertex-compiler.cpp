@@ -520,10 +520,14 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
      * think about more general solution instead of storing rhs' type into the CGContext
      */
     {
-      const auto restore_rhs_t = vk::finally([&W, prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t]() noexcept {
-        W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
-      });
+      const auto restore_ctx = vk::finally(
+          [&W, prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t, prev_interruptible_flag = W.get_context().interruptible_flag]() noexcept {
+            W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
+            W.get_context().interruptible_flag = prev_interruptible_flag;
+          });
+
       W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
+      W.get_context().interruptible_flag = interruptible_call;
 
       FunctionSignatureGenerator(W) << "[&] ()";
       W << " -> " << (interruptible_call ? "kphp::coro::task<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
