@@ -207,7 +207,7 @@ concept convertible_to_php_bool = requires(T t) {
 };
 
 template<class T, std::invocable<T> F>
-requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, T>>)
+requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, T>> && !kphp::coro::is_async_function_v<F, T>)
 kphp::coro::ready<array<T>> array_filter_impl(const array<T>& a, const F& f) noexcept {
   array<T> result{a.size()};
   for (const auto& it : a) {
@@ -233,7 +233,8 @@ kphp::coro::task<array<T>> array_filter_impl(array<T> a, F f) noexcept {
 }
 
 template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
-requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::key_type>>)
+requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::key_type>> &&
+         !kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::key_type>)
 kphp::coro::ready<array<T>> array_filter_by_key_impl(const array<T>& a, const F& f) noexcept {
   array<T> result{a.size()};
   for (const auto& it : a) {
@@ -260,7 +261,8 @@ kphp::coro::task<array<T>> array_filter_by_key_impl(array<T> a, F f) noexcept {
 }
 
 template<class T, class F>
-requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::value_type>>)
+requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::value_type>> &&
+         !kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>)
 kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(const array<T>& a,
                                                                                                                                           const F& f) noexcept {
   for (const auto& it : a) {
@@ -314,6 +316,7 @@ kphp::coro::ready<array<T>> f$array_filter(const array<T>& a) noexcept {
 }
 
 template<class T, std::invocable<T> F>
+requires(!kphp::coro::is_async_function_v<F, T>)
 kphp::coro::ready<array<T>> f$array_filter(const array<T>& a, const F& f) noexcept {
   return array_functions_impl_::array_filter_impl(a, f);
 }
@@ -325,6 +328,7 @@ kphp::coro::task<array<T>> f$array_filter(array<T> a, F f) noexcept {
 }
 
 template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
+requires(!kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::key_type>)
 kphp::coro::ready<array<T>> f$array_filter_by_key(const array<T>& a, const F& f) noexcept {
   return array_functions_impl_::array_filter_by_key_impl(a, f);
 }
@@ -336,6 +340,7 @@ kphp::coro::task<array<T>> f$array_filter_by_key(array<T> a, F f) noexcept {
 }
 
 template<class T, std::invocable<T> F>
+requires(!kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>)
 kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> f$array_find(const array<T>& a,
                                                                                                                                        const F& f) {
   return array_functions_impl_::array_find_impl(a, f);
@@ -380,6 +385,7 @@ mixed f$array_rand(const array<T>& a, int64_t num) noexcept {
 }
 
 template<class A, std::invocable<A> F, class R = kphp::coro::async_function_return_type_t<F, A>>
+requires(!kphp::coro::is_async_function_v<F, A>)
 kphp::coro::ready<array<R>> f$array_map(const F& f, const array<A>& a) noexcept {
   array<R> result{a.size()};
   for (const auto& it : a) {
@@ -401,7 +407,7 @@ kphp::coro::task<array<R>> f$array_map(F f, array<A> a) noexcept {
 }
 
 template<class R, class T, std::invocable<R, T> F, class I>
-requires(std::constructible_from<R, std::add_rvalue_reference_t<I>>)
+requires(std::constructible_from<R, std::add_rvalue_reference_t<I>> && !kphp::coro::is_async_function_v<F, R, T>)
 kphp::coro::ready<R> f$array_reduce(const array<T>& a, const F& f, I init) noexcept {
   R result{R(std::move(init))}; // explicit constructor call to avoid implicit cast
   for (const auto& it : a) {
@@ -424,7 +430,8 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
 
 template<class T, class F>
 requires(std::is_invocable_v<F, T, typename array<T>::key_type> &&
-         std::same_as<kphp::coro::async_function_return_type_t<F, T, typename array<T>::key_type>, bool>)
+         std::same_as<kphp::coro::async_function_return_type_t<F, T, typename array<T>::key_type>, bool> &&
+         !kphp::coro::is_async_function_v<F, T, typename array<T>::key_type>)
 kphp::coro::ready<bool> f$array_all(const array<T>& a, const F& f) noexcept {
   for (const auto& it : a) {
     if (!std::invoke(f, it.get_value(), it.get_key())) {
@@ -450,7 +457,7 @@ kphp::coro::task<bool> f$array_all(array<T> a, F f) noexcept {
 }
 
 template<class T, class Comparator>
-requires(std::invocable<Comparator, T, T>)
+requires(std::invocable<Comparator, T, T> && !kphp::coro::is_async_function_v<Comparator, T, T>)
 kphp::coro::ready<> f$usort(array<T>& a, const Comparator& compare) noexcept {
   a.sort(compare, true);
   return kphp::coro::ready<>{};
@@ -464,7 +471,7 @@ kphp::coro::task<> f$usort(array<T>& a, Comparator compare) noexcept {
 }
 
 template<class T, class Comparator>
-requires(std::invocable<Comparator, T, T>)
+requires(std::invocable<Comparator, T, T> && !kphp::coro::is_async_function_v<Comparator, T, T>)
 kphp::coro::ready<> f$uasort(array<T>& a, const Comparator& compare) noexcept {
   a.sort(compare, false);
   return kphp::coro::ready<>{};
@@ -478,7 +485,8 @@ kphp::coro::task<> f$uasort(array<T>& a, Comparator compare) noexcept {
 }
 
 template<class T, class Comparator>
-requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>)
+requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type> &&
+         !kphp::coro::is_async_function_v<Comparator, typename array<T>::key_type, typename array<T>::key_type>)
 kphp::coro::ready<> f$uksort(array<T>& a, const Comparator& compare) noexcept {
   a.ksort(compare);
   return kphp::coro::ready<>{};
