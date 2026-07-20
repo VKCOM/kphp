@@ -30,7 +30,7 @@ public:
     return true;
   }
 
-  constexpr auto await_suspend(std::coroutine_handle<> /*unused*/) const noexcept -> void {
+  auto await_suspend(std::coroutine_handle<> /*unused*/) const noexcept -> void {
     std::unreachable();
   }
 
@@ -46,7 +46,7 @@ public:
     return true;
   }
 
-  constexpr auto await_suspend(std::coroutine_handle<> /*unused*/) const noexcept -> void {
+  auto await_suspend(std::coroutine_handle<> /*unused*/) const noexcept -> void {
     std::unreachable();
   }
 
