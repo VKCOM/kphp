@@ -16,7 +16,7 @@ private:
 
 public:
   constexpr explicit ready(T val) noexcept
-      : m_val(std::move(val)) {}
+      : m_val{std::move(val)} {}
 
   ready(const ready& other) = delete;
   constexpr ready(ready&& other) noexcept = default;

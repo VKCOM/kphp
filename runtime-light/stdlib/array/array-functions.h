@@ -216,7 +216,7 @@ kphp::coro::ready<array<T>> array_filter_impl(const array<T>& a, const F& f) noe
     }
   }
 
-  return kphp::coro::ready<array<T>>(std::move(result));
+  return kphp::coro::ready<array<T>>{std::move(result)};
 }
 
 template<class T, std::invocable<T> F>
@@ -243,7 +243,7 @@ kphp::coro::ready<array<T>> array_filter_by_key_impl(const array<T>& a, const F&
     }
   }
 
-  return kphp::coro::ready<array<T>>(std::move(result));
+  return kphp::coro::ready<array<T>>{std::move(result)};
 }
 
 template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
@@ -272,8 +272,8 @@ kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typena
     }
   }
 
-  return kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>>(
-      std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>{});
+  return kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>>{
+      std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>{}};
 }
 
 template<class T, class F>
@@ -392,7 +392,7 @@ kphp::coro::ready<array<R>> f$array_map(const F& f, const array<A>& a) noexcept 
     result.set_value(it.get_key(), std::invoke(f, it.get_value()));
   }
 
-  return kphp::coro::ready<array<R>>(std::move(result));
+  return kphp::coro::ready<array<R>>{std::move(result)};
 }
 
 template<class A, std::invocable<A> F, class R = kphp::coro::async_function_return_type_t<F, A>>
@@ -414,7 +414,7 @@ kphp::coro::ready<R> f$array_reduce(const array<T>& a, const F& f, I init) noexc
     result = std::invoke(f, result, it.get_value());
   }
 
-  return kphp::coro::ready<R>(std::move(result));
+  return kphp::coro::ready<R>{std::move(result)};
 }
 
 template<class R, class T, std::invocable<R, T> F, class I>
@@ -439,7 +439,7 @@ kphp::coro::ready<bool> f$array_all(const array<T>& a, const F& f) noexcept {
     }
   }
 
-  return kphp::coro::ready<bool>(true);
+  return kphp::coro::ready<bool>{true};
 }
 
 template<class T, class F>
