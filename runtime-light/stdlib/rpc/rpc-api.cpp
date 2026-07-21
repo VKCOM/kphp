@@ -159,15 +159,13 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
 }
 
 // update response extra info if needed
-void update_response_extra_info(int64_t query_id, size_t response_size) {
+void static update_response_extra_info(int64_t query_id, size_t response_size) {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& extra_info_map{rpc_client_instance_st.rpc_responses_extra_info};
   if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
     const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
     it_extra_info->second.second = std::make_tuple(response_size, timestamp - std::get<1>(it_extra_info->second.second));
     it_extra_info->second.first = response_extra_info_status::ready;
-  } else {
-    kphp::log::warning("can't find extra info for RPC query {}", query_id);
   }
 }
 
@@ -213,8 +211,8 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   kphp::log::assertion(opt_rpc_request_handle.has_value());
   auto response_expected{co_await opt_rpc_request_handle->get_response()};
   if (!response_expected) [[unlikely]] {
-    std::pair<int32_t, string> error{std::move(response_expected.error())};
-    co_return TlRpcError::make_error(error.first, std::move(error.second));
+    std::pair<int32_t, std::string_view> error{response_expected.error()};
+    co_return TlRpcError::make_error(error.first, string{error.second.data(), static_cast<string::size_type>(error.second.size())});
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
@@ -272,8 +270,8 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   kphp::log::assertion(opt_rpc_request_handle.has_value());
   auto response_expected{co_await opt_rpc_request_handle->get_response()};
   if (!response_expected) [[unlikely]] {
-    std::pair<int32_t, string> error{std::move(response_expected.error())};
-    co_return error_factory.make_error(error.first, std::move(error.second));
+    std::pair<int32_t, std::string_view> error{response_expected.error()};
+    co_return error_factory.make_error(error.first, string{error.second.data(), static_cast<string::size_type>(error.second.size())});
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
@@ -306,11 +304,11 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     }
   }};
 
-  std::span<const std::byte> request_buffer{};
-  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(tl_storer.view(), ignore_answer)}; opt_new_extra_header) {
+  std::span<const std::byte> request_buffer = tl_storer.view();
+  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
-    std::span<const std::byte> request_body{tl_storer.view().subspan(cur_extra_header_size)};
+    std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
 
     std::span<std::byte> new_header_and_request{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), new_header.size() + request_body.size()};
 
@@ -340,7 +338,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                     .value_or(DEFAULT_TIMEOUT),
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
 
-  auto query_handle_expected{kphp::rpc::query_handle::send(actor, timeout, query_id, request_buffer)};
+  auto query_handle_expected{kphp::rpc::query_handle::send(actor, timeout, request_buffer)};
   if (!query_handle_expected) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
