@@ -14,6 +14,92 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
+namespace kphp::regex::details {
+
+replace_callback_matcher::replace_callback_matcher(const kphp::regex::regexp& regex, std::string_view subject, int64_t limit) noexcept
+    : m_subject{subject},
+      m_limit{limit},
+      m_opt_re{regex.get_regex()},
+      m_unsigned_limit{limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit)} {
+  if (!m_opt_re.has_value()) [[unlikely]] {
+    m_ok = false;
+    return;
+  }
+  const auto& re{m_opt_re->get()};
+  m_group_names = collect_group_names(re);
+
+  if (m_limit == 0) {
+    return;
+  }
+
+  auto& regex_state{RegexInstanceState::get()};
+  if (!regex_state.match_context) [[unlikely]] {
+    m_ok = false;
+    return;
+  }
+
+  m_matcher.emplace(re, m_subject, 0, regex_state.match_context, regex_state.match_data, regex.match_options);
+}
+
+bool replace_callback_matcher::is_ok() const noexcept {
+  return m_ok;
+}
+
+int64_t replace_callback_matcher::replace_count() const noexcept {
+  return m_replace_count;
+}
+
+Optional<array<string>> replace_callback_matcher::next() noexcept {
+  if (!is_ok() || !m_matcher.has_value() || m_replace_count >= m_unsigned_limit) {
+    return {};
+  }
+
+  auto expected_opt_match_view{m_matcher->next()};
+  if (!expected_opt_match_view.has_value()) [[unlikely]] {
+    kphp::log::warning("can't replace with callback by pcre2 regex due to match error: {}", expected_opt_match_view.error());
+    m_ok = false;
+    return {};
+  }
+
+  auto opt_match_view{*expected_opt_match_view};
+  if (!opt_match_view.has_value()) {
+    return {};
+  }
+
+  auto& match_view{*opt_match_view};
+  auto& re{m_opt_re->get()};
+
+  m_output_str.append(std::next(m_subject.data(), m_last_pos), match_view.match_start() - m_last_pos);
+  m_last_pos = match_view.match_end();
+
+  // retrieve the named groups count
+  uint32_t named_groups_count{re.name_count()};
+
+  array<string> matches{array_size{static_cast<int64_t>(match_view.size() + named_groups_count), named_groups_count == 0}};
+  for (auto [key, value] : kphp::regex::details::match_results_wrapper{match_view, m_group_names, re.capture_count(), re.name_count(),
+                                                                       kphp::regex::details::trailing_unmatch::skip, false, false}) {
+    matches.set_value(key, value.to_string());
+  }
+
+  return matches;
+}
+
+void replace_callback_matcher::apply(const string& replacement) noexcept {
+  m_output_str.append(replacement);
+  ++m_replace_count;
+}
+
+Optional<string> replace_callback_matcher::finish() noexcept {
+  if (!is_ok()) {
+    return {};
+  }
+
+  m_output_str.append(std::next(m_subject.data(), m_last_pos), m_subject.size() - m_last_pos);
+  return m_output_str;
+}
+
+} // namespace kphp::regex::details
+
 // === preg_replace implementation ================================================================
 
 mixed f$preg_replace(const kphp::regex::regexp& regex, const mixed& replacement, const mixed& subject, int64_t limit,
