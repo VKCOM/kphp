@@ -20,9 +20,8 @@
 
 namespace kphp::rpc {
 
-std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor, bool collect_responses_extra_info, bool ignore_answer,
-                                                         std::chrono::milliseconds timeout, double timestamp, int64_t query_id,
-                                                         std::span<const std::byte> request_buffer) noexcept {
+auto query_handle::send(std::string_view actor, bool collect_responses_extra_info, bool ignore_answer, std::chrono::milliseconds timeout, double timestamp,
+                        int64_t query_id, std::span<const std::byte> request_buffer) noexcept -> std::expected<query_handle, int32_t> {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& string_lib_ctx{StringLibContext::get()};
 
@@ -43,7 +42,7 @@ std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor,
   if (!rpc_d_exp) {
     return std::unexpected{rpc_d_exp.error()};
   }
-  k2::descriptor rpc_d{*rpc_d_exp};
+  k2::descriptor descriptor{*rpc_d_exp};
 
   // create response extra info
   if (collect_responses_extra_info) {
@@ -52,31 +51,31 @@ std::expected<query_handle, int32_t> send_and_get_handle(std::string_view actor,
 
   std::chrono::nanoseconds deadline{kphp::time::expires_at(timeout)};
 
-  return {query_handle{rpc_d, query_id, deadline, collect_responses_extra_info}};
+  return {query_handle{descriptor, query_id, deadline, collect_responses_extra_info}};
 }
 
 std::expected<string, std::pair<int32_t, string>> query_handle::get_ready_response() noexcept {
-  std::expected<size_t, int32_t> first_response_size{k2::rpc_get_response_size(rpc_d)};
+  std::expected<size_t, int32_t> first_response_size{k2::rpc_get_response_size(m_descriptor)};
   if (!first_response_size) {
     return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
   }
   // TODO remove allocation
   string response{reinterpret_cast<char*>(k2::alloc(*first_response_size)), static_cast<string::size_type>(*first_response_size)};
-  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(rpc_d, {reinterpret_cast<std::byte*>(response.buffer()), response.size()})};
+  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, {reinterpret_cast<std::byte*>(response.buffer()), response.size()})};
   if (!response_fetch_result) {
     return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, string{"error fetching rpc response"})};
   }
 
   // update response extra info if needed
-  if (collect_responses_extra_info) {
+  if (m_collect_responses_extra_info) {
     auto& rpc_client_instance_st{RpcClientInstanceState::get()};
     auto& extra_info_map{rpc_client_instance_st.rpc_responses_extra_info};
-    if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
+    if (const auto it_extra_info{extra_info_map.find(m_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
       const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
       it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
       it_extra_info->second.first = response_extra_info_status::ready;
     } else {
-      kphp::log::warning("can't find extra info for RPC query {}", query_id);
+      kphp::log::warning("can't find extra info for RPC query {}", m_id);
     }
   }
 

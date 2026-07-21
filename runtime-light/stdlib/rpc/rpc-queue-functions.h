@@ -29,7 +29,6 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
     if (it_rpc_request_handle == rpc_client_instance_st.rpc_query_handles.end()) [[unlikely]] {
       co_return request_id;
     }
-    // FIXME after response fetch finished `it_rpc_request_handle` will become invalid iterator
     co_await it_rpc_request_handle->second.wait_for_response();
     co_return request_id;
   }};
