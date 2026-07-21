@@ -18,6 +18,11 @@ public:
   constexpr explicit ready(T val) noexcept
       : m_val{std::move(val)} {}
 
+  template<typename U>
+  requires(!std::same_as<T, U> && std::constructible_from<T, U>)
+  constexpr explicit ready(ready<U>&& other) noexcept
+      : m_val(other.result()) {}
+
   ready(const ready& other) = delete;
   constexpr ready(ready&& other) noexcept = default;
 
@@ -35,6 +40,10 @@ public:
   }
 
   constexpr auto await_resume() noexcept -> T {
+    return result();
+  }
+
+  constexpr auto result() noexcept -> T {
     return std::move(m_val);
   }
 };
