@@ -15,11 +15,6 @@ prepend(
   rpc/rpc-api.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
-<<<<<<< HEAD
-=======
-  rpc/rpc-query-handle.cpp
-  rpc/rpc-queue-state.cpp
->>>>>>> 80bbdda81 (query_handle)
   rpc/rpc-tl-builtins.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
