@@ -158,6 +158,19 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   return query_info;
 }
 
+// update response extra info if needed
+void update_response_extra_info(int64_t query_id, size_t response_size) {
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  auto& extra_info_map{rpc_client_instance_st.rpc_responses_extra_info};
+  if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
+    const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+    it_extra_info->second.second = std::make_tuple(response_size, timestamp - std::get<1>(it_extra_info->second.second));
+    it_extra_info->second.first = response_extra_info_status::ready;
+  } else {
+    kphp::log::warning("can't find extra info for RPC query {}", query_id);
+  }
+}
+
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_WRONG_QUERY_ID, string{"wrong query_id"});
@@ -205,6 +218,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
+  update_response_extra_info(query_id, response.size());
 
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
@@ -263,6 +277,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
+  update_response_extra_info(query_id, response.size());
 
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
@@ -279,6 +294,8 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 kphp::rpc::query_info send_request(std::string_view actor, std::optional<double> opt_timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  auto& string_lib_ctx{StringLibContext::get()};
+
   const size_t request_size{rpc_server_instance_st.tl_storer.view().size_bytes()};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
@@ -289,7 +306,26 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     }
   }};
 
+  std::span<const std::byte> request_buffer{};
+  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(tl_storer.view(), ignore_answer)}; opt_new_extra_header) {
+    std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
+                                          sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
+    std::span<const std::byte> request_body{tl_storer.view().subspan(cur_extra_header_size)};
+
+    std::span<std::byte> new_header_and_request{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), new_header.size() + request_body.size()};
+
+    std::ranges::copy(new_header, new_header_and_request.subspan(0, new_header.size()).begin());
+    std::ranges::copy(request_body, new_header_and_request.subspan(new_header.size()).begin());
+
+    request_buffer = new_header_and_request;
+  }
+
   const auto query_id{rpc_client_instance_st.current_query_id++};
+
+  // create response extra info
+  if (collect_responses_extra_info) {
+    rpc_client_instance_st.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
+  }
 
   // normalize timeout
   using namespace std::chrono_literals;
@@ -304,7 +340,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                     .value_or(DEFAULT_TIMEOUT),
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
 
-  auto query_handle_expected{kphp::rpc::query_handle::send(actor, collect_responses_extra_info, ignore_answer, timeout, timestamp, query_id, tl_storer.view())};
+  auto query_handle_expected{kphp::rpc::query_handle::send(actor, timeout, query_id, request_buffer)};
   if (!query_handle_expected) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
