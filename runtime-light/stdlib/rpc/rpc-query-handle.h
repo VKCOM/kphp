@@ -9,15 +9,14 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
-#include <tuple>
+#include <string_view>
 #include <utility>
 
 #include "common/rpc-error-codes.h"
-#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 
 namespace kphp::rpc {
@@ -34,8 +33,7 @@ class query_handle {
       : m_descriptor{descriptor},
         m_deadline{deadline} {}
 
-  auto get_ready_response() noexcept -> std::expected<string, std::pair<int32_t, std::string_view>>;
-  auto drop() noexcept -> void;
+  auto get_ready_response() noexcept -> std::expected<std::span<std::byte>, std::pair<int32_t, std::string_view>>;
 
 public:
   query_handle() = delete;
@@ -64,7 +62,8 @@ public:
       -> std::expected<query_handle, int32_t>;
 
   auto wait_for_response() noexcept -> kphp::coro::task<void>;
-  auto get_response() noexcept -> kphp::coro::task<std::expected<string, std::pair<int32_t, std::string_view>>>;
+  auto get_response() noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, std::pair<int32_t, std::string_view>>>;
+  auto drop() noexcept -> void;
 };
 
 inline auto query_handle::drop() noexcept -> void {
@@ -86,19 +85,21 @@ inline auto query_handle::send(std::string_view actor, std::chrono::milliseconds
   return {query_handle{descriptor, deadline}};
 }
 
-inline auto query_handle::get_ready_response() noexcept -> std::expected<string, std::pair<int32_t, std::string_view>> {
-  std::expected<size_t, int32_t> first_response_size{k2::rpc_get_response_size(m_descriptor)};
-  if (!first_response_size) {
+inline auto query_handle::get_ready_response() noexcept -> std::expected<std::span<std::byte>, std::pair<int32_t, std::string_view>> {
+  std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(m_descriptor)};
+  if (!response_size_exp) {
     return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, INTERNAL_ERROR_DESCRIPTION)};
   }
-  // TODO remove allocation
-  string response{reinterpret_cast<char*>(k2::alloc(*first_response_size)), static_cast<string::size_type>(*first_response_size)};
-  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, {reinterpret_cast<std::byte*>(response.buffer()), response.size()})};
+  size_t response_size{*response_size_exp};
+
+  auto& string_lib_ctx{StringLibContext::get()};
+  std::span<std::byte> response_buffer{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), response_size};
+  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, response_buffer)};
   if (!response_fetch_result) {
     return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, INTERNAL_ERROR_DESCRIPTION)};
   }
 
-  return {response};
+  return {response_buffer};
 }
 
 inline auto query_handle::wait_for_response() noexcept -> kphp::coro::task<void> {
@@ -118,7 +119,7 @@ inline auto query_handle::wait_for_response() noexcept -> kphp::coro::task<void>
   co_return;
 }
 
-inline auto query_handle::get_response() noexcept -> kphp::coro::task<std::expected<string, std::pair<int32_t, std::string_view>>> {
+inline auto query_handle::get_response() noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, std::pair<int32_t, std::string_view>>> {
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return std::unexpected{std::make_pair(TL_ERROR_INTERNAL, EMPTY_QUERY_ERROR_DESCRIPTION)};
   }

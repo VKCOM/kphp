@@ -20,6 +20,7 @@
 #include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/shared-task.h"
@@ -219,7 +220,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   update_response_extra_info(query_id, response.size());
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
   // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
@@ -278,7 +279,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   update_response_extra_info(query_id, response.size());
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
