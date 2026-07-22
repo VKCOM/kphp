@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <coroutine>
 #include <utility>
 
@@ -14,11 +15,10 @@ class ready final {
   T m_val;
 
 public:
-  constexpr explicit ready(const T& val) noexcept
-      : m_val{val} {}
-
-  constexpr explicit ready(T&& val) noexcept
-      : m_val{std::move(val)} {}
+  template<typename U>
+  requires(std::same_as<T, std::remove_cvref_t<U>>)
+  constexpr explicit ready(U&& val) noexcept
+      : m_val{std::forward<U>(val)} {}
 
   template<typename U>
   requires(!std::same_as<T, U> && std::constructible_from<T, U>)
