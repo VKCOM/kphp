@@ -104,6 +104,7 @@ auto query::get_ready_response(ResponseAllocator response_allocator) noexcept ->
   std::span<std::byte> response_buffer{std::invoke(response_allocator, response_size)};
   std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, response_buffer)};
   if (!response_fetch_result) {
+  // TODO deallocate response_buffer
     return std::unexpected{TL_ERROR_INTERNAL};
   }
 
