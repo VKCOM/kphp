@@ -6,9 +6,11 @@ prepend(
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
   web-transfer-lib/web-state.cpp
+  diagnostics/detail/logs.cpp
   diagnostics/backtrace.cpp
   diagnostics/contextual-tags.cpp
   diagnostics/error-handling-state.cpp
+  diagnostics/logs.cpp
   diagnostics/php-assert.cpp
   file/file-system-state.cpp
   file/file-system-functions.cpp

@@ -23,10 +23,16 @@ namespace impl {
 
 static constexpr size_t DEFAULT_LOG_BUFFER_SIZE = 2048UZ;
 
+template<typename T>
+const T& unmove(T&& x) {
+  return x;
+}
+
 template<typename... Args>
 void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   std::array<char, DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
-  size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
+  size_t message_size{
+      impl::format_log_message(log_buffer, fmt.get(), std::make_format_args(kphp::log::impl::unmove(impl::wrap_log_argument(std::forward<Args>(args)))...))};
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
 
   auto opt_tags{
@@ -66,15 +72,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
 
 // The backtrace algorithm relies on the fact that assertion does not call backtrace.
 // If assertion is modified, the backtrace algorithm should be updated accordingly
-inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
-  if (!condition) [[unlikely]] {
-    std::array<char, impl::DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
-    size_t message_size{impl::format_log_message(log_buffer, "assertion failed at {}:{}", location.file_name(), location.line())};
-    auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
-    k2::log(std::to_underlying(level::error), message, {});
-    k2::exit(1);
-  }
-}
+void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept;
 
 template<typename... Args>
 [[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
