@@ -411,7 +411,7 @@ requires(std::constructible_from<R, std::add_rvalue_reference_t<I>> && !kphp::co
 kphp::coro::ready<R> f$array_reduce(const array<T>& a, const F& f, I init) noexcept {
   R result{R(std::move(init))}; // explicit constructor call to avoid implicit cast
   for (const auto& it : a) {
-    result = std::invoke(f, result, it.get_value());
+    result = std::invoke(f, std::move(result), it.get_value());
   }
 
   return kphp::coro::ready<R>{std::move(result)};
@@ -422,7 +422,7 @@ requires(std::constructible_from<R, std::add_rvalue_reference_t<I>> && kphp::cor
 kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   R result{R(std::move(init))}; // explicit constructor call to avoid implicit cast
   for (const auto& it : std::as_const(a)) {
-    result = co_await std::invoke(f, result, it.get_value());
+    result = co_await std::invoke(f, std::move(result), it.get_value());
   }
 
   co_return std::move(result);
