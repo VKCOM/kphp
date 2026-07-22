@@ -459,6 +459,21 @@ inline int64_t can_use_precomputed_hash_indexing_array(VertexPtr key) {
   return 0;
 }
 
+bool is_interruptible_expr(VertexPtr vertex) {
+  FunctionPtr callee;
+  if (auto call = vertex.try_as<op_func_call>()) {
+    callee = call->func_id;
+  } else if (auto call = vertex.try_as<op_invoke_call>()) {
+    callee = call->func_id;
+  }
+
+  if (callee && callee->is_interruptible) {
+    return true;
+  }
+
+  return std::any_of(vertex->begin(), vertex->end(), is_interruptible_expr);
+}
+
 void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &W) {
   const TypeData *type = tinf::get_type(root);
   auto lhs = root->lhs();
@@ -469,16 +484,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
 
-  /* TODO:K2
-   * In current implementation all non-trivial finialize block marked as cpp coroutine.
-   * This leads to redundant coroutines, but eliminates the need to traverse the rhs subtree
-   * to find whether it actually contains interruptible call. It can be fixed in the future
-   * to reduce count of cpp coroutines.
-   */
-  bool interruptible_call = G->is_output_mode_k2() &&
-                            !vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null) &&
-                            W.get_context().parent_func->is_interruptible;
-
+  bool interruptible_call = G->is_output_mode_k2() && is_interruptible_expr(rhs);
   if (interruptible_call) {
     W << "co_await ";
   }
@@ -514,10 +520,14 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
      * think about more general solution instead of storing rhs' type into the CGContext
      */
     {
-      const auto restore_rhs_t = vk::finally([&W, prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t]() noexcept {
-        W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
-      });
+      const auto restore_ctx = vk::finally(
+          [&W, prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t, prev_interruptible_flag = W.get_context().interruptible_flag]() noexcept {
+            W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
+            W.get_context().interruptible_flag = prev_interruptible_flag;
+          });
+
       W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
+      W.get_context().interruptible_flag = interruptible_call;
 
       FunctionSignatureGenerator(W) << "[&] ()";
       W << " -> " << (interruptible_call ? "kphp::coro::task<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
