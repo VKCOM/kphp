@@ -14,12 +14,15 @@ class ready final {
   T m_val;
 
 public:
-  constexpr explicit ready(T val) noexcept
+  constexpr explicit ready(const T& val) noexcept
+      : m_val{val} {}
+
+  constexpr explicit ready(T&& val) noexcept
       : m_val{std::move(val)} {}
 
   template<typename U>
   requires(!std::same_as<T, U> && std::constructible_from<T, U>)
-  constexpr explicit ready(ready<U> other) noexcept
+  constexpr explicit ready(ready<U>&& other) noexcept
       : m_val{std::move(other).result()} {}
 
   ready(const ready& other) = delete;
@@ -30,21 +33,29 @@ public:
 
   constexpr ~ready() = default;
 
-  constexpr auto await_ready() const noexcept -> bool {
-    return true;
-  }
-
-  auto await_suspend(std::coroutine_handle<> /*unused*/) const noexcept -> void {
-    std::unreachable();
-  }
-
-  constexpr auto await_resume() noexcept -> T {
-    return std::move(m_val);
-  }
-
   template<typename Self>
   constexpr decltype(auto) result(this Self&& self) noexcept {
     return std::forward<Self>(self).m_val;
+  }
+
+  constexpr auto operator co_await() && noexcept {
+    struct awaiter {
+      T m_val;
+
+      constexpr auto await_ready() const noexcept -> bool {
+        return true;
+      }
+
+      auto await_suspend(std::coroutine_handle<> /*unused*/) const noexcept -> void {
+        std::unreachable();
+      }
+
+      constexpr auto await_resume() noexcept -> T {
+        return std::move(m_val);
+      }
+    };
+
+    return awaiter{std::move(m_val)};
   }
 };
 
