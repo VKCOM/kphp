@@ -27,9 +27,9 @@ inline constexpr std::string_view INTERNAL_ERROR_DESCRIPTION = "internal error w
 
 class query_handle {
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-  std::chrono::nanoseconds m_deadline{};
+  std::chrono::steady_clock::time_point m_deadline{};
 
-  query_handle(k2::descriptor descriptor, std::chrono::nanoseconds deadline) noexcept
+  query_handle(k2::descriptor descriptor, std::chrono::steady_clock::time_point deadline) noexcept
       : m_descriptor{descriptor},
         m_deadline{deadline} {}
 
@@ -80,7 +80,7 @@ inline auto query_handle::send(std::string_view actor, std::chrono::milliseconds
   }
   k2::descriptor descriptor{*descriptor_exp};
 
-  std::chrono::nanoseconds deadline{kphp::time::expires_at(timeout)};
+  auto deadline{kphp::time::expires_at(std::chrono::duration_cast<std::chrono::nanoseconds>(timeout))};
 
   return {query_handle{descriptor, deadline}};
 }
