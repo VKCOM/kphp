@@ -42,7 +42,7 @@ public:
     return std::move(m_val);
   }
 
-  template <typename Self>
+  template<typename Self>
   constexpr decltype(auto) result(this Self&& self) noexcept {
     return std::forward<Self>(self).m_val;
   }
