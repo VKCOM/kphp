@@ -265,15 +265,15 @@ requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typ
          !kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>)
 kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(const array<T>& a,
                                                                                                                                           const F& f) noexcept {
+  using key_type = typename array<T>::const_iterator::key_type;
+  using value_type = typename array<T>::const_iterator::value_type;
   for (const auto& it : a) {
     if (std::invoke(f, it.get_value())) {
-      return kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>>(
-          std::tuple{it.get_key(), it.get_value()});
+      return kphp::coro::ready<std::tuple<key_type, value_type>>(std::tuple<key_type, value_type>{it.get_key(), it.get_value()});
     }
   }
 
-  return kphp::coro::ready<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>>{
-      std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>{}};
+  return kphp::coro::ready<std::tuple<key_type, value_type>>{std::tuple<key_type, value_type>{}};
 }
 
 template<class T, class F>
@@ -281,13 +281,15 @@ requires(convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typ
          kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>)
 kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(array<T> a,
                                                                                                                                          F f) noexcept {
+  using key_type = typename array<T>::const_iterator::key_type;
+  using value_type = typename array<T>::const_iterator::value_type;
   for (const auto& it : std::as_const(a)) {
     if (co_await std::invoke(f, it.get_value())) {
-      co_return std::tuple{it.get_key(), it.get_value()};
+      co_return std::tuple<std::tuple<key_type, value_type>>{it.get_key(), it.get_value()};
     }
   }
 
-  co_return std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>{};
+  co_return std::tuple<key_type, value_type>{};
 }
 
 } // namespace array_functions_impl_
@@ -498,4 +500,9 @@ requires(std::invocable<Comparator, typename array<T>::key_type, typename array<
 kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) noexcept {
   co_await array_functions_impl_::async_ksort<kphp::coro::task<>>(a, std::move(compare));
   co_return;
+}
+
+void temp_func() {
+  int a = 5;
+  kphp::coro::ready ready{a};
 }
