@@ -346,7 +346,6 @@ int32_t k2_rpc_get_response_size(uint64_t rpc_d, size_t* response_size);
 
 /**
  * Write response for corresponding request of this `rpc_d` to `buf`. Return `EAGAIN` if response is not ready.
- * If `buf_size` < response size, then write first `buf_size` bytes of response to `buf`.
  *
  * @return return `0` on success. libc-like `errno` otherwise
  *
