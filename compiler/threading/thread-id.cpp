@@ -4,7 +4,7 @@
 
 #include "compiler/threading/thread-id.h"
 
-static __thread int bicycle_thread_id;
+static thread_local int bicycle_thread_id;
 
 int get_thread_id() {
   return bicycle_thread_id;
