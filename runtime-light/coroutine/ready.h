@@ -11,7 +11,6 @@ namespace kphp::coro {
 
 template<typename T = void>
 class ready final {
-private:
   T m_val;
 
 public:
@@ -20,8 +19,8 @@ public:
 
   template<typename U>
   requires(!std::same_as<T, U> && std::constructible_from<T, U>)
-  constexpr explicit ready(ready<U>&& other) noexcept
-      : m_val(other.result()) {}
+  constexpr explicit ready(ready<U> other) noexcept
+      : m_val{std::move(other).result()} {}
 
   ready(const ready& other) = delete;
   constexpr ready(ready&& other) noexcept = default;
@@ -40,11 +39,12 @@ public:
   }
 
   constexpr auto await_resume() noexcept -> T {
-    return result();
+    return std::move(m_val);
   }
 
-  constexpr auto result() noexcept -> T {
-    return std::move(m_val);
+  template <typename Self>
+  constexpr decltype(auto) result(this Self&& self) noexcept {
+    return std::forward<Self>(self).m_val;
   }
 };
 
