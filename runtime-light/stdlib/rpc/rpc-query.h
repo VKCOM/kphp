@@ -23,13 +23,17 @@ namespace kphp::rpc {
 
 class query {
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-  std::chrono::steady_clock::time_point m_deadline{};
+  std::chrono::steady_clock::time_point m_deadline;
 
   query(k2::descriptor descriptor, std::chrono::steady_clock::time_point deadline) noexcept
       : m_descriptor{descriptor},
         m_deadline{deadline} {}
 
-  auto get_ready_response() noexcept -> std::expected<std::span<std::byte>, int32_t>;
+  template<typename ResponseAllocator>
+  requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
+  auto get_ready_response(ResponseAllocator response_allocator) noexcept -> std::expected<std::span<std::byte>, int32_t>;
+
+  auto drop() noexcept -> void;
 
 public:
   query() = delete;
@@ -58,8 +62,10 @@ public:
       -> std::expected<query, int32_t>;
 
   auto wait_for_response() noexcept -> kphp::coro::task<void>;
-  auto get_response() noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
-  auto drop() noexcept -> void;
+
+  template<typename ResponseAllocator>
+  requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
+  auto get_response(ResponseAllocator response_allocator) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
 };
 
 inline auto query::drop() noexcept -> void {
@@ -81,7 +87,9 @@ inline auto query::send(std::string_view actor, std::chrono::milliseconds timeou
   return {query{descriptor, deadline}};
 }
 
-inline auto query::get_ready_response() noexcept -> std::expected<std::span<std::byte>, int32_t> {
+template<typename ResponseAllocator>
+requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
+auto query::get_ready_response(ResponseAllocator response_allocator) noexcept -> std::expected<std::span<std::byte>, int32_t> {
   std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(m_descriptor)};
   if (!response_size_exp) {
     switch (response_size_exp.error()) {
@@ -93,8 +101,7 @@ inline auto query::get_ready_response() noexcept -> std::expected<std::span<std:
   }
   size_t response_size{*response_size_exp};
 
-  auto& string_lib_ctx{StringLibContext::get()};
-  std::span<std::byte> response_buffer{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), response_size};
+  std::span<std::byte> response_buffer{std::invoke(response_allocator, response_size)};
   std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, response_buffer)};
   if (!response_fetch_result) {
     return std::unexpected{TL_ERROR_INTERNAL};
@@ -120,7 +127,9 @@ inline auto query::wait_for_response() noexcept -> kphp::coro::task<void> {
   co_return;
 }
 
-inline auto query::get_response() noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
+template<typename ResponseAllocator>
+requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
+inline auto query::get_response(ResponseAllocator response_allocator) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return std::unexpected{TL_ERROR_INTERNAL};
   }
@@ -130,12 +139,12 @@ inline auto query::get_response() noexcept -> kphp::coro::task<std::expected<std
 
   // TODO DISCUSS: may be completely remove timeout monitoring in kphp and leave it in k2-node's rpc client ???
   if (timeout <= std::chrono::nanoseconds::zero()) {
-    co_return get_ready_response();
+    co_return get_ready_response(response_allocator);
   }
 
   switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
-    co_return get_ready_response();
+    co_return get_ready_response(response_allocator);
   case kphp::coro::poll_status::closed:
   case kphp::coro::poll_status::timeout:
     co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};

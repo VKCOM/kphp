@@ -170,6 +170,10 @@ void static update_response_extra_info(int64_t query_id, size_t response_size) {
   }
 }
 
+std::span<std::byte> response_allocator(size_t size) noexcept {
+  return std::span<std::byte>{static_cast<std::byte*>(k2::alloc(size)), size};
+}
+
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_WRONG_QUERY_ID, string{"wrong query_id"});
@@ -210,7 +214,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   kphp::log::assertion(opt_rpc_request_handle.has_value());
-  auto response_expected{co_await opt_rpc_request_handle->get_response()};
+  auto response_expected{co_await opt_rpc_request_handle->get_response(response_allocator)};
   if (!response_expected) [[unlikely]] {
     co_return TlRpcError::make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
@@ -221,6 +225,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
+  k2::free(static_cast<void*>(response.data()));
   // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
     co_return std::move(err);
@@ -268,7 +273,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   kphp::log::assertion(opt_rpc_request_handle.has_value());
-  auto response_expected{co_await opt_rpc_request_handle->get_response()};
+  auto response_expected{co_await opt_rpc_request_handle->get_response(response_allocator)};
   if (!response_expected) [[unlikely]] {
     co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
@@ -279,6 +284,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
+  k2::free(static_cast<void*>(response.data()));
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
     co_return std::move(err);
