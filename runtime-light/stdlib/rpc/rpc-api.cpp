@@ -35,7 +35,7 @@
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
-#include "runtime-light/stdlib/rpc/rpc-query-handle.h"
+#include "runtime-light/stdlib/rpc/rpc-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/streams/read-ext.h"
@@ -177,7 +177,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  std::optional<kphp::rpc::query_handle> opt_rpc_request_handle{};
+  std::optional<kphp::rpc::query> opt_rpc_request_handle{};
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
@@ -212,8 +212,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   kphp::log::assertion(opt_rpc_request_handle.has_value());
   auto response_expected{co_await opt_rpc_request_handle->get_response()};
   if (!response_expected) [[unlikely]] {
-    std::pair<int32_t, std::string_view> error{response_expected.error()};
-    co_return TlRpcError::make_error(error.first, string{error.second.data(), static_cast<string::size_type>(error.second.size())});
+    co_return TlRpcError::make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
@@ -236,7 +235,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  std::optional<kphp::rpc::query_handle> opt_rpc_request_handle{};
+  std::optional<kphp::rpc::query> opt_rpc_request_handle{};
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
@@ -271,8 +270,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   kphp::log::assertion(opt_rpc_request_handle.has_value());
   auto response_expected{co_await opt_rpc_request_handle->get_response()};
   if (!response_expected) [[unlikely]] {
-    std::pair<int32_t, std::string_view> error{response_expected.error()};
-    co_return error_factory.make_error(error.first, string{error.second.data(), static_cast<string::size_type>(error.second.size())});
+    co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
 
   auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
@@ -339,7 +337,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                     .value_or(DEFAULT_TIMEOUT),
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
 
-  auto query_handle_expected{kphp::rpc::query_handle::send(actor, timeout, request_buffer)};
+  auto query_handle_expected{kphp::rpc::query::send(actor, timeout, request_buffer)};
   if (!query_handle_expected) {
     return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
   }
