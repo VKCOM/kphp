@@ -60,6 +60,7 @@ inline constexpr int32_t errno_enoent = ENOENT;
 inline constexpr int32_t errno_eopnotsupp = EOPNOTSUPP;
 inline constexpr int32_t errno_ealready = EALREADY;
 inline constexpr int32_t errno_einprogress = EINPROGRESS;
+inline constexpr int32_t errno_eagain = EAGAIN;
 
 using descriptor = uint64_t;
 inline constexpr k2::descriptor INVALID_PLATFORM_DESCRIPTOR = 0;
