@@ -1,4 +1,4 @@
-@ok
+@skip php8
 <?php
 
 require_once 'kphp_tester_include.php';
@@ -23,10 +23,9 @@ function test_uasort_ints() {
     uasort($arr1, 'cmp_int');
     var_dump($arr1);
 
-    // temprorary comment because semantic bug was found in uasort (unstable, but should be stable)
-    // $arr2 = [5, 1, 4, 2, 3, 2, 2, 5];
-    // uasort($arr2, 'cmp_int');
-    // var_dump($arr2);
+    $arr2 = [5, 1, 4, 2, 3, 2, 2, 5];
+    uasort($arr2, 'cmp_int');
+    var_dump($arr2);
 
     $arr3 = [1, 2, 3, 4, 5];
     uasort($arr3, 'cmp_int');
@@ -42,10 +41,9 @@ function test_uasort_strings() {
     uasort($arr1, 'cmp_str');
     var_dump($arr1);
 
-    // temprorary comment because semantic bug was found in uasort (unstable, but should be stable)
-    // $arr2 = ["d", "b", "a", "e", "c", "e", "e", "d"];
-    // uasort($arr2, 'cmp_str');
-    // var_dump($arr2);
+    $arr2 = ["d", "b", "a", "e", "c", "e", "e", "d"];
+    uasort($arr2, 'cmp_str');
+    var_dump($arr2);
 
     $arr3 = ["a", "b", "c", "d", "e"];
     uasort($arr3, 'cmp_str');
@@ -61,10 +59,9 @@ function test_uasort_with_keys() {
     uasort($arr1, 'cmp_int');
     var_dump($arr1);
 
-    // temprorary comment because semantic bug was found in uasort (unstable, but should be stable)
-    // $arr2 = ["a" => 5, "b" => 1, "c" => 4, "d" => 2, "e" => 3, "f" => 2, "g" => 2, "h" => 5];
-    // uasort($arr2, 'cmp_int');
-    // var_dump($arr2);
+    $arr2 = ["a" => 5, "b" => 1, "c" => 4, "d" => 2, "e" => 3, "f" => 2, "g" => 2, "h" => 5];
+    uasort($arr2, 'cmp_int');
+    var_dump($arr2);
 
     $arr3 = ["a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5];
     uasort($arr3, 'cmp_int');
@@ -87,10 +84,9 @@ function test_uasort_ints_async() {
     uasort($arr1, function($a, $b) { sleep(0); return cmp_int($a, $b); });
     var_dump($arr1);
 
-    // temprorary comment because semantic bug was found in uasort (unstable, but should be stable)
-    // $arr2 = [5, 1, 4, 2, 3, 2, 2, 5];
-    // uasort($arr2, function($a, $b) { sleep(0); return cmp_int($a, $b); });
-    // var_dump($arr2);
+    $arr2 = [5, 1, 4, 2, 3, 2, 2, 5];
+    uasort($arr2, function($a, $b) { sleep(0); return cmp_int($a, $b); });
+    var_dump($arr2);
 
     $arr3 = [1, 2, 3, 4, 5];
     uasort($arr3, function($a, $b) { sleep(0); return cmp_int($a, $b); });
@@ -106,10 +102,9 @@ function test_uasort_strings_async() {
     uasort($arr1, function($a, $b) { sleep(0); return cmp_str($a, $b); });
     var_dump($arr1);
 
-    // temprorary comment because semantic bug was found in uasort (unstable, but should be stable)
-    // $arr2 = ["d", "b", "a", "e", "c", "e", "e", "d"];
-    // uasort($arr2, function($a, $b) { sleep(0); return cmp_str($a, $b); });
-    // var_dump($arr2);
+    $arr2 = ["d", "b", "a", "e", "c", "e", "e", "d"];
+    uasort($arr2, function($a, $b) { sleep(0); return cmp_str($a, $b); });
+    var_dump($arr2);
 
     $arr3 = ["a", "b", "c", "d", "e"];
     uasort($arr3, function($a, $b) { sleep(0); return cmp_str($a, $b); });
@@ -125,10 +120,9 @@ function test_uasort_with_keys_async() {
     uasort($arr1, function($a, $b) { sleep(0); return cmp_int($a, $b); });
     var_dump($arr1);
 
-    // temprorary comment because semantic bug was found in uasort (unstable, but should be stable)
-    // $arr2 = ["a" => 5, "b" => 1, "c" => 4, "d" => 2, "e" => 3, "f" => 2, "g" => 2, "h" => 5];
-    // uasort($arr2, function($a, $b) { sleep(0); return cmp_int($a, $b); });
-    // var_dump($arr2);
+    $arr2 = ["a" => 5, "b" => 1, "c" => 4, "d" => 2, "e" => 3, "f" => 2, "g" => 2, "h" => 5];
+    uasort($arr2, function($a, $b) { sleep(0); return cmp_int($a, $b); });
+    var_dump($arr2);
 
     $arr3 = ["a" => 1, "b" => 2, "c" => 3, "d" => 4, "e" => 5];
     uasort($arr3, function($a, $b) { sleep(0); return cmp_int($a, $b); });
