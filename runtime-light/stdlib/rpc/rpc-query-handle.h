@@ -58,8 +58,8 @@ public:
   query_handle(const query_handle& other) = delete;
   query_handle& operator=(const query_handle& other) = delete;
 
-  static auto send(std::string_view actor,
-                   std::chrono::milliseconds timeout, std::span<const std::byte> request_buffer) noexcept -> std::expected<query_handle, int32_t>;
+  static auto send(std::string_view actor, std::chrono::milliseconds timeout,
+                   std::span<const std::byte> request_buffer) noexcept -> std::expected<query_handle, int32_t>;
 
   auto wait_for_response() noexcept -> kphp::coro::task<void>;
   auto get_response() noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, std::pair<int32_t, std::string_view>>>;
