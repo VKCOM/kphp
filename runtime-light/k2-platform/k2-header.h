@@ -27,7 +27,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 14
+#define K2_PLATFORM_HEADER_H_VERSION 15
 
 // Always check that enum value is a valid value!
 
@@ -107,6 +107,16 @@ struct ImageInfo {
   uint64_t header_h_version;
   uint8_t commit_hash[40];
   const char* version;
+
+  // Build tool
+  struct BuildToolInfo {
+    const char* name;
+    uint64_t build_timestamp;
+    uint8_t commit_hash[40];
+    const char* version;
+  };
+
+  struct BuildToolInfo build_tool_info;
 
   // Extra
   struct KeyValuePair {
