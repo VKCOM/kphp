@@ -16,11 +16,14 @@
 #include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/metaprogramming/concepts.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
-namespace kphp::time::impl {
+namespace kphp::time {
+
+namespace impl {
 
 constexpr inline int64_t CHECKDATE_YEAR_MIN{1};
 constexpr inline int64_t CHECKDATE_YEAR_MAX{32767};
@@ -29,7 +32,33 @@ int64_t fix_year(int64_t year) noexcept;
 
 string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept;
 
-} // namespace kphp::time::impl
+} // namespace impl
+
+/**
+ * Calculate time remaining to the deadline.
+ */
+inline std::chrono::nanoseconds remaining(std::chrono::steady_clock::time_point deadline) noexcept {
+  k2::TimePoint now_instant{};
+  k2::instant(std::addressof(now_instant));
+
+  std::chrono::steady_clock::time_point now{std::chrono::nanoseconds{now_instant.time_point_ns}};
+
+  return deadline - now;
+}
+
+/**
+ * Converts timeout to time point, when timeout will elapse a.k.a. deadline.
+ */
+inline std::chrono::steady_clock::time_point expires_at(std::chrono::nanoseconds timeout) {
+  k2::TimePoint now_instant{};
+  k2::instant(std::addressof(now_instant));
+
+  std::chrono::steady_clock::time_point now{std::chrono::nanoseconds{now_instant.time_point_ns}};
+
+  return now + timeout;
+}
+
+} // namespace kphp::time
 
 inline int64_t f$_hrtime_int() noexcept {
   return std::chrono::steady_clock::now().time_since_epoch().count();
