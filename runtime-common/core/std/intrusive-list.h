@@ -19,18 +19,19 @@ class hook_base {
   // correct usage supposes that this->is_linked() == false
   void move_hook(hook_base&& other) noexcept {
     if (other.is_linked()) {
-        m_prev = std::exchange(other.m_prev, std::addressof(other));
-        m_next = std::exchange(other.m_next, std::addressof(other));
+      m_prev = std::exchange(other.m_prev, std::addressof(other));
+      m_next = std::exchange(other.m_next, std::addressof(other));
 
-        m_prev->m_next = this;
-        m_next->m_prev = this;
+      m_prev->m_next = this;
+      m_next->m_prev = this;
     }
   }
 
 public:
   hook_base() noexcept = default;
 
-  hook_base(const hook_base& /*unused*/) noexcept : hook_base() {}
+  hook_base(const hook_base& /*unused*/) noexcept
+      : hook_base() {}
 
   hook_base(hook_base&& other) noexcept {
     move_hook(std::move(other));
@@ -42,7 +43,7 @@ public:
 
   hook_base& operator=(hook_base&& other) noexcept {
     if (this == std::addressof(other)) {
-        return *this;
+      return *this;
     }
 
     unlink();
