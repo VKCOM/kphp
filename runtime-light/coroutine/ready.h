@@ -10,6 +10,7 @@
 
 namespace kphp::coro {
 
+// Creates an awaiter that is immediately ready with a value.
 template<typename T = void>
 class ready final {
   T m_val;
