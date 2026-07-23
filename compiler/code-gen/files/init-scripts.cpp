@@ -327,6 +327,7 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
     << "K2_PLATFORM_HEADER_H_VERSION, "
     << "{" << php_code_commit_hash << "},"
     << "\"" << G->settings().php_code_version.get() << "\","
+    << R"({.name = "kphp2cpp", .build_timestamp = 0, .commit_hash = {}, .version = ")" << G->settings().get_version() << "\"},"
     << "extraInfo.size()" << ","
     << "extraInfo.data()"
     << "};" << NL << "return &imageInfo;" << NL << END;
