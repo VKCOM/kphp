@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -16,8 +17,8 @@ class hook_base {
   hook_base* m_prev{this};
   hook_base* m_next{this};
 
-  // correct usage supposes that this->is_linked() == false
   void move_hook(hook_base&& other) noexcept {
+    assert(!is_linked());
     if (other.is_linked()) {
       m_prev = std::exchange(other.m_prev, std::addressof(other));
       m_next = std::exchange(other.m_next, std::addressof(other));
