@@ -29,9 +29,15 @@ class query {
       : m_descriptor{descriptor},
         m_deadline{deadline} {}
 
-  template<typename ResponseAllocator>
-  requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
-  auto get_ready_response(ResponseAllocator response_allocator) noexcept -> std::expected<std::span<std::byte>, int32_t>;
+  template<typename ResponseDeleter>
+  using response_type = std::unique_ptr<std::byte, ResponseDeleter>;
+
+  template<typename ResponseDeleter>
+  using response_and_size_type = std::pair<response_type<ResponseDeleter>, size_t>;
+
+  template<typename ResponseAllocator, typename ResponseDeleter>
+  requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::byte*>
+  auto get_ready_response(ResponseAllocator response_allocator, ResponseDeleter response_deleter) noexcept -> std::expected<response_and_size_type<ResponseDeleter>, int32_t>;
 
   auto drop() noexcept -> void;
 
@@ -63,9 +69,9 @@ public:
 
   auto wait_for_response() noexcept -> kphp::coro::task<void>;
 
-  template<typename ResponseAllocator>
-  requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
-  auto get_response(ResponseAllocator response_allocator) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
+  template<typename ResponseAllocator, typename ResponseDeleter>
+  requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::byte*>
+  auto get_response(ResponseAllocator response_allocator, ResponseDeleter response_deleter) noexcept -> kphp::coro::task<std::expected<response_and_size_type<ResponseDeleter>, int32_t>>;
 };
 
 inline auto query::drop() noexcept -> void {
@@ -87,9 +93,9 @@ inline auto query::send(std::string_view actor, std::chrono::milliseconds timeou
   return {query{descriptor, deadline}};
 }
 
-template<typename ResponseAllocator>
-requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
-auto query::get_ready_response(ResponseAllocator response_allocator) noexcept -> std::expected<std::span<std::byte>, int32_t> {
+template<typename ResponseAllocator, typename ResponseDeleter>
+requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::byte*>
+auto query::get_ready_response(ResponseAllocator response_allocator, ResponseDeleter response_deleter) noexcept -> std::expected<response_and_size_type<ResponseDeleter>, int32_t> {
   std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(m_descriptor)};
   if (!response_size_exp) {
     switch (response_size_exp.error()) {
@@ -101,14 +107,15 @@ auto query::get_ready_response(ResponseAllocator response_allocator) noexcept ->
   }
   size_t response_size{*response_size_exp};
 
-  std::span<std::byte> response_buffer{std::invoke(response_allocator, response_size)};
-  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, response_buffer)};
+  auto raw_ptr{std::invoke(response_allocator, response_size)};
+  std::unique_ptr<std::byte, ResponseDeleter> response_buffer_ptr{raw_ptr, response_deleter};
+  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, std::span<std::byte>{raw_ptr, response_size})};
   if (!response_fetch_result) {
-  // TODO deallocate response_buffer
+    // in case of error response_buffer_ptr will be freed
     return std::unexpected{TL_ERROR_INTERNAL};
   }
 
-  return {response_buffer};
+  return {{std::move(response_buffer_ptr), response_size}};
 }
 
 inline auto query::wait_for_response() noexcept -> kphp::coro::task<void> {
@@ -128,9 +135,10 @@ inline auto query::wait_for_response() noexcept -> kphp::coro::task<void> {
   co_return;
 }
 
-template<typename ResponseAllocator>
-requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::span<std::byte>>
-inline auto query::get_response(ResponseAllocator response_allocator) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
+template<typename ResponseAllocator, typename ResponseDeleter>
+requires std::invocable<ResponseAllocator, size_t> && std::is_same_v<std::invoke_result_t<ResponseAllocator, size_t>, std::byte*>
+auto query::get_response(ResponseAllocator response_allocator, ResponseDeleter response_deleter) noexcept
+    -> kphp::coro::task<std::expected<response_and_size_type<ResponseDeleter>, int32_t>> {
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return std::unexpected{TL_ERROR_INTERNAL};
   }
@@ -140,12 +148,12 @@ inline auto query::get_response(ResponseAllocator response_allocator) noexcept -
 
   // TODO DISCUSS: may be completely remove timeout monitoring in kphp and leave it in k2-node's rpc client ???
   if (timeout <= std::chrono::nanoseconds::zero()) {
-    co_return get_ready_response(response_allocator);
+    co_return get_ready_response<ResponseAllocator, ResponseDeleter>(response_allocator, response_deleter);
   }
 
   switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
-    co_return get_ready_response(response_allocator);
+    co_return get_ready_response<ResponseAllocator, ResponseDeleter>(response_allocator, response_deleter);
   case kphp::coro::poll_status::closed:
   case kphp::coro::poll_status::timeout:
     co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};

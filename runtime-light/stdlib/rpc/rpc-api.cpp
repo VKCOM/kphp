@@ -170,8 +170,12 @@ void static update_response_extra_info(int64_t query_id, size_t response_size) {
   }
 }
 
-std::span<std::byte> response_allocator(size_t size) noexcept {
-  return std::span<std::byte>{static_cast<std::byte*>(k2::alloc(size)), size};
+std::byte* response_allocator(size_t size) noexcept {
+  return static_cast<std::byte*>(k2::alloc(size));
+}
+
+void response_deleter(std::byte* ptr) noexcept {
+  k2::free(static_cast<void*>(ptr));
 }
 
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
@@ -214,18 +218,20 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   kphp::log::assertion(opt_rpc_request_handle.has_value());
-  auto response_expected{co_await opt_rpc_request_handle->get_response(response_allocator)};
-  if (!response_expected) [[unlikely]] {
-    co_return TlRpcError::make_error(response_expected.error(), string{"can't fetch rpc response"});
-  }
 
-  auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
+  auto response_and_size_expected{
+      co_await opt_rpc_request_handle->get_response<decltype(std::addressof(response_allocator)), decltype(std::addressof(response_deleter))>(
+          response_allocator, response_deleter)};
+  if (!response_and_size_expected) [[unlikely]] {
+    co_return TlRpcError::make_error(response_and_size_expected.error(), string{"can't fetch rpc response"});
+  }
+  std::span<std::byte> response{response_and_size_expected->first.get(),
+                                response_and_size_expected->second}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
   update_response_extra_info(query_id, response.size());
 
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
-  k2::free(static_cast<void*>(response.data()));
   // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
     co_return std::move(err);
@@ -273,18 +279,19 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   kphp::log::assertion(opt_rpc_request_handle.has_value());
-  auto response_expected{co_await opt_rpc_request_handle->get_response(response_allocator)};
-  if (!response_expected) [[unlikely]] {
-    co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
+  auto response_and_size_expected{
+      co_await opt_rpc_request_handle->get_response<decltype(std::addressof(response_allocator)), decltype(std::addressof(response_deleter))>(
+          response_allocator, response_deleter)};
+  if (!response_and_size_expected) [[unlikely]] {
+    co_return error_factory.make_error(response_and_size_expected.error(), string{"can't fetch rpc response"});
   }
-
-  auto response{*std::move(response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
+  std::span<std::byte> response{response_and_size_expected->first.get(),
+                                response_and_size_expected->second}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
   update_response_extra_info(query_id, response.size());
 
   f$rpc_clean();
   RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
-  k2::free(static_cast<void*>(response.data()));
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
     co_return std::move(err);
