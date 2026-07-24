@@ -1,9 +1,11 @@
 #include "intrusive-list.h"
 
-namespace kphp::stl::intrusive_list::details {
+#include <memory>
+#include <utility>
 
-auto hook_base::move_hook(hook_base&& other) noexcept -> void {
-  assert(!is_linked());
+namespace kphp::stl::intrusive::details {
+
+constexpr auto list_node_base::insert_instead(list_node_base&& other) noexcept -> void {
   if (other.is_linked()) {
     m_prev = std::exchange(other.m_prev, std::addressof(other));
     m_next = std::exchange(other.m_next, std::addressof(other));
@@ -13,37 +15,28 @@ auto hook_base::move_hook(hook_base&& other) noexcept -> void {
   }
 }
 
-hook_base::hook_base(const hook_base& /*unused*/) noexcept
-    : hook_base() {}
-
-hook_base::hook_base(hook_base&& other) noexcept {
-  move_hook(std::move(other));
+constexpr list_node_base::list_node_base(list_node_base&& other) noexcept {
+  insert_instead(std::move(other));
 }
 
-auto hook_base::operator=(const hook_base& /*unused*/) noexcept -> hook_base& {
-  return *this;
-}
-
-auto hook_base::operator=(hook_base&& other) noexcept -> hook_base& {
-  if (this == std::addressof(other)) {
-    return *this;
+constexpr auto list_node_base::operator=(list_node_base&& other) noexcept -> list_node_base& {
+  if (this != std::addressof(other)) {
+    unlink();
+    insert_instead(std::move(other));
   }
 
-  unlink();
-  move_hook(std::move(other));
-
   return *this;
 }
 
-hook_base::~hook_base() {
+list_node_base::~list_node_base() {
   unlink();
 }
 
-auto hook_base::is_linked() const noexcept -> bool {
+constexpr auto list_node_base::is_linked() const noexcept -> bool {
   return m_prev != this;
 }
 
-auto hook_base::unlink() noexcept -> void {
+constexpr auto list_node_base::unlink() noexcept -> void {
   m_prev->m_next = m_next;
   m_next->m_prev = m_prev;
 
@@ -51,4 +44,4 @@ auto hook_base::unlink() noexcept -> void {
   m_next = this;
 }
 
-} // namespace kphp::stl::intrusive_list::details
+} // namespace kphp::stl::intrusive::details
