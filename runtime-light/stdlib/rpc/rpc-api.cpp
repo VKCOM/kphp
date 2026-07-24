@@ -322,46 +322,45 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     rpc_client_instance_st.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
   }
 
-  static constexpr auto awaiter_coroutine{
-    [](query q, int64_t query_id, bool collect_responses_extra_info) mutable noexcept -> kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>> {
-      kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
-      const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
-        resp_buf.resize(size);
-        return {resp_buf.data(), size};
-      }};
-
-      auto fetch_task{q.get_response<decltype(response_buffer_provider)>(response_buffer_provider)};
-      auto schedule_expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
-      if (!schedule_expected) {
-        co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
-      }
-
-      // update response extra info if needed
-      if (collect_responses_extra_info) {
-        auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
-        if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
-          const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-          it_extra_info->second.second = std::make_tuple(resp_buf.size(), timestamp - std::get<1>(it_extra_info->second.second));
-          it_extra_info->second.first = response_extra_info_status::ready;
-        } else {
-          kphp::log::warning("can't find extra info for RPC query {}", query_id);
-        }
-      }
-
-      co_return std::move(resp_buf);
+  static constexpr auto awaiter_coroutine{[](query q, int64_t query_id, bool collect_responses_extra_info) mutable noexcept
+                                          -> kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>> {
+    kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+    const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+      resp_buf.resize(size);
+      return {resp_buf.data(), size};
     }};
 
-  static constexpr auto ignore_answer_awaiter_coroutine{
-    [](query q) noexcept -> kphp::coro::shared_task<> {
-      kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
-      const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
-        resp_buf.resize(size);
-        return {resp_buf.data(), size};
-      }};
+    auto fetch_task{q.get_response<decltype(response_buffer_provider)>(response_buffer_provider)};
+    auto schedule_expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
+    if (!schedule_expected) {
+      co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
+    }
 
-      auto fetch_task{q.get_response<decltype(response_buffer_provider)>(response_buffer_provider)};
-      std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task));
+    // update response extra info if needed
+    if (collect_responses_extra_info) {
+      auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
+      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
+        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+        it_extra_info->second.second = std::make_tuple(resp_buf.size(), timestamp - std::get<1>(it_extra_info->second.second));
+        it_extra_info->second.first = response_extra_info_status::ready;
+      } else {
+        kphp::log::warning("can't find extra info for RPC query {}", query_id);
+      }
+    }
+
+    co_return std::move(resp_buf);
+  }};
+
+  static constexpr auto ignore_answer_awaiter_coroutine{[](query q) noexcept -> kphp::coro::shared_task<> {
+    kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+    const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+      resp_buf.resize(size);
+      return {resp_buf.data(), size};
     }};
+
+    auto fetch_task{q.get_response<decltype(response_buffer_provider)>(response_buffer_provider)};
+    std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task));
+  }};
 
   // normalize timeout
   using namespace std::chrono_literals;
