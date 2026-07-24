@@ -23,15 +23,18 @@
 namespace kphp::rpc {
 
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
-  static constexpr auto rpc_queue_wrapper_task{[](int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
-    auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-    const auto it_rpc_request_handle{rpc_client_instance_st.rpc_query_handles.find(request_id)};
-    if (it_rpc_request_handle == rpc_client_instance_st.rpc_query_handles.end()) [[unlikely]] {
-      co_return request_id;
-    }
-    co_await it_rpc_request_handle->second.wait_for_response();
+  static constexpr auto rpc_queue_wrapper_task{[](kphp::coro::shared_task<> awaiter_task, int64_t request_id) noexcept -> kphp::coro::task<int64_t> {
+    co_await std::move(awaiter_task).when_ready();
     co_return request_id;
   }};
+
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+
+  const auto it_awaiter_task{rpc_client_instance_st.response_awaiter_tasks.find(request_id)};
+  if (it_awaiter_task == rpc_client_instance_st.response_awaiter_tasks.end()) [[unlikely]] {
+    kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
+    return;
+  }
 
   auto& rpc_queue_instance_st{RpcQueueInstanceState::get()};
   auto opt_await_set{rpc_queue_instance_st.get_queue(queue_id)};
@@ -41,7 +44,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   }
 
   auto& await_set{(*opt_await_set).get()};
-  await_set.push(rpc_queue_wrapper_task(request_id));
+  await_set.push(rpc_queue_wrapper_task(static_cast<kphp::coro::shared_task<>>(it_awaiter_task->second), request_id));
 }
 
 inline int64_t rpc_queue_create(std::span<int64_t> request_ids) noexcept {
