@@ -278,7 +278,6 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 kphp::rpc::query_info send_request(std::string_view actor, std::optional<double> opt_timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  auto& string_lib_ctx{StringLibContext::get()};
 
   const size_t request_size{rpc_server_instance_st.tl_storer.view().size_bytes()};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
@@ -290,18 +289,30 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     }
   }};
 
-  std::span<const std::byte> request_buffer = tl_storer.view();
-  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
+  // if we have to allocate memory for request buffer, it will be in this vector, and it will be freed at the end of the function
+  std::optional<kphp::stl::vector<std::byte, kphp::memory::script_allocator>> opt_request_vec{};
+  std::span<const std::byte> request_buffer{tl_storer.view()};
+  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(tl_storer.view(), ignore_answer)}; opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
-    std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
+    std::span<const std::byte> request_body{tl_storer.view().subspan(cur_extra_header_size)};
 
-    std::span<std::byte> new_header_and_request{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), new_header.size() + request_body.size()};
+    std::span<std::byte> new_request_buffer{};
+    size_t request_and_headers_size{new_header.size() + request_body.size()};
+    if (request_and_headers_size <= StringLibContext::STATIC_BUFFER_LENGTH) {
+      // we have enough space in static buffer to store request with regularized headers
+      auto& string_lib_ctx{StringLibContext::get()};
+      new_request_buffer = std::span<std::byte>{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), request_and_headers_size};
+    } else {
+      // we have to allocate buffer for request with regularized headers
+      opt_request_vec.emplace(request_and_headers_size);
+      new_request_buffer = std::span<std::byte>{opt_request_vec->data(), request_and_headers_size};
+    }
 
-    std::ranges::copy(new_header, new_header_and_request.subspan(0, new_header.size()).begin());
-    std::ranges::copy(request_body, new_header_and_request.subspan(new_header.size()).begin());
+    std::ranges::copy(new_header, new_request_buffer.subspan(0, new_header.size()).begin());
+    std::ranges::copy(request_body, new_request_buffer.subspan(new_header.size()).begin());
 
-    request_buffer = new_header_and_request;
+    request_buffer = new_request_buffer;
   }
 
   const auto query_id{rpc_client_instance_st.current_query_id++};
@@ -312,7 +323,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }
 
   static constexpr auto awaiter_coroutine{
-    [](query q, int64_t query_id) mutable noexcept -> kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>> {
+    [](query q, int64_t query_id, bool collect_responses_extra_info) mutable noexcept -> kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>> {
       kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
       const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
         resp_buf.resize(size);
@@ -325,12 +336,16 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
         co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
       }
 
-      auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-      auto& extra_info_map{rpc_client_instance_st.rpc_responses_extra_info};
-      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
-        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-        it_extra_info->second.second = std::make_tuple(resp_buf.size(), timestamp - std::get<1>(it_extra_info->second.second));
-        it_extra_info->second.first = response_extra_info_status::ready;
+      // update response extra info if needed
+      if (collect_responses_extra_info) {
+        auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
+        if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
+          const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+          it_extra_info->second.second = std::make_tuple(resp_buf.size(), timestamp - std::get<1>(it_extra_info->second.second));
+          it_extra_info->second.first = response_extra_info_status::ready;
+        } else {
+          kphp::log::warning("can't find extra info for RPC query {}", query_id);
+        }
       }
 
       co_return std::move(resp_buf);
@@ -368,14 +383,14 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   if (ignore_answer) {
     // start ignore answer awaiter task
-    auto awaiter_task{ignore_answer_awaiter_coroutine(std::move(*query_expected))};
-    kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
+    auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(*query_expected))};
+    kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
 
     return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
   // start awaiter task
-  auto awaiter_task{awaiter_coroutine(std::move(*query_expected), query_id)};
+  auto awaiter_task{awaiter_coroutine(std::move(*query_expected), query_id, collect_responses_extra_info)};
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
 
   rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
