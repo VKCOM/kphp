@@ -7,10 +7,16 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
+#include "common/type_traits/apply_tuple.h"
+
 namespace kphp::stl::intrusive {
+
+template<typename T, typename... Tags>
+class list_node;
 
 namespace details {
 
@@ -47,6 +53,18 @@ struct tag_holder : public list_node_base {};
 template<typename... Tags>
 struct tag_holder_variadic : public tag_holder<Tags>... {};
 
+template<typename Node, typename Tag>
+constexpr auto as_value(list_node_base& node) noexcept -> Node::element_type& {
+  using tag_holder_variadic_t = vk::apply_tuple_t<tag_holder_variadic, typename Node::tags>;
+  return (static_cast<Node&>(static_cast<tag_holder_variadic_t&>(static_cast<tag_holder<Tag>&>(node)))).get();
+}
+
+template<typename Node, typename Tag>
+constexpr auto as_value(const list_node_base& node) noexcept -> const Node::element_type& {
+  using tag_holder_variadic_t = vk::apply_tuple_t<tag_holder_variadic, typename Node::tags>;
+  return (static_cast<const Node&>(static_cast<const tag_holder_variadic_t&>(static_cast<const tag_holder<Tag>&>(node)))).get();
+}
+
 } // namespace details
 
 struct default_tag {};
@@ -57,6 +75,7 @@ class list_node final : private std::conditional_t<sizeof...(Tags) == 0, details
 
 public:
   using element_type = T;
+  using tags = std::tuple<Tags...>;
 
   constexpr explicit list_node(T value) noexcept
       : m_value{std::move(value)} {}
@@ -111,19 +130,39 @@ public:
 
   ~list_iterator() = default;
 
-  constexpr auto operator++() noexcept -> list_iterator&;
+  constexpr auto operator++() noexcept -> list_iterator& {
+    m_curr = m_curr->m_next;
+    return *this;
+  }
 
-  constexpr auto operator++(int) noexcept -> list_iterator;
+  constexpr auto operator++(int) noexcept -> list_iterator {
+    list_iterator res = *this;
+    ++*this;
+    return res;
+  }
 
-  constexpr auto operator--() noexcept -> list_iterator&;
+  constexpr auto operator--() noexcept -> list_iterator& {
+    m_curr = m_curr->m_prev;
+    return *this;
+  }
 
-  constexpr auto operator--(int) noexcept -> list_iterator;
+  constexpr auto operator--(int) noexcept -> list_iterator {
+    list_iterator res = *this;
+    --*this;
+    return res;
+  }
 
-  constexpr auto operator*() const noexcept -> reference;
+  constexpr auto operator*() const noexcept -> reference {
+    return details::as_value<Node, Tag>(*m_curr);
+  }
 
-  constexpr auto operator==(const list_iterator& other) const noexcept -> bool;
+  constexpr auto operator==(const list_iterator& other) const noexcept -> bool {
+    return m_curr == other.m_curr;
+  }
 
-  constexpr auto operator!=(const list_iterator& other) const noexcept -> bool;
+  constexpr auto operator!=(const list_iterator& other) const noexcept -> bool {
+    return !(*this == other);
+  }
 };
 
 template<typename Node, typename Tag = default_tag>
