@@ -57,8 +57,8 @@ public:
   query(const query& other) = delete;
   query& operator=(const query& other) = delete;
 
-  static auto send(std::string_view actor, std::chrono::milliseconds timeout, std::span<const std::byte> request_buffer) noexcept ->
-                   std::expected<query, int32_t>;
+  static auto send(std::string_view actor, std::chrono::milliseconds timeout,
+                   std::span<const std::byte> request_buffer) noexcept -> std::expected<query, int32_t>;
 
   template<std::invocable<size_t> B>
   requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
@@ -71,8 +71,8 @@ inline auto query::drop() noexcept -> void {
   }
 }
 
-inline auto query::send(std::string_view actor, std::chrono::milliseconds timeout, std::span<const std::byte> request_buffer) noexcept ->
-                        std::expected<query, int32_t> {
+inline auto query::send(std::string_view actor, std::chrono::milliseconds timeout,
+                        std::span<const std::byte> request_buffer) noexcept -> std::expected<query, int32_t> {
   auto descriptor_exp{k2::rpc_send_request(actor, request_buffer, RpcKind::TL_RPC)};
   if (!descriptor_exp) {
     return std::unexpected{descriptor_exp.error()};
