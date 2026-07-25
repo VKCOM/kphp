@@ -67,6 +67,12 @@ template<typename T, typename... Tags>
 class list_node final : private std::conditional_t<sizeof...(Tags) == 0, details::tagged_hooks<default_tag>, details::tagged_hooks<Tags...>> {
   T m_value;
 
+  template<typename, typename>
+  friend class kphp::stl::intrusive::list;
+
+  template<typename, typename>
+  friend class kphp::stl::intrusive::list_iterator;
+
 public:
   using value_type = T;
   using tags = std::conditional_t<sizeof...(Tags) == 0, std::tuple<default_tag>, std::tuple<Tags...>>;
@@ -98,8 +104,33 @@ auto make_list_node(T value) noexcept -> list_node<T, Tags...> {
   return list_node<T, Tags...>{std::move(value)};
 }
 
+namespace details {
+
+template<typename>
+struct is_list_node : std::false_type {};
+
+template<typename T, typename... Tags>
+struct is_list_node<list_node<T, Tags...>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_list_node_v = is_list_node<std::decay_t<T>>::value_type;
+
+template<typename Tag, typename... Tags>
+struct is_tag_of : std::false_type {};
+
+template<typename Tag, typename... Tags>
+struct is_tag_of<Tag, std::tuple<Tags...>> : std::bool_constant<(std::is_same_v<Tag, Tags> || ...)> {};
+
+template<typename Tag, typename Node>
+inline constexpr bool is_tag_of_v = is_tag_of<Tag, typename std::decay_t<Node>::tags>::value;
+
+} // namespace details
+
 template<typename Node, typename Tag = default_tag>
 class list_iterator final {
+  static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
+  static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
+
   using list_node_base_type = std::conditional_t<std::is_const_v<Node>, const details::list_node_base, details::list_node_base>;
 
   list_node_base_type* m_curr;
@@ -117,8 +148,8 @@ class list_iterator final {
 public:
   using difference_type = std::ptrdiff_t;
   using value_type = Node::value_type;
-  using pointer = value_type*;
-  using reference = value_type&;
+  using pointer = std::conditional_t<std::is_const_v<Node>, const value_type*, value_type*>;
+  using reference = std::conditional_t<std::is_const_v<Node>, const value_type&, value_type&>;
   using iterator_category = std::bidirectional_iterator_tag;
 
   explicit list_iterator(list_node_base_type& node) noexcept
@@ -171,6 +202,9 @@ public:
 
 template<typename Node, typename Tag = default_tag>
 class list final {
+  static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
+  static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
+
   details::list_node_base m_sentinel;
 
 public:
