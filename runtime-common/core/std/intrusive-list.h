@@ -104,14 +104,14 @@ class list_iterator final {
 
   list_node_base_type* m_curr;
 
-  static auto value_from_list_node_base(details::list_node_base& node) noexcept -> Node::element_type& {
-    using tag_holder_variadic_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
-    return (static_cast<Node&>(static_cast<tag_holder_variadic_t&>(static_cast<details::tagged_hook<Tag>&>(node)))).value();
+  static auto value_from_list_node_base(details::list_node_base& node) noexcept -> Node::value_type& {
+    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
+    return (static_cast<Node&>(static_cast<tagged_hooks_t&>(static_cast<details::tagged_hook<Tag>&>(node)))).value();
   }
 
-  static auto value_from_list_node_base(const details::list_node_base& node) noexcept -> const Node::element_type& {
-    using tag_holder_variadic_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
-    return (static_cast<const Node&>(static_cast<const tag_holder_variadic_t&>(static_cast<const details::tagged_hook<Tag>&>(node)))).value();
+  static auto value_from_list_node_base(const details::list_node_base& node) noexcept -> const Node::value_type& {
+    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
+    return (static_cast<const Node&>(static_cast<const tagged_hooks_t&>(static_cast<const details::tagged_hook<Tag>&>(node)))).value();
   }
 
 public:
