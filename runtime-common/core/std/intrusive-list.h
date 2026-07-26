@@ -113,7 +113,7 @@ template<typename T, typename... Tags>
 struct is_list_node<list_node<T, Tags...>> : std::true_type {};
 
 template<typename T>
-inline constexpr bool is_list_node_v = is_list_node<std::decay_t<T>>::value_type;
+inline constexpr bool is_list_node_v = is_list_node<std::decay_t<T>>::value;
 
 template<typename Tag, typename... Tags>
 struct is_tag_of : std::false_type {};
@@ -127,35 +127,40 @@ inline constexpr bool is_tag_of_v = is_tag_of<Tag, typename std::decay_t<Node>::
 } // namespace details
 
 template<typename Node, typename Tag = default_tag>
-class list_iterator final {
-  static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
-  static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
-
-  using list_node_base_type = std::conditional_t<std::is_const_v<Node>, const details::list_node_base, details::list_node_base>;
-
-  list_node_base_type* m_curr;
-
-  static auto value_from_list_node_base(details::list_node_base& node) noexcept -> Node::value_type& {
-    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
-    return (static_cast<Node&>(static_cast<tagged_hooks_t&>(static_cast<details::tagged_hook<Tag>&>(node)))).value();
-  }
-
-  static auto value_from_list_node_base(const details::list_node_base& node) noexcept -> const Node::value_type& {
-    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
-    return (static_cast<const Node&>(static_cast<const tagged_hooks_t&>(static_cast<const details::tagged_hook<Tag>&>(node)))).value();
-  }
-
+class list_iterator {
 public:
   using difference_type = std::ptrdiff_t;
-  using value_type = Node::value_type;
+  using value_type = typename Node::value_type;
   using pointer = std::conditional_t<std::is_const_v<Node>, const value_type*, value_type*>;
   using reference = std::conditional_t<std::is_const_v<Node>, const value_type&, value_type&>;
   using iterator_category = std::bidirectional_iterator_tag;
 
-  explicit list_iterator(list_node_base_type& node) noexcept
-      : m_curr{std::addressof(node)} {}
+private:
+  static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
+  static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
 
+  details::list_node_base* m_curr;
+
+  explicit list_iterator(const details::list_node_base* node) noexcept
+      : m_curr{const_cast<details::list_node_base*>(node)} {}
+
+  static auto value_from_list_node_base(details::list_node_base* node) noexcept -> reference {
+    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
+    return (static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node))))->value();
+  }
+
+  template<typename, typename>
+  friend class kphp::stl::intrusive::list_iterator;
+
+  template<typename, typename>
+  friend class kphp::stl::intrusive::list;
+
+public:
   list_iterator(const list_iterator& other) noexcept = default;
+
+  template<typename NodeU, typename = std::enable_if_t<std::is_const_v<Node> && !std::is_const_v<NodeU>>>
+  list_iterator(const list_iterator<NodeU, Tag>& other) noexcept // NOLINT (hicpp-explicit-conversions)
+      : m_curr{other.m_curr} {}
 
   list_iterator(list_iterator&& other) noexcept = default;
 
@@ -188,27 +193,24 @@ public:
   }
 
   auto operator*() const noexcept -> reference {
-    return value_from_list_node_base(*m_curr);
+    return value_from_list_node_base(m_curr);
   }
 
-  auto operator==(const list_iterator& other) const noexcept -> bool {
+  template<typename NodeU, typename = std::enable_if_t<std::is_same_v<std::remove_const_t<Node>, std::remove_const_t<NodeU>>>>
+  auto operator==(const list_iterator<NodeU, Tag>& other) const noexcept -> bool {
     return m_curr == other.m_curr;
   }
 
-  auto operator!=(const list_iterator& other) const noexcept -> bool {
+  template<typename NodeU, typename = std::enable_if_t<std::is_same_v<std::remove_const_t<Node>, std::remove_const_t<NodeU>>>>
+  auto operator!=(const list_iterator<NodeU, Tag>& other) const noexcept -> bool {
     return !(*this == other);
   }
 };
 
 template<typename Node, typename Tag = default_tag>
-class list final {
-  static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
-  static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
-
-  details::list_node_base m_sentinel;
-
+class list {
 public:
-  using value_type = Node::value_type;
+  using value_type = typename Node::value_type;
   using size_type = size_t;
   using difference_type = ptrdiff_t;
   using reference = value_type&;
@@ -220,10 +222,39 @@ public:
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  list() noexcept = default;
+private:
+  static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
+  static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
 
-  template<typename It>
-  list(It first, It last) noexcept;
+  details::list_node_base m_sentinel;
+
+  static auto list_node_base_from_list_node(Node& node) noexcept -> details::list_node_base* {
+    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
+    return static_cast<details::list_node_base*>(static_cast<details::tagged_hook<Tag>*>(static_cast<tagged_hooks_t*>(std::addressof(node))));
+  }
+
+  template<typename List>
+  auto splice_impl(const_iterator pos, List&& other, const_iterator first, const_iterator last) noexcept -> void {
+    if (first == last || (this == std::addressof(other) && last == pos)) {
+      return;
+    }
+
+    auto* pos_node = pos.m_curr;
+    auto* first_node = first.m_curr;
+    auto* last_node = last.m_curr->m_prev;
+
+    first_node->m_prev->m_next = last_node->m_next;
+    last_node->m_next->m_prev = first_node->m_prev;
+
+    first_node->m_prev = pos_node->m_prev;
+    last_node->m_next = pos_node;
+
+    pos_node->m_prev->m_next = first_node;
+    pos_node->m_prev = last_node;
+  }
+
+public:
+  list() noexcept = default;
 
   list(const list& other) = delete;
 
@@ -244,19 +275,19 @@ public:
   }
 
   auto back() noexcept -> reference {
-    return *(--end());
+    return *std::prev(end());
   }
 
   auto back() const noexcept -> const_reference {
-    return *(--end());
+    return *std::prev(end());
   }
 
   auto begin() noexcept -> iterator {
-    return iterator{*m_sentinel.m_next};
+    return iterator{m_sentinel.m_next};
   }
 
   auto begin() const noexcept -> const_iterator {
-    return const_iterator{*m_sentinel.m_next};
+    return const_iterator{m_sentinel.m_next};
   }
 
   auto cbegin() const noexcept -> const_iterator {
@@ -264,11 +295,11 @@ public:
   }
 
   auto end() noexcept -> iterator {
-    return iterator{m_sentinel};
+    return iterator{std::addressof(m_sentinel)};
   }
 
   auto end() const noexcept -> const_iterator {
-    return const_iterator{m_sentinel};
+    return const_iterator{std::addressof(m_sentinel)};
   }
 
   auto cend() const noexcept -> const_iterator {
@@ -276,11 +307,11 @@ public:
   }
 
   auto rbegin() noexcept -> reverse_iterator {
-    return reverse_iterator{--end()};
+    return reverse_iterator{std::prev(end())};
   }
 
   auto rbegin() const noexcept -> const_reverse_iterator {
-    return const_reverse_iterator{--end()};
+    return const_reverse_iterator{std::prev(end())};
   }
 
   auto crbegin() const noexcept -> const_reverse_iterator {
@@ -288,11 +319,11 @@ public:
   }
 
   auto rend() noexcept -> reverse_iterator {
-    return reverse_iterator{--begin()};
+    return reverse_iterator{std::prev(begin())};
   }
 
   auto rend() const noexcept -> const_reverse_iterator {
-    return const_reverse_iterator{--begin()};
+    return const_reverse_iterator{std::prev(begin())};
   }
 
   auto crend() const noexcept -> const_reverse_iterator {
@@ -311,39 +342,91 @@ public:
     m_sentinel.unlink();
   }
 
-  auto insert(const_iterator pos, const Node& node) noexcept -> iterator;
+  auto insert(const_iterator pos, Node& node) noexcept -> iterator {
+    auto* next_node = pos.m_curr;
+    auto* new_node = list_node_base_from_list_node(node);
+    if (new_node == next_node) {
+      return iterator{next_node};
+    }
 
-  template<typename It>
-  auto insert(const_iterator pos, It first, It last) noexcept -> iterator;
+    new_node->unlink();
 
-  auto erase(const_iterator pos) noexcept -> iterator;
+    new_node->m_prev = next_node->m_prev;
+    new_node->m_next = next_node;
 
-  auto erase(const_iterator first, const_iterator last) noexcept -> iterator;
+    new_node->m_prev->m_next = new_node;
+    new_node->m_next->m_prev = new_node;
 
-  auto push_back(const Node& node) noexcept -> void;
+    return iterator{new_node};
+  }
 
-  auto push_front(const Node& node) noexcept -> void;
+  auto erase(const_iterator pos) noexcept -> iterator {
+    auto* remove_node = pos.m_curr;
+    auto* next_node = remove_node->m_next;
 
-  auto pop_back() noexcept -> void;
+    remove_node->unlink();
 
-  auto pop_front() noexcept -> void;
+    return iterator{next_node};
+  }
 
-  auto swap(list& other) noexcept -> void;
+  auto erase(const_iterator first, const_iterator last) noexcept -> iterator {
+    while (first != last) {
+      first = erase(first);
+    }
 
-  auto splice(const_iterator pos, list& other) noexcept -> void;
+    return iterator{last.m_curr};
+  }
 
-  auto splice(const_iterator pos, list&& other) noexcept -> void;
+  auto push_back(Node& node) noexcept -> void {
+    insert(end(), node);
+  }
 
-  auto splice(const_iterator pos, list& other, const_iterator it) noexcept -> void;
+  auto push_front(Node& node) noexcept -> void {
+    insert(begin(), node);
+  }
 
-  auto splice(const_iterator pos, list&& other, const_iterator it) noexcept -> void;
+  auto pop_back() noexcept -> void {
+    erase(std::prev(end()));
+  }
 
-  auto splice(const_iterator pos, list& other, const_iterator first, const_iterator last) noexcept -> void;
+  auto pop_front() noexcept -> void {
+    erase(begin());
+  }
 
-  auto splice(const_iterator pos, list&& other, const_iterator first, const_iterator last) noexcept -> void;
+  auto swap(list& other) noexcept -> void {
+    details::list_node_base tmp{std::move(m_sentinel)};
+    m_sentinel = std::move(other.m_sentinel);
+    other.m_sentinel = std::move(tmp);
+  }
+
+  auto splice(const_iterator pos, list& other) noexcept -> void {
+    splice(pos, other, other.begin(), other.end());
+  }
+
+  auto splice(const_iterator pos, list&& other) noexcept -> void {
+    splice(pos, std::move(other), other.begin(), other.end());
+  }
+
+  auto splice(const_iterator pos, list& other, const_iterator it) noexcept -> void {
+    splice(pos, other, it, std::next(it));
+  }
+
+  auto splice(const_iterator pos, list&& other, const_iterator it) noexcept -> void {
+    splice(pos, std::move(other), it, std::next(it));
+  }
+
+  auto splice(const_iterator pos, list& other, const_iterator first, const_iterator last) noexcept -> void {
+    splice_impl(pos, other, first, last);
+  }
+
+  auto splice(const_iterator pos, list&& other, const_iterator first, const_iterator last) noexcept -> void {
+    splice_impl(pos, std::move(other), first, last);
+  }
 };
 
 template<typename Node, typename Tag>
-auto swap(list<Node, Tag>& lhs, list<Node, Tag>& rhs) noexcept -> void;
+auto swap(list<Node, Tag>& lhs, list<Node, Tag>& rhs) noexcept -> void {
+  lhs.swap(rhs);
+}
 
 } // namespace kphp::stl::intrusive
