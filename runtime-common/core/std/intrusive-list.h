@@ -139,7 +139,7 @@ private:
   static_assert(details::is_list_node_v<Node>, "Node must be a specialization of list_node");
   static_assert(details::is_tag_of_v<Tag, Node>, "Tag is not one of Node's tags");
 
-  details::list_node_base* m_curr;
+  details::list_node_base* m_curr{nullptr};
 
   explicit list_iterator(const details::list_node_base* node) noexcept
       : m_curr{const_cast<details::list_node_base*>(node)} {}
@@ -156,6 +156,8 @@ private:
   friend class kphp::stl::intrusive::list;
 
 public:
+  list_iterator() noexcept = default;
+
   list_iterator(const list_iterator& other) noexcept = default;
 
   template<typename NodeU, typename = std::enable_if_t<std::is_const_v<Node> && !std::is_const_v<NodeU>>>
@@ -233,8 +235,7 @@ private:
     return static_cast<details::list_node_base*>(static_cast<details::tagged_hook<Tag>*>(static_cast<tagged_hooks_t*>(std::addressof(node))));
   }
 
-  template<typename List>
-  auto splice_impl(const_iterator pos, List&& other, const_iterator first, const_iterator last) noexcept -> void {
+  auto splice_impl(const_iterator pos, list& other, const_iterator first, const_iterator last) noexcept -> void {
     if (first == last || (this == std::addressof(other) && last == pos)) {
       return;
     }
@@ -404,7 +405,7 @@ public:
   }
 
   auto splice(const_iterator pos, list&& other) noexcept -> void {
-    splice(pos, std::move(other), other.begin(), other.end());
+    splice(pos, other, other.begin(), other.end());
   }
 
   auto splice(const_iterator pos, list& other, const_iterator it) noexcept -> void {
@@ -412,7 +413,7 @@ public:
   }
 
   auto splice(const_iterator pos, list&& other, const_iterator it) noexcept -> void {
-    splice(pos, std::move(other), it, std::next(it));
+    splice(pos, other, it, std::next(it));
   }
 
   auto splice(const_iterator pos, list& other, const_iterator first, const_iterator last) noexcept -> void {
@@ -420,7 +421,7 @@ public:
   }
 
   auto splice(const_iterator pos, list&& other, const_iterator first, const_iterator last) noexcept -> void {
-    splice_impl(pos, std::move(other), first, last);
+    splice_impl(pos, other, first, last);
   }
 };
 
