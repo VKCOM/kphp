@@ -146,7 +146,13 @@ private:
 
   static auto value_from_list_node_base(details::list_node_base* node) noexcept -> reference {
     using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
-    return (static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node))))->value();
+    /* 
+     * save cast to local variable to avoid compilation error in g++-11:
+     * error: ‘this’ pointer is null [-Werror=nonnull]
+     * 150 |     return (static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node))))->value();
+     */
+    auto* list_node = static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node)));
+    return list_node->value();
   }
 
   template<typename, typename>
@@ -308,11 +314,11 @@ public:
   }
 
   auto rbegin() noexcept -> reverse_iterator {
-    return reverse_iterator{std::prev(end())};
+    return reverse_iterator{end()};
   }
 
   auto rbegin() const noexcept -> const_reverse_iterator {
-    return const_reverse_iterator{std::prev(end())};
+    return const_reverse_iterator{end()};
   }
 
   auto crbegin() const noexcept -> const_reverse_iterator {
@@ -320,11 +326,11 @@ public:
   }
 
   auto rend() noexcept -> reverse_iterator {
-    return reverse_iterator{std::prev(begin())};
+    return reverse_iterator{begin()};
   }
 
   auto rend() const noexcept -> const_reverse_iterator {
-    return const_reverse_iterator{std::prev(begin())};
+    return const_reverse_iterator{begin()};
   }
 
   auto crend() const noexcept -> const_reverse_iterator {
