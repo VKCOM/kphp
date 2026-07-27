@@ -305,12 +305,13 @@ if __name__ == "__main__":
         "mkdir {kphp_repo_root}/build && "
         "cmake "
         "-S {kphp_repo_root} -B {kphp_repo_root}/build "
-        "-DCMAKE_CXX_COMPILER={cxx_name} {cmake_options} && "
+        "-DCMAKE_C_COMPILER={cc_name} -DCMAKE_CXX_COMPILER={cxx_name} {cmake_options} && "
         "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test && "
         "{env_vars} make -C {kphp_repo_root}/build vkext7.4 && "
         "cd {kphp_repo_root}/build && cpack".format(
             jobs=n_cpu * 4 if args.use_nocc else n_cpu,
             kphp_repo_root=kphp_repo_root,
+            cc_name=args.cc_name,
             cxx_name=args.cxx_name,
             cmake_options=cmake_options,
             env_vars=env_vars,
