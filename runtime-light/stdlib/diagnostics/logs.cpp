@@ -16,9 +16,9 @@
 void kphp::log::assertion(bool condition, const std::source_location& location) noexcept {
   if (!condition) [[unlikely]] {
     std::array<char, impl::DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
-    size_t message_size{
-        impl::format_log_message(log_buffer, "assertion failed at {}:{}",
-                                 std::make_format_args(kphp::log::impl::unmove(location.file_name()), kphp::log::impl::unmove(location.line())))};
+    const auto* file_name{location.file_name()};
+    auto line{location.line()};
+    size_t message_size{impl::format_log_message(log_buffer, "assertion failed at {}:{}", std::make_format_args(file_name, line))};
     auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
     k2::log(std::to_underlying(level::error), message, {});
     k2::exit(1);
