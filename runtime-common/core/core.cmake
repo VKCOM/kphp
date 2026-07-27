@@ -7,4 +7,6 @@ prepend(CORE_MEMORY_RESOURCE core/memory-resource/
         details/memory_chunk_tree.cpp details/memory_ordered_chunk_list.cpp
         monotonic_buffer_resource.cpp unsynchronized_pool_resource.cpp)
 
-set(CORE_SRC ${CORE_UTILS} ${CORE_TYPES} ${CORE_MEMORY_RESOURCE})
+prepend(CORE_STD core/std/ intrusive-list.cpp)        
+
+set(CORE_SRC ${CORE_UTILS} ${CORE_TYPES} ${CORE_MEMORY_RESOURCE} ${CORE_STD})
