@@ -65,7 +65,7 @@ struct default_tag {};
 
 template<typename T, typename... Tags>
 class list_node final : private std::conditional_t<sizeof...(Tags) == 0, details::tagged_hooks<default_tag>, details::tagged_hooks<Tags...>> {
-  T m_value;
+  T m_value{};
 
   template<typename, typename>
   friend class kphp::stl::intrusive::list;
@@ -76,6 +76,8 @@ class list_node final : private std::conditional_t<sizeof...(Tags) == 0, details
 public:
   using value_type = T;
   using tags = std::conditional_t<sizeof...(Tags) == 0, std::tuple<default_tag>, std::tuple<Tags...>>;
+
+  list_node() noexcept = default;
 
   explicit list_node(T value) noexcept
       : m_value{std::move(value)} {}
@@ -146,7 +148,7 @@ private:
 
   static auto value_from_list_node_base(details::list_node_base* node) noexcept -> reference {
     using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
-    /* 
+    /*
      * save cast to local variable to avoid compilation error in g++-11:
      * error: ‘this’ pointer is null [-Werror=nonnull]
      * 150 |     return (static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node))))->value();
