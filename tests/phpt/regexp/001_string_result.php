@@ -128,6 +128,62 @@ function test_preg_replace_callback4(string $text) {
   }
 }
 
+function test_preg_replace_callback1_async(string $subject) {
+  $result = preg_replace_callback('/_/', function ($m) {
+    sleep(0);
+    return '{' . $m[0] . '}';
+  }, $subject);
+  accept_nullable_string($result);
+  if ($result !== null) {
+    accept_string($result);
+  }
+  if ($result) {
+    accept_string($result);
+  }
+}
+
+function test_preg_replace_callback2_async(string $subject) {
+  $pattern = '/_/';
+  $result = preg_replace_callback($pattern, function ($m) {
+    sleep(0);
+    return '{' . $m[0] . '}';
+  }, $subject);
+  accept_nullable_string($result);
+  if ($result !== null) {
+    accept_string($result);
+  }
+  if ($result) {
+    accept_string($result);
+  }
+}
+
+/**
+ * @kphp-infer
+ * @param mixed $name
+ * @return string
+ */
+function test_preg_replace_callback3_async($name) {
+  $name = strtolower(as_mixed($name));
+  $name = preg_replace_callback('/\s/', function ($m) { sleep(0); return '-'; }, $name);
+  $name = preg_replace_callback('/[^a-z0-9-]/', function ($m) { sleep(0); return ''; }, $name);
+  if ($name !== null) {
+    return $name;
+  }
+  return '';
+}
+
+function test_preg_replace_callback4_async(string $text) {
+  $patterns = ['/_/', '/\s/'];
+  $result = preg_replace_callback($patterns, function ($m) { sleep(0); return ''; }, $text);
+  accept_nullable_string($result);
+  if ($result !== null) {
+    accept_string($result);
+  }
+  if ($result) {
+    accept_string($result);
+  }
+}
+
 test_preg_replace1('hello_world');
 test_preg_replace1('foo');
 test_preg_replace2('hello_world');
@@ -145,3 +201,11 @@ test_preg_replace_callback2('foo');
 test_preg_replace_callback3('foo @() -- 12');
 test_preg_replace_callback4('hello _world_ ');
 test_preg_replace_callback4('foo');
+
+test_preg_replace_callback1_async('hello_world');
+test_preg_replace_callback1_async('foo');
+test_preg_replace_callback2_async('hello_world');
+test_preg_replace_callback2_async('foo');
+test_preg_replace_callback3_async('foo @() -- 12');
+test_preg_replace_callback4_async('hello _world_ ');
+test_preg_replace_callback4_async('foo');

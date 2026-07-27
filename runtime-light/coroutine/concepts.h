@@ -30,13 +30,13 @@ concept awaiter = awaiter_base<type> && (requires(type t, std::coroutine_handle<
 });
 
 template<typename T>
-concept member_co_await_awaitable = requires(T t) {
-  { t.operator co_await() } -> awaiter;
+concept member_co_await_awaitable = requires(T&& t) {
+  { std::forward<T>(t).operator co_await() } -> awaiter;
 };
 
 template<typename T>
-concept global_co_await_awaitable = requires(T t) {
-  { operator co_await(t) } -> awaiter;
+concept global_co_await_awaitable = requires(T&& t) {
+  { operator co_await(std::forward<T>(t)) } -> awaiter;
 };
 
 } // namespace detail
