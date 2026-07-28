@@ -166,7 +166,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  std::optional<kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>>> opt_awaiter_task{};
+  std::optional<kphp::coro::shared_task<std::expected<string, int32_t>>> opt_awaiter_task{};
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
@@ -203,11 +203,11 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   if (!response_expected) [[unlikely]] {
     co_return TlRpcError::make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
-  std::span<std::byte> response{response_expected->data(),
-                                response_expected->size()}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
+
+  auto response{std::move(*response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
   // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
@@ -223,7 +223,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  std::optional<kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>>> opt_awaiter_task{};
+  std::optional<kphp::coro::shared_task<std::expected<string, int32_t>>> opt_awaiter_task{};
 
   {
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
@@ -260,11 +260,11 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   if (!response_expected) [[unlikely]] {
     co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
-  std::span<std::byte> response{response_expected->data(),
-                                response_expected->size()}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
+
+  auto response{std::move(*response_expected)}; // don't check response's emptiness; will throw if it's empty, indicating a fetch error
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
@@ -323,14 +323,14 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }
 
   static constexpr auto awaiter_coroutine{[](query q, int64_t query_id, bool collect_responses_extra_info) mutable noexcept
-                                          -> kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>> {
-    kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+                                          -> kphp::coro::shared_task<std::expected<string, int32_t>> {
+    string resp_buf{};
     const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
-      resp_buf.resize(size);
-      return {resp_buf.data(), size};
+      resp_buf.assign(size, true);
+      return {reinterpret_cast<std::byte*>(resp_buf.buffer()), size};
     }};
 
-    auto fetch_task{q.get_response<decltype(response_buffer_provider)>(response_buffer_provider)};
+    auto fetch_task{std::move(q).response<decltype(response_buffer_provider)>(response_buffer_provider)};
     auto schedule_expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
     if (!schedule_expected) {
       co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
@@ -352,13 +352,13 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }};
 
   static constexpr auto ignore_answer_awaiter_coroutine{[](query q) noexcept -> kphp::coro::shared_task<> {
-    kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+    string resp_buf{};
     const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
-      resp_buf.resize(size);
-      return {resp_buf.data(), size};
+      resp_buf.assign(size, true);
+      return {reinterpret_cast<std::byte*>(resp_buf.buffer()), size};
     }};
 
-    auto fetch_task{q.get_response<decltype(response_buffer_provider)>(response_buffer_provider)};
+    auto fetch_task{std::move(q).response<decltype(response_buffer_provider)>(response_buffer_provider)};
     std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task));
   }};
 

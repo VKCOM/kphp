@@ -23,9 +23,7 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   CurrentTlQuery current_client_query{};
   int64_t current_query_id{kphp::rpc::VALID_QUERY_ID_RANGE_START};
 
-  kphp::stl::unordered_map<int64_t, kphp::coro::shared_task<std::expected<kphp::stl::vector<std::byte, kphp::memory::script_allocator>, int32_t>>,
-                           kphp::memory::script_allocator>
-      response_awaiter_tasks;
+  kphp::stl::unordered_map<int64_t, kphp::coro::shared_task<std::expected<string, int32_t>>, kphp::memory::script_allocator> response_awaiter_tasks;
   kphp::stl::unordered_map<int64_t, class_instance<RpcTlQuery>, kphp::memory::script_allocator> response_fetcher_instances;
   kphp::stl::unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>, kphp::memory::script_allocator>
       rpc_responses_extra_info;

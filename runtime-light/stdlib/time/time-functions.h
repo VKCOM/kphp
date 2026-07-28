@@ -35,27 +35,28 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
 } // namespace impl
 
 /**
- * Calculate time remaining to the deadline.
+ * Return the current steady-clock time point from the K2 platform.
  */
-inline std::chrono::nanoseconds remaining(std::chrono::steady_clock::time_point deadline) noexcept {
+inline std::chrono::steady_clock::time_point now() noexcept {
   k2::TimePoint now_instant{};
   k2::instant(std::addressof(now_instant));
-
-  std::chrono::steady_clock::time_point now{std::chrono::nanoseconds{now_instant.time_point_ns}};
-
-  return deadline - now;
+  return std::chrono::steady_clock::time_point{std::chrono::nanoseconds{now_instant.time_point_ns}};
 }
 
 /**
- * Converts timeout to time point, when timeout will elapse a.k.a. deadline.
+ * Calculate duration remaining to the deadline.
  */
-inline std::chrono::steady_clock::time_point expires_at(std::chrono::nanoseconds timeout) {
-  k2::TimePoint now_instant{};
-  k2::instant(std::addressof(now_instant));
+template<kphp::concepts::duration duration_type>
+auto remaining(std::chrono::time_point<std::chrono::steady_clock, duration_type> deadline) noexcept {
+  return deadline - now();
+}
 
-  std::chrono::steady_clock::time_point now{std::chrono::nanoseconds{now_instant.time_point_ns}};
-
-  return now + timeout;
+/**
+ * Convert a timeout to time point at which it elapses, i.e. the deadline.
+ */
+template<kphp::concepts::duration duration_type>
+auto expires_at(duration_type timeout) {
+  return now() + timeout;
 }
 
 } // namespace kphp::time
