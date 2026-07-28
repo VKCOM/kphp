@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <set>
 
 #include "compiler/data/data_ptr.h"
@@ -55,7 +56,7 @@ private:
   void inc_count_by_type(const TypeData *type);
 
 public:
-  static int detect_constants_batch_count(int n_constants);
+  static int detect_constants_batch_count(size_t n_constants);
   static const ConstantsBatchedMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
 
   const std::vector<OneBatchInfo> &get_batches() const { return batches; }
