@@ -15,6 +15,19 @@ from python.lib.colors import cyan, green, red, yellow
 from python.lib.nocc_for_kphp_tester import nocc_env
 
 
+KPHP_EXTRA_CXXFLAGS = " ".join([
+    "-B/opt/binutils-2-35/bin/ -fno-pie -gdwarf64 -gdwarf-5 -gz -fno-var-tracking",
+    "-femit-struct-debug-baseonly -fdebug-types-section -fmerge-debug-strings",
+    "-Os -march=sandybridge -mfpmath=sse -mssse3 -Wno-unused-but-set-variable",
+    "-Wa,--compress-debug-sections -std=gnu++17 -fgcse-after-reload -floop-interchange",
+    "-fpeel-loops -fpredictive-commoning -ftree-loop-distribution -ftree-loop-vectorize",
+    "-ftree-partial-pre -ftree-slp-vectorize -funswitch-loops -fvect-cost-model",
+    "-fvect-cost-model=dynamic",
+    "-falign-jumps -falign-labels -falign-loops -freorder-blocks-algorithm=stc",
+    "-no-pie -fsplit-loops -floop-unroll-and-jam -fsplit-paths -ftree-partial-pre",
+])
+
+
 K2_KPHP_TRACKED_BUILTINS_LIST_PATH = pathlib.Path(__file__).parent / "k2_kphp_tracked_builtins_list.txt"
 K2_KPHP_TRACKED_BUILTINS_LIST = K2_KPHP_TRACKED_BUILTINS_LIST_PATH.read_text()
 
@@ -342,12 +355,14 @@ if __name__ == "__main__":
         name="kphp-tests",
         description="run kphp tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+        "KPHP_EXTRA_CXXFLAGS={KPHP_EXTRA_CXXFLAGS} "
         "{kphp_runner} -j{jobs} --cxx-name {cxx_name} {use_nocc_option}".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
             kphp_runner=kphp_test_runner,
             cxx_name=args.cxx_name,
             use_nocc_option=use_nocc_option,
+            KPHP_EXTRA_CXXFLAGS=shlex.quote(KPHP_EXTRA_CXXFLAGS),
         ),
         skip=args.steps and "kphp-tests" not in args.steps,
     )
@@ -372,13 +387,15 @@ if __name__ == "__main__":
         runner.add_test_group(
             name="zend-tests",
             description="run php tests from zend repo",
-            cmd="{kphp_runner} -j{jobs} -d {zend_repo} --from-list {zend_tests} --cxx-name {cxx_name} {use_nocc_option}".format(
+            cmd="KPHP_EXTRA_CXXFLAGS={KPHP_EXTRA_CXXFLAGS} "
+            "{kphp_runner} -j{jobs} -d {zend_repo} --from-list {zend_tests} --cxx-name {cxx_name} {use_nocc_option}".format(
                 jobs=n_cpu,
                 kphp_runner=kphp_test_runner,
                 zend_repo=args.zend_repo,
                 zend_tests=zend_test_list,
                 cxx_name=args.cxx_name,
                 use_nocc_option=use_nocc_option,
+                KPHP_EXTRA_CXXFLAGS=shlex.quote(KPHP_EXTRA_CXXFLAGS),
             ),
             skip=args.steps and "zend-tests" not in args.steps,
         )
@@ -422,6 +439,7 @@ if __name__ == "__main__":
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
         "KPHP_TL_SCHEMA={combined_tlo} "
         "KPHP_GEN_TL_INTERNALS=1 "
+        "KPHP_EXTRA_CXXFLAGS={KPHP_EXTRA_CXXFLAGS} "
         "{kphp_runner} -j{jobs} -d {tl_tests_dir} --cxx-name {cxx_name} {use_nocc_option}".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
@@ -430,6 +448,7 @@ if __name__ == "__main__":
             tl_tests_dir=tl_tests_dir,
             cxx_name=args.cxx_name,
             use_nocc_option=use_nocc_option,
+            KPHP_EXTRA_CXXFLAGS=shlex.quote(KPHP_EXTRA_CXXFLAGS),
         ),
         skip=args.steps and "typed-tl-tests" not in args.steps,
     )
@@ -439,11 +458,13 @@ if __name__ == "__main__":
         description="run kphp functional tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
         "KPHP_CXX={cxx_name} "
+        "KPHP_EXTRA_CXXFLAGS={KPHP_EXTRA_CXXFLAGS} "
         "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             cxx_name=args.cxx_name,
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
+            KPHP_EXTRA_CXXFLAGS=shlex.quote(KPHP_EXTRA_CXXFLAGS),
             base_tempdir=os.path.expanduser(
                 "~/_tmp"
             ),  # Workaround to make unix socket paths needed by pytest-mysql have length < 108 symbols
@@ -487,6 +508,7 @@ if __name__ == "__main__":
             "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
             "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
             "KPHP_CXX={cxx_name} "
+            "KPHP_EXTRA_CXXFLAGS={KPHP_EXTRA_CXXFLAGS} "
             "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
@@ -494,6 +516,7 @@ if __name__ == "__main__":
                 kphp_repo_root=kphp_repo_root,
                 kphp_polyfills_repo=kphp_polyfills_repo,
                 cxx_name=args.cxx_name,
+                KPHP_EXTRA_CXXFLAGS=shlex.quote(KPHP_EXTRA_CXXFLAGS),
                 exclude_pattern=(
                     "not test_load_and_kill_worker" if args.use_asan else ""
                 ),  # TODO: ASAN behaves very strange on this test that makes it flaky
