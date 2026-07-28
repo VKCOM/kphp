@@ -25,7 +25,7 @@ struct truncating_iterator {
 
   char* dst;
   size_t max_size;
-  size_t count = 0;
+  size_t count{};
 
   struct proxy {
     truncating_iterator& it;
@@ -72,7 +72,7 @@ size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* const> ra
 }
 
 size_t format_log_message(std::span<char> message_buffer, std::string_view fmt, std::format_args args) noexcept {
-  auto it{std::vformat_to(truncating_iterator{message_buffer.data(), message_buffer.size() - 1}, fmt, args)};
+  auto it{std::vformat_to(truncating_iterator{.dst = message_buffer.data(), .max_size = message_buffer.size() - 1}, fmt, args)};
   *it.dst = '\0';
   return std::distance(message_buffer.data(), it.dst);
 }
