@@ -118,7 +118,7 @@ int ConstantsBatchedMem::detect_constants_batch_count(size_t n_constants) {
   }
 
   // round to avoid changing buckets count frequently
-  const auto msb{std::bit_width(batch_count) - 1};
+  const auto msb{sizeof(size_t) * __CHAR_BIT__ - 1 - __builtin_clzl(batch_count)};
   const auto mask{(1 << msb) | (1 << (msb - 1))};
   const auto tail_mask{(1 << (msb - 1)) - 1};
   if (batch_count & tail_mask) {
