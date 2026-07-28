@@ -26,25 +26,27 @@ struct truncating_iterator {
   char* dst;
   size_t max_size;
   size_t count{};
+  mutable char blackhole{};
 
-  struct proxy {
-    truncating_iterator& it;
-    void operator=(char c) const { // NOLINT
-      if (it.count < it.max_size) {
-        *it.dst++ = c;
-      }
-      it.count++;
+  truncating_iterator(char* out, size_t max_size) noexcept
+      : dst{out},
+        max_size{max_size} {}
+
+  truncating_iterator& operator++() noexcept {
+    if (count++ < max_size) {
+      ++dst;
     }
-  };
+    return *this;
+  }
 
-  proxy operator*() {
-    return proxy{*this};
+  truncating_iterator operator++(int) noexcept { // NOLINT
+    auto it = *this;
+    ++*this;
+    return it;
   }
-  truncating_iterator& operator++() {
-    return *this;
-  }
-  truncating_iterator operator++(int) { // NOLINT
-    return *this;
+
+  char& operator*() noexcept {
+    return count < max_size ? *dst : blackhole;
   }
 };
 
@@ -72,7 +74,7 @@ size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* const> ra
 }
 
 size_t format_log_message(std::span<char> message_buffer, std::string_view fmt, std::format_args args) noexcept {
-  auto it{std::vformat_to(truncating_iterator{.dst = message_buffer.data(), .max_size = message_buffer.size() - 1}, fmt, args)};
+  auto it{std::vformat_to(truncating_iterator{message_buffer.data(), message_buffer.size() - 1}, fmt, args)};
   *it.dst = '\0';
   return std::distance(message_buffer.data(), it.dst);
 }
