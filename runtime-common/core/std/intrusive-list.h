@@ -249,7 +249,7 @@ private:
   }
 
   auto splice_impl(const_iterator pos, list& other, const_iterator first, const_iterator last) noexcept -> void {
-    if (first == last || (this == std::addressof(other) && last == pos)) {
+    if (first == last || (this == std::addressof(other) && (first == pos || last == pos))) {
       return;
     }
 
