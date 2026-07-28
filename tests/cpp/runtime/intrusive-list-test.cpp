@@ -827,7 +827,8 @@ TEST(intrusive_list_move, self_move_assign_node_is_noop) {
 
   l.push_back(a);
 
-  a = std::move(a);
+  auto* self = std::addressof(a); // to avoid compilation error [-Wself-move]
+  a = std::move(*self);
 
   ASSERT_EQ(values(l), (std::vector<int>{1}));
   ASSERT_EQ(std::addressof(l.front()), std::addressof(a.value()));
@@ -840,7 +841,8 @@ TEST(intrusive_list_move, self_move_assign_is_noop) {
   l.push_back(a);
   l.push_back(b);
 
-  l = std::move(l);
+  auto* self = std::addressof(l); // to avoid compilation error [-Wself-move]
+  l = std::move(*self);
 
   ASSERT_EQ(values(l), (std::vector<int>{1, 2}));
 }
