@@ -243,6 +243,11 @@ private:
     return static_cast<details::list_node_base*>(static_cast<details::tagged_hook<Tag>*>(static_cast<tagged_hooks_t*>(std::addressof(node))));
   }
 
+  static auto list_node_base_from_list_node(const Node& node) noexcept -> const details::list_node_base* {
+    using tagged_hooks_t = vk::apply_tuple_t<details::tagged_hooks, typename Node::tags>;
+    return static_cast<const details::list_node_base*>(static_cast<const details::tagged_hook<Tag>*>(static_cast<const tagged_hooks_t*>(std::addressof(node))));
+  }
+
   auto splice_impl(const_iterator pos, list& other, const_iterator first, const_iterator last) noexcept -> void {
     if (first == last || (this == std::addressof(other) && last == pos)) {
       return;
@@ -384,6 +389,14 @@ public:
     }
 
     return iterator{last.m_curr};
+  }
+
+  auto iterator_to(Node& node) noexcept -> iterator {
+    return iterator{list_node_base_from_list_node(node)};
+  }
+
+  auto iterator_to(const Node& node) const noexcept -> const_iterator {
+    return const_iterator{list_node_base_from_list_node(node)};
   }
 
   auto push_back(Node& node) noexcept -> void {
