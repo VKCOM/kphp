@@ -416,6 +416,10 @@ public:
   }
 
   auto swap(list& other) noexcept -> void {
+    if (this == std::addressof(other)) {
+      return;
+    }
+    
     details::list_node_base tmp{std::move(m_sentinel)};
     m_sentinel = std::move(other.m_sentinel);
     other.m_sentinel = std::move(tmp);
