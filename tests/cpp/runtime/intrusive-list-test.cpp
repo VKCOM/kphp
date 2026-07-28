@@ -41,6 +41,7 @@ TEST(intrusive_list_node_base, default_is_not_linked) {
 
 TEST(intrusive_list_node_base, unlink_on_unlinked_is_safe) {
   kphp::stl::intrusive::details::list_node_base b;
+
   b.unlink();
   b.unlink();
 
@@ -75,6 +76,7 @@ TEST(intrusive_list_basic, push_back_keeps_order) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -100,6 +102,7 @@ TEST(intrusive_list_basic, push_front_reverses_order) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     l.push_front(n);
   }
@@ -111,6 +114,7 @@ TEST(intrusive_list_basic, push_front_reverses_order) {
 TEST(intrusive_list_basic, mixed_push_front_and_back) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3}, d{4};
+
   l.push_back(b);  // 2
   l.push_front(a); // 1 2
   l.push_back(c);  // 1 2 3
@@ -122,6 +126,7 @@ TEST(intrusive_list_basic, mixed_push_front_and_back) {
 TEST(intrusive_list_basic, front_back_are_mutable_references) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   l.front() = 10;
@@ -136,6 +141,7 @@ TEST(intrusive_list_iteration, forward) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 4> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}, kphp::stl::intrusive::list_node<int>{4}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -147,6 +153,7 @@ TEST(intrusive_list_iteration, reverse) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 4> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}, kphp::stl::intrusive::list_node<int>{4}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -158,6 +165,7 @@ TEST(intrusive_list_iteration, bidirectional_increment_decrement) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -181,6 +189,7 @@ TEST(intrusive_list_iteration, const_iteration) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{7}, kphp::stl::intrusive::list_node<int>{8},
                                                          kphp::stl::intrusive::list_node<int>{9}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -206,6 +215,7 @@ TEST(intrusive_list_iteration, const_iteration) {
 TEST(intrusive_list_iteration, iterator_converts_to_const_and_compares) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1};
+
   l.push_back(a);
 
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>>::iterator it = l.begin();
@@ -221,6 +231,7 @@ TEST(intrusive_list_iteration, works_with_std_algorithms) {
   std::array<kphp::stl::intrusive::list_node<int>, 5> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}, kphp::stl::intrusive::list_node<int>{4},
                                                          kphp::stl::intrusive::list_node<int>{5}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -239,6 +250,7 @@ TEST(intrusive_list_iteration, works_with_std_algorithms) {
 TEST(intrusive_list_insert, at_begin) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{2}, b{1};
+
   l.push_back(a);
   auto it = l.insert(l.begin(), b);
 
@@ -249,6 +261,7 @@ TEST(intrusive_list_insert, at_begin) {
 TEST(intrusive_list_insert, at_end) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.insert(l.end(), a);
   l.insert(l.end(), b);
 
@@ -258,6 +271,7 @@ TEST(intrusive_list_insert, at_end) {
 TEST(intrusive_list_insert, in_middle_returns_iterator_to_new_node) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, c{3}, b{2};
+
   l.push_back(a);
   l.push_back(c);
   auto pos = std::next(l.begin()); // points at 3
@@ -270,6 +284,7 @@ TEST(intrusive_list_insert, in_middle_returns_iterator_to_new_node) {
 TEST(intrusive_list_insert, same_node_at_its_own_position_is_noop) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   // Inserting node 'a' right before itself must not corrupt the list.
@@ -283,6 +298,7 @@ TEST(intrusive_list_insert, relinks_node_moving_it_from_another_list) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> src;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> dst;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
   src.push_back(a);
   src.push_back(b);
   src.push_back(c);
@@ -296,6 +312,7 @@ TEST(intrusive_list_insert, relinks_node_moving_it_from_another_list) {
 TEST(intrusive_list_insert, moves_node_within_same_list) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
   l.push_back(a);
   l.push_back(b);
   l.push_back(c);
@@ -309,6 +326,7 @@ TEST(intrusive_list_insert, moves_node_within_same_list) {
 TEST(intrusive_list_erase, single_returns_next) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
   l.push_back(a);
   l.push_back(b);
   l.push_back(c);
@@ -321,6 +339,7 @@ TEST(intrusive_list_erase, single_returns_next) {
 TEST(intrusive_list_erase, front) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   auto next = l.erase(l.begin());
@@ -332,6 +351,7 @@ TEST(intrusive_list_erase, front) {
 TEST(intrusive_list_erase, end) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   auto next = l.erase(std::prev(l.end()));
@@ -345,6 +365,7 @@ TEST(intrusive_list_erase, range) {
   std::array<kphp::stl::intrusive::list_node<int>, 5> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}, kphp::stl::intrusive::list_node<int>{4},
                                                          kphp::stl::intrusive::list_node<int>{5}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -360,6 +381,7 @@ TEST(intrusive_list_erase, range) {
 TEST(intrusive_list_erase, empty_range_is_noop) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   auto it = l.erase(l.begin(), l.begin());
@@ -372,6 +394,7 @@ TEST(intrusive_list_erase, all_makes_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -386,6 +409,7 @@ TEST(intrusive_list_erase, node_is_reusable_after_erase) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l1;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l2;
   kphp::stl::intrusive::list_node<int> a{1};
+
   l1.push_back(a);
   l1.erase(l1.begin());
 
@@ -400,6 +424,7 @@ TEST(intrusive_list_erase, node_is_reusable_after_erase) {
 TEST(intrusive_list_pop, pop_back) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
   l.push_back(a);
   l.push_back(b);
   l.push_back(c);
@@ -415,6 +440,7 @@ TEST(intrusive_list_pop, pop_back) {
 TEST(intrusive_list_pop, pop_front) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
   l.push_back(a);
   l.push_back(b);
   l.push_back(c);
@@ -429,6 +455,7 @@ TEST(intrusive_list_pop, pop_front) {
 TEST(intrusive_list_pop, pop_until_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   l.pop_front();
@@ -441,6 +468,7 @@ TEST(intrusive_list_clear, makes_list_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -455,6 +483,7 @@ TEST(intrusive_list_clear, list_is_reusable_after_clear) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     l.push_back(n);
   }
@@ -471,6 +500,7 @@ TEST(intrusive_list_swap, two_non_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2};
   kphp::stl::intrusive::list_node<int> b1{3}, b2{4}, b3{5};
+
   a.push_back(a1);
   a.push_back(a2);
   b.push_back(b1);
@@ -487,6 +517,7 @@ TEST(intrusive_list_swap, empty_with_non_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> a;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> b1{1}, b2{2};
+
   b.push_back(b1);
   b.push_back(b2);
 
@@ -504,6 +535,7 @@ TEST(intrusive_list_swap, empty_with_non_empty) {
 TEST(intrusive_list_swap, both_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> a;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
+
   a.swap(b);
 
   ASSERT_TRUE(a.empty());
@@ -515,6 +547,7 @@ TEST(intrusive_list_swap, free_function) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1};
   kphp::stl::intrusive::list_node<int> b1{2}, b2{3};
+
   a.push_back(a1);
   b.push_back(b1);
   b.push_back(b2);
@@ -528,6 +561,9 @@ TEST(intrusive_list_swap, free_function) {
 TEST(intrusive_list_swap, swap_with_self) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> a;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2};
+
+  a.push_back(a1);
+  a.push_back(a2);
 
   a.swap(a);
 
@@ -543,6 +579,7 @@ TEST(intrusive_list_splice, whole_list_at_end) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2}, a3{3};
   kphp::stl::intrusive::list_node<int> b1{4}, b2{5};
+
   a.push_back(a1);
   a.push_back(a2);
   a.push_back(a3);
@@ -560,6 +597,7 @@ TEST(intrusive_list_splice, whole_list_at_begin) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2};
   kphp::stl::intrusive::list_node<int> b1{3}, b2{4};
+
   a.push_back(a1);
   a.push_back(a2);
   b.push_back(b1);
@@ -576,6 +614,7 @@ TEST(intrusive_list_splice, whole_list_in_middle) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2};
   kphp::stl::intrusive::list_node<int> b1{3}, b2{4};
+
   a.push_back(a1);
   a.push_back(a2);
   b.push_back(b1);
@@ -591,6 +630,7 @@ TEST(intrusive_list_splice, single_element) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> a;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2}, a3{3};
+
   a.push_back(a1);
   a.push_back(a2);
   a.push_back(a3);
@@ -607,6 +647,7 @@ TEST(intrusive_list_splice, sub_range) {
   std::array<kphp::stl::intrusive::list_node<int>, 5> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}, kphp::stl::intrusive::list_node<int>{4},
                                                          kphp::stl::intrusive::list_node<int>{5}};
+
   for (auto& n : ns) {
     a.push_back(n);
   }
@@ -623,6 +664,7 @@ TEST(intrusive_list_splice, empty_other_is_noop) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> a;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> b1{1}, b2{2};
+
   b.push_back(b1);
   b.push_back(b2);
 
@@ -635,6 +677,7 @@ TEST(intrusive_list_splice, empty_other_is_noop) {
 TEST(intrusive_list_splice, within_same_list_moves_node) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
   l.push_back(a);
   l.push_back(b);
   l.push_back(c);
@@ -648,6 +691,7 @@ TEST(intrusive_list_splice, within_same_list_moves_node) {
 TEST(intrusive_list_splice, self_splice_to_same_position_is_noop) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   l.push_back(a);
   l.push_back(b);
   // splicing the first node to the position right after it (== its own place) is a noop
@@ -665,6 +709,7 @@ TEST(intrusive_list_splice, rvalue_overloads) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> a;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> b;
   kphp::stl::intrusive::list_node<int> a1{1}, a2{2};
+
   a.push_back(a1);
   a.push_back(a2);
 
@@ -688,6 +733,7 @@ TEST(intrusive_list_move, move_construct_transfers_nodes) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> src;
   std::array<kphp::stl::intrusive::list_node<int>, 3> ns{kphp::stl::intrusive::list_node<int>{1}, kphp::stl::intrusive::list_node<int>{2},
                                                          kphp::stl::intrusive::list_node<int>{3}};
+
   for (auto& n : ns) {
     src.push_back(n);
   }
@@ -700,10 +746,12 @@ TEST(intrusive_list_move, move_construct_transfers_nodes) {
 TEST(intrusive_list_move, move_assign_into_empty) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> src;
   kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
   src.push_back(a);
   src.push_back(b);
 
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> dst;
+
   dst = std::move(src);
 
   ASSERT_EQ(values(dst), (std::vector<int>{1, 2}));
@@ -713,16 +761,196 @@ TEST(intrusive_list_move, move_assign_into_empty) {
 TEST(intrusive_list_move, move_assign) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> src;
   kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3}, d{4};
+
   src.push_back(a);
   src.push_back(b);
 
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> dst;
+
   dst.push_back(c);
   dst.push_back(d);
   dst = std::move(src);
 
   ASSERT_EQ(values(dst), (std::vector<int>{1, 2}));
   ASSERT_TRUE(src.empty());
+}
+
+TEST(intrusive_list_move, move_linked_node) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
+  l.push_back(a);
+  l.push_back(b);
+
+  kphp::stl::intrusive::list_node<int> c{std::move(a)};
+
+  ASSERT_EQ(values(l), (std::vector<int>{1, 2}));
+
+  ASSERT_EQ(std::addressof(c.value()), std::addressof(*l.begin()));
+}
+
+TEST(intrusive_list_move, move_assign_unlinked_node) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
+  l.push_back(a);
+  l.push_back(b);
+
+  kphp::stl::intrusive::list_node<int> c{0};
+  c = std::move(a);
+
+  ASSERT_EQ(values(l), (std::vector<int>{1, 2}));
+  ASSERT_EQ(std::addressof(l.front()), std::addressof(c.value()));
+}
+
+TEST(intrusive_list_move, move_assign_linked_node) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l1;
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l2;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
+  l1.push_back(a);
+  l1.push_back(b);
+  l2.push_back(c);
+
+  // 'c' is already linked in l2; assigning into it must first unlink it from l2,
+  // then take over 'a's place in l1.
+  c = std::move(a);
+
+  ASSERT_TRUE(l2.empty());
+  ASSERT_EQ(values(l1), (std::vector<int>{1, 2}));
+  ASSERT_EQ(std::addressof(l1.front()), std::addressof(c.value()));
+}
+
+TEST(intrusive_list_move, self_move_assign_node_is_noop) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1};
+
+  l.push_back(a);
+
+  a = std::move(a);
+
+  ASSERT_EQ(values(l), (std::vector<int>{1}));
+  ASSERT_EQ(std::addressof(l.front()), std::addressof(a.value()));
+}
+
+TEST(intrusive_list_move, self_move_assign_is_noop) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
+  l.push_back(a);
+  l.push_back(b);
+
+  l = std::move(l);
+
+  ASSERT_EQ(values(l), (std::vector<int>{1, 2}));
+}
+
+TEST(intrusive_list_value, stores_move_only_value_type) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<std::unique_ptr<int>>> l;
+  kphp::stl::intrusive::list_node<std::unique_ptr<int>> a{std::make_unique<int>(1)};
+  kphp::stl::intrusive::list_node<std::unique_ptr<int>> b{std::make_unique<int>(2)};
+
+  l.push_back(a);
+  l.push_back(b);
+
+  auto it = l.begin();
+
+  ASSERT_EQ(**it, 1);
+
+  ++it;
+
+  ASSERT_EQ(**it, 2);
+}
+
+TEST(intrusive_list_value, make_list_node_helper) {
+  auto n = kphp::stl::intrusive::make_list_node(123);
+  static_assert(std::is_same_v<decltype(n)::value_type, int>);
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+
+  l.push_back(n);
+
+  ASSERT_EQ(l.front(), 123);
+}
+
+TEST(intrusive_list_iterator_to, single_node) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{42};
+
+  l.push_back(a);
+
+  auto it = l.iterator_to(a);
+
+  ASSERT_EQ(it, l.begin());
+  ASSERT_EQ(*it, 42);
+}
+
+TEST(intrusive_list_iterator_to, points_at_correct_position_in_middle) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
+  l.push_back(a);
+  l.push_back(b);
+  l.push_back(c);
+
+  auto it = l.iterator_to(b);
+
+  ASSERT_EQ(*it, 2);
+  ASSERT_EQ(it, std::next(l.begin()));
+  ASSERT_EQ(*std::prev(it), 1);
+  ASSERT_EQ(*std::next(it), 3);
+}
+
+TEST(intrusive_list_iterator_to, works_for_front_and_back) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
+
+  l.push_back(a);
+  l.push_back(b);
+  l.push_back(c);
+
+  ASSERT_EQ(l.iterator_to(a), l.begin());
+  ASSERT_EQ(l.iterator_to(c), std::prev(l.end()));
+}
+
+TEST(intrusive_list_iterator_to, const_overload) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
+  l.push_back(a);
+  l.push_back(b);
+  const auto& cl = l;
+
+  auto cit = cl.iterator_to(b);
+
+  ASSERT_EQ(*cit, 2);
+  ASSERT_EQ(cit, std::next(cl.cbegin()));
+}
+
+TEST(intrusive_list_iterator_to, mutating_through_returned_iterator_is_visible_via_node) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1};
+
+  l.push_back(a);
+
+  auto it = l.iterator_to(a);
+  *it = 100;
+
+  ASSERT_EQ(a.value(), 100);
+}
+
+TEST(intrusive_list_iterator_to, remains_valid_after_owning_node_is_relocated) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
+  kphp::stl::intrusive::list_node<int> a{1}, b{2};
+
+  l.push_back(a);
+  l.push_back(b);
+
+  auto relocated = std::make_unique<kphp::stl::intrusive::list_node<int>>(std::move(a));
+  auto it = l.iterator_to(*relocated);
+
+  ASSERT_EQ(*it, 1);
+  ASSERT_EQ(it, l.begin());
+  ASSERT_EQ(values(l), (std::vector<int>{1, 2}));
 }
 
 namespace {
@@ -771,6 +999,7 @@ TEST(intrusive_list_tags, mutation_through_one_tag_visible_via_other) {
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int, tag_a, tag_b>, tag_a> la;
   kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int, tag_a, tag_b>, tag_b> lb;
   kphp::stl::intrusive::list_node<int, tag_a, tag_b> n{5};
+
   la.push_back(n);
   lb.push_back(n);
 
@@ -779,102 +1008,35 @@ TEST(intrusive_list_tags, mutation_through_one_tag_visible_via_other) {
   ASSERT_EQ(lb.front(), 99);
 }
 
-TEST(intrusive_list_value, stores_move_only_value_type) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<std::unique_ptr<int>>> l;
-  kphp::stl::intrusive::list_node<std::unique_ptr<int>> a{std::make_unique<int>(1)};
-  kphp::stl::intrusive::list_node<std::unique_ptr<int>> b{std::make_unique<int>(2)};
-  l.push_back(a);
-  l.push_back(b);
+TEST(intrusive_list_tags, move_linked_node_with_two_tags) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int, tag_a, tag_b>, tag_a> la;
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int, tag_a, tag_b>, tag_b> lb;
+  kphp::stl::intrusive::list_node<int, tag_a, tag_b> n{5};
 
-  auto it = l.begin();
+  la.push_back(n);
+  lb.push_back(n);
 
-  ASSERT_EQ(**it, 1);
+  kphp::stl::intrusive::list_node<int, tag_a, tag_b> new_n{std::move(n)};
 
-  ++it;
-
-  ASSERT_EQ(**it, 2);
+  ASSERT_EQ(values(la), (std::vector<int>{5}));
+  ASSERT_EQ(values(lb), (std::vector<int>{5}));
+  ASSERT_EQ(la.iterator_to(new_n), la.begin());
+  ASSERT_EQ(lb.iterator_to(new_n), lb.begin());
 }
 
-TEST(intrusive_list_value, make_list_node_helper) {
-  auto n = kphp::stl::intrusive::make_list_node(123);
-  static_assert(std::is_same_v<decltype(n)::value_type, int>);
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  l.push_back(n);
+TEST(intrusive_list_tags, move_assign_linked_node_with_two_tags) {
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int, tag_a, tag_b>, tag_a> la;
+  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int, tag_a, tag_b>, tag_b> lb;
+  kphp::stl::intrusive::list_node<int, tag_a, tag_b> n{5};
+  kphp::stl::intrusive::list_node<int, tag_a, tag_b> dst{7};
 
-  ASSERT_EQ(l.front(), 123);
-}
+  la.push_back(n);
+  lb.push_back(n);
 
-TEST(intrusive_list_iterator_to, single_node) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  kphp::stl::intrusive::list_node<int> a{42};
-  l.push_back(a);
+  dst = std::move(n);
 
-  auto it = l.iterator_to(a);
-
-  ASSERT_EQ(it, l.begin());
-  ASSERT_EQ(*it, 42);
-}
-
-TEST(intrusive_list_iterator_to, points_at_correct_position_in_middle) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
-  l.push_back(a);
-  l.push_back(b);
-  l.push_back(c);
-
-  auto it = l.iterator_to(b);
-
-  ASSERT_EQ(*it, 2);
-  ASSERT_EQ(it, std::next(l.begin()));
-  ASSERT_EQ(*std::prev(it), 1);
-  ASSERT_EQ(*std::next(it), 3);
-}
-
-TEST(intrusive_list_iterator_to, works_for_front_and_back) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  kphp::stl::intrusive::list_node<int> a{1}, b{2}, c{3};
-  l.push_back(a);
-  l.push_back(b);
-  l.push_back(c);
-
-  ASSERT_EQ(l.iterator_to(a), l.begin());
-  ASSERT_EQ(l.iterator_to(c), std::prev(l.end()));
-}
-
-TEST(intrusive_list_iterator_to, const_overload) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  kphp::stl::intrusive::list_node<int> a{1}, b{2};
-  l.push_back(a);
-  l.push_back(b);
-  const auto& cl = l;
-
-  auto cit = cl.iterator_to(b);
-
-  ASSERT_EQ(*cit, 2);
-  ASSERT_EQ(cit, std::next(cl.cbegin()));
-}
-
-TEST(intrusive_list_iterator_to, mutating_through_returned_iterator_is_visible_via_node) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  kphp::stl::intrusive::list_node<int> a{1};
-  l.push_back(a);
-
-  auto it = l.iterator_to(a);
-  *it = 100;
-
-  ASSERT_EQ(a.value(), 100);
-}
-
-TEST(intrusive_list_iterator_to, remains_valid_after_owning_node_is_relocated) {
-  kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<int>> l;
-  kphp::stl::intrusive::list_node<int> a{1}, b{2};
-  l.push_back(a);
-  l.push_back(b);
-
-  auto relocated = std::make_unique<kphp::stl::intrusive::list_node<int>>(std::move(a));
-  auto it = l.iterator_to(*relocated);
-
-  ASSERT_EQ(*it, 1);
-  ASSERT_EQ(it, l.begin());
-  ASSERT_EQ(values(l), (std::vector<int>{1, 2}));
+  ASSERT_EQ(values(la), (std::vector<int>{5}));
+  ASSERT_EQ(values(lb), (std::vector<int>{5}));
+  ASSERT_EQ(la.iterator_to(dst), la.begin());
+  ASSERT_EQ(lb.iterator_to(dst), lb.begin());
 }
