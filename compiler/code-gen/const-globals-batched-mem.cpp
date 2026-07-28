@@ -111,7 +111,7 @@ void ConstantsBatchedMem::inc_count_by_type(const TypeData *type) {
 }
 
 int ConstantsBatchedMem::detect_constants_batch_count(size_t n_constants) {
-  constexpr auto BATCH_SIZE {71};
+  constexpr auto BATCH_SIZE {106};
   const auto batch_count{1 + n_constants / BATCH_SIZE};
   if (batch_count <= 2) {
     return batch_count;
