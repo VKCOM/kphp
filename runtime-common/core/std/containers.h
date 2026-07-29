@@ -53,6 +53,9 @@ using string = std::basic_string<char, std::char_traits<char>, Allocator<char>>;
 
 namespace intrusive {
 
+template<typename T, typename... Tags>
+using list_node = vk::intrusive::list_node<T, Tags...>;
+
 template<typename Node, typename... Tags>
 using list = vk::intrusive::list<Node, Tags...>;
 
