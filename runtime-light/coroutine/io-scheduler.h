@@ -414,7 +414,12 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
     kphp::coro::detail::poll_info::scheduled_coroutines scheduled_coroutines{};
     scheduled_coroutines.splice(scheduled_coroutines.begin(), m_scheduled_coroutines);
     while (!scheduled_coroutines.empty()) {
-      auto coroutine{scheduled_coroutines.front()};
+      auto& coroutine{scheduled_coroutines.front()};
+      /*
+       * We can remove pop_front() here, because list node will be destroyed after resume and in its
+       * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
+       * (in the future invariant [1] may not work).
+       */
       scheduled_coroutines.pop_front();
       kphp::log::assertion(static_cast<bool>(coroutine));
       kphp::coro::resume(coroutine, m_coroutine_instance_state.coroutine_stack_root);
