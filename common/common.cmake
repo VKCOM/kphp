@@ -19,9 +19,7 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
 
         fast-backtrace.cpp
         string-processing.cpp
-        kphp-tasks-lease/lease-worker-mode.cpp
-        
-        containers/intrusive-list.cpp)
+        kphp-tasks-lease/lease-worker-mode.cpp)
 
 prepend(COMMON_KFS_SOURCES ${COMMON_DIR}/kfs/
         kfs.cpp
