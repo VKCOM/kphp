@@ -13,10 +13,10 @@ struct apply_tuple;
 
 template<template<typename...> typename Template, typename... Args>
 struct apply_tuple<Template, std::tuple<Args...>> {
-  using Type = Template<Args...>;
+  using type = Template<Args...>;
 };
 
 template<template<typename...> typename Template, typename Tuple>
-using apply_tuple_t = typename apply_tuple<Template, Tuple>::Type;
+using apply_tuple_t = typename apply_tuple<Template, Tuple>::type;
 
 } // namespace vk

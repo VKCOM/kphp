@@ -56,6 +56,8 @@ namespace intrusive {
 template<typename Node, typename... Tags>
 using list = vk::intrusive::list<Node, Tags...>;
 
+using vk::intrusive::make_list_node;
+
 } // namespace intrusive
 
 } // namespace stl
