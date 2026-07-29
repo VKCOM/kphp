@@ -357,7 +357,7 @@ public:
     m_sentinel.unlink();
   }
 
-  // if the node is linked in other list with the same tag, it will be unlinked from other list before insertion
+  // if the node is linked in list with the same tag, it will be unlinked from list before insertion
   auto insert(const_iterator pos, Node& node) noexcept -> iterator {
     auto* next_node = pos.m_curr;
     auto* new_node = list_node_base_from_list_node(node);
