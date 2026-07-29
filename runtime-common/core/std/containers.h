@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "common/containers/intrusive-list.h"
 #include <deque>
 #include <functional>
 #include <list>
@@ -49,6 +50,13 @@ using stack = std::stack<T, vector<T, Allocator>>;
 
 template<template<class> class Allocator>
 using string = std::basic_string<char, std::char_traits<char>, Allocator<char>>;
+
+namespace intrusive {
+
+template<typename Node, typename... Tags>
+using list = vk::intrusive::list<Node, Tags...>;
+
+} // namespace intrusive
 
 } // namespace stl
 

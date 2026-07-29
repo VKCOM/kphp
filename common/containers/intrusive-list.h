@@ -13,7 +13,7 @@
 
 #include "common/type_traits/apply_tuple.h"
 
-namespace kphp::stl::intrusive {
+namespace vk::intrusive {
 
 template<typename, typename>
 class list;
@@ -30,10 +30,10 @@ class list_node_base {
   auto take_place_of(list_node_base&& other) noexcept -> void;
 
   template<typename, typename>
-  friend class kphp::stl::intrusive::list;
+  friend class vk::intrusive::list;
 
   template<typename, typename>
-  friend class kphp::stl::intrusive::list_iterator;
+  friend class vk::intrusive::list_iterator;
 
 public:
   list_node_base() noexcept = default;
@@ -68,10 +68,10 @@ class list_node final : private std::conditional_t<sizeof...(Tags) == 0, details
   T m_value{};
 
   template<typename, typename>
-  friend class kphp::stl::intrusive::list;
+  friend class vk::intrusive::list;
 
   template<typename, typename>
-  friend class kphp::stl::intrusive::list_iterator;
+  friend class vk::intrusive::list_iterator;
 
 public:
   using value_type = T;
@@ -158,10 +158,10 @@ private:
   }
 
   template<typename, typename>
-  friend class kphp::stl::intrusive::list_iterator;
+  friend class vk::intrusive::list_iterator;
 
   template<typename, typename>
-  friend class kphp::stl::intrusive::list;
+  friend class vk::intrusive::list;
 
 public:
   list_iterator() noexcept = default;
@@ -455,4 +455,4 @@ auto swap(list<Node, Tag>& lhs, list<Node, Tag>& rhs) noexcept -> void {
   lhs.swap(rhs);
 }
 
-} // namespace kphp::stl::intrusive
+} // namespace vk::intrusive

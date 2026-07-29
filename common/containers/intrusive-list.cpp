@@ -3,7 +3,7 @@
 #include <memory>
 #include <utility>
 
-namespace kphp::stl::intrusive::details {
+namespace vk::intrusive::details {
 
 auto list_node_base::take_place_of(list_node_base&& other) noexcept -> void {
   if (other.is_linked()) {
@@ -44,4 +44,4 @@ auto list_node_base::unlink() noexcept -> void {
   m_next = this;
 }
 
-} // namespace kphp::stl::intrusive::details
+} // namespace vk::intrusive::details
