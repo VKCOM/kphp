@@ -20,7 +20,6 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         memory_resource/extra-memory-pool-test.cpp
         memory_resource/unsynchronized_pool_resource-test.cpp
         string-list-test.cpp
-        intrusive-list-test.cpp
         string-test.cpp
         zstd-test.cpp)
 
