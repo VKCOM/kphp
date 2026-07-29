@@ -21,8 +21,8 @@
 namespace kphp::coro {
 
 class event {
-  using waiters_list = kphp::stl::intrusive::list<kphp::stl::intrusive::list_node<std::coroutine_handle<>>>;
   using waiter = kphp::stl::intrusive::list_node<std::coroutine_handle<>>;
+  using waiters_list = kphp::stl::intrusive::list<waiter>;
 
   struct event_controller;
 
