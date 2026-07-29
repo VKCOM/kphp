@@ -97,6 +97,7 @@ enum UpdateStatus {
   NewDescriptor = 2,
 };
 
+// k2-node will attempt to extract `compiler_version` from `extra_info` to add as a tag to the `k2_image_version` metric
 struct ImageInfo {
   // Base
   const char* image_name;
