@@ -110,7 +110,7 @@ void ConstantsBatchedMem::inc_count_by_type(const TypeData *type) {
   }
 }
 
-int ConstantsBatchedMem::detect_constants_batch_count(size_t n_constants) {
+int ConstantsBatchedMem::detect_constants_batch_count(unsigned n_constants) {
   constexpr auto BATCH_SIZE {106};
   const auto batch_count{1 + n_constants / BATCH_SIZE};
   if (batch_count <= 2) {
@@ -118,7 +118,7 @@ int ConstantsBatchedMem::detect_constants_batch_count(size_t n_constants) {
   }
 
   // round to avoid changing buckets count frequently
-  const auto msb{sizeof(size_t) * __CHAR_BIT__ - 1 - __builtin_clzl(batch_count)};
+  const auto msb{sizeof(unsigned) * __CHAR_BIT__ - 1 - __builtin_clz(batch_count)};
   const auto mask{(1 << msb) | (1 << (msb - 1))};
   const auto tail_mask{(1 << (msb - 1)) - 1};
   if (batch_count & tail_mask) {
