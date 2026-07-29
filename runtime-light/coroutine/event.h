@@ -102,6 +102,9 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
   m_suspended = true;
   m_awaiting_coroutine_node = kphp::stl::intrusive::make_list_node<std::coroutine_handle<>>(awaiting_coroutine);
 
+  // possibly this assertion is unnecessary, but it is left, because it was there earlier
+  kphp::log::assertion(!m_controller.is_set());
+
   if (std::holds_alternative<std::monostate>(m_controller.m_state)) {
     m_controller.m_state = waiters_list{};
   }
