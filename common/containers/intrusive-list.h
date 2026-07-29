@@ -27,7 +27,15 @@ class list_node_base {
   list_node_base* m_prev{this};
   list_node_base* m_next{this};
 
-  auto take_place_of(list_node_base&& other) noexcept -> void;
+  auto take_place_of(list_node_base&& other) noexcept -> void {
+    if (other.is_linked()) {
+      m_prev = std::exchange(other.m_prev, std::addressof(other));
+      m_next = std::exchange(other.m_next, std::addressof(other));
+
+      m_prev->m_next = this;
+      m_next->m_prev = this;
+    }
+  }
 
   template<typename, typename>
   friend class vk::intrusive::list;
@@ -40,17 +48,36 @@ public:
 
   list_node_base(const list_node_base& /*unused*/) noexcept = delete;
 
-  list_node_base(list_node_base&& other) noexcept;
+  list_node_base(list_node_base&& other) noexcept {
+    take_place_of(std::move(other));
+  }
 
   auto operator=(const list_node_base& /*unused*/) noexcept -> list_node_base& = delete;
 
-  auto operator=(list_node_base&& other) noexcept -> list_node_base&;
+  auto operator=(list_node_base&& other) noexcept -> list_node_base& {
+    if (this != std::addressof(other)) {
+      unlink();
+      take_place_of(std::move(other));
+    }
 
-  ~list_node_base();
+    return *this;
+  }
 
-  auto is_linked() const noexcept -> bool;
+  ~list_node_base() {
+    unlink();
+  }
 
-  auto unlink() noexcept -> void;
+  auto is_linked() const noexcept -> bool {
+    return m_prev != this;
+  }
+
+  auto unlink() noexcept -> void {
+    m_prev->m_next = m_next;
+    m_next->m_prev = m_prev;
+
+    m_prev = this;
+    m_next = this;
+  }
 };
 
 template<typename Tag>
