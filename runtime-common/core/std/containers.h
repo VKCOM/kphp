@@ -56,8 +56,8 @@ namespace intrusive {
 template<typename T, typename... Tags>
 using list_node = vk::intrusive::list_node<T, Tags...>;
 
-template<typename Node, typename... Tags>
-using list = vk::intrusive::list<Node, Tags...>;
+template<typename Node, typename Tag>
+using list = vk::intrusive::list<Node, Tag>;
 
 using vk::intrusive::make_list_node;
 
