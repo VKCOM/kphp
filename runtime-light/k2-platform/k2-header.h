@@ -21,13 +21,14 @@
 #include <ctime>
 #else
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 14
+#define K2_PLATFORM_HEADER_H_VERSION 16
 
 // Always check that enum value is a valid value!
 
@@ -125,6 +126,33 @@ struct ImageInfo {
  */
 enum PollStatus k2_poll();
 
+/**
+ * Performs component-specific warmup work before the instance starts handling
+ * requests.
+ *
+ * The platform calls this function repeatedly during scope warmup until it
+ * returns either `PollFinishedOk` or `PollFinishedError`. Between calls the
+ * component may use timers, streams, and other async descriptors exactly as
+ * during normal `k2_poll` execution.
+ *
+ * Lifecycle semantics:
+ * - For multishot components, `k2_warmup` operates on the same `InstanceState`
+ *   that will later handle requests. Any state prepared here is preserved.
+ * - For oneshot components, `k2_warmup` runs against a single throwaway
+ *   instance that is created, warmed, and discarded before the first real
+ *   request. The warmup is performed exactly once.
+ *
+ * Return values reuse `enum PollStatus` with the same meaning as `k2_poll`:
+ * - `PollBlocked` / `PollReschedule` — warmup is not complete; the platform
+ *   will call `k2_warmup` again.
+ * - `PollFinishedOk` — warmup succeeded and the instance is considered ready.
+ * - `PollFinishedError` — warmup failed; the instance will not receive
+ *   requests and scope warmup will fail.
+ *
+ * Components with no warmup work should return `PollFinishedOk` immediately.
+ */
+enum PollStatus k2_warmup();
+
 // Symbols provided by .so.
 struct ImageState* k2_create_image();
 void k2_init_image();
@@ -164,6 +192,86 @@ void* k2_realloc(void* ptr, size_t new_size);
 void* k2_realloc_checked(void* ptr, size_t old_size, size_t align, size_t new_size);
 void k2_free(void* ptr);
 void k2_free_checked(void* ptr, size_t size, size_t align);
+
+/**
+ * Shared memory provides a mechanism for instances to share data.
+ * To use it, first allocate memory with `k2_alloc_shared_memory`, then publish
+ * it with a unique name using `k2_publish_shared_memory`. Other instances can
+ * then retrieve the memory by name with `k2_get_shared_memory`.
+ *
+ * Lifecycle:
+ * - TTL defines when memory becomes eligible for reclamation
+ * - Memory is reclaimed lazily after TTL expires AND no references remain
+ *
+ * Reference counting:
+ * - Calling `k2_publish_shared_memory` sets the reference count to one
+ * - Calling `k2_get_shared_memory` increments the reference count
+ * - Reference count is decremented automatically when instance finishes
+ * - No explicit release function is needed
+ */
+
+/**
+ * Allocates shared memory with specified size and alignment.
+ *
+ * The actual alignment of the returned pointer is `max(align, system_page_size)`.
+ *
+ * @param `size` Size of the memory region to allocate in bytes.
+ * @param `align` Alignment requirement for the memory region in bytes. Must be
+ *                a power of two.
+ * @param `pointer` Return argument. On success (return code is 0), contains
+ *                  pointer to the allocated memory. Set to NULL on error.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `size` is 0, `align` is not a power of 2, or `pointer` is NULL.
+ * `ENOMEM` => Not enough memory to allocate the requested region.
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
+
+/**
+ * Publishes shared memory with a name and TTL, making it discoverable by other instances.
+ *
+ * @param `name` Name to associate with the memory region. Must be unique.
+ *               Should be valid UTF-8 and not contain null bytes.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ * @param `memory` Pointer to memory previously allocated via `k2_alloc_shared_memory`.
+ * @param `ttl` Time-to-live in milliseconds. Memory becomes eligible for
+ *              reclamation after this duration, but only when the reference
+ *              count reaches zero. Zero TTL means infinite life.
+ * @param `as_mut` Controls whether write protection is disabled. If true, the memory is made writable.
+ * @param `ignore_if_exist` If true, allows re-publishing memory previously allocated via
+ *              `k2_alloc_shared_memory` even if a live published memory with the same name already exists.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `memory` is NULL, or `name` is
+ *             not valid UTF-8.
+ * `ENOENT` => `memory` was not allocated by `k2_alloc_shared_memory`.
+ * `EEXIST` => Memory with this name already exists.
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* memory, uint64_t ttl, bool as_mut, bool ignore_if_exist);
+
+/**
+ * Retrieves shared memory by name and increments its reference count.
+ *
+ * @param `name` Name of the published memory region to retrieve.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ * @param `pointer` Return argument. On success (return code is 0), contains
+ *                  pointer to the shared memory. Set to NULL on error.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `pointer` is NULL, or `name`
+ *             is not valid UTF-8.
+ * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size);
 
 /**
  * Immediately abort component execution.
@@ -377,7 +485,7 @@ size_t k2_readline(uint64_t stream_d, size_t buf_len, void* buf);
  * @param `md` A pointer to a `uint64_t` where the mmap descriptor will be stored upon success.
  * @param `addr` Must always be nullptr.
  */
-void* k2_mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t flags, uint64_t fd, uint64_t offset);
+void* k2_mmap(uint64_t* md, void* addr, size_t len, int32_t prot, int32_t flags, uint64_t fd, uint64_t offset);
 
 /**
  * Semantically equivalent to libc's `madvise` function.
