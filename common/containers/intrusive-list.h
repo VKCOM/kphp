@@ -180,7 +180,7 @@ private:
      * error: ‘this’ pointer is null [-Werror=nonnull]
      * 150 |     return (static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node))))->value();
      */
-    auto* list_node = static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node)));
+    auto* list_node{static_cast<Node*>(static_cast<tagged_hooks_t*>(static_cast<details::tagged_hook<Tag>*>(node)))};
     return list_node->value();
   }
 
@@ -213,7 +213,7 @@ public:
   }
 
   auto operator++(int) noexcept -> list_iterator {
-    list_iterator res = *this;
+    list_iterator res{*this};
     ++*this;
     return res;
   }
@@ -224,7 +224,7 @@ public:
   }
 
   auto operator--(int) noexcept -> list_iterator {
-    list_iterator res = *this;
+    list_iterator res{*this};
     --*this;
     return res;
   }
@@ -284,9 +284,9 @@ private:
       return;
     }
 
-    auto* pos_node = pos.m_curr;
-    auto* first_node = first.m_curr;
-    auto* last_node = last.m_curr->m_prev;
+    auto* pos_node{pos.m_curr};
+    auto* first_node{first.m_curr};
+    auto* last_node{last.m_curr->m_prev};
 
     first_node->m_prev->m_next = last_node->m_next;
     last_node->m_next->m_prev = first_node->m_prev;
@@ -390,8 +390,8 @@ public:
 
   // if the node is linked in list with the same tag, it will be unlinked from list before insertion
   auto insert(const_iterator pos, Node& node) noexcept -> iterator {
-    auto* next_node = pos.m_curr;
-    auto* new_node = list_node_base_from_list_node(node);
+    auto* next_node{pos.m_curr};
+    auto* new_node{list_node_base_from_list_node(node)};
     if (new_node == next_node) {
       return iterator{next_node};
     }
@@ -408,8 +408,8 @@ public:
   }
 
   auto erase(const_iterator pos) noexcept -> iterator {
-    auto* remove_node = pos.m_curr;
-    auto* next_node = remove_node->m_next;
+    auto* remove_node{pos.m_curr};
+    auto* next_node{remove_node->m_next};
 
     remove_node->unlink();
 
