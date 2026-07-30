@@ -16,7 +16,6 @@
 #include <variant>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
-#include "runtime-common/core/std/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"

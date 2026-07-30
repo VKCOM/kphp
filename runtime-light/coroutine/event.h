@@ -13,7 +13,6 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime-common/core/allocator/script-allocator-managed.h"
-#include "runtime-common/core/std/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"

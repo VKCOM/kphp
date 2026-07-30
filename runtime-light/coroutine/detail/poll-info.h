@@ -10,7 +10,6 @@
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/std/intrusive-list.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
