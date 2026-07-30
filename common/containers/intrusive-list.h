@@ -233,6 +233,10 @@ public:
     return value_from_list_node_base(m_curr);
   }
 
+  auto operator->() const noexcept -> pointer {
+    return std::addressof(value_from_list_node_base(m_curr));
+  }
+
   template<typename NodeU, typename = std::enable_if_t<std::is_same_v<std::remove_const_t<Node>, std::remove_const_t<NodeU>>>>
   auto operator==(const list_iterator<NodeU, Tag>& other) const noexcept -> bool {
     return m_curr == other.m_curr;
