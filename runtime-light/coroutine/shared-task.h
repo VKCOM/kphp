@@ -27,8 +27,8 @@ namespace kphp::coro {
 
 namespace shared_task_impl {
 
-using waiter = kphp::stl::intrusive::list_node<std::coroutine_handle<>>;
-using waiters_list = kphp::stl::intrusive::list<waiter>;
+using awaiter_node = kphp::stl::intrusive::list_node<std::coroutine_handle<>>;
+using awaiters_list = kphp::stl::intrusive::list<awaiter_node>;
 
 template<typename promise_type>
 struct promise_base : kphp::coro::async_stack_element {
@@ -49,17 +49,17 @@ public:
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
         promise_base& promise{coro.promise()};
-        waiters_list waiters;
-        waiters.splice(waiters.begin(), std::get<waiters_list>(promise.m_state));
+        awaiters_list awaiters;
+        awaiters.splice(awaiters.begin(), std::get<awaiters_list>(promise.m_state));
         promise.m_state = done_tag{};
-        if (waiters.empty()) {
+        if (awaiters.empty()) {
           return std::noop_coroutine();
         }
 
         while (true) {
-          auto& coroutine{waiters.front()};
-          waiters.pop_front();
-          if (waiters.empty()) {
+          auto& coroutine{awaiters.front()};
+          awaiters.pop_front();
+          if (awaiters.empty()) {
             // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call
             return coroutine;
           }
@@ -92,7 +92,7 @@ public:
   // awaiter->coroutine will be resumed when the task completes.
   // false if the coroutine was already completed and the awaiting
   // coroutine can continue without suspending.
-  auto suspend_awaiter(waiter& awaiter) noexcept -> bool {
+  auto suspend_awaiter(awaiter_node& awaiter) noexcept -> bool {
     // NOTE: If the coroutine is not yet started then the first awaiter
     // will start the coroutine before enqueuing itself up to the list
     // of suspended awaiters waiting for completion. We split this into
@@ -105,7 +105,7 @@ public:
 
     // start the coroutine if not yet started
     if (std::holds_alternative<not_started_tag>(m_state)) {
-      m_state = waiters_list{};
+      m_state = awaiters_list{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
       kphp::coro::resume(handle, async_stack_root);
@@ -116,7 +116,7 @@ public:
       return false;
     }
 
-    std::get<waiters_list>(m_state).push_front(awaiter);
+    std::get<awaiters_list>(m_state).push_front(awaiter);
 
     return true;
   }
@@ -144,7 +144,7 @@ public:
 
 private:
   uint32_t m_refcnt{1};
-  std::variant<not_started_tag, done_tag, waiters_list> m_state;
+  std::variant<not_started_tag, done_tag, awaiters_list> m_state;
 };
 
 template<typename promise_type>
@@ -170,7 +170,7 @@ class awaiter_base {
   }
 
 protected:
-  waiter m_awaiting_coroutine_node;
+  awaiter_node m_awaiting_coroutine_node;
   std::coroutine_handle<promise_type> m_coro;
 
 public:
