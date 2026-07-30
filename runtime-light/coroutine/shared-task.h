@@ -8,7 +8,6 @@
 #include <coroutine>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <new>
 #include <optional>
@@ -16,7 +15,6 @@
 #include <utility>
 #include <variant>
 
-#include "common/wrappers/overloaded.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
