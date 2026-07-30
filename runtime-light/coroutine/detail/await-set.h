@@ -82,6 +82,11 @@ public:
     ready_task.m_next = std::exchange(m_ready_tasks, std::addressof(ready_task));
     if (!m_awaiters.empty()) {
       auto& coroutine{m_awaiters.front()};
+      /*
+       * We can remove pop_front() here, because list node will be destroyed after resume and in its
+       * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
+       * (in the future invariant [1] may not work).
+       */
       m_awaiters.pop_front();
       coroutine.resume();
     }
@@ -110,6 +115,11 @@ public:
     auto typed_handle = std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(task_iterator->address());
     auto result{typed_handle.promise().result()};
 
+    /*
+     * We can remove erase() here, because list node will be destroyed after destruction of coroutine frame and in its
+     * destructor will call unlink() [1]. But we left erase() for better readability and safety
+     * (in the future invariant [1] may not work).
+     */
     m_tasks_storage.erase(task_iterator);
     --m_tasks_count;
     task_iterator->destroy();
@@ -122,6 +132,11 @@ public:
     detach_all();
     while (!m_tasks_storage.empty()) {
       auto& coroutine{m_tasks_storage.front()};
+      /*
+       * We can remove pop_front() here, because list node will be destroyed after destruction of coroutine frame and in its
+       * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
+       * (in the future invariant [1] may not work).
+       */
       m_tasks_storage.pop_front();
       coroutine.destroy();
     }
