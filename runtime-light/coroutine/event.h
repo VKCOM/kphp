@@ -21,13 +21,13 @@
 namespace kphp::coro {
 
 class event {
-  using waiter = kphp::stl::intrusive::list_node<std::coroutine_handle<>>;
-  using waiters_list = kphp::stl::intrusive::list<waiter>;
+  using awaiter_node = kphp::stl::intrusive::list_node<std::coroutine_handle<>>;
+  using awaiters_list = kphp::stl::intrusive::list<awaiter_node>;
 
   struct event_controller;
 
   struct awaiter {
-    waiter m_awaiting_coroutine_node;
+    awaiter_node m_awaiting_coroutine_node;
     bool m_suspended{};
     event_controller& m_controller;
     kphp::coro::async_stack_root& m_async_stack_root;
@@ -53,7 +53,7 @@ class event {
     // 1) std::monostate => not set and no coroutines are waiting
     // 2) non empty list => linked list of coroutines waiting for the event to trigger
     // 3) empty list => The event is triggered and all coroutines are resumed
-    std::variant<std::monostate, waiters_list> m_state;
+    std::variant<std::monostate, awaiters_list> m_state;
 
     auto set() noexcept -> void;
     auto unset() noexcept -> void;
@@ -106,10 +106,10 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
   kphp::log::assertion(!m_controller.is_set());
 
   if (std::holds_alternative<std::monostate>(m_controller.m_state)) {
-    m_controller.m_state = waiters_list{};
+    m_controller.m_state = awaiters_list{};
   }
 
-  std::get<waiters_list>(m_controller.m_state).push_front(m_awaiting_coroutine_node);
+  std::get<awaiters_list>(m_controller.m_state).push_front(m_awaiting_coroutine_node);
 }
 
 inline auto event::awaiter::await_resume() noexcept -> void {
@@ -122,20 +122,20 @@ inline auto event::awaiter::await_resume() noexcept -> void {
 
 inline auto event::event_controller::set() noexcept -> void {
   if (std::holds_alternative<std::monostate>(m_state)) {
-    m_state = waiters_list{};
+    m_state = awaiters_list{};
     return;
   }
 
-  waiters_list waiters;
-  waiters.splice(waiters.begin(), std::get<waiters_list>(m_state));
-  while (!waiters.empty()) {
-    auto& coroutine{waiters.front()};
+  awaiters_list awaiters;
+  awaiters.splice(awaiters.begin(), std::get<awaiters_list>(m_state));
+  while (!awaiters.empty()) {
+    auto& coroutine{awaiters.front()};
     /*
      * We can remove pop_front() here, because list node will be destroyed after resume and in its
      * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
      * (in the future invariant [1] may not work).
      */
-    waiters.pop_front();
+    awaiters.pop_front();
     coroutine.resume();
   }
 }
@@ -147,7 +147,7 @@ inline auto event::event_controller::unset() noexcept -> void {
 }
 
 inline auto event::event_controller::is_set() const noexcept -> bool {
-  return std::visit(overloaded([](std::monostate) noexcept { return false; }, [](const waiters_list& list) noexcept { return list.empty(); }), m_state);
+  return std::visit(overloaded([](std::monostate) noexcept { return false; }, [](const awaiters_list& list) noexcept { return list.empty(); }), m_state);
 }
 
 inline auto event::set() noexcept -> void {
