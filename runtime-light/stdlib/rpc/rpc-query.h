@@ -104,7 +104,6 @@ auto query::get_ready_response(B&& response_buffer_provider) && noexcept -> std:
   }
   std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, response_buffer)};
   if (!response_fetch_result) {
-    // in case of error response_buffer_ptr will be freed
     return std::unexpected{TL_ERROR_INTERNAL};
   }
 
