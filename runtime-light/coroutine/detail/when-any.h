@@ -14,9 +14,11 @@
 #include <variant>
 
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/detail/coro-malloc-interface.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/metaprogramming/type-functions.h"
+#include "runtime-light/stdlib/cpu-info/cpu-info-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::when_any {
@@ -162,16 +164,22 @@ public:
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc(n);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc_aligned(n, al);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::memory::script::free(ptr);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_free_cycles)};
+    kphp::coro::free(ptr);
   }
 
   auto initial_suspend() const noexcept -> std::suspend_always {

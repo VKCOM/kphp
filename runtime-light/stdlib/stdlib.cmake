@@ -3,6 +3,7 @@ prepend(
   stdlib/
   confdata/confdata-functions.cpp
   confdata/confdata-state.cpp
+  cpu-info/cpu-info-state.cpp
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
   web-transfer-lib/web-state.cpp

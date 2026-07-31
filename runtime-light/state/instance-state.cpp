@@ -27,6 +27,7 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/metrics.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
@@ -246,4 +247,25 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session_is_finished = true;
     web_state.session.reset();
   }
+
+  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
+  cpu_info_instance_state.write_exit();
+
+  constexpr std::string_view metric_name{"instance_cpu_cycles"};
+  constexpr std::string_view tag_name{"kind"};
+
+  auto result{kphp::diagnostics::metric::empty().send_value(metric_name, std::array{std::pair{tag_name, "total"}}, cpu_info_instance_state.processing_cycles)};
+  if (!result.second.has_value()) {
+    kphp::log::warning("failed to send metric {} (kind=total): error {}", metric_name, result.second.error());
+  }
+
+  auto send{[&result, metric_name, tag_name](std::string_view tag_value, uint64_t value) noexcept {
+    result = kphp::diagnostics::metric::with_buffer(std::move(result.first)).send_value(metric_name, std::array{std::pair{tag_name, tag_value}}, value);
+    if (!result.second.has_value()) {
+      kphp::log::warning("failed to send metric {} (kind={}): error {}", metric_name, tag_value, result.second.error());
+    }
+  }};
+
+  send("coro_alloc", cpu_info_instance_state.coro_alloc_cycles);
+  send("coro_free", cpu_info_instance_state.coro_free_cycles);
 }

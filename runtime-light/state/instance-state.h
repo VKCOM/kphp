@@ -22,6 +22,7 @@
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
+#include "runtime-light/stdlib/cpu-info/cpu-info-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
@@ -98,6 +99,7 @@ struct InstanceState final : vk::not_copyable {
   WaitQueueInstanceState wait_queue_instance_state;
   RpcQueueInstanceState rpc_queue_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
+  CpuInfoInstanceState cpu_info_instance_state;
 
   RuntimeContext runtime_context;
   CLIInstanceInstance cli_instance_instate;

@@ -10,11 +10,12 @@
 #include <memory>
 #include <optional>
 
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/coro-malloc-interface.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
+#include "runtime-light/stdlib/cpu-info/cpu-info-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -58,16 +59,22 @@ public:
 
   template<typename... Args>
   void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
-    return kphp::memory::script::alloc(n);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc_aligned(n, al);
   }
 
   void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
-    kphp::memory::script::free(ptr);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_free_cycles)};
+    kphp::coro::free(ptr);
   }
 
   void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root& coroutine_stack_root, void* return_address) noexcept {
@@ -170,16 +177,22 @@ public:
 
   template<typename... Args>
   void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
-    return kphp::memory::script::alloc(n);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_alloc_cycles)};
+    return kphp::coro::alloc_aligned(n, al);
   }
 
   void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
-    kphp::memory::script::free(ptr);
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto writer{ciis.write_cycles(ciis.coro_free_cycles)};
+    kphp::coro::free(ptr);
   }
 
   std::suspend_always initial_suspend() const noexcept {
