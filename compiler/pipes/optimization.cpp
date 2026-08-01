@@ -448,6 +448,11 @@ void OptimizationPass::on_finish() {
     class_id->members.for_each([this](ClassMemberStaticField &static_field) {
       if (static_field.var->init_val) {
         run_function_pass(static_field.var->init_val, this);
+        // a static field's init value is stored in php globals and is reset via hard_reset_var()
+        // on every request startup, where memory allocations are forbidden;
+        // its constant initializer must therefore have exactly the same C++ type as the field itself
+        // (otherwise a converting copy_from() is generated, which allocates memory and crashes)
+        explicit_cast_array_type(static_field.var->init_val, tinf::get_type(static_field.var));
       }
     });
   }
