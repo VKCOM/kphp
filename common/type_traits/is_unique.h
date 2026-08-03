@@ -2,6 +2,8 @@
 //  Copyright (c) 2026 LLC «V Kontakte»
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#pragma once
+
 #include <type_traits>
 
 namespace vk {
