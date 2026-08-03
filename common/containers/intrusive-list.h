@@ -68,6 +68,10 @@ public:
   }
 
   auto is_linked() const noexcept -> bool {
+    /*
+     * it's enough to only check m_prev, because if the node is unlinked, m_prev == m_next == this,
+     * otherwise none of m_prev and m_next is equal to this
+     */
     return m_prev != this;
   }
 
@@ -109,6 +113,10 @@ public:
   explicit list_node(T value) noexcept
       : m_value{std::move(value)} {}
 
+  template<typename... Args>
+  explicit list_node(std::in_place_t /*unused*/, Args&&... args) noexcept
+      : m_value{std::forward<Args>(args)...} {}
+
   list_node(const list_node& other) = delete;
 
   list_node(list_node&& other) noexcept = default;
@@ -127,11 +135,6 @@ public:
     return m_value;
   }
 };
-
-template<typename T, typename... Tags>
-auto make_list_node(T value) noexcept -> list_node<T, Tags...> {
-  return list_node<T, Tags...>{std::move(value)};
-}
 
 namespace details {
 
@@ -171,6 +174,10 @@ private:
   details::list_node_base* m_curr{nullptr};
 
   explicit list_iterator(const details::list_node_base* node) noexcept
+      /*
+       * this const_cast is made for convenience, it's safe, because we don't write data through this pointer,
+       * also if the iterator is const we return const pointer and const reference in * and -> operators, so const correctness is maintained
+       */
       : m_curr{const_cast<details::list_node_base*>(node)} {}
 
   static auto value_from_list_node_base(details::list_node_base* node) noexcept -> reference {
@@ -253,7 +260,7 @@ class list {
 public:
   using value_type = typename Node::value_type;
   using size_type = size_t;
-  using difference_type = ptrdiff_t;
+  using difference_type = std::ptrdiff_t;
   using reference = value_type&;
   using const_reference = const value_type&;
   using pointer = value_type*;
@@ -384,6 +391,7 @@ public:
     return std::distance(begin(), end());
   }
 
+  // the list becomes empty, but the nodes remain linked with each other
   auto clear() noexcept -> void {
     m_sentinel.unlink();
   }
