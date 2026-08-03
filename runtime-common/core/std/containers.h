@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "common/containers/intrusive-list.h"
 #include <deque>
 #include <functional>
 #include <list>
