@@ -1,11 +1,16 @@
-#include <gtest/gtest.h>
+//  Compiler for PHP (aka KPHP)
+//  Copyright (c) 2026 LLC «V Kontakte»
+//  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <algorithm>
 #include <array>
 #include <iterator>
 #include <memory>
 #include <numeric>
+#include <utility>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "common/containers/intrusive-list.h"
 
@@ -46,6 +51,50 @@ TEST(intrusive_list_node_base, unlink_on_unlinked_is_safe) {
   b.unlink();
 
   ASSERT_FALSE(b.is_linked());
+}
+
+TEST(intrusive_list_node, default_constructor_value_initialized) {
+  vk::intrusive::list_node<int> n;
+
+  ASSERT_EQ(n.value(), 0);
+}
+
+TEST(intrusive_list_node, default_constructed_node_in_list) {
+  vk::intrusive::list<vk::intrusive::list_node<int>> l;
+  vk::intrusive::list_node<int> n;
+
+  l.push_back(n);
+
+  ASSERT_FALSE(l.empty());
+  ASSERT_EQ(l.front(), 0);
+}
+
+TEST(intrusive_list_node, inplace_constructor_no_arguments) {
+  vk::intrusive::list_node<int> n{std::in_place};
+
+  ASSERT_EQ(n.value(), 0);
+}
+
+TEST(intrusive_list_node, inplace_constructor_single_argument) {
+  vk::intrusive::list_node<int> n{std::in_place, 1};
+
+  ASSERT_EQ(n.value(), 1);
+}
+
+TEST(intrusive_list_node, inplace_constructor_multiple_arguments) {
+  vk::intrusive::list_node<std::pair<int, int>> n{std::in_place, 1, 2};
+
+  ASSERT_EQ(n.value(), (std::pair<int, int>{1, 2}));
+}
+
+TEST(intrusive_list_node, inplace_constructed_node_in_list) {
+  vk::intrusive::list<vk::intrusive::list_node<std::pair<int, int>>> l;
+  vk::intrusive::list_node<std::pair<int, int>> n{std::in_place, 1, 2};
+
+  l.push_back(n);
+
+  ASSERT_FALSE(l.empty());
+  ASSERT_EQ(l.front(), (std::pair<int, int>{1, 2}));
 }
 
 TEST(intrusive_list_basic, empty_list) {
@@ -851,16 +900,6 @@ TEST(intrusive_list_value, stores_move_only_value_type) {
   ++it;
 
   ASSERT_EQ(**it, 2);
-}
-
-TEST(intrusive_list_value, make_list_node_helper) {
-  auto n = vk::intrusive::make_list_node(123);
-  static_assert(std::is_same_v<decltype(n)::value_type, int>);
-  vk::intrusive::list<vk::intrusive::list_node<int>> l;
-
-  l.push_back(n);
-
-  ASSERT_EQ(l.front(), 123);
 }
 
 TEST(intrusive_list_iterator_to, single_node) {
