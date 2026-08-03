@@ -11,8 +11,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/type_traits/apply_tuple.h"
-#include "common/type_traits/is_unique.h"
+#include "common/type_traits/apply-tuple.h"
+#include "common/type_traits/is-unique.h"
 
 namespace vk::intrusive {
 
