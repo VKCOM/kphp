@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "common/type_traits/apply_tuple.h"
+#include "common/type_traits/is_unique.h"
 
 namespace vk::intrusive {
 
@@ -96,6 +97,8 @@ struct default_tag {};
 
 template<typename T, typename... Tags>
 class list_node final : private std::conditional_t<sizeof...(Tags) == 0, details::tagged_hooks<default_tag>, details::tagged_hooks<Tags...>> {
+  static_assert(vk::is_unique_v<Tags...>, "All tags must be unique");
+
   T m_value{};
 
   template<typename, typename>
