@@ -51,18 +51,6 @@ using stack = std::stack<T, vector<T, Allocator>>;
 template<template<class> class Allocator>
 using string = std::basic_string<char, std::char_traits<char>, Allocator<char>>;
 
-namespace intrusive {
-
-template<typename T, typename... Tags>
-using list_node = vk::intrusive::list_node<T, Tags...>;
-
-template<typename Node, typename Tag = vk::intrusive::default_tag>
-using list = vk::intrusive::list<Node, Tag>;
-
-using vk::intrusive::make_list_node;
-
-} // namespace intrusive
-
 } // namespace stl
 
 } // namespace kphp
