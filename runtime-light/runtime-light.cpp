@@ -69,6 +69,13 @@ VISIBILITY_DEFAULT void k2_init_instance() {
   kphp::log::debug("finish instance state init");
 }
 
+VISIBILITY_DEFAULT k2::PollStatus k2_warmup() {
+  kphp::log::debug("start instance warmup");
+  const auto warmup_status{k2::PollStatus::PollFinishedOk};
+  kphp::log::debug("finish instance warmup");
+  return warmup_status;
+}
+
 VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
