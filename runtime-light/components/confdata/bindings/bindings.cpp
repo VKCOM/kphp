@@ -15,21 +15,6 @@
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-auto AllocatorState::get() noexcept -> const AllocatorState& {
-  if (k2::instance_state() != nullptr) [[likely]] {
-    return InstanceState::get().instance_allocator_state;
-  }
-  kphp::log::error("can't find allocator state");
-}
-
-auto ErrorHandlingState::try_get() noexcept -> std::optional<std::reference_wrapper<ErrorHandlingState>> {
-  return std::nullopt; // confdata doesn't support PHP error handling
-}
-
-auto RuntimeContext::get() noexcept -> RuntimeContext& {
-  kphp::log::error("unexpected access to RuntimeContext"); // confdata doesn't have a runtime context
-}
-
 namespace kphp::coro {
 
 auto instance_state::get() noexcept -> instance_state& {
@@ -52,3 +37,18 @@ auto contextual_tags::try_get() noexcept -> std::optional<std::reference_wrapper
 }
 
 } // namespace kphp::log
+
+auto AllocatorState::get() noexcept -> const AllocatorState& {
+  if (k2::instance_state() != nullptr) [[likely]] {
+    return InstanceState::get().instance_allocator_state;
+  }
+  kphp::log::error("can't find allocator state");
+}
+
+auto ErrorHandlingState::try_get() noexcept -> std::optional<std::reference_wrapper<ErrorHandlingState>> {
+  return std::nullopt; // confdata doesn't support PHP error handling
+}
+
+auto RuntimeContext::get() noexcept -> RuntimeContext& {
+  kphp::log::error("unexpected access to RuntimeContext"); // confdata doesn't have a runtime context
+}

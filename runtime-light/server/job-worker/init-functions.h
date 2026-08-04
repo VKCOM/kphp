@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -18,7 +17,7 @@ inline void init_job_server(tl::K2InvokeJobWorker invoke_jw) noexcept {
 
   {
     using namespace PhpServerSuperGlobalIndices;
-    auto& server{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
+    auto& server{PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER};
     server.set_value(string{JOB_ID.data(), JOB_ID.size()}, invoke_jw.job_id.value);
   }
 }

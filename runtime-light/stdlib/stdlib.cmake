@@ -2,48 +2,30 @@ prepend(
   RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
   confdata/confdata-functions.cpp
-  confdata/confdata-state.cpp
   crypto/crypto-functions.cpp
-  curl/curl-state.cpp
-  web-transfer-lib/web-state.cpp
   diagnostics/backtrace.cpp
   diagnostics/php-assert.cpp
   file/file-system-state.cpp
   file/file-system-functions.cpp
   file/resource.cpp
-  fork/fork-state.cpp
   fork/fork-storage.cpp
-  fork/wait-queue-state.cpp
-  instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
-  job-worker/job-worker-client-state.cpp
-  kml/kml-state.cpp
-  math/random-state.cpp
-  math/math-state.cpp
   output/output-buffer.cpp
-  output/output-state.cpp
   output/print-functions.cpp
   rpc/rpc-api.cpp
-  rpc/rpc-client-state.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
-  rpc/rpc-queue-state.cpp
   rpc/rpc-tl-builtins.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
-  serialization/serialization-state.cpp
   server/http-functions.cpp
   string/regex-functions.cpp
-  string/regex-state.cpp
-  string/string-state.cpp
   system/system-functions.cpp
-  system/system-state.cpp
   time/date-interval.cpp
   time/date-time.cpp
   time/date-time-immutable.cpp
   time/time-functions.cpp
-  time/time-state.cpp
   time/timelib-functions.cpp
   zlib/zlib-functions.cpp
   zstd/zstd-functions.cpp)
