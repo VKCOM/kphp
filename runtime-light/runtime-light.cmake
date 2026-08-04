@@ -66,10 +66,16 @@ combine_static_runtime_library(kphp-light-runtime-pic k2kphp-rt)
 
 # =================================================================================================
 
+include(${RUNTIME_LIGHT_DIR}/components/confdata/confdata.cmake)
+
+# =================================================================================================
+
 file(
   GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
   RELATIVE ${BASE_DIR}
   CONFIGURE_DEPENDS "${RUNTIME_LIGHT_DIR}/*.h")
+# confdata component has its own state types and is not a part of the kphp runtime
+list(FILTER KPHP_RUNTIME_ALL_HEADERS EXCLUDE REGEX "^runtime-light/components/confdata/")
 file(
   GLOB_RECURSE KPHP_RUNTIME_COMMON_ALL_HEADERS
   RELATIVE ${BASE_DIR}
