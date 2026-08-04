@@ -580,7 +580,7 @@ auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, 
     break;
   case poll_op::is_closed:
     if (stream_status.write_status == k2::IOStatus::IOClosed || stream_status.read_status == k2::IOStatus::IOClosed) {
-      co_return kphp::coro::poll_status::closed;
+      co_return kphp::coro::poll_status::event;
     }
     break;
   }
