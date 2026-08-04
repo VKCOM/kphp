@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/string/regex-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 RegexInstanceState& RegexInstanceState::get() noexcept {
   return InstanceState::get().regex_instance_state;

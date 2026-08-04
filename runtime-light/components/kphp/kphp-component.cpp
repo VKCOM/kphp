@@ -4,13 +4,13 @@
 
 #include <utility>
 
+#include "runtime-light/components/kphp/state/component-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/k2-platform/k2-header.h"
-#include "runtime-light/state/component-state.h"
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))

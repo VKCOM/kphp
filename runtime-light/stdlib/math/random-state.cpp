@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/math/random-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 RandomInstanceState& RandomInstanceState::get() noexcept {
   return InstanceState::get().random_instance_state;

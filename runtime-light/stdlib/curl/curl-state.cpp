@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/curl/curl-state.h"
 
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 CurlInstanceState& CurlInstanceState::get() noexcept {
   return InstanceState::get().curl_instance_state;

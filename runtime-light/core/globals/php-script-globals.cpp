@@ -4,7 +4,7 @@
 
 #include "php-script-globals.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 PhpScriptMutableGlobals& PhpScriptMutableGlobals::current() noexcept {

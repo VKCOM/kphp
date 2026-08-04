@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -15,6 +15,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/await-set.h"
@@ -24,7 +25,6 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/rpc/init-functions.h"
-#include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"

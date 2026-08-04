@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/output/output-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 OutputInstanceState& OutputInstanceState::get() noexcept {
   return InstanceState::get().output_instance_state;

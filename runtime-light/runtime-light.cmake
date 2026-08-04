@@ -16,12 +16,12 @@ set(RUNTIME_LIGHT_LINK_FLAGS -stdlib=libc++ -static-libstdc++ -static-libgcc ${R
 # =================================================================================================
 
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
+include(${RUNTIME_LIGHT_DIR}/components/kphp/kphp.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
 include(${RUNTIME_LIGHT_DIR}/coroutine/coroutine.cmake)
 include(${RUNTIME_LIGHT_DIR}/server/server.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)
-include(${RUNTIME_LIGHT_DIR}/state/state.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
 set(RUNTIME_LIGHT_SRC
@@ -32,12 +32,11 @@ set(RUNTIME_LIGHT_SRC
     ${RUNTIME_LIGHT_SERVER_SRC}
     ${RUNTIME_LIGHT_ALLOCATOR_SRC}
     ${RUNTIME_LIGHT_COROUTINE_SRC}
-    ${RUNTIME_LIGHT_STATE_SRC}
     ${RUNTIME_LIGHT_STREAMS_SRC}
     ${RUNTIME_LIGHT_TL_SRC}
     ${RUNTIME_LIGHT_UTILS_SRC}
     ${RUNTIME_LIGHT_MEMORY_RESOURCE_IMPL_SRC}
-    runtime-light.cpp)
+    ${RUNTIME_LIGHT_KPHP_COMPONENT_SRC})
 
 set(RUNTIME_SOURCES_FOR_COMP "${RUNTIME_LIGHT_SRC}")
 configure_file(${BASE_DIR}/compiler/runtime_sources.h.in ${AUTO_DIR}/compiler/runtime_sources.h)

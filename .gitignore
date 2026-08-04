@@ -15,5 +15,5 @@ build
 /cmake-build-*
 
 dev
-kphp
+/kphp
 kphp_out

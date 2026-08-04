@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/rpc/rpc-queue-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 RpcQueueInstanceState& RpcQueueInstanceState::get() noexcept {
   return InstanceState::get().rpc_queue_instance_state;

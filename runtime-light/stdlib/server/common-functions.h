@@ -7,9 +7,9 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-functions.h"

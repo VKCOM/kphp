@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/time/time-state.h"
 
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 TimeInstanceState& TimeInstanceState::get() noexcept {
   return InstanceState::get().time_instance_state;

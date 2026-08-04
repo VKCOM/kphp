@@ -4,7 +4,7 @@
 
 #include "runtime-light/server/http/http-server-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 HttpServerInstanceState& HttpServerInstanceState::get() noexcept {
   return InstanceState::get().http_server_instance_state;

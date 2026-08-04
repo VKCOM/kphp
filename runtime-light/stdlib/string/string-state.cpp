@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/string/string-state.h"
 
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 StringInstanceState& StringInstanceState::get() noexcept {
   return InstanceState::get().string_instance_state;

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/state/image-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
 
 class ToArrayVisitor {

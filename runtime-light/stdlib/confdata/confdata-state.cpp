@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/confdata/confdata-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 ConfdataInstanceState& ConfdataInstanceState::get() noexcept {
   return InstanceState::get().confdata_instance_state;

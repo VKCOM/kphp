@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/tl/tl-functions.h"
 
 inline void init_job_server(tl::K2InvokeJobWorker invoke_jw) noexcept {

@@ -4,10 +4,10 @@
 
 #include "runtime-light/allocator/allocator-state.h"
 
+#include "runtime-light/components/kphp/state/component-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/state/component-state.h"
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 const AllocatorState& AllocatorState::get() noexcept {

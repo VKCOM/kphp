@@ -8,7 +8,7 @@
 
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/state/image-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
 
 namespace {
 

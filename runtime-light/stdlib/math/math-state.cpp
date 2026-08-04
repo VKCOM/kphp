@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/math/math-state.h"
 
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 MathInstanceState& MathInstanceState::get() noexcept {
   return InstanceState::get().math_instance_state;

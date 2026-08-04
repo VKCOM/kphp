@@ -9,8 +9,8 @@
 #include <optional>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/state/component-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/component-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 ErrorHandlingState::ErrorHandlingState() noexcept {
   const auto& component_st{ComponentState::get()};

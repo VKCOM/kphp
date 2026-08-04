@@ -4,7 +4,7 @@
 
 #include "runtime-light/coroutine/io-scheduler.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 namespace kphp::coro {
 

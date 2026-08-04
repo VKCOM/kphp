@@ -4,7 +4,7 @@
 
 #include "runtime-light/coroutine/coroutine-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 CoroutineInstanceState& CoroutineInstanceState::get() noexcept {
   return InstanceState::get().coroutine_instance_state;

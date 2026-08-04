@@ -4,7 +4,7 @@
 
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 JobWorkerServerInstanceState& JobWorkerServerInstanceState::get() noexcept {
   return InstanceState::get().job_worker_server_instance_state;

@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/fork/fork-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 ForkInstanceState& ForkInstanceState::get() noexcept {
   return InstanceState::get().fork_instance_state;

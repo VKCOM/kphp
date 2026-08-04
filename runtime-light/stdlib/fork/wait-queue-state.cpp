@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 WaitQueueInstanceState& WaitQueueInstanceState::get() noexcept {
   return InstanceState::get().wait_queue_instance_state;

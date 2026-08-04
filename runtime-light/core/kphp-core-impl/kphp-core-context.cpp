@@ -3,8 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace {

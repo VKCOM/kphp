@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/kml/kml-state.h"
 
-#include "runtime-light/state/component-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/component-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 template<>
 const KmlComponentState& KmlComponentState::get() noexcept {

@@ -4,7 +4,7 @@
 
 #include "runtime-light/server/rpc/rpc-server-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 RpcServerInstanceState& RpcServerInstanceState::get() noexcept {
   return InstanceState::get().rpc_server_instance_state;

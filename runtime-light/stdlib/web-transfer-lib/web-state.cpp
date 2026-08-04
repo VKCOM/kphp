@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 WebInstanceState& WebInstanceState::get() noexcept {
   return InstanceState::get().web_instance_state;

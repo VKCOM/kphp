@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 SerializationInstanceState& SerializationInstanceState::get() noexcept {
   return InstanceState::get().serialization_instance_state;

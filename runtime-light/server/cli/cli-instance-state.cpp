@@ -4,7 +4,7 @@
 
 #include "runtime-light/server/cli/cli-instance-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 CLIInstanceInstance& CLIInstanceInstance::get() noexcept {
   return InstanceState::get().cli_instance_instate;

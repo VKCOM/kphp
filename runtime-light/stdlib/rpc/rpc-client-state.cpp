@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/image-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 RpcClientInstanceState& RpcClientInstanceState::get() noexcept {
   return InstanceState::get().rpc_client_instance_state;

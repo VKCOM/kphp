@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 InstanceCacheInstanceState& InstanceCacheInstanceState::get() noexcept {
   return InstanceState::get().instance_cache_instance_state;

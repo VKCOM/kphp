@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/state/component-state.h"
+#include "runtime-light/components/kphp/state/component-state.h"
 
 #include <charconv>
 #include <cstddef>

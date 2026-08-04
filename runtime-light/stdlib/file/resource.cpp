@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <expected>
 
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/components/kphp/state/instance-state.h"
 
 namespace kphp::fs {
 
