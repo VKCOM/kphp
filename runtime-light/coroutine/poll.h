@@ -11,6 +11,7 @@ namespace kphp::coro {
 enum class poll_op : uint8_t {
   read,
   write,
+  is_closed,
 };
 
 enum class poll_status : uint8_t {

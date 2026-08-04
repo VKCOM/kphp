@@ -130,17 +130,8 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }};
 
     static constexpr auto descriptor_awaiter{[](k2::descriptor descriptor) noexcept -> kphp::coro::task<std::monostate> {
-      k2::StreamStatus stream_status{};
-      auto& io_scheduler{kphp::coro::io_scheduler::get()};
-      for (;;) { // FIXME it should actually use scheduler.poll
-        k2::stream_status(descriptor, std::addressof(stream_status));
-        if (stream_status.write_status == k2::IOStatus::IOClosed) {
-          co_return std::monostate{};
-        }
-
-        using namespace std::chrono_literals;
-        co_await io_scheduler.schedule(150ms);
-      }
+      co_await kphp::coro::io_scheduler::get().poll(descriptor, kphp::coro::poll_op::is_closed);
+      co_return std::monostate{};
     }};
 
     kphp::log::assertion(!state.is_null());
