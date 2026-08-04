@@ -91,9 +91,9 @@ struct InstanceState final : vk::not_copyable {
   AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
 
   kphp::log::contextual_tags instance_tags;
-  kphp::coro::io_scheduler io_scheduler;
 
-  CoroutineInstanceState coroutine_instance_state;
+  kphp::coro::instance_state coroutine_instance_state;
+  kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
   RpcQueueInstanceState rpc_queue_instance_state;

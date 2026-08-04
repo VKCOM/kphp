@@ -6,7 +6,6 @@
 #include <iterator>
 #include <span>
 
-#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -44,18 +43,19 @@ size_t async_frames(std::span<void*> addresses, kphp::coro::async_stack_frame* t
 namespace kphp::diagnostic::impl {
 
 size_t async_backtrace(std::span<void*> addresses) noexcept {
-  if (const auto* instance_state{k2::instance_state()}; instance_state != nullptr) [[likely]] {
-    const auto& async_stack_root{instance_state->coroutine_instance_state.coroutine_stack_root};
-
-    auto* const start_sync_frame{reinterpret_cast<kphp::coro::stack_frame*>(STACK_FRAME_ADDRESS)};
-    auto* const stop_sync_frame{async_stack_root.stop_sync_stack_frame};
-
-    size_t frames_count{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
-    if (frames_count < addresses.size()) {
-      frames_count += async_frames(addresses.subspan(frames_count), async_stack_root.top_async_stack_frame);
-    }
-    return frames_count;
+  if (k2::instance_state() == nullptr) [[unlikely]] {
+    return 0;
   }
-  return 0;
+
+  const auto& async_stack_root{kphp::coro::instance_state::get().coroutine_stack_root};
+
+  auto* const start_sync_frame{reinterpret_cast<kphp::coro::stack_frame*>(STACK_FRAME_ADDRESS)};
+  auto* const stop_sync_frame{async_stack_root.stop_sync_stack_frame};
+
+  size_t frames_count{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
+  if (frames_count < addresses.size()) {
+    frames_count += async_frames(addresses.subspan(frames_count), async_stack_root.top_async_stack_frame);
+  }
+  return frames_count;
 }
 } // namespace kphp::diagnostic::impl

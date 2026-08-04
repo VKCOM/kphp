@@ -33,5 +33,7 @@ public:
       : allocator(script_mem_size, min_extra_mem_size, oom_handling_mem_size) {}
 
   static const AllocatorState& get() noexcept;
-  static AllocatorState& get_mutable() noexcept;
+  static AllocatorState& get_mutable() noexcept {
+    return const_cast<AllocatorState&>(get());
+  }
 };
