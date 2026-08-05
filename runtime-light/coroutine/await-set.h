@@ -64,7 +64,6 @@ public:
   }
 
   bool empty() const noexcept {
-    kphp::log::assertion(m_await_broker != nullptr);
     return size() == 0;
   }
 

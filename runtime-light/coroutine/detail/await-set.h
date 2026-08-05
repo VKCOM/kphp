@@ -112,7 +112,7 @@ public:
     auto* ready_task{std::exchange(m_ready_tasks, m_ready_tasks->m_next)};
     auto task_iterator{ready_task->m_storage_location};
 
-    auto typed_handle = std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(task_iterator->address());
+    auto typed_handle{std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(task_iterator->address())};
     auto result{typed_handle.promise().result()};
 
     /*
@@ -122,7 +122,7 @@ public:
      */
     m_tasks_storage.erase(task_iterator);
     --m_tasks_count;
-    task_iterator->destroy();
+    typed_handle->destroy();
 
     return result_t{std::move(result)};
   }
