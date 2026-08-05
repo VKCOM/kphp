@@ -122,7 +122,7 @@ public:
      */
     m_tasks_storage.erase(task_iterator);
     --m_tasks_count;
-    typed_handle->destroy();
+    typed_handle.destroy();
 
     return result_t{std::move(result)};
   }
