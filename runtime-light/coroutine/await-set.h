@@ -56,7 +56,7 @@ public:
   }
 
   auto try_next() noexcept {
-    using result_type = std::optional<decltype(std::declval<detail::await_set::await_set_task<return_type>>().result())>;
+    using result_type = std::optional<decltype(std::declval<typename detail::await_set::await_set_task<return_type>::promise_type>().result())>;
     if (m_await_broker == nullptr) [[unlikely]] {
       return result_type{std::nullopt};
     }
@@ -64,6 +64,7 @@ public:
   }
 
   bool empty() const noexcept {
+    kphp::log::assertion(m_await_broker != nullptr);
     return size() == 0;
   }
 
