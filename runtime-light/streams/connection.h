@@ -130,7 +130,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }};
 
     static constexpr auto descriptor_awaiter{[](k2::descriptor descriptor) noexcept -> kphp::coro::task<std::monostate> {
-      co_await kphp::coro::io_scheduler::get().poll(descriptor, kphp::coro::poll_op::write_closed);
+      co_await kphp::coro::io_scheduler::get().poll(descriptor, kphp::coro::poll_op::close_writer);
       co_return std::monostate{};
     }};
 
