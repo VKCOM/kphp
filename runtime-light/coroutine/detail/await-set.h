@@ -26,25 +26,19 @@ class await_set;
 
 namespace kphp::coro::detail::await_set {
 
-using awaiter_node = vk::intrusive::list_node<std::coroutine_handle<>>;
-using awaiters_list = vk::intrusive::list<awaiter_node>;
-
-using task_node = vk::intrusive::list_node<std::coroutine_handle<>>;
-using tasks_list = vk::intrusive::list<task_node>;
-
 template<typename return_type>
 class await_set_task;
 
 template<typename return_type>
 struct await_set_ready_task_element {
   await_set_ready_task_element* m_next{};
-  tasks_list::iterator m_storage_location;
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>::iterator m_storage_location;
 };
 
 template<typename return_type>
 class await_broker {
-  tasks_list m_tasks_storage;
-  awaiters_list m_awaiters;
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> m_tasks_storage;
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> m_awaiters;
   await_set_ready_task_element<return_type>* m_ready_tasks{};
   size_t m_tasks_count{0};
 
@@ -92,7 +86,7 @@ public:
     }
   }
 
-  bool suspend_awaiter(awaiter_node& awaiter) noexcept {
+  bool suspend_awaiter(vk::intrusive::list_node<std::coroutine_handle<>>& awaiter) noexcept {
     if (m_ready_tasks != nullptr) {
       // There are completed tasks
       return false;
@@ -146,7 +140,7 @@ public:
 
   void detach_all() noexcept {
     // Extract the value from m_awaiters so as not to resume those who subscribe during the detach_all.
-    awaiters_list awaiters;
+    vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> awaiters;
     awaiters.splice(awaiters.begin(), m_awaiters);
     while (!awaiters.empty()) {
       auto coroutine{awaiters.front()};
@@ -220,7 +214,8 @@ public:
     kphp::log::error("internal unhandled exception");
   }
 
-  auto start(detail::await_set::await_broker<return_type>& await_broker, tasks_list::iterator storage_location, kphp::coro::async_stack_root& async_stack_root,
+  auto start(detail::await_set::await_broker<return_type>& await_broker,
+             vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>::iterator storage_location, kphp::coro::async_stack_root& async_stack_root,
              void* return_address) noexcept {
     m_await_broker = await_broker;
     m_ready_task_element.m_storage_location = storage_location;
@@ -253,7 +248,7 @@ private:
   promise_type& m_promise;
 
   struct await_set_task_promise_common : public await_set_task_promise_base<return_type, promise_type> {
-    task_node m_coroutine_node;
+    vk::intrusive::list_node<std::coroutine_handle<>> m_coroutine_node;
 
     auto get_return_object() noexcept {
       auto& self{static_cast<promise_type&>(*this)};
@@ -303,7 +298,7 @@ public:
       : m_promise(promise) {}
 
   await_set_task(const await_set_task&) = delete;
-  await_set_task(await_set_task&& other) noexcept = default;
+  await_set_task(await_set_task&& other) noexcept = delete;
 
   await_set_task& operator=(const await_set_task&) = delete;
   await_set_task& operator=(await_set_task&&) = delete;
@@ -320,7 +315,7 @@ private:
   await_broker<return_type>& m_await_broker;
 
   class awaiter {
-    awaiter_node m_awaiting_coroutine_node;
+    vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     await_broker<return_type>& m_await_broker;
     kphp::coro::async_stack_frame* caller_frame{};
 

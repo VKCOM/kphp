@@ -21,13 +21,19 @@
 namespace kphp::coro {
 
 class event {
-  using awaiter_node = vk::intrusive::list_node<std::coroutine_handle<>>;
-  using awaiters_list = vk::intrusive::list<awaiter_node>;
+  struct event_controller : kphp::memory::script_allocator_managed, vk::not_copyable {
+    // 1) std::monostate => not set and no coroutines are waiting
+    // 2) non empty list => linked list of coroutines waiting for the event to trigger
+    // 3) empty list => the event is triggered and all coroutines are resumed
+    std::variant<std::monostate, vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>> m_state;
 
-  struct event_controller;
+    auto set() noexcept -> void;
+    auto unset() noexcept -> void;
+    auto is_set() const noexcept -> bool;
+  };
 
   struct awaiter {
-    awaiter_node m_awaiting_coroutine_node;
+    vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     bool m_suspended{};
     event_controller& m_controller;
     kphp::coro::async_stack_root& m_async_stack_root;
@@ -47,17 +53,6 @@ class event {
     template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
     auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> void;
     auto await_resume() noexcept -> void;
-  };
-
-  struct event_controller : kphp::memory::script_allocator_managed, vk::not_copyable {
-    // 1) std::monostate => not set and no coroutines are waiting
-    // 2) non empty list => linked list of coroutines waiting for the event to trigger
-    // 3) empty list => the event is triggered and all coroutines are resumed
-    std::variant<std::monostate, awaiters_list> m_state;
-
-    auto set() noexcept -> void;
-    auto unset() noexcept -> void;
-    auto is_set() const noexcept -> bool;
   };
 
   std::unique_ptr<event_controller> m_controller;
@@ -106,10 +101,10 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
   kphp::log::assertion(!m_controller.is_set());
 
   if (std::holds_alternative<std::monostate>(m_controller.m_state)) {
-    m_controller.m_state = awaiters_list{};
+    m_controller.m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
   }
 
-  std::get<awaiters_list>(m_controller.m_state).push_front(m_awaiting_coroutine_node);
+  std::get<vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>>(m_controller.m_state).push_front(m_awaiting_coroutine_node);
 }
 
 inline auto event::awaiter::await_resume() noexcept -> void {
@@ -122,12 +117,12 @@ inline auto event::awaiter::await_resume() noexcept -> void {
 
 inline auto event::event_controller::set() noexcept -> void {
   if (std::holds_alternative<std::monostate>(m_state)) {
-    m_state = awaiters_list{};
+    m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
     return;
   }
 
-  awaiters_list awaiters;
-  awaiters.splice(awaiters.begin(), std::get<awaiters_list>(m_state));
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> awaiters;
+  awaiters.splice(awaiters.begin(), std::get<vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>>(m_state));
   while (!awaiters.empty()) {
     auto coroutine{awaiters.front()};
     /*
@@ -147,7 +142,9 @@ inline auto event::event_controller::unset() noexcept -> void {
 }
 
 inline auto event::event_controller::is_set() const noexcept -> bool {
-  return std::visit(overloaded([](std::monostate) noexcept { return false; }, [](const awaiters_list& list) noexcept { return list.empty(); }), m_state);
+  return std::visit(overloaded([](std::monostate) noexcept { return false; },
+                               [](const vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>& list) noexcept { return list.empty(); }),
+                    m_state);
 }
 
 inline auto event::set() noexcept -> void {
