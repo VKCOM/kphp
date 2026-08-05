@@ -31,14 +31,13 @@ set(K2_CONFDATA_SRC
 vk_add_library_pic(k2-confdata-pic SHARED ${K2_CONFDATA_SRC})
 set_target_properties(k2-confdata-pic PROPERTIES PREFIX "" OUTPUT_NAME "k2-confdata" LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR})
 target_compile_options(k2-confdata-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
-target_link_options(k2-confdata-pic PUBLIC -stdlib=libc++ -static-libstdc++ -static-libgcc)
-if(APPLE)
-  target_link_options(k2-confdata-pic PUBLIC -undefined dynamic_lookup)
-else()
-  # k2 platform symbols are resolved by k2-node during dlopen
-  target_link_options(k2-confdata-pic PUBLIC -Wl,--allow-shlib-undefined -Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,calloc -Wl,--wrap,realloc
-                      -Wl,--wrap,strdup)
+# reuse the common link flags; cmake drives the link through the compiler,
+# so bare ld options need the -Wl, prefix
+set(K2_CONFDATA_LINK_FLAGS ${RUNTIME_LIGHT_LINK_FLAGS})
+if(NOT APPLE)
+  list(TRANSFORM K2_CONFDATA_LINK_FLAGS REPLACE "^--" "-Wl,--")
 endif()
+target_link_options(k2-confdata-pic PUBLIC ${K2_CONFDATA_LINK_FLAGS})
 
 string(TIMESTAMP K2_CONFDATA_BUILD_TIMESTAMP "%s" UTC)
 target_compile_definitions(k2-confdata-pic PRIVATE K2_CONFDATA_BUILD_TIMESTAMP=${K2_CONFDATA_BUILD_TIMESTAMP}ULL
