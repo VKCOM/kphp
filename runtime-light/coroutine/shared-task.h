@@ -192,7 +192,7 @@ public:
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
     set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_awaiting_coroutine_node.value() = awaiting_coroutine;
-    bool suspended = m_coro.promise().suspend_awaiter(m_awaiting_coroutine_node);
+    bool suspended{m_coro.promise().suspend_awaiter(m_awaiting_coroutine_node)};
     reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
     return suspended;
   }
