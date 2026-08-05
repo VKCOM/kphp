@@ -55,7 +55,7 @@ public:
         }
 
         while (true) {
-          auto& coroutine{awaiters.front()};
+          auto coroutine{awaiters.front()};
           awaiters.pop_front();
           if (awaiters.empty()) {
             // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call

@@ -129,7 +129,7 @@ inline auto event::event_controller::set() noexcept -> void {
   awaiters_list awaiters;
   awaiters.splice(awaiters.begin(), std::get<awaiters_list>(m_state));
   while (!awaiters.empty()) {
-    auto& coroutine{awaiters.front()};
+    auto coroutine{awaiters.front()};
     /*
      * We can remove pop_front() here, because list node will be destroyed after resume and in its
      * destructor will call unlink() [1]. But we left pop_front() for better readability and safety

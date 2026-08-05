@@ -414,7 +414,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
     kphp::coro::detail::poll_info::scheduled_coroutines scheduled_coroutines{};
     scheduled_coroutines.splice(scheduled_coroutines.begin(), m_scheduled_coroutines);
     while (!scheduled_coroutines.empty()) {
-      auto& coroutine{scheduled_coroutines.front()};
+      auto coroutine{scheduled_coroutines.front()};
       /*
        * We can remove pop_front() here, because list node will be destroyed after resume and in its
        * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
@@ -454,9 +454,9 @@ auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
 inline auto io_scheduler::schedule() noexcept {
   class schedule_operation {
     friend class io_scheduler;
-    vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     io_scheduler& m_scheduler;
     kphp::coro::async_stack_frame* m_async_stack_frame{};
+    vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     kphp::coro::detail::poll_info::schedule_position m_schedule_pos{std::monostate{}};
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
@@ -469,9 +469,9 @@ inline auto io_scheduler::schedule() noexcept {
     schedule_operation& operator=(schedule_operation&&) = delete;
 
     schedule_operation(schedule_operation&& other) noexcept
-        : m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
-          m_scheduler(other.m_scheduler),
+        : m_scheduler(other.m_scheduler),
           m_async_stack_frame(std::exchange(other.m_async_stack_frame, nullptr)),
+          m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
           m_schedule_pos(std::exchange(other.m_schedule_pos, std::monostate{})) {
       if (std::holds_alternative<kphp::coro::detail::poll_info::scheduled_coroutines::iterator>(m_schedule_pos)) {
         m_schedule_pos = m_scheduler.m_scheduled_coroutines.iterator_to(m_awaiting_coroutine_node);

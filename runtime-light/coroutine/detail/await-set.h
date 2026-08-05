@@ -81,7 +81,7 @@ public:
   void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
     ready_task.m_next = std::exchange(m_ready_tasks, std::addressof(ready_task));
     if (!m_awaiters.empty()) {
-      auto& coroutine{m_awaiters.front()};
+      auto coroutine{m_awaiters.front()};
       /*
        * We can remove pop_front() here, because list node will be destroyed after resume and in its
        * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
@@ -131,7 +131,7 @@ public:
     m_ready_tasks = nullptr;
     detach_all();
     while (!m_tasks_storage.empty()) {
-      auto& coroutine{m_tasks_storage.front()};
+      auto coroutine{m_tasks_storage.front()};
       /*
        * We can remove pop_front() here, because list node will be destroyed after destruction of coroutine frame and in its
        * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
@@ -149,7 +149,7 @@ public:
     awaiters_list awaiters;
     awaiters.splice(awaiters.begin(), m_awaiters);
     while (!awaiters.empty()) {
-      auto& coroutine{awaiters.front()};
+      auto coroutine{awaiters.front()};
       /*
        * We can remove pop_front() here, because list node will be destroyed after resume and in its
        * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
