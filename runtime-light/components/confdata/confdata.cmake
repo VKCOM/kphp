@@ -39,23 +39,6 @@ if(NOT APPLE)
 endif()
 target_link_options(k2-confdata-pic PUBLIC ${K2_CONFDATA_LINK_FLAGS})
 
-include(CheckIPOSupported)
-check_ipo_supported(RESULT K2_CONFDATA_IPO_SUPPORTED OUTPUT K2_CONFDATA_IPO_ERROR)
-if(NOT APPLE)
-  # GNU ld can't read LLVM bitcode objects; LTO requires a linker with
-  # LLVM plugin support — mold, or the version-matched lld
-  string(REGEX MATCH "^[0-9]+" K2_CONFDATA_COMPILER_VERSION_MAJOR "${CMAKE_CXX_COMPILER_VERSION}")
-  find_program(K2_CONFDATA_LINKER NAMES mold ld.lld-${K2_CONFDATA_COMPILER_VERSION_MAJOR})
-endif()
-if(K2_CONFDATA_IPO_SUPPORTED AND (APPLE OR K2_CONFDATA_LINKER))
-  set_target_properties(k2-confdata-pic PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-  if(K2_CONFDATA_LINKER)
-    target_link_options(k2-confdata-pic PRIVATE -fuse-ld=${K2_CONFDATA_LINKER})
-  endif()
-else()
-  message(WARNING "k2-confdata: IPO/LTO is disabled: ${K2_CONFDATA_IPO_ERROR}")
-endif()
-
 string(TIMESTAMP K2_CONFDATA_BUILD_TIMESTAMP "%s" UTC)
 target_compile_definitions(k2-confdata-pic PRIVATE K2_CONFDATA_BUILD_TIMESTAMP=${K2_CONFDATA_BUILD_TIMESTAMP}ULL
                                                    K2_CONFDATA_COMPILER_VERSION="${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
