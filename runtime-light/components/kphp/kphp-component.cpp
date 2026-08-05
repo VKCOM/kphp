@@ -34,9 +34,7 @@ VISIBILITY_DEFAULT ComponentState* k2_create_component() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = nullptr;
   k2::details::instance_state_ptr = nullptr;
-  kphp::log::debug("start component state creation, requested {} bytes", sizeof(ComponentState));
   auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc_align(sizeof(ComponentState), alignof(ComponentState)))};
-  kphp::log::debug("finish component state creation");
   return component_state_ptr;
 }
 
@@ -44,18 +42,14 @@ VISIBILITY_DEFAULT void k2_init_component() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = nullptr;
-  kphp::log::debug("start component state init");
   new (const_cast<ComponentState*>(k2::component_state())) ComponentState{};
-  kphp::log::debug("finish component state init");
 }
 
 VISIBILITY_DEFAULT InstanceState* k2_create_instance() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = nullptr;
-  kphp::log::debug("start instance state creation, requested {} bytes", sizeof(InstanceState));
   auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc_align(sizeof(InstanceState), alignof(InstanceState)))};
-  kphp::log::debug("finish instance state creation");
   return instance_state_ptr;
 }
 
@@ -63,16 +57,12 @@ VISIBILITY_DEFAULT void k2_init_instance() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = k2_instance_state();
-  kphp::log::debug("start instance state init");
   new (k2::instance_state()) InstanceState{};
   k2::instance_state()->init_script_execution();
-  kphp::log::debug("finish instance state init");
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_warmup() {
-  kphp::log::debug("start instance warmup");
   const auto warmup_status{k2::PollStatus::PollFinishedOk};
-  kphp::log::debug("finish instance warmup");
   return warmup_status;
 }
 
@@ -80,8 +70,8 @@ VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = k2_instance_state();
-  kphp::log::debug("k2_poll started");
+  kphp::log::trace("k2_poll started");
   const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
-  kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));
+  kphp::log::trace("k2_poll finished: {}", std::to_underlying(poll_status));
   return poll_status;
 }
