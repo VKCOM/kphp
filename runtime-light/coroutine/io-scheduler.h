@@ -299,7 +299,7 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
         break;
       }
       break;
-    case poll_op::close_writer:
+    case poll_op::close:
       if (stream_status.write_status == k2::IOStatus::IOClosed) {
         std::invoke(complete_poll_on_update, *this, poll_info, kphp::coro::poll_status::event);
       }
@@ -578,7 +578,7 @@ auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, 
       co_return kphp::coro::poll_status::closed;
     }
     break;
-  case poll_op::close_writer:
+  case poll_op::close:
     if (stream_status.write_status == k2::IOStatus::IOClosed) {
       co_return kphp::coro::poll_status::event;
     }
