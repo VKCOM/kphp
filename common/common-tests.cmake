@@ -17,7 +17,8 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         type_traits/list_of_types_test.cpp
         wrappers/span-test.cpp
         wrappers/string_view-test.cpp
-        ucontext/ucontext-portable-test.cpp)
+        ucontext/ucontext-portable-test.cpp
+        containers/intrusive-list-test.cpp)
 
 allow_deprecated_declarations(${COMMON_TESTS_SOURCES}/algorithms/projections-test.cpp)
 
