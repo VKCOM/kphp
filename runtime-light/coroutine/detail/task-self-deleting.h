@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <memory>
 
+#include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
@@ -21,11 +22,13 @@ namespace task_self_deleting {
 class task_self_deleting;
 
 struct promise_self_deleting : kphp::coro::async_stack_element {
+  vk::intrusive::list_node<std::coroutine_handle<>> m_coroutine_node;
+
   promise_self_deleting() noexcept = default;
   ~promise_self_deleting() = default;
 
   promise_self_deleting(const promise_self_deleting&) = delete;
-  promise_self_deleting(promise_self_deleting&&) noexcept = default;
+  promise_self_deleting(promise_self_deleting&&) noexcept = delete;
 
   promise_self_deleting& operator=(const promise_self_deleting&) = delete;
   promise_self_deleting& operator=(promise_self_deleting&&) = delete;
@@ -87,9 +90,14 @@ public:
   auto get_handle() noexcept -> std::coroutine_handle<promise_self_deleting> {
     return std::coroutine_handle<promise_type>::from_promise(m_promise);
   }
+
+  auto get_coroutine_node() noexcept -> vk::intrusive::list_node<std::coroutine_handle<>>& {
+    return m_promise.m_coroutine_node;
+  }
 };
 
 inline auto promise_self_deleting::get_return_object() noexcept -> task_self_deleting {
+  m_coroutine_node.value() = std::coroutine_handle<promise_self_deleting>::from_promise(*this);
   return task_self_deleting{*this};
 }
 
