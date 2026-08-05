@@ -10,8 +10,8 @@
 #include <memory>
 #include <optional>
 
+#include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -26,26 +26,21 @@ class await_set;
 
 namespace kphp::coro::detail::await_set {
 
-struct await_set_awaiter {
-  await_set_awaiter* m_next{};
-  await_set_awaiter* m_prev{};
-  std::coroutine_handle<> m_continuation;
-};
-
 template<typename return_type>
 class await_set_task;
 
 template<typename return_type>
 struct await_set_ready_task_element {
   await_set_ready_task_element* m_next{};
-  kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator m_storage_location{};
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>::iterator m_storage_location;
 };
 
 template<typename return_type>
 class await_broker {
-  kphp::stl::list<detail::await_set::await_set_task<return_type>, kphp::memory::script_allocator> m_tasks_storage{};
-  await_set_awaiter* m_awaiters{};
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> m_tasks_storage;
+  vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> m_awaiters;
   await_set_ready_task_element<return_type>* m_ready_tasks{};
+  size_t m_tasks_count{0};
 
 public:
   await_broker() noexcept = default;
@@ -71,86 +66,96 @@ public:
   }
 
   void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root& coroutine_stack_root, void* return_address) noexcept {
-    auto task_iterator{m_tasks_storage.insert(m_tasks_storage.begin(), std::move(task))};
-    task_iterator->start(*this, task_iterator, coroutine_stack_root, return_address);
+    auto& promise{task.m_promise};
+    m_tasks_storage.push_front(promise.m_coroutine_node);
+    ++m_tasks_count;
+    promise.start(*this, m_tasks_storage.begin(), coroutine_stack_root, return_address);
   }
 
   void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
     ready_task.m_next = std::exchange(m_ready_tasks, std::addressof(ready_task));
-
-    if (m_awaiters != nullptr) {
-      // Resume if someone is waiting
-      auto* awaiter{m_awaiters};
-      m_awaiters = awaiter->m_next;
-      if (m_awaiters != nullptr) {
-        m_awaiters->m_prev = nullptr;
-      }
-      awaiter->m_continuation.resume();
+    if (!m_awaiters.empty()) {
+      auto coroutine{m_awaiters.front()};
+      /*
+       * We can remove pop_front() here, because list node will be destroyed after resume and in its
+       * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
+       * (in the future invariant [1] may not work).
+       */
+      m_awaiters.pop_front();
+      coroutine.resume();
     }
   }
 
-  void cancel_awaiter(await_set_awaiter& awaiter) noexcept {
-    auto* awaiter_ptr{std::addressof(awaiter)};
-    if (m_awaiters == awaiter_ptr) {
-      m_awaiters = awaiter_ptr->m_next;
-    } else if (awaiter_ptr->m_next == nullptr) {
-      awaiter_ptr->m_prev->m_next = nullptr;
-    } else if (m_awaiters != nullptr) {
-      awaiter_ptr->m_prev->m_next = awaiter_ptr->m_next;
-      awaiter_ptr->m_next->m_prev = awaiter_ptr->m_prev;
-    }
-  }
-
-  bool suspend_awaiter(await_set_awaiter& awaiter) noexcept {
+  bool suspend_awaiter(vk::intrusive::list_node<std::coroutine_handle<>>& awaiter) noexcept {
     if (m_ready_tasks != nullptr) {
       // There are completed tasks
       return false;
     }
 
-    awaiter.m_prev = nullptr;
-    awaiter.m_next = m_awaiters;
-    if (m_awaiters != nullptr) {
-      m_awaiters->m_prev = std::addressof(awaiter);
-    }
-    m_awaiters = std::addressof(awaiter);
+    m_awaiters.push_front(awaiter);
+
     return true;
   }
 
   auto try_get_result() noexcept {
-    using result_t = std::optional<decltype(std::declval<await_set_task<return_type>>().result())>;
+    using result_t = std::optional<decltype(std::declval<typename await_set_task<return_type>::promise_type>().result())>;
     if (m_ready_tasks == nullptr) {
       return result_t{std::nullopt};
     }
 
     auto* ready_task{std::exchange(m_ready_tasks, m_ready_tasks->m_next)};
     auto task_iterator{ready_task->m_storage_location};
-    auto result{task_iterator->result()};
+
+    auto typed_handle{std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(task_iterator->address())};
+    auto result{typed_handle.promise().result()};
+
+    /*
+     * We can remove erase() here, because list node will be destroyed after destruction of coroutine frame and in its
+     * destructor will call unlink() [1]. But we left erase() for better readability and safety
+     * (in the future invariant [1] may not work).
+     */
     m_tasks_storage.erase(task_iterator);
+    --m_tasks_count;
+    typed_handle.destroy();
+
     return result_t{std::move(result)};
   }
 
   void abort_all() noexcept {
     m_ready_tasks = nullptr;
     detach_all();
-    m_tasks_storage.clear();
+    while (!m_tasks_storage.empty()) {
+      auto coroutine{m_tasks_storage.front()};
+      /*
+       * We can remove pop_front() here, because list node will be destroyed after destruction of coroutine frame and in its
+       * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
+       * (in the future invariant [1] may not work).
+       */
+      m_tasks_storage.pop_front();
+      coroutine.destroy();
+    }
+
+    m_tasks_count = 0;
   }
 
   void detach_all() noexcept {
-    // Extract the value from m_waiters so as not to resume those who subscribe during the detach_all.
-    await_set_awaiter* awaiters_to_resume{std::exchange(m_awaiters, nullptr)};
-    while (awaiters_to_resume != nullptr) {
-      auto* waiter{awaiters_to_resume};
-      awaiters_to_resume = awaiters_to_resume->m_next;
-      if (awaiters_to_resume != nullptr) {
-        awaiters_to_resume->m_prev = nullptr;
-      }
-
-      waiter->m_continuation.resume();
+    // Extract the value from m_awaiters so as not to resume those who subscribe during the detach_all.
+    vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> awaiters;
+    awaiters.splice(awaiters.begin(), m_awaiters);
+    while (!awaiters.empty()) {
+      auto coroutine{awaiters.front()};
+      /*
+       * We can remove pop_front() here, because list node will be destroyed after resume and in its
+       * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
+       * (in the future invariant [1] may not work).
+       */
+      awaiters.pop_front();
+      coroutine.resume();
     }
   }
 
   size_t size() noexcept {
-    return m_tasks_storage.size();
+    return m_tasks_count;
   }
 
   ~await_broker() {
@@ -210,8 +215,8 @@ public:
   }
 
   auto start(detail::await_set::await_broker<return_type>& await_broker,
-             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location,
-             kphp::coro::async_stack_root& async_stack_root, void* return_address) noexcept {
+             vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>::iterator storage_location, kphp::coro::async_stack_root& async_stack_root,
+             void* return_address) noexcept {
     m_await_broker = await_broker;
     m_ready_task_element.m_storage_location = storage_location;
 
@@ -240,11 +245,15 @@ public:
   using promise_type = std::conditional_t<std::is_void_v<return_type>, await_set_task_promise_void, await_set_task_promise_non_void<return_type>>;
 
 private:
-  std::coroutine_handle<promise_type> m_coroutine;
+  promise_type& m_promise;
 
   struct await_set_task_promise_common : public await_set_task_promise_base<return_type, promise_type> {
+    vk::intrusive::list_node<std::coroutine_handle<>> m_coroutine_node;
+
     auto get_return_object() noexcept {
-      return await_set_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
+      auto& self{static_cast<promise_type&>(*this)};
+      m_coroutine_node.value() = std::coroutine_handle<promise_type>::from_promise(self);
+      return await_set_task{self};
     }
 
     static await_set_task get_return_object_on_allocation_failure() {
@@ -281,35 +290,20 @@ private:
     constexpr void return_void() const noexcept {}
   };
 
-  auto start(detail::await_set::await_broker<return_type>& await_broker,
-             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location,
-             kphp::coro::async_stack_root& async_stack_root, void* return_address) noexcept {
-    m_coroutine.promise().start(await_broker, storage_location, async_stack_root, return_address);
-  }
-
 public:
   template<typename T>
   friend class detail::await_set::await_broker;
 
-  explicit await_set_task(std::coroutine_handle<promise_type> coroutine) noexcept
-      : m_coroutine(coroutine) {}
-
-  await_set_task(await_set_task&& other) noexcept
-      : m_coroutine(std::exchange(other.m_coroutine, {})) {}
+  explicit await_set_task(promise_type& promise) noexcept
+      : m_promise(promise) {}
 
   await_set_task(const await_set_task&) = delete;
+  await_set_task(await_set_task&& other) noexcept = delete;
+
   await_set_task& operator=(const await_set_task&) = delete;
   await_set_task& operator=(await_set_task&&) = delete;
 
-  auto result() noexcept {
-    return m_coroutine.promise().result();
-  }
-
-  ~await_set_task() {
-    if (m_coroutine != nullptr) {
-      m_coroutine.destroy();
-    }
-  }
+  ~await_set_task() = default;
 };
 
 template<typename return_type>
@@ -321,9 +315,8 @@ private:
   await_broker<return_type>& m_await_broker;
 
   class awaiter {
-    bool m_suspended{};
+    vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     await_broker<return_type>& m_await_broker;
-    await_set_awaiter m_awaiter{};
     kphp::coro::async_stack_frame* caller_frame{};
 
   public:
@@ -343,10 +336,9 @@ private:
     bool await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept {
       // save caller async stack frame
       caller_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
+      m_awaiting_coroutine_node.value() = awaiting_coroutine;
 
-      m_awaiter.m_continuation = awaiting_coroutine;
-      m_suspended = m_await_broker.suspend_awaiter(m_awaiter);
-      return m_suspended;
+      return m_await_broker.suspend_awaiter(m_awaiting_coroutine_node);
     }
 
     std::optional<result_type> await_resume() noexcept {
@@ -356,15 +348,10 @@ private:
       kphp::log::assertion(async_stack_root != nullptr);
       async_stack_root->top_async_stack_frame = caller_frame;
 
-      m_suspended = false;
       return m_await_broker.try_get_result();
     }
 
-    ~awaiter() {
-      if (m_suspended) {
-        m_await_broker.cancel_awaiter(m_awaiter);
-      }
-    }
+    ~awaiter() = default;
   };
 
 public:

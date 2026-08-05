@@ -8,6 +8,7 @@
 #include <utility>
 #include <variant>
 
+#include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/poll.h"
@@ -18,8 +19,7 @@ namespace kphp::coro::detail {
 struct poll_info {
   using timed_events = kphp::stl::multimap<k2::TimePoint, detail::poll_info&, kphp::memory::script_allocator>;
   using parked_polls = kphp::stl::multimap<k2::descriptor, detail::poll_info&, kphp::memory::script_allocator>;
-  // TODO: Consider using an intrusive list for scheduled_coroutines.
-  using scheduled_coroutines = kphp::stl::list<std::coroutine_handle<>, kphp::memory::script_allocator>;
+  using scheduled_coroutines = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>;
 
   // Each coroutine in the scheduler can be in one of the following states, represented by the `schedule_position` variant:
   // 1. `std::monostate`: a coroutine has not been scheduled yet or has already been resumed by the scheduler;
@@ -30,10 +30,11 @@ struct poll_info {
   using schedule_position = std::variant<std::monostate, timed_events::iterator, parked_polls::iterator,
                                          std::pair<timed_events::iterator, parked_polls::iterator>, scheduled_coroutines::iterator>;
 
+  vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
+
   schedule_position m_schedule_position{std::monostate{}};
 
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-  std::coroutine_handle<> m_awaiting_coroutine;
 
   kphp::coro::poll_status m_poll_status{kphp::coro::poll_status::error};
   kphp::coro::poll_op m_poll_op;
@@ -61,7 +62,7 @@ struct poll_info {
       }
 
       auto await_suspend(std::coroutine_handle<> awaiting_coroutine) noexcept -> void {
-        m_poll_info.m_awaiting_coroutine = awaiting_coroutine;
+        m_poll_info.m_awaiting_coroutine_node.value() = awaiting_coroutine;
       }
 
       auto await_resume() const noexcept -> kphp::coro::poll_status {
