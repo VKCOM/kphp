@@ -6,14 +6,12 @@
 
 #include <concepts>
 #include <coroutine>
-#include <memory>
 #include <utility>
 #include <variant>
 
 #include "common/containers/intrusive-list.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
-#include "runtime-common/core/allocator/script-allocator-managed.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -21,7 +19,7 @@
 namespace kphp::coro {
 
 class event {
-  struct event_controller : kphp::memory::script_allocator_managed, vk::not_copyable {
+  struct event_controller : vk::not_copyable {
     // 1) std::monostate => not set and no coroutines are waiting
     // 2) non empty list => linked list of coroutines waiting for the event to trigger
     // 3) empty list => the event is triggered and all coroutines are resumed
@@ -55,28 +53,18 @@ class event {
     auto await_resume() noexcept -> void;
   };
 
-  std::unique_ptr<event_controller> m_controller;
+  event_controller m_controller;
 
 public:
-  event() noexcept
-      : m_controller(std::make_unique<event_controller>()) {
-    kphp::log::assertion(m_controller != nullptr);
-  }
-
-  event(event&& other) noexcept
-      : m_controller(std::move(other.m_controller)) {}
-
-  event& operator=(event&& other) noexcept {
-    if (this != std::addressof(other)) {
-      m_controller = std::move(other.m_controller);
-    }
-    return *this;
-  }
-
-  ~event() = default;
+  event() = default;
 
   event(const event&) = delete;
+  event(event&& other) = delete;
+
   event& operator=(const event&) = delete;
+  event& operator=(event&& other) = delete;
+
+  ~event() = default;
 
   auto set() noexcept -> void;
   auto unset() noexcept -> void;
@@ -148,23 +136,19 @@ inline auto event::event_controller::is_set() const noexcept -> bool {
 }
 
 inline auto event::set() noexcept -> void {
-  kphp::log::assertion(m_controller != nullptr);
-  m_controller->set();
+  m_controller.set();
 }
 
 inline auto event::unset() noexcept -> void {
-  kphp::log::assertion(m_controller != nullptr);
-  m_controller->unset();
+  m_controller.unset();
 }
 
 inline auto event::is_set() const noexcept -> bool {
-  kphp::log::assertion(m_controller != nullptr);
-  return m_controller->is_set();
+  return m_controller.is_set();
 }
 
 inline auto event::operator co_await() noexcept {
-  kphp::log::assertion(m_controller != nullptr);
-  return event::awaiter{*this->m_controller};
+  return event::awaiter{m_controller};
 }
 
 } // namespace kphp::coro
