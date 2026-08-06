@@ -34,8 +34,7 @@ VISIBILITY_DEFAULT ComponentState* k2_create_component() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = nullptr;
   k2::details::instance_state_ptr = nullptr;
-  auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc_align(sizeof(ComponentState), alignof(ComponentState)))};
-  return component_state_ptr;
+  return static_cast<ComponentState*>(k2::alloc_align(sizeof(ComponentState), alignof(ComponentState)));
 }
 
 VISIBILITY_DEFAULT void k2_init_component() {
@@ -49,8 +48,7 @@ VISIBILITY_DEFAULT InstanceState* k2_create_instance() {
   k2::details::image_state_ptr = k2_image_state();
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = nullptr;
-  auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc_align(sizeof(InstanceState), alignof(InstanceState)))};
-  return instance_state_ptr;
+  return static_cast<InstanceState*>(k2::alloc_align(sizeof(InstanceState), alignof(InstanceState)));
 }
 
 VISIBILITY_DEFAULT void k2_init_instance() {
@@ -62,8 +60,7 @@ VISIBILITY_DEFAULT void k2_init_instance() {
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_warmup() {
-  const auto warmup_status{k2::PollStatus::PollFinishedOk};
-  return warmup_status;
+  return k2::PollStatus::PollFinishedOk;
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
