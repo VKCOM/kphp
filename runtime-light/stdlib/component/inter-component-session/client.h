@@ -56,7 +56,7 @@ private:
 
       // Wait until transport is available
       if (is_occupied) [[unlikely]] {
-        transport_readiness_notifier.emplace(qid, kphp::coro::event{});
+        transport_readiness_notifier.try_emplace(qid);
         queue.push(qid);
         co_await transport_readiness_notifier[qid];
       }
@@ -105,7 +105,7 @@ private:
     }
 
     auto write(shared_transport_type t, query_id_type qid, std::span<const std::byte> payload) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-      req_finish_notifier.emplace(qid, kphp::coro::event{});
+      req_finish_notifier.try_emplace(qid);
 
       // The protocol design assumes that interrupting the transfer in the middle of a frame leads to critical error.
       // Therefore, we need to write the request in a separate coroutine.
@@ -230,7 +230,7 @@ private:
       ctx.get()->query2resp_buffer_provider.emplace(qid, std::move(buffer_provider));
 
       // Register notifier
-      ctx.get()->resp_finish_notifier.emplace(qid, kphp::coro::event{});
+      ctx.get()->resp_finish_notifier.try_emplace(qid);
     }
   } reader;
 
