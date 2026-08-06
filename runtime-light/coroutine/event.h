@@ -12,6 +12,7 @@
 #include "common/containers/intrusive-list.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -65,6 +66,20 @@ public:
   event& operator=(event&& other) = delete;
 
   ~event() = default;
+
+  template<typename... Args>
+  void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
+    return kphp::memory::script::alloc(n);
+  }
+
+  template<typename... Args>
+  auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
+    return kphp::memory::script::alloc_aligned(n, al);
+  }
+
+  void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
+    kphp::memory::script::free(ptr);
+  }
 
   auto set() noexcept -> void;
   auto unset() noexcept -> void;
