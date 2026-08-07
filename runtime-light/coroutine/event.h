@@ -41,7 +41,7 @@ class event {
 
     explicit awaiter(event_controller& event_controller) noexcept
         : m_controller(event_controller),
-          m_async_stack_root(CoroutineInstanceState::get().coroutine_stack_root) {}
+          m_async_stack_root(kphp::coro::instance_state::get().coroutine_stack_root) {}
 
     awaiter(const awaiter&) = delete;
     awaiter(awaiter&&) = delete;

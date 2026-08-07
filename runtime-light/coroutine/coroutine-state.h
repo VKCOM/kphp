@@ -8,11 +8,15 @@
 
 #include "runtime-light/coroutine/async-stack.h"
 
-struct CoroutineInstanceState final : private vk::not_copyable {
+namespace kphp::coro {
 
-  CoroutineInstanceState() noexcept = default;
+struct instance_state final : private vk::not_copyable {
 
-  static CoroutineInstanceState& get() noexcept;
+  instance_state() noexcept = default;
+
+  static instance_state& get() noexcept;
 
   kphp::coro::async_stack_root coroutine_stack_root;
 };
+
+} // namespace kphp::coro

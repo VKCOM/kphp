@@ -15,7 +15,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"

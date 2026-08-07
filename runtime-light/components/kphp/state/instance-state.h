@@ -11,6 +11,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/io-scheduler.h"
@@ -20,7 +21,6 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
-#include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
@@ -91,9 +91,9 @@ struct InstanceState final : vk::not_copyable {
   AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
 
   kphp::log::contextual_tags instance_tags;
-  kphp::coro::io_scheduler io_scheduler;
 
-  CoroutineInstanceState coroutine_instance_state;
+  kphp::coro::instance_state coroutine_instance_state;
+  kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
   RpcQueueInstanceState rpc_queue_instance_state;

@@ -8,9 +8,9 @@
 #include <functional>
 #include <utility>
 
+#include "runtime-light/components/kphp/state/instance-state.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 template<typename F, typename... Args>

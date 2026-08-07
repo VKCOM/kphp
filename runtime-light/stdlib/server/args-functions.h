@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/state/component-state.h"
+#include "runtime-light/components/kphp/state/component-state.h"
 
 inline Optional<string> f$ini_get(const string& key) noexcept {
   const auto& component_st{ComponentState::get()};

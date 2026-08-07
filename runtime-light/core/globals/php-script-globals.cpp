@@ -4,12 +4,9 @@
 
 #include "php-script-globals.h"
 
-#include "runtime-light/state/instance-state.h"
+#include "common/php-functions.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-
-PhpScriptMutableGlobals& PhpScriptMutableGlobals::current() noexcept {
-  return InstanceState::get().php_script_mutable_globals_singleton;
-}
 
 void PhpScriptMutableGlobals::once_alloc_linear_mem(unsigned int n_bytes) {
   kphp::log::assertion(g_linear_mem == nullptr);

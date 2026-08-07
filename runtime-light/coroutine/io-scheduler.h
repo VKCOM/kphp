@@ -54,7 +54,7 @@ class io_scheduler {
   kphp::coro::detail::poll_info::parked_polls m_parked_polls;
   kphp::coro::detail::poll_info::scheduled_coroutines m_scheduled_coroutines;
 
-  CoroutineInstanceState& m_coroutine_instance_state{CoroutineInstanceState::get()};
+  kphp::coro::instance_state& m_coro_instance_state;
 
   auto make_cancellation_handler(kphp::coro::detail::poll_info& poll_info) noexcept;
   auto make_timeout_task(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<timeout_status>;
@@ -69,7 +69,8 @@ class io_scheduler {
   auto remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void;
 
 public:
-  io_scheduler() noexcept = default;
+  explicit io_scheduler(kphp::coro::instance_state& coroutine_instance_state) noexcept
+      : m_coro_instance_state(coroutine_instance_state) {}
   ~io_scheduler() = default;
 
   io_scheduler(const io_scheduler&) = delete;
@@ -427,7 +428,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
        */
       scheduled_coroutines.pop_front();
       kphp::log::assertion(static_cast<bool>(coroutine));
-      kphp::coro::resume(coroutine, m_coroutine_instance_state.coroutine_stack_root);
+      kphp::coro::resume(coroutine, m_coro_instance_state.coroutine_stack_root);
     }
   }
 
@@ -452,7 +453,7 @@ auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   if (!handle || handle.done()) [[unlikely]] {
     return false;
   }
-  kphp::coro::resume(handle, m_coroutine_instance_state.coroutine_stack_root);
+  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root);
   return true;
 }
 
@@ -466,7 +467,7 @@ inline auto io_scheduler::schedule() noexcept {
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
         : m_scheduler(scheduler),
-          m_async_stack_frame(m_scheduler.m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame) {}
+          m_async_stack_frame(m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame) {}
 
   public:
     schedule_operation(const schedule_operation&) = delete;
@@ -508,7 +509,7 @@ inline auto io_scheduler::schedule() noexcept {
 
     auto await_resume() noexcept -> void {
       m_schedule_pos = std::monostate{};
-      m_scheduler.m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
+      m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
     }
   };
   return schedule_operation{*this};

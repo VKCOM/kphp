@@ -26,7 +26,7 @@ class await_set {
 public:
   await_set() noexcept
       : m_await_broker(std::make_unique<detail::await_set::await_broker<return_type>>()),
-        m_coroutine_stack_root(CoroutineInstanceState::get().coroutine_stack_root) {}
+        m_coroutine_stack_root(kphp::coro::instance_state::get().coroutine_stack_root) {}
 
   await_set(await_set&& other) noexcept
       : m_await_broker(std::move(other.m_await_broker)),
@@ -39,6 +39,8 @@ public:
     }
     return *this;
   }
+
+  ~await_set() noexcept = default;
 
   await_set(const await_set&) = delete;
   await_set& operator=(const await_set&) = delete;

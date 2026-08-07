@@ -8,7 +8,6 @@
 
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/state/image-state.h"
 
 namespace {
 
@@ -35,8 +34,4 @@ FileSystemImageState::FileSystemImageState() noexcept
   READ_PLUS_MODE.set_reference_counter_to(ExtraRefCnt::for_global_const);
   WRITE_PLUS_MODE.set_reference_counter_to(ExtraRefCnt::for_global_const);
   APPEND_PLUS_MODE.set_reference_counter_to(ExtraRefCnt::for_global_const);
-}
-
-const FileSystemImageState& FileSystemImageState::get() noexcept {
-  return ImageState::get().file_system_image_state;
 }

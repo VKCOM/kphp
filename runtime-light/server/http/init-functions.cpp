@@ -29,7 +29,6 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/multipart/multipart.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
@@ -247,7 +246,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     kphp::log::error("erroneous http request");
   }
 
-  auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
+  auto& superglobals{PhpScriptMutableGlobals::current().get_superglobals()};
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};
 
