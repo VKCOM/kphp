@@ -6,9 +6,12 @@ prepend(
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
   web-transfer-lib/web-state.cpp
+  diagnostics/detail/logs.cpp
   diagnostics/backtrace.cpp
   diagnostics/contextual-tags.cpp
+  diagnostics/error-handling-functions.cpp
   diagnostics/error-handling-state.cpp
+  diagnostics/logs.cpp
   diagnostics/php-assert.cpp
   file/file-system-state.cpp
   file/file-system-functions.cpp
@@ -20,6 +23,7 @@ prepend(
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp
   kml/kml-state.cpp
+  math/random-functions.cpp
   math/random-state.cpp
   math/math-state.cpp
   output/output-buffer.cpp

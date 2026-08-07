@@ -23,10 +23,9 @@ namespace impl {
 
 static constexpr size_t DEFAULT_LOG_BUFFER_SIZE = 2048UZ;
 
-template<typename... Args>
-void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+inline void log(level level, std::optional<std::span<void* const>> trace, std::string_view fmt, std::format_args args) noexcept {
   std::array<char, DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
-  size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
+  size_t message_size{impl::format_log_message(log_buffer, fmt, args)};
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
 
   auto opt_tags{
@@ -62,19 +61,17 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   k2::log(std::to_underlying(level), message, tagged_entries);
 }
 
+template<typename... Args>
+void log_wrapped(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+                 impl::wrapped_arg_t<Args>... args) noexcept {
+  kphp::log::impl::log(level, trace, fmt.get(), std::make_format_args(args...));
+}
+
 } // namespace impl
 
 // The backtrace algorithm relies on the fact that assertion does not call backtrace.
 // If assertion is modified, the backtrace algorithm should be updated accordingly
-inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
-  if (!condition) [[unlikely]] {
-    std::array<char, impl::DEFAULT_LOG_BUFFER_SIZE> log_buffer; // NOLINT
-    size_t message_size{impl::format_log_message(log_buffer, "assertion failed at {}:{}", location.file_name(), location.line())};
-    auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
-    k2::log(std::to_underlying(level::error), message, {});
-    k2::exit(1);
-  }
-}
+void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept;
 
 template<typename... Args>
 [[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
@@ -84,7 +81,7 @@ template<typename... Args>
     std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
     const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
     const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-    impl::log(level::error, backtrace_view, fmt, std::forward<Args>(args)...);
+    impl::log_wrapped<Args...>(level::error, backtrace_view, fmt, impl::wrap_log_argument(std::forward<Args>(args))...);
   }
   k2::exit(1);
 }
@@ -99,7 +96,7 @@ void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... arg
     std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
     const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
     const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-    impl::log(level::warn, backtrace_view, fmt, std::forward<Args>(args)...);
+    impl::log_wrapped<Args...>(level::warn, backtrace_view, fmt, impl::wrap_log_argument(std::forward<Args>(args))...);
   }
 }
 
@@ -110,21 +107,21 @@ void info(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) 
     return;
   }
   if (std::to_underlying(level::info) <= k2::log_level_enabled()) {
-    impl::log(level::info, std::nullopt, fmt, std::forward<Args>(args)...);
+    impl::log_wrapped<Args...>(level::info, std::nullopt, fmt, impl::wrap_log_argument(std::forward<Args>(args))...);
   }
 }
 
 template<typename... Args>
 void debug(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (std::to_underlying(level::debug) <= k2::log_level_enabled()) {
-    impl::log(level::debug, std::nullopt, fmt, std::forward<Args>(args)...);
+    impl::log_wrapped<Args...>(level::debug, std::nullopt, fmt, impl::wrap_log_argument(std::forward<Args>(args))...);
   }
 }
 
 template<typename... Args>
 void trace(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (std::to_underlying(level::trace) <= k2::log_level_enabled()) {
-    impl::log(level::trace, std::nullopt, fmt, std::forward<Args>(args)...);
+    impl::log_wrapped<Args...>(level::trace, std::nullopt, fmt, impl::wrap_log_argument(std::forward<Args>(args))...);
   }
 }
 
