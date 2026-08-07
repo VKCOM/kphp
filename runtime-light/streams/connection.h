@@ -24,12 +24,14 @@ class connection {
     std::optional<kphp::coro::event> m_unwatch_event;
 
     shared_state() noexcept = default;
-    shared_state(shared_state&&) noexcept = default;
-    shared_state& operator=(shared_state&&) noexcept = default;
-    ~shared_state() = default;
 
+    shared_state(shared_state&&) noexcept = delete;
     shared_state(const shared_state&) = delete;
+
+    shared_state& operator=(shared_state&&) noexcept = delete;
     shared_state operator=(const shared_state&) = delete;
+
+    ~shared_state() = default;
   };
 
   class_instance<shared_state> m_shared_state;

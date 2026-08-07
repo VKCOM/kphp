@@ -235,9 +235,11 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
    */
   {
     auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-    auto ignore_answer_request_await_set{std::exchange(rpc_client_instance_st.ignore_answer_request_awaiter_tasks, kphp::coro::await_set<void>{})};
-    while (!ignore_answer_request_await_set.empty()) {
-      co_await ignore_answer_request_await_set.next();
+    auto ignore_answer_request_await_set{
+        std::exchange(rpc_client_instance_st.ignore_answer_request_awaiter_tasks, std::make_unique<kphp::coro::await_set<void>>())};
+    kphp::log::assertion(ignore_answer_request_await_set != nullptr);
+    while (!ignore_answer_request_await_set->empty()) {
+      co_await ignore_answer_request_await_set->next();
     }
   }
 

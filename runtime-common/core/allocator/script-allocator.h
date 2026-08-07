@@ -15,6 +15,9 @@ namespace memory {
 template<typename T>
 struct script_allocator {
   using value_type = T;
+  using propagate_on_container_copy_assignment = std::true_type;
+  using propagate_on_container_move_assignment = std::true_type;
+  using is_always_equal = std::true_type;
 
   script_allocator() noexcept = default;
 

@@ -24,7 +24,7 @@ public:
 
   [[nodiscard]] int64_t create_queue() noexcept {
     const int64_t wait_queue_id{m_next_wait_queue_id++};
-    m_queues.emplace(wait_queue_id, kphp::coro::await_set<int64_t>{});
+    m_queues.try_emplace(wait_queue_id);
     return wait_queue_id;
   }
 

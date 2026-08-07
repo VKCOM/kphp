@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -27,7 +28,7 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   kphp::stl::unordered_map<int64_t, class_instance<RpcTlQuery>, kphp::memory::script_allocator> response_fetcher_instances;
   kphp::stl::unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>, kphp::memory::script_allocator>
       rpc_responses_extra_info;
-  kphp::coro::await_set<void> ignore_answer_request_awaiter_tasks;
+  std::unique_ptr<kphp::coro::await_set<void>> ignore_answer_request_awaiter_tasks{std::make_unique<kphp::coro::await_set<void>>()};
 
   RpcClientInstanceState() noexcept = default;
 
