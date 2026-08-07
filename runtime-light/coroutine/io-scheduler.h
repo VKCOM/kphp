@@ -229,15 +229,23 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
     return process_timeout();
   }
 
+  auto [first, last]{m_parked_polls.equal_range(descriptor)};
+  if (first == last) {
+    /*
+     * No tasks are waiting for updates on this descriptor. This is a harmless race: the platform may have queued
+     * the update before we cancelled our interest in the descriptor — e.g. an update for a timer that has already
+     * been cleared or re-armed earlier in this batch, or for a stream descriptor that was closed after its
+     * coroutine had been resumed. The descriptor may not even exist anymore, so querying its status could fail —
+     * just ignore such an update.
+     */
+    kphp::log::debug("ignoring an update on descriptor {} since no tasks are waiting for it", descriptor);
+    return;
+  }
+
   k2::StreamStatus stream_status{};
   k2::stream_status(descriptor, std::addressof(stream_status));
   if (stream_status.libc_errno != k2::errno_ok) [[unlikely]] {
     return kphp::log::warning("error retrieving stream status: error code -> {}, stream descriptor -> {}", stream_status.libc_errno, descriptor);
-  }
-
-  auto [first, last]{m_parked_polls.equal_range(descriptor)};
-  if (first == last) { // no tasks waiting for updates on this descriptor
-    return;
   }
 
   static constexpr auto complete_poll_on_update{
