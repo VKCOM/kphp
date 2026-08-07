@@ -74,7 +74,7 @@ public:
       std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
       ss << end_group;
     }
-    ss << settings->ld_flags.get();
+    ss << settings->extra_ld_flags.get();
     return ss.str();
   }
 };
