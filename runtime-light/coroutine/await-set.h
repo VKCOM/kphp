@@ -59,9 +59,6 @@ public:
 
   auto try_next() noexcept {
     using result_type = std::optional<decltype(std::declval<typename detail::await_set::await_set_task<return_type>::promise_type>().result())>;
-    if (m_await_broker == nullptr) [[unlikely]] {
-      return result_type{std::nullopt};
-    }
     return result_type{m_await_broker.try_get_result()};
   }
 
