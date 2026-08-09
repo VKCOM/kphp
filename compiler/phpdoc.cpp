@@ -693,7 +693,7 @@ const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   bool was_raw_bool = false;
   bool was_false = false;
   bool was_null = false;
-  
+
   auto on_each_item = [&](const TypeHint *item) {
     items.emplace_back(item);
     if (const auto *as_primitive = item->try_as<TypeHintPrimitive>()) {
@@ -713,7 +713,7 @@ const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
     }
   }
 
-  // try to simplify: T|false and similar as an optional<T>, not as a vector
+  // try to simplify: T|false and similar to an optional<T>, not as a vector
   bool can_be_simplified_as_optional = 1 == (items.size() - was_false - was_null);
   if (can_be_simplified_as_optional) {
     for (const TypeHint *item : items) {
