@@ -12,6 +12,8 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
+namespace kphp::coro {
+
 CoroutineAllocator::CoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size)
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create coroutine allocator -> {:p}: memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), mem_size,
@@ -91,3 +93,5 @@ auto CoroutineAllocator::request_extra_memory(size_t requested_size) noexcept ->
   auto* extra_mem{RuntimeAllocator::get().alloc_global_memory(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
+
+} // namespace kphp::coro
