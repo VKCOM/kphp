@@ -14,7 +14,7 @@
 
 namespace kphp::coro {
 
-CoroutineAllocator::CoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size)
+CoroutineAllocator::CoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create coroutine allocator -> {:p}: memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), mem_size,
   //                 oom_handling_mem_size);
@@ -22,14 +22,14 @@ CoroutineAllocator::CoroutineAllocator(size_t mem_size, size_t min_extra_mem_siz
   memory_resource.init(buffer, mem_size, oom_handling_mem_size);
 }
 
-auto CoroutineAllocator::init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) -> void {
+auto CoroutineAllocator::init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept -> void {
   kphp::log::assertion(buffer != nullptr);
   // kphp::log::debug("init coroutine allocator -> {:p}: buffer -> {:p}, memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
   //                  mem_size, oom_handling_mem_size);
   memory_resource.init(buffer, mem_size, oom_handling_mem_size);
 }
 
-auto CoroutineAllocator::free() -> void {
+auto CoroutineAllocator::free() noexcept -> void {
   // kphp::log::debug("free coroutine allocator -> {:p}", reinterpret_cast<void*>(this));
   auto* extra_memory{memory_resource.get_extra_memory_head()};
   while (extra_memory->get_pool_payload_size() != 0) {
