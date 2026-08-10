@@ -11,7 +11,7 @@
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/allocator/detail/control-block.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/allocator/coroutine-allocator.h"
+#include "runtime-light/allocator/runtime-coroutine-allocator.h"
 
 namespace kphp::memory::coro {
 
@@ -24,7 +24,7 @@ inline void* alloc(size_t size) noexcept {
     return nullptr;
   }
   const size_t total_size{size + cb_size};
-  void* base{kphp::coro::CoroutineAllocator::get().alloc_memory(total_size)};
+  void* base{RuntimeCoroutineAllocator::get().alloc_memory(total_size)};
   if (unlikely(base == nullptr)) {
     php_warning("not enough coroutine memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
     return base;
@@ -51,7 +51,7 @@ inline void* alloc_aligned(size_t size, std::align_val_t alignment) noexcept {
 
   // Request mem from underlying memory manager
   const size_t total_size{size + (align - 1) + cb_size};
-  void* base{kphp::coro::CoroutineAllocator::get().alloc_memory(total_size)};
+  void* base{RuntimeCoroutineAllocator::get().alloc_memory(total_size)};
   if (unlikely(base == nullptr)) {
     php_warning("not enough coroutine memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
     return base;
@@ -88,7 +88,7 @@ inline void free(void* ptr) noexcept {
   const auto cb{kphp::memory::detail::control_block::from_raw(*reinterpret_cast<uint64_t*>(mem - cb_size))}; // NOLINT
   void* base{reinterpret_cast<void*>(mem - cb.base_offset)};                                                 // NOLINT
 
-  kphp::coro::CoroutineAllocator::get().free_memory(base, cb.size);
+  RuntimeCoroutineAllocator::get().free_memory(base, cb.size);
 }
 
 inline void* realloc(void* ptr, size_t new_size) noexcept {
@@ -112,7 +112,7 @@ inline void* realloc(void* ptr, size_t new_size) noexcept {
   void* new_ptr{kphp::memory::coro::alloc(new_size)};
   if (likely(new_ptr != nullptr)) {
     std::memcpy(new_ptr, ptr, std::min(new_size, old_size));
-    kphp::coro::CoroutineAllocator::get().free_memory(old_base, old_size);
+    RuntimeCoroutineAllocator::get().free_memory(old_base, old_size);
   }
   return new_ptr;
 }

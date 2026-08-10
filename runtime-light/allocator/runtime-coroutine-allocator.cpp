@@ -8,13 +8,11 @@
 #include <cstring>
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
-#include "runtime-light/allocator/coroutine-allocator.h"
+#include "runtime-light/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-namespace kphp::coro {
-
-CoroutineAllocator::CoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
+RuntimeCoroutineAllocator::RuntimeCoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create coroutine allocator -> {:p}: memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), mem_size,
   //                 oom_handling_mem_size);
@@ -22,14 +20,14 @@ CoroutineAllocator::CoroutineAllocator(size_t mem_size, size_t min_extra_mem_siz
   memory_resource.init(buffer, mem_size, oom_handling_mem_size);
 }
 
-auto CoroutineAllocator::init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept -> void {
+auto RuntimeCoroutineAllocator::init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept -> void {
   kphp::log::assertion(buffer != nullptr);
   // kphp::log::debug("init coroutine allocator -> {:p}: buffer -> {:p}, memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
   //                  mem_size, oom_handling_mem_size);
   memory_resource.init(buffer, mem_size, oom_handling_mem_size);
 }
 
-auto CoroutineAllocator::free() noexcept -> void {
+auto RuntimeCoroutineAllocator::free() noexcept -> void {
   // kphp::log::debug("free coroutine allocator -> {:p}", reinterpret_cast<void*>(this));
   auto* extra_memory{memory_resource.get_extra_memory_head()};
   while (extra_memory->get_pool_payload_size() != 0) {
@@ -40,7 +38,7 @@ auto CoroutineAllocator::free() noexcept -> void {
   k2::free(memory_resource.memory_begin());
 }
 
-auto CoroutineAllocator::alloc_memory(size_t size) noexcept -> void* {
+auto RuntimeCoroutineAllocator::alloc_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate(size)};
   if (mem == nullptr) [[unlikely]] {
@@ -51,7 +49,7 @@ auto CoroutineAllocator::alloc_memory(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto CoroutineAllocator::alloc0_memory(size_t size) noexcept -> void* {
+auto RuntimeCoroutineAllocator::alloc0_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate0(size)};
   if (mem == nullptr) [[unlikely]] {
@@ -62,7 +60,7 @@ auto CoroutineAllocator::alloc0_memory(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto CoroutineAllocator::realloc_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
+auto RuntimeCoroutineAllocator::realloc_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
   kphp::log::assertion(new_size > old_size);
   void* new_mem{memory_resource.reallocate(old_mem, new_size, old_size)};
   if (new_mem == nullptr) [[unlikely]] {
@@ -73,12 +71,12 @@ auto CoroutineAllocator::realloc_memory(void* old_mem, size_t new_size, size_t o
   return new_mem;
 }
 
-auto CoroutineAllocator::free_memory(void* mem, size_t size) noexcept -> void {
+auto RuntimeCoroutineAllocator::free_memory(void* mem, size_t size) noexcept -> void {
   kphp::log::assertion(size != 0);
   memory_resource.deallocate(mem, size);
 }
 
-auto CoroutineAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
+auto RuntimeCoroutineAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
 
@@ -93,5 +91,3 @@ auto CoroutineAllocator::request_extra_memory(size_t requested_size) noexcept ->
   auto* extra_mem{RuntimeAllocator::get().alloc_global_memory(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
-
-} // namespace kphp::coro
