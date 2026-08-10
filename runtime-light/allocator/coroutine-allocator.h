@@ -14,11 +14,11 @@ namespace kphp::coro {
 struct CoroutineAllocator final : vk::not_copyable {
   static auto get() noexcept -> CoroutineAllocator&;
 
-  CoroutineAllocator() = default;
-  CoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size);
+  CoroutineAllocator() noexcept = default;
+  CoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
-  void init(void* buffer, size_t mem_size, size_t oom_handling_mem_size);
-  void free();
+  void init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept;
+  void free() noexcept;
 
   auto alloc_memory(size_t size) noexcept -> void*;
   auto alloc0_memory(size_t size) noexcept -> void*;
