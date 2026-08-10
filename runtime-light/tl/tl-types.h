@@ -44,6 +44,10 @@ struct magic final {
     return expected == value;
   }
 
+  bool expect(tl::magic expected) const noexcept {
+    return expect(expected.value);
+  }
+
   constexpr size_t footprint() const noexcept {
     return sizeof(underlying_type);
   }
