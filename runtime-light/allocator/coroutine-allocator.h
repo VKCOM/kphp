@@ -9,6 +9,8 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 
+namespace kphp::coro {
+
 struct CoroutineAllocator final : vk::not_copyable {
   static auto get() noexcept -> CoroutineAllocator&;
 
@@ -32,3 +34,5 @@ public:
 private:
   size_t m_min_extra_mem_size{0};
 };
+
+} // namespace kphp::coro
