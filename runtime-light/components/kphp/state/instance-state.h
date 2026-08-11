@@ -11,6 +11,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"
@@ -89,6 +90,8 @@ struct InstanceState final : vk::not_copyable {
   }
 
   AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
+  RuntimeCoroutineAllocator coroutine_allocator{ComponentState::get().initial_instance_coroutine_memory_size,
+                                                ComponentState::get().min_instance_extra_coroutine_memory_size, 0};
 
   kphp::log::contextual_tags instance_tags;
 
