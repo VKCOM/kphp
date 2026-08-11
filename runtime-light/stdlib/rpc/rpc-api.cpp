@@ -323,7 +323,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   auto query_expected{kphp::rpc::query::send(actor, timeout, request_buffer, k2::RpcKind::TL_RPC)};
   if (!query_expected) {
-    return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR, .request_size = request_size, .timestamp = timestamp};
+    return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
   const auto query_id{rpc_client_instance_st.current_query_id++};
@@ -342,9 +342,9 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     }};
 
     auto fetch_task{std::move(q).response(response_buffer_provider)};
-    auto schedule_expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
-    if (!schedule_expected) {
-      response_exp = std::unexpected{TL_ERROR_QUERY_TIMEOUT};
+    auto fetch_result{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
+    if (!fetch_result) [[unlikely]] {
+      response_exp = std::unexpected{fetch_result.error()};
     }
 
     // update response extra info if needed
@@ -364,18 +364,19 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }};
 
   static constexpr auto ignore_answer_awaiter_coroutine{[](query q) noexcept -> kphp::coro::shared_task<> {
-    string resp_buf{};
-    const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
-      resp_buf.assign(size, true);
-      return {reinterpret_cast<std::byte*>(resp_buf.buffer()), size};
+    // will lead to return std::unexpected{TL_ERROR_RESULT_TOO_LARGE} in kphp::rpc::query::response() which is acceptable for us
+    const auto empty_response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+      return {};
     }};
 
-    auto fetch_task{std::move(q).response(response_buffer_provider)};
+    auto fetch_task{std::move(q).response(empty_response_buffer_provider)};
     std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task));
   }};
 
   if (ignore_answer) {
     // start ignore answer awaiter task
+    // We have to spawn the task for ignore answer request to prevent request drop in kphp::rpc::query destructor
+    // and to free descriptor after response fetch.
     auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(*query_expected))};
     kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
 

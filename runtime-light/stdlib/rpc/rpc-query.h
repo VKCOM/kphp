@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <span>
 #include <string_view>
@@ -123,8 +124,7 @@ auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task
   }
 
   auto m_descriptor_copy{m_descriptor};
-  kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-  switch (co_await m_scheduler.poll(m_descriptor_copy, kphp::coro::poll_op::read, timeout)) {
+  switch (co_await kphp::coro::io_scheduler::get().poll(m_descriptor_copy, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
     co_return get_ready_response(m_descriptor_copy, std::move(response_buffer_provider));
   case kphp::coro::poll_status::timeout:

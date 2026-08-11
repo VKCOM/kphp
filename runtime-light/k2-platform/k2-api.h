@@ -233,7 +233,7 @@ inline std::expected<size_t, int32_t> rpc_get_response_size(k2::descriptor descr
 }
 
 inline std::expected<void, int32_t> rpc_fetch_response(k2::descriptor descriptor, std::span<std::byte> buffer) noexcept {
-  if (auto error_code{k2_rpc_fetch_response(descriptor, buffer.data(), buffer.size())}; error_code != errno_ok) {
+  if (auto error_code{k2_rpc_fetch_response(descriptor, buffer.data(), buffer.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
   return {};
