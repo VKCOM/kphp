@@ -13,7 +13,7 @@
 #include "common/containers/intrusive-list.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
-#include "runtime-common/core/allocator/script-allocator-managed.h"
+#include "runtime-light/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/coroutine-state.h"
@@ -28,6 +28,20 @@ class event {
     // 2) non empty list => linked list of coroutines waiting for the event to trigger
     // 3) empty list => the event is triggered and all coroutines are resumed
     std::variant<std::monostate, vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>> m_state;
+
+    template<typename... Args>
+    void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
+      return kphp::memory::coro::alloc(n);
+    }
+
+    template<typename... Args>
+    auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
+      return kphp::memory::coro::alloc_aligned(n, al);
+    }
+
+    void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
+      kphp::memory::coro::free(ptr);
+    }
 
     auto set() noexcept -> void;
     auto unset() noexcept -> void;
