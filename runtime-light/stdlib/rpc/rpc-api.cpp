@@ -286,7 +286,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   // it will be in this tl_storer, and will be freed at the end of the function
   tl::storer big_regularized_request{0};
   std::span<const std::byte> request_buffer{rpc_server_instance_st.tl_storer.view()};
-  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(rpc_server_instance_st.tl_storer.view(), ignore_answer)}; opt_new_extra_header) {
+  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(rpc_server_instance_st.tl_storer.view(), ignore_answer)};
+      opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
     std::span<const std::byte> request_body{rpc_server_instance_st.tl_storer.view().subspan(cur_extra_header_size)};
@@ -333,41 +334,39 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     rpc_client_instance_st.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
   }
 
-  static constexpr auto awaiter_coroutine{[](query q, int64_t query_id, bool collect_responses_extra_info) noexcept
-                                          -> kphp::coro::shared_task<std::expected<string, int32_t>> {
-    std::expected<string, int32_t> response_exp{std::in_place};
-    const auto response_buffer_provider{[&response_exp](size_t size) noexcept -> std::span<std::byte> {
-      response_exp->assign(size, true);
-      return {reinterpret_cast<std::byte*>(response_exp->buffer()), size};
-    }};
+  static constexpr auto awaiter_coroutine{
+      [](query q, int64_t query_id, bool collect_responses_extra_info) noexcept -> kphp::coro::shared_task<std::expected<string, int32_t>> {
+        std::expected<string, int32_t> response_exp{std::in_place};
+        const auto response_buffer_provider{[&response_exp](size_t size) noexcept -> std::span<std::byte> {
+          response_exp->assign(size, true);
+          return {reinterpret_cast<std::byte*>(response_exp->buffer()), size};
+        }};
 
-    auto fetch_task{std::move(q).response(response_buffer_provider)};
-    auto fetch_result{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
-    if (!fetch_result) [[unlikely]] {
-      response_exp = std::unexpected{fetch_result.error()};
-    }
+        auto fetch_task{std::move(q).response(response_buffer_provider)};
+        auto fetch_result{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
+        if (!fetch_result) [[unlikely]] {
+          response_exp = std::unexpected{fetch_result.error()};
+        }
 
-    // update response extra info if needed
-    if (collect_responses_extra_info) {
-      auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
-      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
-        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-        const auto response_size{response_exp.transform([](const string& response) noexcept { return static_cast<int64_t>(response.size()); }).value_or(0)};
-        it_extra_info->second.second = std::make_tuple(response_size, timestamp - std::get<1>(it_extra_info->second.second));
-        it_extra_info->second.first = response_extra_info_status::ready;
-      } else {
-        kphp::log::warning("can't find extra info for RPC query {}", query_id);
-      }
-    }
+        // update response extra info if needed
+        if (collect_responses_extra_info) {
+          auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
+          if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
+            const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+            const auto response_size{response_exp.transform([](const string& response) noexcept { return static_cast<int64_t>(response.size()); }).value_or(0)};
+            it_extra_info->second.second = std::make_tuple(response_size, timestamp - std::get<1>(it_extra_info->second.second));
+            it_extra_info->second.first = response_extra_info_status::ready;
+          } else {
+            kphp::log::warning("can't find extra info for RPC query {}", query_id);
+          }
+        }
 
-    co_return std::move(response_exp);
-  }};
+        co_return std::move(response_exp);
+      }};
 
   static constexpr auto ignore_answer_awaiter_coroutine{[](query q) noexcept -> kphp::coro::shared_task<> {
     // will lead to return std::unexpected{TL_ERROR_RESULT_TOO_LARGE} in kphp::rpc::query::response() which is acceptable for us
-    const auto empty_response_buffer_provider{[](size_t _) noexcept -> std::span<std::byte> {
-      return {};
-    }};
+    const auto empty_response_buffer_provider{[](size_t _) noexcept -> std::span<std::byte> { return {}; }};
 
     auto fetch_task{std::move(q).response(empty_response_buffer_provider)};
     std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task));

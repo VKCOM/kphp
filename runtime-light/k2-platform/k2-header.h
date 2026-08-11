@@ -447,7 +447,8 @@ int32_t k2_component_access(size_t name_len, const char* name);
  * `ENODEV` => rpc client module is not available.
  * `EINVAL` => invalid `actor_name` or request.
  */
-int32_t k2_rpc_send_request(const char* actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, enum RpcKind rpc_kind, uint64_t* rpc_d);
+int32_t k2_rpc_send_request(const char* actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, enum RpcKind rpc_kind,
+                            uint64_t* rpc_d);
 
 /**
  * Try to get response size for the corresponding query of this `rpc_d`.

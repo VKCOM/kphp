@@ -57,8 +57,8 @@ public:
   query(const query& other) = delete;
   query& operator=(const query& other) = delete;
 
-  static auto send(std::string_view actor, std::chrono::milliseconds timeout,
-                   std::span<const std::byte> request_buffer, k2::RpcKind rpc_kind) noexcept -> std::expected<query, int32_t>;
+  static auto send(std::string_view actor, std::chrono::milliseconds timeout, std::span<const std::byte> request_buffer,
+                   k2::RpcKind rpc_kind) noexcept -> std::expected<query, int32_t>;
 
   template<std::invocable<size_t> B>
   requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
@@ -71,8 +71,8 @@ inline auto query::drop() noexcept -> void {
   }
 }
 
-inline auto query::send(std::string_view actor, std::chrono::milliseconds timeout,
-                        std::span<const std::byte> request_buffer, k2::RpcKind rpc_kind) noexcept -> std::expected<query, int32_t> {
+inline auto query::send(std::string_view actor, std::chrono::milliseconds timeout, std::span<const std::byte> request_buffer,
+                        k2::RpcKind rpc_kind) noexcept -> std::expected<query, int32_t> {
   auto descriptor_exp{k2::rpc_send_request(actor, request_buffer, rpc_kind)};
   if (!descriptor_exp) {
     return std::unexpected{descriptor_exp.error()};
@@ -89,30 +89,29 @@ requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
 auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
 
   static constexpr auto get_ready_response{
-    [](k2::descriptor& descriptor, B&& response_buffer_provider) noexcept -> std::expected<std::span<std::byte>, int32_t> {
-      std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(descriptor)};
-      if (!response_size_exp) {
-        switch (response_size_exp.error()) {
-        case k2::errno_eagain:
-          return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
-        default:
+      [](k2::descriptor& descriptor, B&& response_buffer_provider) noexcept -> std::expected<std::span<std::byte>, int32_t> {
+        std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(descriptor)};
+        if (!response_size_exp) {
+          switch (response_size_exp.error()) {
+          case k2::errno_eagain:
+            return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
+          default:
+            return std::unexpected{TL_ERROR_INTERNAL};
+          }
+        }
+        size_t response_size{*response_size_exp};
+
+        std::span<std::byte> response_buffer{std::invoke(std::forward<B>(response_buffer_provider), response_size)};
+        if (response_buffer.size() < response_size) {
+          return std::unexpected{TL_ERROR_RESULT_TOO_LARGE};
+        }
+        std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(descriptor, response_buffer)};
+        if (!response_fetch_result) {
           return std::unexpected{TL_ERROR_INTERNAL};
         }
-      }
-      size_t response_size{*response_size_exp};
 
-      std::span<std::byte> response_buffer{std::invoke(std::forward<B>(response_buffer_provider), response_size)};
-      if (response_buffer.size() < response_size) {
-        return std::unexpected{TL_ERROR_RESULT_TOO_LARGE};
-      }
-      std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(descriptor, response_buffer)};
-      if (!response_fetch_result) {
-        return std::unexpected{TL_ERROR_INTERNAL};
-      }
-
-      return {response_buffer};
-    }
-  };
+        return {response_buffer};
+      }};
 
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return std::unexpected{TL_ERROR_INVALID_CONNECTION_ID};
