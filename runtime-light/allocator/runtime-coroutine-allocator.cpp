@@ -9,13 +9,8 @@
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
-#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-
-auto RuntimeCoroutineAllocator::get() noexcept -> RuntimeCoroutineAllocator& {
-  return kphp::coro::instance_state::get().coroutine_allocator;
-}
 
 RuntimeCoroutineAllocator::RuntimeCoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_min_extra_mem_size(min_extra_mem_size) {
