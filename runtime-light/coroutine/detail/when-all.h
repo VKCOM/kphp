@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "runtime-light/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
@@ -152,16 +153,16 @@ public:
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc(n);
+    return kphp::memory::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    return kphp::memory::coro::alloc_aligned(n, al);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::memory::script::free(ptr);
+    kphp::memory::coro::free(ptr);
   }
 
   auto initial_suspend() const noexcept -> std::suspend_always {

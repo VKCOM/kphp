@@ -11,7 +11,7 @@
 #include <optional>
 
 #include "common/containers/intrusive-list.h"
-#include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-light/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -53,16 +53,16 @@ public:
 
   template<typename... Args>
   void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
-    return kphp::memory::script::alloc(n);
+    return kphp::memory::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    return kphp::memory::coro::alloc_aligned(n, al);
   }
 
   void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
-    kphp::memory::script::free(ptr);
+    kphp::memory::coro::free(ptr);
   }
 
   void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root& coroutine_stack_root, void* return_address) noexcept {
@@ -175,16 +175,16 @@ public:
 
   template<typename... Args>
   void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
-    return kphp::memory::script::alloc(n);
+    return kphp::memory::coro::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::script::alloc_aligned(n, al);
+    return kphp::memory::coro::alloc_aligned(n, al);
   }
 
   void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
-    kphp::memory::script::free(ptr);
+    kphp::memory::coro::free(ptr);
   }
 
   std::suspend_always initial_suspend() const noexcept {

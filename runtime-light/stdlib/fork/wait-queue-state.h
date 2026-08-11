@@ -8,14 +8,14 @@
 #include <functional>
 #include <optional>
 
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/allocator/coroutine-allocator.h"
 #include "runtime-light/coroutine/await-set.h"
 
 class WaitQueueInstanceState {
   static constexpr int64_t WAIT_QUEUE_ID_INIT = 0;
   int64_t m_next_wait_queue_id{WAIT_QUEUE_ID_INIT};
-  kphp::stl::unordered_map<int64_t, kphp::coro::await_set<int64_t>, kphp::memory::script_allocator> m_queues;
+  kphp::stl::unordered_map<int64_t, kphp::coro::await_set<int64_t>, kphp::memory::coroutine_allocator> m_queues;
 
 public:
   WaitQueueInstanceState() noexcept = default;
