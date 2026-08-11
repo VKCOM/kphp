@@ -31,7 +31,6 @@ struct instance_state final : private vk::not_copyable {
   kphp::memory::pool_allocator coroutine_allocator;
   kphp::coro::detail::memory::task_allocator task_allocator;
   kphp::coro::async_stack_root coroutine_stack_root;
-  RuntimeCoroutineAllocator coroutine_allocator;
 };
 
 } // namespace kphp::coro
