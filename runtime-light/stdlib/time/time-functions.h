@@ -55,7 +55,7 @@ auto remaining(std::chrono::time_point<std::chrono::steady_clock, duration_type>
  * Convert a timeout to time point at which it elapses, i.e. the deadline.
  */
 template<kphp::concepts::duration duration_type>
-auto expires_at(duration_type timeout) {
+auto expires_at(duration_type timeout) noexcept {
   return now() + timeout;
 }
 

@@ -31,10 +31,6 @@ class query {
       : m_descriptor{descriptor},
         m_deadline{deadline} {}
 
-  template<std::invocable<size_t> B>
-  requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-  auto get_ready_response(B&& response_buffer_provider) && noexcept -> std::expected<std::span<std::byte>, int32_t>;
-
   auto drop() noexcept -> void;
 
 public:
@@ -89,47 +85,48 @@ inline auto query::send(std::string_view actor, std::chrono::milliseconds timeou
 
 template<std::invocable<size_t> B>
 requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-auto query::get_ready_response(B&& response_buffer_provider) && noexcept -> std::expected<std::span<std::byte>, int32_t> {
-  std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(m_descriptor)};
-  if (!response_size_exp) {
-    switch (response_size_exp.error()) {
-    case k2::errno_eagain:
-      return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
-    default:
-      return std::unexpected{TL_ERROR_INTERNAL};
-    }
-  }
-  size_t response_size{*response_size_exp};
-
-  std::span<std::byte> response_buffer{std::invoke(std::forward<B>(response_buffer_provider), response_size)};
-  if (response_buffer.size() < response_size) {
-    return std::unexpected{TL_ERROR_RESULT_TOO_LARGE};
-  }
-  std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(m_descriptor, response_buffer)};
-  if (!response_fetch_result) {
-    return std::unexpected{TL_ERROR_INTERNAL};
-  }
-
-  return {response_buffer};
-}
-
-template<std::invocable<size_t> B>
-requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
 auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
+
+  static constexpr auto get_ready_response{
+    [](k2::descriptor& descriptor, B&& response_buffer_provider) noexcept -> std::expected<std::span<std::byte>, int32_t> {
+      std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(descriptor)};
+      if (!response_size_exp) {
+        switch (response_size_exp.error()) {
+        case k2::errno_eagain:
+          return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
+        default:
+          return std::unexpected{TL_ERROR_INTERNAL};
+        }
+      }
+      size_t response_size{*response_size_exp};
+
+      std::span<std::byte> response_buffer{std::invoke(std::forward<B>(response_buffer_provider), response_size)};
+      if (response_buffer.size() < response_size) {
+        return std::unexpected{TL_ERROR_RESULT_TOO_LARGE};
+      }
+      std::expected<void, int32_t> response_fetch_result{k2::rpc_fetch_response(descriptor, response_buffer)};
+      if (!response_fetch_result) {
+        return std::unexpected{TL_ERROR_INTERNAL};
+      }
+
+      return {response_buffer};
+    }
+  };
+
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return std::unexpected{TL_ERROR_INVALID_CONNECTION_ID};
   }
 
   auto timeout{kphp::time::remaining(m_deadline)};
-
   if (timeout <= std::chrono::nanoseconds::zero()) {
-    co_return std::move(*this).get_ready_response<B>(std::move(response_buffer_provider));
+    co_return get_ready_response(m_descriptor, std::move(response_buffer_provider));
   }
 
+  auto m_descriptor_copy{m_descriptor};
   kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
-  switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read, timeout)) {
+  switch (co_await m_scheduler.poll(m_descriptor_copy, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
-    co_return std::move(*this).get_ready_response<B>(std::move(response_buffer_provider));
+    co_return get_ready_response(m_descriptor_copy, std::move(response_buffer_provider));
   case kphp::coro::poll_status::timeout:
     co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
   case kphp::coro::poll_status::closed:
