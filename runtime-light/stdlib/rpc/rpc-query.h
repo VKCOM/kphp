@@ -5,11 +5,14 @@
 #pragma once
 
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <span>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include "common/rpc-error-codes.h"
@@ -58,7 +61,7 @@ public:
   query& operator=(const query& other) = delete;
 
   static auto send(std::string_view actor, std::chrono::milliseconds timeout,
-                   std::span<const std::byte> request_buffer) noexcept -> std::expected<query, int32_t>;
+                   std::span<const std::byte> request_buffer, k2::RpcKind rpc_kind) noexcept -> std::expected<query, int32_t>;
 
   template<std::invocable<size_t> B>
   requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
@@ -72,8 +75,8 @@ inline auto query::drop() noexcept -> void {
 }
 
 inline auto query::send(std::string_view actor, std::chrono::milliseconds timeout,
-                        std::span<const std::byte> request_buffer) noexcept -> std::expected<query, int32_t> {
-  auto descriptor_exp{k2::rpc_send_request(actor, request_buffer, RpcKind::TL_RPC)};
+                        std::span<const std::byte> request_buffer, k2::RpcKind rpc_kind) noexcept -> std::expected<query, int32_t> {
+  auto descriptor_exp{k2::rpc_send_request(actor, request_buffer, rpc_kind)};
   if (!descriptor_exp) {
     return std::unexpected{descriptor_exp.error()};
   }
@@ -117,13 +120,13 @@ auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task
     co_return std::unexpected{TL_ERROR_INVALID_CONNECTION_ID};
   }
 
-  kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
   auto timeout{kphp::time::remaining(m_deadline)};
 
   if (timeout <= std::chrono::nanoseconds::zero()) {
     co_return std::move(*this).get_ready_response<B>(std::move(response_buffer_provider));
   }
 
+  kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
   switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
     co_return std::move(*this).get_ready_response<B>(std::move(response_buffer_provider));

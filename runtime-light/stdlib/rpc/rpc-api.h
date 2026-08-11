@@ -58,7 +58,7 @@ inline kphp::coro::task<std::expected<void, int32_t>> send_response(std::span<co
 
 namespace detail {
 
-kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, mixed tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
+kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
                                             bool ignore_answer) noexcept;
 
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept;
@@ -286,7 +286,7 @@ inline int64_t f$rpc_tl_pending_queries_count() noexcept {
 
 // === client untyped =============================================================================
 
-inline array<int64_t> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
+inline array<int64_t> f$rpc_send_requests(const string& actor, const array<mixed>& tl_objects, Optional<double> timeout, bool ignore_answer,
                                           class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
     kphp::log::warning("both $ignore_answer and $need_responses_extra_info are 'true'. Metrics won't be collected");
@@ -297,7 +297,7 @@ inline array<int64_t> f$rpc_send_requests(string actor, array<mixed> tl_objects,
   array<kphp::rpc::request_extra_info> req_extra_info_arr{tl_objects.size()};
   auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-  for (const auto& it : std::as_const(tl_objects)) {
+  for (const auto& it : tl_objects) {
     const auto query_info{
         kphp::rpc::detail::rpc_tl_query_one_impl({actor.c_str(), actor.size()}, it.get_value(), opt_timeout, collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
@@ -335,7 +335,7 @@ kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<
 // === client typed ===============================================================================
 
 template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_type, std::same_as<KphpRpcRequest> rpc_request_type = KphpRpcRequest>
-array<int64_t> f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_type>> query_functions, Optional<double> timeout,
+array<int64_t> f$rpc_send_typed_query_requests(const string& actor, const array<class_instance<rpc_function_type>>& query_functions, Optional<double> timeout,
                                                bool ignore_answer, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
                                                bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
@@ -347,7 +347,7 @@ array<int64_t> f$rpc_send_typed_query_requests(string actor, array<class_instanc
   array<kphp::rpc::request_extra_info> req_extra_info_arr{query_functions.size()};
   auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-  for (const auto& it : std::as_const(query_functions)) {
+  for (const auto& it : query_functions) {
     const auto query_info{kphp::rpc::detail::typed_rpc_tl_query_one_impl({actor.c_str(), actor.size()}, rpc_request_type{it.get_value()}, opt_timeout,
                                                                          collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
