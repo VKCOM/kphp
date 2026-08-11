@@ -45,6 +45,13 @@ auto AllocatorState::get() noexcept -> const AllocatorState& {
   kphp::log::error("can't find allocator state");
 }
 
+auto RuntimeCoroutineAllocator::get() noexcept -> RuntimeCoroutineAllocator& {
+  if (auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
+    return instance_state_ptr->coroutine_allocator;
+  }
+  kphp::log::error("can't find runtime coroutine allocator");
+}
+
 auto ErrorHandlingState::try_get() noexcept -> std::optional<std::reference_wrapper<ErrorHandlingState>> {
   return std::nullopt; // confdata doesn't support PHP error handling
 }

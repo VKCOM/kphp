@@ -31,7 +31,8 @@ private:
   auto parse_args() noexcept -> void;
 
   static constexpr std::string_view CONFDATA_PROXY_ACTOR_NAME_ARG{"confdata-proxy-actor-name"};
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)}; // 1MiB
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)};            // 1MiB
+  static constexpr auto DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1U * 1024U * 1024U); // 1MiB
 };
 
 inline ComponentState::ComponentState() noexcept {

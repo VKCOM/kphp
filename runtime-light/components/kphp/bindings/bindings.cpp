@@ -8,6 +8,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/components/kphp/state/image-state.h"
 #include "runtime-light/components/kphp/state/instance-state.h"
@@ -74,6 +75,13 @@ auto AllocatorState::get() noexcept -> const AllocatorState& {
     return image_state_ptr->image_allocator_state;
   }
   kphp::log::error("can't find allocator state");
+}
+
+auto RuntimeCoroutineAllocator::get() noexcept -> RuntimeCoroutineAllocator& {
+  if (auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
+    return instance_state_ptr->coroutine_allocator;
+  }
+  kphp::log::error("can't find runtime coroutine allocator");
 }
 
 auto RuntimeContext::get() noexcept -> RuntimeContext& {

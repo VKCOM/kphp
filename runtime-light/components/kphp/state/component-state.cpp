@@ -132,6 +132,24 @@ void ComponentState::parse_min_instance_extra_memory_size_arg(std::string_view v
   kphp::log::info("set min instance extra memory size to {} bytes", min_instance_extra_memory_size);
 }
 
+void ComponentState::parse_initial_instance_coroutine_memory_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse initial instance coroutine memory size, got {}", value_view);
+  }
+  initial_instance_coroutine_memory_size = *parsed;
+  kphp::log::info("set initial instance coroutine memory size to {} bytes", initial_instance_coroutine_memory_size);
+}
+
+void ComponentState::parse_min_instance_extra_coroutine_memory_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse min instance extra coroutine memory size, got {}", value_view);
+  }
+  min_instance_extra_coroutine_memory_size = *parsed;
+  kphp::log::info("set min instance extra coroutine memory size to {} bytes", min_instance_extra_coroutine_memory_size);
+}
+
 void ComponentState::parse_args() noexcept {
   for (auto i = 0; i < argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -152,6 +170,10 @@ void ComponentState::parse_args() noexcept {
       parse_initial_instance_memory_size_arg(value_view);
     } else if (key_view == MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG) {
       parse_min_instance_extra_memory_size_arg(value_view);
+    } else if (key_view == INITIAL_INSTANCE_COROUTINE_MEMORY_SIZE_ARG) {
+      parse_initial_instance_coroutine_memory_size_arg(value_view);
+    } else if (key_view == MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_SIZE_ARG) {
+      parse_min_instance_extra_coroutine_memory_size_arg(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
