@@ -365,7 +365,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   static constexpr auto ignore_answer_awaiter_coroutine{[](query q) noexcept -> kphp::coro::shared_task<> {
     // will lead to return std::unexpected{TL_ERROR_RESULT_TOO_LARGE} in kphp::rpc::query::response() which is acceptable for us
-    const auto empty_response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    const auto empty_response_buffer_provider{[](size_t _) noexcept -> std::span<std::byte> {
       return {};
     }};
 
