@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/allocator/detail/control-block.h"

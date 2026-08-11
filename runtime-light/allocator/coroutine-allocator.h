@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
 
