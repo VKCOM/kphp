@@ -8,11 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-<<<<<<< HEAD
 #include "runtime-common/core/allocator/pool-allocator.h"
-=======
-#include "runtime-light/allocator/runtime-coroutine-allocator.h"
->>>>>>> ff0826b9a (add runtime-coroutine-allocator to coroutine-instance-state)
 #include "runtime-light/coroutine/async-stack.h"
 
 namespace kphp::coro {

@@ -13,6 +13,7 @@
 #include <utility>
 #include <variant>
 
+#include "runtime-light/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/type-traits.h"

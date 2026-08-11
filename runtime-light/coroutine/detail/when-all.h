@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "runtime-light/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
