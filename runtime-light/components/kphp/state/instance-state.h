@@ -122,7 +122,7 @@ struct InstanceState final : vk::not_copyable {
   ErrorHandlingState error_handling_instance_state;
   KmlInstanceState kml_instance_state;
 
-  list<kphp::coro::task<>> shutdown_functions;
+  kphp::stl::list<kphp::coro::task<>, kphp::memory::coroutine_allocator> shutdown_functions;
 
 private:
   kphp::coro::task<> init_cli_instance() noexcept;
