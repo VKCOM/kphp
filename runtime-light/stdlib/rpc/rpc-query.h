@@ -122,7 +122,7 @@ auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task
     co_return get_ready_response(m_descriptor, std::move(response_buffer_provider));
   }
 
-  auto m_descriptor_copy{m_descriptor};
+  auto m_descriptor_copy{std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)};
   switch (co_await kphp::coro::io_scheduler::get().poll(m_descriptor_copy, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
     co_return get_ready_response(m_descriptor_copy, std::move(response_buffer_provider));

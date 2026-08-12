@@ -113,6 +113,15 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   return rpc_tl_query;
 }
 
+// store bytes for `dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
+// we do this to avoid allocating new buffer for regularized rpc extra headers and copying whole request.
+void reserve_header_in_tl_storer_before_request() noexcept {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  dest_actor_flags_header reserved_header;
+  rpc_server_instance_st.tl_storer.store_bytes(
+    {reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(std::remove_cvref_t<decltype(reserved_header)>)});
+}
+
 kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
                                             bool ignore_answer) noexcept {
   if (!tl_object.is_array()) [[unlikely]] {
@@ -121,6 +130,7 @@ kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed&
   }
 
   f$rpc_clean();
+  reserve_header_in_tl_storer_before_request();
   auto rpc_tl_query{store_function(tl_object)}; // THROWING
   // handle exceptions that could arise during store_function
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || rpc_tl_query.is_null()) [[unlikely]] {
@@ -142,6 +152,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   }
 
   f$rpc_clean();
+  reserve_header_in_tl_storer_before_request();
   auto fetcher{rpc_request.store_request()}; // THROWING
   // handle exceptions that could arise during store_request
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
@@ -279,35 +290,31 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
 
-  const size_t request_size{rpc_server_instance_st.tl_storer.view().size_bytes()};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
-  // if we have to allocate memory for request buffer with regularized headers,
-  // it will be in this tl_storer, and will be freed at the end of the function
-  tl::storer big_regularized_request{0};
-  std::span<const std::byte> request_buffer{rpc_server_instance_st.tl_storer.view()};
-  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(rpc_server_instance_st.tl_storer.view(), ignore_answer)};
+  const size_t reserved_header_size{sizeof(dest_actor_flags_header)};
+  std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(reserved_header_size)};
+
+  if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)};
       opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
-    std::span<const std::byte> request_body{rpc_server_instance_st.tl_storer.view().subspan(cur_extra_header_size)};
+    std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
 
-    size_t request_and_headers_size{new_header.size() + request_body.size()};
-    if (request_and_headers_size <= StringInstanceState::STATIC_BUFFER_LENGTH) {
-      // we have enough space in static buffer to store request with regularized headers
-      auto& string_lib_ctx{StringInstanceState::get()};
-      std::span<std::byte> new_request_buffer{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), request_and_headers_size};
-      std::ranges::copy(new_header, new_request_buffer.subspan(0, new_header.size()).begin());
-      std::ranges::copy(request_body, new_request_buffer.subspan(new_header.size()).begin());
-      request_buffer = new_request_buffer;
-    } else {
-      // we have to allocate buffer for request with regularized headers
-      big_regularized_request.reserve(request_and_headers_size);
-      big_regularized_request.store_bytes(new_header);
-      big_regularized_request.store_bytes(request_body);
-      request_buffer = big_regularized_request.view();
-    }
+    //                                       here business logic starts
+    //                                                   \/
+    // tl_storer was:  |reserved dest-actor-flags-header|  [optional old header] |request-body|
+    //
+    // We want to serialize our new header right before |request-body| :
+    //
+    // tl_storer will be: ... may be some bytes leaved here ... |our new header| |request-body|
+
+    // we do always have enough bytes for `sizeof(*opt_new_extra_header)` before `request_body`, because we have reserved it before send_request(...) call.
+    auto new_header_begin{request_buffer.data() + cur_extra_header_size - sizeof(*opt_new_extra_header)};
+    std::ranges::copy(new_header, new_header_begin);
   }
+
+  const size_t request_size{request_buffer.size_bytes()};
 
   // normalize timeout
   using namespace std::chrono_literals;
@@ -324,7 +331,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   auto query_expected{kphp::rpc::query::send(actor, timeout, request_buffer, k2::RpcKind::TL_RPC)};
   if (!query_expected) {
-    return kphp::rpc::query_info{.id = kphp::rpc::INTERNAL_ERROR_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+    return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
   const auto query_id{rpc_client_instance_st.current_query_id++};
@@ -364,21 +371,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
         co_return std::move(response_exp);
       }};
 
-  static constexpr auto ignore_answer_awaiter_coroutine{[](query q) noexcept -> kphp::coro::shared_task<> {
-    // will lead to return std::unexpected{TL_ERROR_RESULT_TOO_LARGE} in kphp::rpc::query::response() which is acceptable for us
-    const auto empty_response_buffer_provider{[](size_t _) noexcept -> std::span<std::byte> { return {}; }};
-
-    auto fetch_task{std::move(q).response(empty_response_buffer_provider)};
-    std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task));
-  }};
-
   if (ignore_answer) {
-    // start ignore answer awaiter task
-    // We have to spawn the task for ignore answer request to prevent request drop in kphp::rpc::query destructor
-    // and to free descriptor after response fetch.
-    auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(*query_expected))};
-    kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
-
     return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 

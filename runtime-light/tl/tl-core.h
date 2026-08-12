@@ -54,6 +54,10 @@ public:
     return m_buffer;
   }
 
+  std::span<std::byte> view() noexcept {
+    return m_buffer;
+  }
+
   void clear() noexcept {
     m_buffer.clear();
   }
