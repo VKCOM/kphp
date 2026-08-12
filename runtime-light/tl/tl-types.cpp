@@ -193,6 +193,80 @@ bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept 
   return ok;
 }
 
+void rpcInvokeReqExtra::store(tl::storer& tls, const tl::mask& flags) const noexcept { // NOLINT(readability-function-cognitive-complexity)
+  if (static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
+    opt_wait_binlog_pos.has_value() ? (*opt_wait_binlog_pos).store(tls) : tl::i64{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & STRING_FORWARD_KEYS_FLAG)) {
+    opt_string_forward_keys.has_value() ? (*opt_string_forward_keys).store(tls) : tl::vector<tl::string>{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & INT_FORWARD_KEYS_FLAG)) {
+    opt_int_forward_keys.has_value() ? (*opt_int_forward_keys).store(tls) : tl::vector<tl::i64>{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & STRING_FORWARD_FLAG)) {
+    opt_string_forward.has_value() ? (*opt_string_forward).store(tls) : tl::string{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & INT_FORWARD_FLAG)) {
+    opt_int_forward.has_value() ? (*opt_int_forward).store(tls) : tl::i64{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & CUSTOM_TIMEOUT_MS_FLAG)) {
+    opt_custom_timeout_ms.has_value() ? (*opt_custom_timeout_ms).store(tls) : tl::i32{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
+    opt_supported_compression_version.has_value() ? (*opt_supported_compression_version).store(tls) : tl::i32{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
+    opt_random_delay.has_value() ? (*opt_random_delay).store(tls) : tl::f64{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & PERSISTENT_QUERY_FLAG)) {
+    opt_persistent_query.has_value() ? (*opt_persistent_query).store(tls) : tl::exactlyOnce::PersistentRequest{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & TRACE_CONTEXT_FLAG)) {
+    opt_trace_context.has_value() ? (*opt_trace_context).store(tls) : tl::tracing::traceContext{}.store(tls);
+  }
+  if (static_cast<bool>(flags.value & EXECUTION_CONTEXT_FLAG)) {
+    opt_execution_context.has_value() ? (*opt_execution_context).store(tls) : tl::string{}.store(tls);
+  }
+}
+
+size_t rpcInvokeReqExtra::footprint(const tl::mask& flags) const noexcept { // NOLINT(readability-function-cognitive-complexity)
+  size_t footprint{};
+  if (static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
+    footprint += opt_wait_binlog_pos.has_value() ? (*opt_wait_binlog_pos).footprint() : tl::i64{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & STRING_FORWARD_KEYS_FLAG)) {
+    footprint += opt_string_forward_keys.has_value() ? (*opt_string_forward_keys).footprint() : tl::vector<tl::string>{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & INT_FORWARD_KEYS_FLAG)) {
+    footprint += opt_int_forward_keys.has_value() ? (*opt_int_forward_keys).footprint() : tl::vector<tl::i64>{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & STRING_FORWARD_FLAG)) {
+    footprint += opt_string_forward.has_value() ? (*opt_string_forward).footprint() : tl::string{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & INT_FORWARD_FLAG)) {
+    footprint += opt_int_forward.has_value() ? (*opt_int_forward).footprint() : tl::i64{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & CUSTOM_TIMEOUT_MS_FLAG)) {
+    footprint += opt_custom_timeout_ms.has_value() ? (*opt_custom_timeout_ms).footprint() : tl::i32{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
+    footprint += opt_supported_compression_version.has_value() ? (*opt_supported_compression_version).footprint() : tl::i32{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
+    footprint += opt_random_delay.has_value() ? (*opt_random_delay).footprint() : tl::f64{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & PERSISTENT_QUERY_FLAG)) {
+    footprint += opt_persistent_query.has_value() ? (*opt_persistent_query).footprint() : tl::exactlyOnce::PersistentRequest{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & TRACE_CONTEXT_FLAG)) {
+    footprint += opt_trace_context.has_value() ? (*opt_trace_context).footprint() : tl::tracing::traceContext{}.footprint();
+  }
+  if (static_cast<bool>(flags.value & EXECUTION_CONTEXT_FLAG)) {
+    footprint += opt_execution_context.has_value() ? (*opt_execution_context).footprint() : tl::string{}.footprint();
+  }
+  return footprint;
+}
+
 tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
   tl::mask flags{.value = static_cast<tl::mask::underlying_type>(return_binlog_pos)};
 
