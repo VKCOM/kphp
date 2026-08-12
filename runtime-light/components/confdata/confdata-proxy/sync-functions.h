@@ -45,16 +45,19 @@ template<std::invocable<std::span<const tl::confdata::KeyValuePair>> event_handl
 auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination& to,
                const event_handler_type& event_handler) noexcept -> kphp::coro::task<std::expected<void, kphp::confdata::subscribe_error>> {
   // subscribe is a longpoll method, so the timeout must cover the time confdata-proxy may hold the request open
-  static constexpr auto SUBSCRIBE_TIMEOUT{std::chrono::seconds{45}};
+  static constexpr auto SUBSCRIBE_TIMEOUT{std::chrono::milliseconds{45'000}};
 
-  const tl::confdata::Subscribe request{
-      .fields_mask = {},
-      .access_token = {},
-      .page = {.value = to.m_page},
-      .offset = {.value = to.m_offset},
-      .has_synced = {.value = to.m_has_synced},
-      .prefixes = {.value = {{/* a single empty prefix subscribes to all keys */}}},
-  };
+  const tl::RpcDestActorFlags<tl::confdata::Subscribe> request{.inner = {.actor_id = {},
+                                                                         .extra = {.opt_custom_timeout_ms = tl::i32{.value = SUBSCRIBE_TIMEOUT.count()}},
+                                                                         .query = tl::confdata::Subscribe{
+                                                                             .fields_mask = {},
+                                                                             .access_token = {},
+                                                                             .page = {.value = to.m_page},
+                                                                             .offset = {.value = to.m_offset},
+                                                                             .has_synced = {.value = to.m_has_synced},
+                                                                             .prefixes = {.value = {{/* a single empty prefix subscribes to all keys */}}},
+
+                                                                         }}};
   tl::storer tls{request.footprint()};
   request.store(tls);
 
