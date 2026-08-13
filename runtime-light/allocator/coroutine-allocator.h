@@ -23,11 +23,11 @@ struct coroutine_allocator {
   coroutine_allocator(const coroutine_allocator<U>& /*unused*/) noexcept {}
 
   constexpr value_type* allocate(size_t n) noexcept {
-    return static_cast<value_type*>(RuntimeCoroutineAllocator::get().alloc_memory(n * sizeof(T)));
+    return static_cast<value_type*>(RuntimeCoroutineAllocator::get().alloc_script_memory(n * sizeof(T)));
   }
 
   constexpr void deallocate(T* p, size_t n) noexcept {
-    RuntimeCoroutineAllocator::get().free_memory(p, n * sizeof(T));
+    RuntimeCoroutineAllocator::get().free_script_memory(p, n * sizeof(T));
   }
 };
 
