@@ -23,9 +23,12 @@ struct RuntimeCoroutineAllocator final : vk::not_copyable {
   auto realloc_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
   auto free_memory(void* mem, size_t size) noexcept -> void;
 
-private:
   auto alloc_global_memory(size_t size) noexcept -> void*;
+  auto alloc0_global_memory(size_t size) noexcept -> void*;
+  auto realloc_global_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
+  auto free_global_memory(void* mem, size_t size) noexcept -> void;
 
+private:
   auto request_extra_memory(size_t requested_size) noexcept -> void;
 
 public:
