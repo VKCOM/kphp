@@ -288,7 +288,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
-  // We have reserved place for one `kphp::rpc::dest_actor_flags_header` in `rpc_server_instance_st.tl_storer` before storing request and calling `send_request(...)`,
+  // We have reserved place for one `kphp::rpc::dest_actor_flags_header` in `rpc_server_instance_st.tl_storer`
+  // before storing request and calling `send_request(...)`,
   // so the real serialized request starts after `RESERVED_HEADER_SIZE` bytes in tl storer.
   // We do this to have enough place for regularized header after `kphp::rpc::regularize_extra_headers(...)` call.
   // This optimization helps us avoid allocating and copying the whole request.
