@@ -48,6 +48,7 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   static constexpr auto SUBSCRIBE_TIMEOUT{std::chrono::milliseconds{45'000}};
 
   const tl::RpcDestActorFlags<tl::confdata::Subscribe> request{.inner = {.actor_id = {},
+                                                                         .flags = {.value = tl::rpcInvokeReqExtra::CUSTOM_TIMEOUT_MS_FLAG},
                                                                          .extra = {.opt_custom_timeout_ms = tl::i32{.value = SUBSCRIBE_TIMEOUT.count()}},
                                                                          .query = tl::confdata::Subscribe{
                                                                              .fields_mask = {},
@@ -61,7 +62,8 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   tl::storer tls{request.footprint()};
   request.store(tls);
 
-  auto expected_query{kphp::rpc::query::send(confdata_proxy_actor, SUBSCRIBE_TIMEOUT, tls.view())};
+  // client-side timeout must outlive the server-side longpoll (SUBSCRIBE_TIMEOUT); 10x is a safe margin
+  auto expected_query{kphp::rpc::query::send(confdata_proxy_actor, SUBSCRIBE_TIMEOUT * 10, tls.view())};
   if (!expected_query) [[unlikely]] {
     kphp::log::warning("confdata: failed to send subscribe request: {}", expected_query.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
