@@ -51,3 +51,7 @@ auto RuntimeAllocator::realloc_global_memory(void* mem, size_t new_size, size_t 
 auto RuntimeAllocator::free_global_memory(void* mem, size_t size) noexcept -> void {
   m_allocator.free_global_memory(mem, size);
 }
+
+auto RuntimeAllocator::get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource& {
+  return m_allocator.memory_resource;
+}
