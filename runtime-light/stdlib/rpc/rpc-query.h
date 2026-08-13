@@ -62,7 +62,7 @@ public:
 
   template<std::invocable<size_t> B>
   requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-  static auto response(query q, B response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
+  static auto response(query self, B response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
 };
 
 inline auto query::drop() noexcept -> void {

@@ -41,6 +41,8 @@ namespace kphp::rpc {
 
 namespace detail {
 
+static constexpr size_t RESERVED_HEADER_SIZE{sizeof(kphp::rpc::dest_actor_flags_header)};
+
 mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) [[unlikely]] {
     return {};
@@ -108,14 +110,13 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   return rpc_tl_query;
 }
 
-static constexpr size_t RESERVED_HEADER_SIZE{sizeof(kphp::rpc::dest_actor_flags_header)};
-
 // store bytes for `kphp::rpc::dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
 // we do this to avoid allocating new buffer for regularized rpc extra headers and copying whole request.
 void reserve_header() noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   kphp::rpc::dest_actor_flags_header reserved_header{};
-  rpc_server_instance_st.tl_storer.store_bytes({reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), RESERVED_HEADER_SIZE});
+  static_assert(sizeof(reserved_header) == RESERVED_HEADER_SIZE);
+  rpc_server_instance_st.tl_storer.store_bytes({reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(reserved_header)});
 }
 
 kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
