@@ -1287,7 +1287,7 @@ public:
 
 } // namespace tracing
 
-class rpcInvokeReqExtra final {
+struct rpcInvokeReqExtra final {
   static constexpr uint32_t RETURN_BINLOG_POS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_pos;
   static constexpr uint32_t RETURN_BINLOG_TIME_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_time;
   static constexpr uint32_t RETURN_PID_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_pid;
@@ -1308,7 +1308,6 @@ class rpcInvokeReqExtra final {
   static constexpr uint32_t TRACE_CONTEXT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::trace_context;
   static constexpr uint32_t EXECUTION_CONTEXT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::execution_context;
 
-public:
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
