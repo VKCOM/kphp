@@ -81,6 +81,23 @@ auto RuntimeCoroutineAllocator::alloc_global_memory(size_t size) noexcept -> voi
   return mem;
 }
 
+void* RuntimeCoroutineAllocator::alloc0_global_memory(size_t size) noexcept {
+  void* mem{k2::alloc(size)};
+  kphp::log::assertion(mem != nullptr);
+  std::memset(mem, 0, size);
+  return mem;
+}
+
+void* RuntimeCoroutineAllocator::realloc_global_memory(void* old_mem, size_t new_size, size_t /*unused*/) noexcept {
+  void* mem{k2::realloc(old_mem, new_size)};
+  kphp::log::assertion(mem != nullptr);
+  return mem;
+}
+
+void RuntimeCoroutineAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept {
+  k2::free(mem);
+}
+
 auto RuntimeCoroutineAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
