@@ -1090,6 +1090,14 @@ struct uuid final {
   bool fetch(tl::fetcher& tlf) noexcept {
     return lo.fetch(tlf) && hi.fetch(tlf);
   }
+
+  void store(tl::storer& tls) const noexcept {
+    lo.store(tls), hi.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return lo.footprint() + hi.footprint();
+  }
 };
 
 struct prepareRequest final {
@@ -1097,6 +1105,14 @@ struct prepareRequest final {
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return persistent_query_uuid.fetch(tlf);
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    persistent_query_uuid.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return persistent_query_uuid.footprint();
   }
 };
 
@@ -1106,6 +1122,14 @@ struct commitRequest final {
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    persistent_query_uuid.store(tls), persistent_slot_uuid.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return persistent_query_uuid.footprint() + persistent_slot_uuid.footprint();
   }
 };
 
@@ -1131,6 +1155,24 @@ public:
     }
     return false;
   }
+
+  void store(tl::storer& tls) const noexcept {
+    std::visit(
+        [&tls](const auto& request) noexcept {
+          using request_t = std::remove_cvref_t<decltype(request)>;
+          if constexpr (std::same_as<request_t, tl::exactlyOnce::prepareRequest>) {
+            tl::magic{.value = PREPARE_REQUEST_MAGIC}.store(tls);
+          } else if constexpr (std::same_as<request_t, tl::exactlyOnce::commitRequest>) {
+            tl::magic{.value = COMMIT_REQUEST_MAGIC}.store(tls);
+          }
+          request.store(tls);
+        },
+        request);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& request) noexcept { return tl::magic{}.footprint() + request.footprint(); }, request);
+  }
 };
 } // namespace exactlyOnce
 
@@ -1142,6 +1184,14 @@ struct traceID final {
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return lo.fetch(tlf) && hi.fetch(tlf);
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    lo.store(tls), hi.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return lo.footprint() + hi.footprint();
   }
 };
 
@@ -1193,6 +1243,28 @@ public:
     debug_flag = static_cast<bool>(fields_mask.value & DEBUG_FLAG);
 
     return ok;
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    get_flags().store(tls);
+    trace_id.store(tls);
+    if (opt_parent_id.has_value()) {
+      opt_parent_id->store(tls);
+    }
+    if (opt_source_id.has_value()) {
+      opt_source_id->store(tls);
+    }
+  }
+
+  constexpr size_t footprint() const noexcept {
+    size_t footprint{tl::mask{}.footprint() + trace_id.footprint()};
+    if (opt_parent_id.has_value()) {
+      footprint += opt_parent_id->footprint();
+    }
+    if (opt_source_id.has_value()) {
+      footprint += opt_source_id->footprint();
+    }
+    return footprint;
   }
 
   tl::mask get_flags() const noexcept {
@@ -1254,6 +1326,8 @@ public:
   bool return_view_number{};
 
   bool fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept;
+  void store(tl::storer& tls, const tl::mask& flags) const noexcept;
+  size_t footprint(const tl::mask& flags) const noexcept;
 
   tl::mask get_flags() const noexcept;
 };
@@ -1330,6 +1404,42 @@ struct rpcReqError final {
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return query_id.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
+  }
+};
+
+template<std::default_initializable T>
+struct rpcDestActorFlags final {
+  tl::i64 actor_id{};
+  tl::mask flags{};
+  tl::rpcInvokeReqExtra extra{};
+  T query{};
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<T>
+  {
+    actor_id.store(tls), flags.store(tls), extra.store(tls, flags), query.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return actor_id.footprint() + flags.footprint() + extra.footprint(flags) + query.footprint();
+  }
+};
+
+template<typename T>
+class RpcDestActorFlags final {
+  static constexpr tl::magic MAGIC{.value = TL_RPC_DEST_ACTOR_FLAGS};
+
+public:
+  tl::rpcDestActorFlags<T> inner{};
+
+  void store(tl::storer& tls) const noexcept {
+    MAGIC.store(tls), inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return MAGIC.footprint() + inner.footprint();
   }
 };
 
