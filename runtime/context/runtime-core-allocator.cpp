@@ -5,11 +5,11 @@
 #include "runtime/allocator.h"
 #include "runtime/context/runtime-context.h"
 
-void RuntimeAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) {
+void RuntimeAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept {
   dl::init_script_allocator(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-void RuntimeAllocator::free() {
+void RuntimeAllocator::free() noexcept {
   dl::free_script_allocator();
 }
 
