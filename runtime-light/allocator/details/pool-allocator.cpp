@@ -7,27 +7,29 @@
 #include <cstddef>
 #include <cstring>
 
-#include "runtime-light/allocator/runtime-coroutine-allocator.h"
+#include "runtime-common/core/allocator/details/pool-allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-RuntimeCoroutineAllocator::RuntimeCoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
+namespace kphp::memory::details {
+
+PoolAllocator::PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size)
     : m_min_extra_mem_size(min_extra_mem_size) {
-  // kphp::log::debug("create coroutine allocator -> {:p}: memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), mem_size,
+  // kphp::log::debug("create pool allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
   //                 oom_handling_mem_size);
-  void* buffer{alloc_global_memory(mem_size)};
-  memory_resource.init(buffer, mem_size, oom_handling_mem_size);
+  void* buffer{alloc_global_memory(script_mem_size)};
+  memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto RuntimeCoroutineAllocator::init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept -> void {
+auto PoolAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) -> void {
   kphp::log::assertion(buffer != nullptr);
-  // kphp::log::debug("init coroutine allocator -> {:p}: buffer -> {:p}, memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
-  //                  mem_size, oom_handling_mem_size);
-  memory_resource.init(buffer, mem_size, oom_handling_mem_size);
+  // kphp::log::debug("init pool allocator -> {:p}: buffer -> {:p}, script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
+  //                  script_mem_size, oom_handling_mem_size);
+  memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto RuntimeCoroutineAllocator::free() noexcept -> void {
-  // kphp::log::debug("free coroutine allocator -> {:p}", reinterpret_cast<void*>(this));
+auto PoolAllocator::free() -> void {
+  // kphp::log::debug("free pool allocator -> {:p}", reinterpret_cast<void*>(this));
   auto* extra_memory{memory_resource.get_extra_memory_head()};
   while (extra_memory->get_pool_payload_size() != 0) {
     auto* extra_memory_to_release{extra_memory};
@@ -37,7 +39,7 @@ auto RuntimeCoroutineAllocator::free() noexcept -> void {
   k2::free(memory_resource.memory_begin());
 }
 
-auto RuntimeCoroutineAllocator::alloc_memory(size_t size) noexcept -> void* {
+auto PoolAllocator::alloc_script_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate(size)};
   if (mem == nullptr) [[unlikely]] {
@@ -48,7 +50,7 @@ auto RuntimeCoroutineAllocator::alloc_memory(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto RuntimeCoroutineAllocator::alloc0_memory(size_t size) noexcept -> void* {
+auto PoolAllocator::alloc0_script_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate0(size)};
   if (mem == nullptr) [[unlikely]] {
@@ -59,7 +61,7 @@ auto RuntimeCoroutineAllocator::alloc0_memory(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto RuntimeCoroutineAllocator::realloc_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
+auto PoolAllocator::realloc_script_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
   kphp::log::assertion(new_size > old_size);
   void* new_mem{memory_resource.reallocate(old_mem, new_size, old_size)};
   if (new_mem == nullptr) [[unlikely]] {
@@ -70,35 +72,35 @@ auto RuntimeCoroutineAllocator::realloc_memory(void* old_mem, size_t new_size, s
   return new_mem;
 }
 
-auto RuntimeCoroutineAllocator::free_memory(void* mem, size_t size) noexcept -> void {
+auto PoolAllocator::free_script_memory(void* mem, size_t size) noexcept -> void {
   kphp::log::assertion(size != 0);
   memory_resource.deallocate(mem, size);
 }
 
-auto RuntimeCoroutineAllocator::alloc_global_memory(size_t size) noexcept -> void* {
+auto PoolAllocator::alloc_global_memory(size_t size) noexcept -> void* {
   void* mem{k2::alloc(size)};
   kphp::log::assertion(mem != nullptr);
   return mem;
 }
 
-void* RuntimeCoroutineAllocator::alloc0_global_memory(size_t size) noexcept {
+auto PoolAllocator::alloc0_global_memory(size_t size) noexcept -> void* {
   void* mem{k2::alloc(size)};
   kphp::log::assertion(mem != nullptr);
   std::memset(mem, 0, size);
   return mem;
 }
 
-void* RuntimeCoroutineAllocator::realloc_global_memory(void* old_mem, size_t new_size, size_t /*unused*/) noexcept {
+auto PoolAllocator::realloc_global_memory(void* old_mem, size_t new_size, size_t /*unused*/) noexcept -> void* {
   void* mem{k2::realloc(old_mem, new_size)};
   kphp::log::assertion(mem != nullptr);
   return mem;
 }
 
-void RuntimeCoroutineAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept {
+auto PoolAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept -> void {
   k2::free(mem);
 }
 
-auto RuntimeCoroutineAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
+auto PoolAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
 
@@ -113,3 +115,5 @@ auto RuntimeCoroutineAllocator::request_extra_memory(size_t requested_size) noex
   auto* extra_mem{alloc_global_memory(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
+
+} // namespace kphp::memory::details
