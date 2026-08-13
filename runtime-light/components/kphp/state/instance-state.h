@@ -61,9 +61,6 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using deque = kphp::stl::deque<T, kphp::memory::script_allocator>;
 
-  template<typename T>
-  using list = kphp::stl::list<T, kphp::memory::script_allocator>;
-
   // It's important to use `{}` instead of `= default` here.
   // In the second case clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful!
