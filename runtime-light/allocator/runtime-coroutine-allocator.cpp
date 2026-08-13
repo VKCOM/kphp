@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <cstring>
 
-#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -16,7 +15,7 @@ RuntimeCoroutineAllocator::RuntimeCoroutineAllocator(size_t mem_size, size_t min
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create coroutine allocator -> {:p}: memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), mem_size,
   //                 oom_handling_mem_size);
-  void* buffer{RuntimeAllocator::get().alloc_global_memory(mem_size)};
+  void* buffer{alloc_global_memory(mem_size)};
   memory_resource.init(buffer, mem_size, oom_handling_mem_size);
 }
 
@@ -76,6 +75,12 @@ auto RuntimeCoroutineAllocator::free_memory(void* mem, size_t size) noexcept -> 
   memory_resource.deallocate(mem, size);
 }
 
+auto RuntimeCoroutineAllocator::alloc_global_memory(size_t size) noexcept -> void* {
+  void* mem{k2::alloc(size)};
+  kphp::log::assertion(mem != nullptr);
+  return mem;
+}
+
 auto RuntimeCoroutineAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
@@ -88,6 +93,6 @@ auto RuntimeCoroutineAllocator::request_extra_memory(size_t requested_size) noex
 
   // kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
 
-  auto* extra_mem{RuntimeAllocator::get().alloc_global_memory(extra_mem_size)};
+  auto* extra_mem{alloc_global_memory(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }

@@ -27,13 +27,11 @@ class event {
     // 3) empty list => the event is triggered and all coroutines are resumed
     std::variant<std::monostate, vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>> m_state;
 
-    template<typename... Args>
-    void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
+    void* operator new(size_t n) noexcept {
       return kphp::memory::coro::alloc(n);
     }
 
-    template<typename... Args>
-    auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
+    auto operator new(size_t n, std::align_val_t al) noexcept -> void* {
       return kphp::memory::coro::alloc_aligned(n, al);
     }
 
