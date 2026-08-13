@@ -312,7 +312,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
     // we do always have enough bytes for `new_header` before `request_body`, because we have reserved it before `send_request(...)` call.
     size_t new_header_offset{detail::RESERVED_HEADER_SIZE + cur_extra_header_size - new_header.size()};
-    std::ranges::copy(new_header, rpc_server_instance_st.tl_storer.view().subspan(new_header_offset).data());
+    request_buffer = rpc_server_instance_st.tl_storer.view().subspan(new_header_offset);
+    std::ranges::copy(new_header, request_buffer.data());
   }
 
   const size_t request_size{request_buffer.size_bytes()};
