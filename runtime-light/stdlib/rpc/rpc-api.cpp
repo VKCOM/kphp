@@ -113,13 +113,15 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   return rpc_tl_query;
 }
 
-// store bytes for `dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
+static constexpr size_t RESERVED_HEADER_SIZE{sizeof(kphp::rpc::dest_actor_flags_header)};
+
+// store bytes for `kphp::rpc::dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
 // we do this to avoid allocating new buffer for regularized rpc extra headers and copying whole request.
-void reserve_header_in_tl_storer_before_request() noexcept {
+void reserve_header() noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  dest_actor_flags_header reserved_header;
+  kphp::rpc::dest_actor_flags_header reserved_header{};
   rpc_server_instance_st.tl_storer.store_bytes(
-    {reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(std::remove_cvref_t<decltype(reserved_header)>)});
+    {reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), RESERVED_HEADER_SIZE});
 }
 
 kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
@@ -130,7 +132,7 @@ kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed&
   }
 
   f$rpc_clean();
-  reserve_header_in_tl_storer_before_request();
+  reserve_header();
   auto rpc_tl_query{store_function(tl_object)}; // THROWING
   // handle exceptions that could arise during store_function
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || rpc_tl_query.is_null()) [[unlikely]] {
@@ -152,7 +154,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   }
 
   f$rpc_clean();
-  reserve_header_in_tl_storer_before_request();
+  reserve_header();
   auto fetcher{rpc_request.store_request()}; // THROWING
   // handle exceptions that could arise during store_request
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
@@ -292,8 +294,11 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
-  const size_t reserved_header_size{sizeof(dest_actor_flags_header)};
-  std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(reserved_header_size)};
+  // We have reserved place for one `kphp::rpc::dest_actor_flags_header` in `rpc_server_instance_st.tl_storer` before storing request and calling `send_request(...)`,
+  // so the real serialized request starts after `RESERVED_HEADER_SIZE` bytes in tl storer.
+  // We do this to have enough place for regularized header after `kphp::rpc::regularize_extra_headers(...)` call.
+  // This optimization helps us avoid allocating and copying the whole request.
+  std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(detail::RESERVED_HEADER_SIZE)};
 
   if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)};
       opt_new_extra_header) {
@@ -301,18 +306,19 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
     std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
 
-    //                                       here business logic starts
+    // If `regularize_extra_headers` gave us new header, then we must serialize `new_header` before `request_body`.
+    //
+    //                               here serialized request (business logic) starts
     //                                                   \/
     // tl_storer was:  |reserved dest-actor-flags-header|  [optional old header] |request-body|
     //
-    // We want to serialize our new header right before |request-body| :
+    // We want to serialize |our new header| right before |request-body| :
     //
     // tl_storer will be: ... may be some bytes leaved here ... |our new header| |request-body|
 
-    // we do always have enough bytes for `sizeof(*opt_new_extra_header)` before `request_body`, because we have reserved it before send_request(...) call.
-    auto new_header_begin{request_buffer.data() + cur_extra_header_size - sizeof(*opt_new_extra_header)};
-    std::ranges::copy(new_header, new_header_begin);
-    request_buffer = {new_header_begin, new_header.size() + request_body.size()};
+    // we do always have enough bytes for `new_header` before `request_body`, because we have reserved it before `send_request(...)` call.
+    size_t new_header_offset{detail::RESERVED_HEADER_SIZE + cur_extra_header_size - new_header.size()};
+    std::ranges::copy(new_header, rpc_server_instance_st.tl_storer.view().subspan(new_header_offset).data());
   }
 
   const size_t request_size{request_buffer.size_bytes()};
@@ -343,7 +349,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   }
 
   static constexpr auto awaiter_coroutine{
-      [](query q, int64_t query_id, bool collect_responses_extra_info) noexcept -> kphp::coro::shared_task<std::expected<string, int32_t>> {
+      [](kphp::rpc::query q, int64_t query_id, bool collect_responses_extra_info) noexcept -> kphp::coro::shared_task<std::expected<string, int32_t>> {
         std::expected<string, int32_t> response_exp{std::in_place};
         const auto response_buffer_provider{[&response_exp](size_t size) noexcept -> std::span<std::byte> {
           response_exp->assign(size, true);
