@@ -13,10 +13,10 @@ namespace kphp::memory::details {
 
 struct PoolAllocator : vk::not_copyable {
   PoolAllocator() = default;
-  PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size);
+  PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
-  auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) -> void;
-  auto free() -> void;
+  auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;
+  auto free() noexcept -> void;
 
   auto alloc_script_memory(size_t size) noexcept -> void*;
   auto alloc0_script_memory(size_t size) noexcept -> void*;

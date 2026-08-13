@@ -13,7 +13,7 @@
 
 namespace kphp::memory::details {
 
-PoolAllocator::PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size)
+PoolAllocator::PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create pool allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
   //                 oom_handling_mem_size);
@@ -21,14 +21,14 @@ PoolAllocator::PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, 
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto PoolAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) -> void {
+auto PoolAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void {
   kphp::log::assertion(buffer != nullptr);
   // kphp::log::debug("init pool allocator -> {:p}: buffer -> {:p}, script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
   //                  script_mem_size, oom_handling_mem_size);
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto PoolAllocator::free() -> void {
+auto PoolAllocator::free() noexcept -> void {
   // kphp::log::debug("free pool allocator -> {:p}", reinterpret_cast<void*>(this));
   auto* extra_memory{memory_resource.get_extra_memory_head()};
   while (extra_memory->get_pool_payload_size() != 0) {
