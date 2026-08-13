@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2026 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
 
 RuntimeCoroutineAllocator::RuntimeCoroutineAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
