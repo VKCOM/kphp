@@ -15,8 +15,8 @@ struct RuntimeCoroutineAllocator final : vk::not_copyable {
   RuntimeCoroutineAllocator() noexcept = default;
   RuntimeCoroutineAllocator(size_t mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
-  void init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept;
-  void free() noexcept;
+  auto init(void* buffer, size_t mem_size, size_t oom_handling_mem_size) noexcept -> void;
+  auto free() noexcept -> void;
 
   auto alloc_memory(size_t size) noexcept -> void*;
   auto alloc0_memory(size_t size) noexcept -> void*;
@@ -24,6 +24,8 @@ struct RuntimeCoroutineAllocator final : vk::not_copyable {
   auto free_memory(void* mem, size_t size) noexcept -> void;
 
 private:
+  auto alloc_global_memory(size_t size) noexcept -> void*;
+
   auto request_extra_memory(size_t requested_size) noexcept -> void;
 
 public:
