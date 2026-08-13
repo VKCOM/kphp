@@ -12,22 +12,22 @@
 
 inline int64_t f$memory_get_peak_usage(bool real_usage = false) noexcept {
   if (real_usage) {
-    return static_cast<int64_t>(RuntimeAllocator::get().memory_resource.get_memory_stats().max_real_memory_used);
+    return static_cast<int64_t>(RuntimeAllocator::get().get_memory_resource().get_memory_stats().max_real_memory_used);
   } else {
-    return static_cast<int64_t>(RuntimeAllocator::get().memory_resource.get_memory_stats().max_memory_used);
+    return static_cast<int64_t>(RuntimeAllocator::get().get_memory_resource().get_memory_stats().max_memory_used);
   }
 }
 
 inline int64_t f$memory_get_usage([[maybe_unused]] bool real_usage = false) noexcept {
-  return static_cast<int64_t>(RuntimeAllocator::get().memory_resource.get_memory_stats().memory_used);
+  return static_cast<int64_t>(RuntimeAllocator::get().get_memory_resource().get_memory_stats().memory_used);
 }
 
 inline int64_t f$memory_get_total_usage() noexcept {
-  return static_cast<int64_t>(RuntimeAllocator::get().memory_resource.get_memory_stats().real_memory_used);
+  return static_cast<int64_t>(RuntimeAllocator::get().get_memory_resource().get_memory_stats().real_memory_used);
 }
 
 inline array<int64_t> f$memory_get_detailed_stats() noexcept {
-  const auto& stats{RuntimeAllocator::get().memory_resource.get_memory_stats()};
+  const auto& stats{RuntimeAllocator::get().get_memory_resource().get_memory_stats()};
   return array<int64_t>({std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
                          std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
                          std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
