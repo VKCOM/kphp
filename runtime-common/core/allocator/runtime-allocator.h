@@ -8,10 +8,15 @@
 
 #include "runtime-common/core/allocator/details/pool-allocator.h"
 
-struct RuntimeAllocator final : public kphp::memory::details::PoolAllocator {
-  static RuntimeAllocator& get() noexcept;
+struct RuntimeAllocator final {
+private:
+  kphp::memory::details::PoolAllocator m_allocator;
 
-  using kphp::memory::details::PoolAllocator::PoolAllocator;
+public:
+  static auto get() noexcept -> RuntimeAllocator&;
+
+  RuntimeAllocator() = default;
+  RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
   auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;
   auto free() noexcept -> void;
