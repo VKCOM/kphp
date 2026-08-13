@@ -62,7 +62,7 @@ public:
 
   template<std::invocable<size_t> B>
   requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-  auto response(B response_buffer_provider) && noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
+  static auto response(query q, B response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
 };
 
 inline auto query::drop() noexcept -> void {
@@ -86,10 +86,10 @@ inline auto query::send(std::string_view actor, std::chrono::milliseconds timeou
 
 template<std::invocable<size_t> B>
 requires std::is_same_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
+auto query::response(query self, B response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
 
   static constexpr auto get_ready_response{
-      [](k2::descriptor& descriptor, B&& response_buffer_provider) noexcept -> std::expected<std::span<std::byte>, int32_t> {
+      [](k2::descriptor descriptor, B&& response_buffer_provider) noexcept -> std::expected<std::span<std::byte>, int32_t> {
         std::expected<size_t, int32_t> response_size_exp{k2::rpc_get_response_size(descriptor)};
         if (!response_size_exp) {
           switch (response_size_exp.error()) {
@@ -113,19 +113,18 @@ auto query::response(B response_buffer_provider) && noexcept -> kphp::coro::task
         return {response_buffer};
       }};
 
-  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
+  if (self.m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) {
     co_return std::unexpected{TL_ERROR_INVALID_CONNECTION_ID};
   }
 
-  auto timeout{kphp::time::remaining(m_deadline)};
+  auto timeout{kphp::time::remaining(self.m_deadline)};
   if (timeout <= std::chrono::nanoseconds::zero()) {
-    co_return get_ready_response(m_descriptor, std::move(response_buffer_provider));
+    co_return get_ready_response(self.m_descriptor, std::move(response_buffer_provider));
   }
 
-  auto m_descriptor_copy{std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)};
-  switch (co_await kphp::coro::io_scheduler::get().poll(m_descriptor_copy, kphp::coro::poll_op::read, timeout)) {
+  switch (co_await kphp::coro::io_scheduler::get().poll(self.m_descriptor, kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
-    co_return get_ready_response(m_descriptor_copy, std::move(response_buffer_provider));
+    co_return get_ready_response(self.m_descriptor, std::move(response_buffer_provider));
   case kphp::coro::poll_status::timeout:
     co_return std::unexpected{TL_ERROR_QUERY_TIMEOUT};
   case kphp::coro::poll_status::closed:

@@ -8,7 +8,6 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -26,7 +25,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
-#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
@@ -37,9 +35,6 @@
 #include "runtime-light/stdlib/rpc/rpc-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
-#include "runtime-light/stdlib/string/string-state.h"
-#include "runtime-light/streams/read-ext.h"
-#include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace kphp::rpc {
@@ -356,7 +351,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
           return {reinterpret_cast<std::byte*>(response_exp->buffer()), size};
         }};
 
-        auto fetch_task{std::move(q).response(response_buffer_provider)};
+        auto fetch_task{kphp::rpc::query::response(std::move(q), response_buffer_provider)};
         auto fetch_result{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
         if (!fetch_result) [[unlikely]] {
           response_exp = std::unexpected{fetch_result.error()};
