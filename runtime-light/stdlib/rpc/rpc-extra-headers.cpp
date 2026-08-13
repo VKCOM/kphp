@@ -20,7 +20,7 @@ constexpr uint32_t EMPTY_FLAGS = 0x0;
 
 namespace kphp::rpc {
 
-std::pair<std::optional<kphp::rpc::dest_actor_flags_header>, uint32_t> regularize_extra_headers(std::span<const std::byte> payload, bool ignore_result) noexcept {
+std::pair<std::optional<dest_actor_flags_header>, uint32_t> regularize_extra_headers(std::span<const std::byte> payload, bool ignore_result) noexcept {
   kphp::log::assertion(payload.size() >= sizeof(uint32_t));
   const auto magic{*reinterpret_cast<const uint32_t*>(payload.data())};
 
@@ -51,7 +51,7 @@ std::pair<std::optional<kphp::rpc::dest_actor_flags_header>, uint32_t> regulariz
     break;
   }
   default:
-  // no wrapping headers. We may want to check `ignore_result`, so fall through
+    // no wrapping headers. We may want to check `ignore_result`, so fall through
   }
 
   if (cur_extra_header_actor_id != EXPECTED_ACTOR_ID) [[unlikely]] {
@@ -73,14 +73,7 @@ std::pair<std::optional<kphp::rpc::dest_actor_flags_header>, uint32_t> regulariz
   if (cur_extra_header_flags == EMPTY_FLAGS) {
     return {std::nullopt, cur_extra_header_size};
   }
-  return {
-    dest_actor_flags_header{
-      .op = TL_RPC_DEST_ACTOR_FLAGS,
-      .actor_id = EXPECTED_ACTOR_ID,
-      .flags = cur_extra_header_flags
-    },
-    cur_extra_header_size
-  };
+  return {dest_actor_flags_header{.op = TL_RPC_DEST_ACTOR_FLAGS, .actor_id = EXPECTED_ACTOR_ID, .flags = cur_extra_header_flags}, cur_extra_header_size};
 }
 
 } // namespace kphp::rpc
