@@ -953,6 +953,15 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
     return false;
   }
   fprintf(stderr, "[pid=%d time=%s] store_function2 before typedStore call on PHP class %s\n", static_cast<int>(getpid()), vkext_rpc_debug_time(), VK_ZSTR_VAL(Z_OBJCE_P(arr)->name));
+  if (!strcmp(VK_ZSTR_VAL(Z_OBJCE_P(arr)->name), "VK\\TL\\_common\\Functions\\rpcDestFlags")) {
+    zval *query = vk_zend_read_public_property(arr, "query");
+    if (query != nullptr && Z_TYPE_P(query) == IS_OBJECT) {
+      fprintf(stderr, "[pid=%d time=%s] store_function2 rpcDestFlags::$query PHP class %s\n", static_cast<int>(getpid()), vkext_rpc_debug_time(), VK_ZSTR_VAL(Z_OBJCE_P(query)->name));
+    } else {
+      fprintf(stderr, "[pid=%d time=%s] store_function2 rpcDestFlags::$query is not object, type %d\n", static_cast<int>(getpid()), vkext_rpc_debug_time(),
+              query != nullptr ? static_cast<int>(Z_TYPE_P(query)) : -1);
+    }
+  }
   if (EG(exception)) {
     fprintf(stderr, "[pid=%d time=%s] typedStore exception before\n", static_cast<int>(getpid()), vkext_rpc_debug_time());
   }
