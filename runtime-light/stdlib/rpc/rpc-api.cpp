@@ -278,6 +278,9 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
     co_return std::move(err);
   }
+  if (res.is_null()) {
+    kphp::log::warning("=================== fetch_function_typed(rpc_query, error_factory) RETURNED null, but didn't raised an error ===================");
+  }
   co_return std::move(res);
 }
 
