@@ -127,7 +127,7 @@ kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed&
   }
 
   f$rpc_clean();
-  reserve_header();
+  // reserve_header();
   auto rpc_tl_query{store_function(tl_object)}; // THROWING
   // handle exceptions that could arise during store_function
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || rpc_tl_query.is_null()) [[unlikely]] {
@@ -149,7 +149,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   }
 
   f$rpc_clean();
-  reserve_header();
+  // reserve_header();
   auto fetcher{rpc_request.store_request()}; // THROWING
   // handle exceptions that could arise during store_request
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
@@ -305,27 +305,33 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   // so the real serialized request starts after `RESERVED_HEADER_SIZE` bytes in tl storer.
   // We do this to have enough place for regularized header after `kphp::rpc::regularize_extra_headers(...)` call.
   // This optimization helps us avoid allocating and copying the whole request.
-  std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(detail::RESERVED_HEADER_SIZE)};
 
+  // std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(detail::RESERVED_HEADER_SIZE)};
+
+  // if we have to allocate memory for request buffer, it will be in this vector, and it will be freed at the end of the function
+  std::optional<kphp::stl::vector<std::byte, kphp::memory::script_allocator>> opt_request_vec{};
+  std::span<const std::byte> request_buffer{rpc_server_instance_st.tl_storer.view()};
   if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
-    std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
+    std::span<const std::byte> request_body{rpc_server_instance_st.tl_storer.view().subspan(cur_extra_header_size)};
 
-    // If `regularize_extra_headers` gave us new header, then we must serialize `new_header` before `request_body`.
-    //
-    //                               here serialized request (business logic) starts
-    //                                                   \/
-    // tl_storer was:  |reserved dest-actor-flags-header|  [optional old header] |request-body|
-    //
-    // We want to serialize |our new header| right before |request-body| :
-    //
-    // tl_storer will be: ... may be some bytes leaved here ... |our new header| |request-body|
+    std::span<std::byte> new_request_buffer{};
+    size_t request_and_headers_size{new_header.size() + request_body.size()};
+    if (request_and_headers_size <= StringLibContext::STATIC_BUFFER_LENGTH) {
+      // we have enough space in static buffer to store request with regularized headers
+      auto& string_lib_ctx{StringLibContext::get()};
+      new_request_buffer = std::span<std::byte>{reinterpret_cast<std::byte*>(string_lib_ctx.static_buf.get()), request_and_headers_size};
+    } else {
+      // we have to allocate buffer for request with regularized headers
+      opt_request_vec.emplace(request_and_headers_size);
+      new_request_buffer = std::span<std::byte>{opt_request_vec->data(), request_and_headers_size};
+    }
 
-    // we do always have enough bytes for `new_header` before `request_body`, because we have reserved it before `send_request(...)` call.
-    size_t new_header_offset{detail::RESERVED_HEADER_SIZE + cur_extra_header_size - new_header.size()};
-    request_buffer = rpc_server_instance_st.tl_storer.view().subspan(new_header_offset);
-    std::ranges::copy(new_header, request_buffer.data());
+    std::ranges::copy(new_header, new_request_buffer.subspan(0, new_header.size()).begin());
+    std::ranges::copy(request_body, new_request_buffer.subspan(new_header.size()).begin());
+
+    request_buffer = new_request_buffer;
   }
 
   const size_t request_size{request_buffer.size_bytes()};
