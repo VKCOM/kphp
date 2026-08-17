@@ -12,7 +12,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/coroutine-allocator.h"
+#include "runtime-light/allocator/script-allocator.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
@@ -40,7 +40,7 @@ private:
 
   int64_t next_fork_id{FORK_ID_INIT};
   // type erased tasks that represent forks
-  kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::coroutine_allocator> forks;
+  kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::script_allocator> forks;
 
 public:
   int64_t current_id{FORK_ID_INIT};
