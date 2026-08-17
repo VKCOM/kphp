@@ -10,13 +10,13 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/coroutine-allocator.h"
+#include "runtime-light/allocator/script-allocator.h"
 #include "runtime-light/coroutine/await-set.h"
 
 class RpcQueueInstanceState final : private vk::not_copyable {
   static constexpr int64_t RPC_QUEUE_ID_INIT = 0;
   int64_t m_rpc_wait_queue_id{RPC_QUEUE_ID_INIT};
-  kphp::stl::unordered_map<int64_t, kphp::coro::await_set<int64_t>, kphp::memory::coroutine_allocator> m_queues;
+  kphp::stl::unordered_map<int64_t, kphp::coro::await_set<int64_t>, kphp::memory::script_allocator> m_queues;
 
 public:
   RpcQueueInstanceState() noexcept = default;
