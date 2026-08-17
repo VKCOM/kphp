@@ -13,6 +13,7 @@
 #include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -69,7 +70,10 @@ public:
     auto& promise{task.m_promise};
     m_tasks_storage.push_front(promise.m_coroutine_node);
     ++m_tasks_count;
+    auto& instance_state{kphp::coro::instance_state::get()};
+    auto* const prev_chain_stats{instance_state.current_chain_stats};
     promise.start(*this, m_tasks_storage.begin(), coroutine_stack_root, return_address);
+    instance_state.current_chain_stats = prev_chain_stats;
   }
 
   void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
@@ -116,7 +120,14 @@ public:
      */
     m_tasks_storage.erase(task_iterator);
     --m_tasks_count;
+
+    auto& instance_state{kphp::coro::instance_state::get()};
+    auto* const prev_chain_stats{instance_state.current_chain_stats};
+    instance_state.current_chain_stats = std::addressof(typed_handle.promise().chain_stats());
+    const auto finished_chain_stats{typed_handle.promise().chain_stats()};
     typed_handle.destroy();
+    instance_state.current_chain_stats = prev_chain_stats;
+    instance_state.note_chain_finished(finished_chain_stats);
 
     return result_t{std::move(result)};
   }
@@ -132,7 +143,15 @@ public:
        * (in the future invariant [1] may not work).
        */
       m_tasks_storage.pop_front();
-      coroutine.destroy();
+
+      auto typed_handle{std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(coroutine.address())};
+      auto& instance_state{kphp::coro::instance_state::get()};
+      auto* const prev_chain_stats{instance_state.current_chain_stats};
+      instance_state.current_chain_stats = std::addressof(typed_handle.promise().chain_stats());
+      const auto finished_chain_stats{typed_handle.promise().chain_stats()};
+      typed_handle.destroy();
+      instance_state.current_chain_stats = prev_chain_stats;
+      instance_state.note_chain_finished(finished_chain_stats);
     }
 
     m_tasks_count = 0;
@@ -169,9 +188,14 @@ template<typename return_type, typename promise_type>
 class await_set_task_promise_base : public kphp::coro::async_stack_element {
   std::optional<std::reference_wrapper<await_broker<return_type>>> m_await_broker{};
   await_set_ready_task_element<return_type> m_ready_task_element{};
+  kphp::coro::chain_stats m_chain_stats{};
 
 public:
   await_set_task_promise_base() noexcept = default;
+
+  kphp::coro::chain_stats& chain_stats() noexcept {
+    return m_chain_stats;
+  }
 
   template<typename... Args>
   void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
@@ -230,6 +254,10 @@ public:
     async_stack_frame.async_stack_root = std::addressof(async_stack_root);
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
+
+    auto& instance_state{kphp::coro::instance_state::get()};
+    instance_state.note_chain_started();
+    instance_state.current_chain_stats = std::addressof(m_chain_stats);
 
     std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
   }
@@ -318,10 +346,12 @@ private:
     vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     await_broker<return_type>& m_await_broker;
     kphp::coro::async_stack_frame* caller_frame{};
+    kphp::coro::chain_stats* m_chain_stats;
 
   public:
     explicit awaiter(await_broker<return_type>& await_broker) noexcept
-        : m_await_broker(await_broker) {}
+        : m_await_broker(await_broker),
+          m_chain_stats(kphp::coro::instance_state::get().current_chain_stats) {}
 
     awaiter(awaiter&& other) noexcept = delete;
     awaiter(const awaiter& other) = delete;
@@ -347,6 +377,7 @@ private:
       auto* async_stack_root{caller_frame->async_stack_root};
       kphp::log::assertion(async_stack_root != nullptr);
       async_stack_root->top_async_stack_frame = caller_frame;
+      kphp::coro::instance_state::get().current_chain_stats = m_chain_stats;
 
       return m_await_broker.try_get_result();
     }

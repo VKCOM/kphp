@@ -23,6 +23,7 @@ class task_self_deleting;
 
 struct promise_self_deleting : kphp::coro::async_stack_element {
   vk::intrusive::list_node<std::coroutine_handle<>> m_coroutine_node;
+  kphp::coro::chain_stats m_chain_stats;
 
   promise_self_deleting() noexcept = default;
   ~promise_self_deleting() = default;
@@ -51,12 +52,42 @@ struct promise_self_deleting : kphp::coro::async_stack_element {
 
   static auto get_return_object_on_allocation_failure() noexcept -> task_self_deleting;
 
-  auto initial_suspend() const noexcept -> std::suspend_always {
-    return {};
+  auto initial_suspend() noexcept {
+    struct chain_start_notifier {
+      promise_self_deleting& m_promise;
+
+      constexpr auto await_ready() const noexcept -> bool {
+        return false;
+      }
+
+      constexpr auto await_suspend(std::coroutine_handle<promise_self_deleting>) const noexcept -> void {}
+
+      auto await_resume() const noexcept -> void {
+        auto& instance_state{kphp::coro::instance_state::get()};
+        instance_state.note_chain_started();
+        instance_state.current_chain_stats = std::addressof(m_promise.m_chain_stats);
+      }
+    };
+    return chain_start_notifier{*this};
   }
 
-  auto final_suspend() const noexcept -> std::suspend_never {
-    return {};
+  auto final_suspend() noexcept {
+    struct chain_finish_notifier {
+      promise_self_deleting& m_promise;
+
+      constexpr auto await_ready() const noexcept -> bool {
+        return true;
+      }
+
+      constexpr auto await_suspend(std::coroutine_handle<promise_self_deleting>) const noexcept -> void {}
+
+      auto await_resume() const noexcept -> void {
+        auto& instance_state{kphp::coro::instance_state::get()};
+        instance_state.note_chain_finished(m_promise.m_chain_stats);
+        instance_state.current_chain_stats = nullptr;
+      }
+    };
+    return chain_finish_notifier{*this};
   }
 
   auto return_void() const noexcept -> void {}

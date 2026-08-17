@@ -18,6 +18,7 @@
 #include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -167,14 +168,17 @@ class awaiter_base {
 protected:
   vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
   std::coroutine_handle<promise_type> m_coro;
+  kphp::coro::chain_stats* m_chain_stats;
 
 public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
-      : m_coro(coro) {}
+      : m_coro(coro),
+        m_chain_stats(kphp::coro::instance_state::get().current_chain_stats) {}
 
   awaiter_base(awaiter_base&& other) noexcept
       : m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
-        m_coro(std::exchange(other.m_coro, {})) {}
+        m_coro(std::exchange(other.m_coro, {})),
+        m_chain_stats(other.m_chain_stats) {}
 
   awaiter_base(const awaiter_base& other) = delete;
   awaiter_base& operator=(const awaiter_base& other) = delete;
@@ -194,7 +198,9 @@ public:
     return suspended;
   }
 
-  auto await_resume() noexcept -> void {}
+  auto await_resume() noexcept -> void {
+    kphp::coro::instance_state::get().current_chain_stats = m_chain_stats;
+  }
 };
 
 } // namespace shared_task_impl

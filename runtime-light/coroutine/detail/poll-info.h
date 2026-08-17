@@ -11,6 +11,7 @@
 #include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
@@ -53,9 +54,11 @@ struct poll_info {
   auto operator co_await() noexcept {
     struct poll_awaiter {
       detail::poll_info& m_poll_info;
+      kphp::coro::chain_stats* m_chain_stats;
 
       explicit poll_awaiter(detail::poll_info& poll_info) noexcept
-          : m_poll_info(poll_info) {}
+          : m_poll_info(poll_info),
+            m_chain_stats(kphp::coro::instance_state::get().current_chain_stats) {}
 
       constexpr auto await_ready() const noexcept -> bool {
         return false;
@@ -67,6 +70,7 @@ struct poll_info {
 
       auto await_resume() const noexcept -> kphp::coro::poll_status {
         m_poll_info.m_schedule_position = std::monostate{};
+        kphp::coro::instance_state::get().current_chain_stats = m_chain_stats;
         return m_poll_info.m_poll_status;
       }
     };

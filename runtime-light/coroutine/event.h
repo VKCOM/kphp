@@ -38,6 +38,7 @@ class event {
     event_controller& m_controller;
     kphp::coro::async_stack_root& m_async_stack_root;
     kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
+    kphp::coro::chain_stats* m_chain_stats{};
 
     explicit awaiter(event_controller& event_controller) noexcept
         : m_controller(event_controller),
@@ -93,6 +94,7 @@ template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
 auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> void {
   // save caller's async stack frame
   m_caller_async_stack_frame = m_async_stack_root.top_async_stack_frame;
+  m_chain_stats = kphp::coro::instance_state::get().current_chain_stats;
 
   m_suspended = true;
   m_awaiting_coroutine_node.value() = awaiting_coroutine;
@@ -112,6 +114,7 @@ inline auto event::awaiter::await_resume() noexcept -> void {
     // restore caller's async stack frame if it was suspended
     kphp::log::assertion(m_caller_async_stack_frame != nullptr);
     m_async_stack_root.top_async_stack_frame = std::exchange(m_caller_async_stack_frame, nullptr);
+    kphp::coro::instance_state::get().current_chain_stats = m_chain_stats;
   }
 }
 

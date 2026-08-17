@@ -14,6 +14,7 @@
 #include <variant>
 
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/metaprogramming/type-functions.h"
@@ -92,9 +93,11 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
     bool m_started{};
     when_any_ready_awaitable& m_awaitable;
     kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
+    kphp::coro::chain_stats* m_chain_stats;
 
     explicit awaiter(when_any_ready_awaitable& awaitable) noexcept
-        : m_awaitable(awaitable) {}
+        : m_awaitable(awaitable),
+          m_chain_stats(kphp::coro::instance_state::get().current_chain_stats) {}
 
     auto await_ready() noexcept -> bool {
       kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
@@ -107,9 +110,13 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
       void* const return_address{STACK_RETURN_ADDRESS};
       m_caller_async_stack_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
 
-      std::apply([&latch = m_awaitable.m_latch, &caller_async_stack_frame = *m_caller_async_stack_frame,
-                  return_address](auto&... tasks) noexcept { (tasks.start(latch, caller_async_stack_frame, return_address), ...); },
-                 m_awaitable.m_tasks);
+      auto start_one = [&latch = m_awaitable.m_latch, &caller_async_stack_frame = *m_caller_async_stack_frame, return_address](auto& task) noexcept {
+        auto& instance_state{kphp::coro::instance_state::get()};
+        auto* const prev_chain_stats{instance_state.current_chain_stats};
+        task.start(latch, caller_async_stack_frame, return_address);
+        instance_state.current_chain_stats = prev_chain_stats;
+      };
+      std::apply([&start_one](auto&... tasks) noexcept { (start_one(tasks), ...); }, m_awaitable.m_tasks);
       return m_awaitable.m_latch.try_await(awaiting_coroutine);
     }
 
@@ -119,6 +126,7 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
         kphp::log::assertion(m_caller_async_stack_frame->async_stack_root != nullptr);
         m_caller_async_stack_frame->async_stack_root->top_async_stack_frame = m_caller_async_stack_frame;
       }
+      kphp::coro::instance_state::get().current_chain_stats = m_chain_stats;
 
       const auto task_result_processor{[&result = m_awaitable.m_result](auto&& task) noexcept {
         if (auto task_result{std::forward<decltype(task)>(task).result()}; !result.has_value() && task_result.has_value()) {
@@ -156,9 +164,18 @@ public:
 template<typename return_type, typename promise_type>
 class when_any_task_promise_base : public kphp::coro::async_stack_element {
   when_any_latch* m_latch{};
+  kphp::coro::chain_stats m_chain_stats{};
 
 public:
   when_any_task_promise_base() noexcept = default;
+
+  kphp::coro::chain_stats& chain_stats() noexcept {
+    return m_chain_stats;
+  }
+
+  auto is_started() const noexcept -> bool {
+    return m_latch != nullptr;
+  }
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
@@ -207,6 +224,11 @@ public:
     async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
+
+    auto& instance_state{kphp::coro::instance_state::get()};
+    instance_state.note_chain_started();
+    instance_state.current_chain_stats = std::addressof(m_chain_stats);
+
     std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
   }
 };
@@ -290,7 +312,17 @@ public:
 
   ~when_any_task() {
     if (m_coroutine != nullptr) {
-      m_coroutine.destroy();
+      if (m_coroutine.promise().is_started()) {
+        auto& instance_state{kphp::coro::instance_state::get()};
+        auto* const prev_chain_stats{instance_state.current_chain_stats};
+        instance_state.current_chain_stats = std::addressof(m_coroutine.promise().chain_stats());
+        const auto finished_chain_stats{m_coroutine.promise().chain_stats()};
+        m_coroutine.destroy();
+        instance_state.current_chain_stats = prev_chain_stats;
+        instance_state.note_chain_finished(finished_chain_stats);
+      } else {
+        m_coroutine.destroy();
+      }
     }
   }
 

@@ -246,4 +246,27 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session_is_finished = true;
     web_state.session.reset();
   }
+
+  {
+    auto& stats{coroutine_instance_state.profile_stats};
+    k2::TimePoint now{};
+    k2::instant(std::addressof(now));
+    if (stats.concurrency_tracking_started) {
+      stats.concurrency_time_weighted_ns += (now.time_point_ns - stats.concurrency_last_ts_ns) * stats.chains_concurrent;
+    }
+    const uint64_t window_ns{stats.concurrency_tracking_started ? now.time_point_ns - stats.concurrency_window_start_ns : 0};
+
+    kphp::log::info("coro profile: chains_total={} chains_concurrent_max={} chains_concurrent_avg={} "
+                    "task_frame_size_avg={} task_frame_size_max={} task_bytes_live_peak={} "
+                    "chain_task_count_avg={} chain_task_count_max={} "
+                    "chain_task_bytes_avg={} chain_task_bytes_max={} "
+                    "chain_task_depth_avg={} chain_task_depth_max={}",
+                    stats.chains_total, stats.chains_concurrent_max,
+                    window_ns ? static_cast<double>(stats.concurrency_time_weighted_ns) / static_cast<double>(window_ns) : 0.0,
+                    stats.task_frame_alloc_count ? static_cast<double>(stats.task_frame_bytes_total) / stats.task_frame_alloc_count : 0.0,
+                    stats.task_frame_bytes_max, stats.task_bytes_live_peak,
+                    stats.chains_finished ? static_cast<double>(stats.chain_task_count_sum) / stats.chains_finished : 0.0, stats.chain_task_count_max,
+                    stats.chains_finished ? static_cast<double>(stats.chain_task_bytes_sum) / stats.chains_finished : 0.0, stats.chain_task_bytes_max,
+                    stats.chains_finished ? static_cast<double>(stats.chain_task_depth_sum) / stats.chains_finished : 0.0, stats.chain_task_depth_max);
+  }
 }

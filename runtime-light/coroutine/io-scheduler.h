@@ -436,7 +436,9 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
        */
       scheduled_coroutines.pop_front();
       kphp::log::assertion(static_cast<bool>(coroutine));
+      auto* const prev_chain_stats{m_coro_instance_state.current_chain_stats};
       kphp::coro::resume(coroutine, m_coro_instance_state.coroutine_stack_root);
+      m_coro_instance_state.current_chain_stats = prev_chain_stats;
     }
   }
 
@@ -461,7 +463,9 @@ auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   if (!handle || handle.done()) [[unlikely]] {
     return false;
   }
+  auto* const prev_chain_stats{m_coro_instance_state.current_chain_stats};
   kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root);
+  m_coro_instance_state.current_chain_stats = prev_chain_stats;
   return true;
 }
 
@@ -470,12 +474,14 @@ inline auto io_scheduler::schedule() noexcept {
     friend class io_scheduler;
     io_scheduler& m_scheduler;
     kphp::coro::async_stack_frame* m_async_stack_frame{};
+    kphp::coro::chain_stats* m_chain_stats;
     vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     kphp::coro::detail::poll_info::schedule_position m_schedule_pos{std::monostate{}};
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
         : m_scheduler(scheduler),
-          m_async_stack_frame(m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame) {}
+          m_async_stack_frame(m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame),
+          m_chain_stats(m_scheduler.m_coro_instance_state.current_chain_stats) {}
 
   public:
     schedule_operation(const schedule_operation&) = delete;
@@ -485,6 +491,7 @@ inline auto io_scheduler::schedule() noexcept {
     schedule_operation(schedule_operation&& other) noexcept
         : m_scheduler(other.m_scheduler),
           m_async_stack_frame(std::exchange(other.m_async_stack_frame, nullptr)),
+          m_chain_stats(other.m_chain_stats),
           m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
           m_schedule_pos(std::exchange(other.m_schedule_pos, std::monostate{})) {
       if (std::holds_alternative<kphp::coro::detail::poll_info::scheduled_coroutines::iterator>(m_schedule_pos)) {
@@ -518,6 +525,7 @@ inline auto io_scheduler::schedule() noexcept {
     auto await_resume() noexcept -> void {
       m_schedule_pos = std::monostate{};
       m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
+      m_scheduler.m_coro_instance_state.current_chain_stats = m_chain_stats;
     }
   };
   return schedule_operation{*this};
