@@ -32,7 +32,13 @@ private:
   struct not_started_tag {};
   struct done_tag {};
 
+  kphp::coro::chain_stats m_chain_stats{};
+
 public:
+  kphp::coro::chain_stats& chain_stats() noexcept {
+    return m_chain_stats;
+  }
+
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -101,10 +107,15 @@ public:
 
     // start the coroutine if not yet started
     if (std::holds_alternative<not_started_tag>(m_state)) {
+      auto& instance_state{kphp::coro::instance_state::get()};
+      auto* const prev_chain_stats{instance_state.current_chain_stats};
+      instance_state.note_chain_started();
+      instance_state.current_chain_stats = std::addressof(m_chain_stats);
       m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
       kphp::coro::resume(handle, async_stack_root);
+      instance_state.current_chain_stats = prev_chain_stats;
     }
 
     // coroutine already completed, don't suspend
@@ -359,7 +370,13 @@ private:
     }
     auto coro{std::coroutine_handle<promise_type>::from_address(m_haddress)};
     if (!coro.promise().detach()) {
+      auto& instance_state{kphp::coro::instance_state::get()};
+      auto* const prev_chain_stats{instance_state.current_chain_stats};
+      instance_state.current_chain_stats = std::addressof(coro.promise().chain_stats());
+      const auto finished_chain_stats{coro.promise().chain_stats()};
       coro.destroy();
+      instance_state.current_chain_stats = prev_chain_stats;
+      instance_state.note_chain_finished(finished_chain_stats);
     }
   }
 
