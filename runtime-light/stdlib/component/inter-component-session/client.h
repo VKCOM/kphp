@@ -14,7 +14,7 @@
 #include <string_view>
 #include <utility>
 
-#include "runtime-light/allocator/coroutine-allocator.h"
+#include "runtime-light/allocator/script-allocator.h"
 #include "runtime-light/coroutine/event.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/inter-component-session/details/function-wrapper.h"
@@ -28,7 +28,7 @@ namespace kphp::component::inter_component_session {
 // The client for inter-component communication over a stream in a client-server manner
 class client final {
   using query_id_type = uint64_t;
-  using query2notifier_type = kphp::stl::map<query_id_type, kphp::coro::event, kphp::memory::coroutine_allocator>;
+  using query2notifier_type = kphp::stl::map<query_id_type, kphp::coro::event, kphp::memory::script_allocator>;
 
 public:
   enum class response_readiness : uint8_t { pending, ready };
