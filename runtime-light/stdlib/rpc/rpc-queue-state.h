@@ -9,7 +9,7 @@
 #include <optional>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-light/allocator/script-allocator.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/await-set.h"
 
