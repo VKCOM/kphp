@@ -14,7 +14,6 @@
 #include <string_view>
 #include <utility>
 
-#include "runtime-light/allocator/script-allocator.h"
 #include "runtime-light/coroutine/event.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/inter-component-session/details/function-wrapper.h"
