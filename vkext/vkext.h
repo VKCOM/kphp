@@ -7,7 +7,7 @@
 
 #include "vkext/vk_zend.h"
 
-#define VKEXT_VERSION "1.03"
+#define VKEXT_VERSION "1.03-rpc-debug1"
 
 #define VKEXT_NAME "vk_extension"
 
