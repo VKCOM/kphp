@@ -226,7 +226,6 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
 
 kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) [[unlikely]] {
-    kphp::log::warning("=================== AAAAAAAAA ===================");
     co_return error_factory.make_error(TL_ERROR_WRONG_QUERY_ID, string{"wrong query_id"});
   }
 
@@ -248,7 +247,6 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
     if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end() || it_fork_task == rpc_client_instance_st.response_awaiter_tasks.end())
         [[unlikely]] {
-      kphp::log::warning("=================== BBBBBBBBBB ===================");
       co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"unexpectedly could not find query in pending queries"});
     }
     rpc_query = std::move(it_response_fetcher->second);
@@ -256,22 +254,18 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   if (rpc_query.is_null()) [[unlikely]] {
-    kphp::log::warning("=================== CCCCCCCCCCCC ===================");
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't use rpc_tl_query_result for non-TL query"});
   }
   if (!rpc_query.get()->result_fetcher || rpc_query.get()->result_fetcher->empty()) [[unlikely]] {
-    kphp::log::warning("=================== DDDDDDDDDDDDD ===================");
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"rpc query has empty result fetcher"});
   }
   if (!rpc_query.get()->result_fetcher->is_typed) [[unlikely]] {
-    kphp::log::warning("=================== EEEEEEEEEEEE ===================");
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't get typed result from untyped TL query. Use consistent API for that"});
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
   auto response_expected{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
   if (!response_expected) [[unlikely]] {
-    kphp::log::warning("=================== FFFFFFFFFFF ===================");
     co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
 
@@ -282,13 +276,8 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
-    kphp::log::warning("=================== GGGGGGGGGGGGGGG ===================");
     co_return std::move(err);
   }
-  if (res.is_null()) {
-    kphp::log::warning("=================== fetch_function_typed(rpc_query, error_factory) RETURNED null, but didn't raised an error ===================");
-  }
-  kphp::log::warning("=================== HHHHHHHHHHHHHH ===================");
   co_return std::move(res);
 }
 
@@ -300,17 +289,10 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
-  // We have reserved place for one `kphp::rpc::dest_actor_flags_header` in `rpc_server_instance_st.tl_storer`
-  // before storing request and calling `send_request(...)`,
-  // so the real serialized request starts after `RESERVED_HEADER_SIZE` bytes in tl storer.
-  // We do this to have enough place for regularized header after `kphp::rpc::regularize_extra_headers(...)` call.
-  // This optimization helps us avoid allocating and copying the whole request.
-
-  // std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(detail::RESERVED_HEADER_SIZE)};
-
   // if we have to allocate memory for request buffer, it will be in this vector, and it will be freed at the end of the function
   std::optional<kphp::stl::vector<std::byte, kphp::memory::script_allocator>> opt_request_vec{};
   std::span<const std::byte> request_buffer{rpc_server_instance_st.tl_storer.view()};
+
   if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
