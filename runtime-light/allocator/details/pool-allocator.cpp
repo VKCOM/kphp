@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "runtime-common/core/allocator/details/pool-allocator.h"
+#include "runtime-common/core/allocator/global-memory-allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -17,7 +18,7 @@ pool_allocator::pool_allocator(size_t script_mem_size, size_t min_extra_mem_size
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create pool allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
   //                 oom_handling_mem_size);
-  void* buffer{alloc_global_memory(script_mem_size)};
+  void* buffer{GlobalMemoryAllocator::get().alloc_global_memory(script_mem_size)};
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
@@ -77,29 +78,6 @@ auto pool_allocator::free_script_memory(void* mem, size_t size) noexcept -> void
   memory_resource.deallocate(mem, size);
 }
 
-auto pool_allocator::alloc_global_memory(size_t size) noexcept -> void* {
-  void* mem{k2::alloc(size)};
-  kphp::log::assertion(mem != nullptr);
-  return mem;
-}
-
-auto pool_allocator::alloc0_global_memory(size_t size) noexcept -> void* {
-  void* mem{k2::alloc(size)};
-  kphp::log::assertion(mem != nullptr);
-  std::memset(mem, 0, size);
-  return mem;
-}
-
-auto pool_allocator::realloc_global_memory(void* old_mem, size_t new_size, size_t /*unused*/) noexcept -> void* {
-  void* mem{k2::realloc(old_mem, new_size)};
-  kphp::log::assertion(mem != nullptr);
-  return mem;
-}
-
-auto pool_allocator::free_global_memory(void* mem, size_t /*unused*/) noexcept -> void {
-  k2::free(mem);
-}
-
 auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
@@ -112,7 +90,7 @@ auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> voi
 
   // kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
 
-  auto* extra_mem{alloc_global_memory(extra_mem_size)};
+  auto* extra_mem{GlobalMemoryAllocator::get().alloc_global_memory(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
 

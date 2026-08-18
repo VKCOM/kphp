@@ -6,7 +6,7 @@
 
 #include <cstddef>
 
-#include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/allocator/global-memory-allocator.h"
 
 namespace kphp::memory {
 
@@ -25,11 +25,11 @@ struct platform_allocator {
   };
 
   constexpr value_type* allocate(size_t n) noexcept {
-    return static_cast<value_type*>(RuntimeAllocator::get().alloc_global_memory(n * sizeof(T)));
+    return static_cast<value_type*>(GlobalMemoryAllocator::get().alloc_global_memory(n * sizeof(T)));
   }
 
   constexpr void deallocate(T* p, size_t n) noexcept {
-    RuntimeAllocator::get().free_global_memory(p, n * sizeof(T));
+    GlobalMemoryAllocator::get().free_global_memory(p, n * sizeof(T));
   }
 };
 

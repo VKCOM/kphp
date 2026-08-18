@@ -8,6 +8,7 @@
 #include "server/php-engine-vars.h"
 
 RuntimeContext kphp_runtime_context;
+GlobalMemoryAllocator global_memory_allocator;
 RuntimeAllocator runtime_allocator;
 
 RuntimeContext& RuntimeContext::get() noexcept {

@@ -5,18 +5,18 @@
 #include "php-script-globals.h"
 
 #include "common/php-functions.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/allocator/global-memory-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 void PhpScriptMutableGlobals::once_alloc_linear_mem(unsigned int n_bytes) {
   kphp::log::assertion(g_linear_mem == nullptr);
-  g_linear_mem = static_cast<char*>(RuntimeAllocator::get().alloc0_global_memory(n_bytes));
+  g_linear_mem = static_cast<char*>(GlobalMemoryAllocator::get().alloc0_global_memory(n_bytes));
 }
 
 void PhpScriptMutableGlobals::once_alloc_linear_mem(const char* lib_name, unsigned int n_bytes) {
   int64_t key_lib_name{string_hash(lib_name, strlen(lib_name))};
   kphp::log::assertion(libs_linear_mem.find(key_lib_name) == libs_linear_mem.end());
-  libs_linear_mem[key_lib_name] = static_cast<char*>(RuntimeAllocator::get().alloc0_global_memory(n_bytes));
+  libs_linear_mem[key_lib_name] = static_cast<char*>(GlobalMemoryAllocator::get().alloc0_global_memory(n_bytes));
 }
 
 char* PhpScriptMutableGlobals::get_linear_mem(const char* lib_name) const {
