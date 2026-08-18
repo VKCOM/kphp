@@ -50,6 +50,10 @@ private:
         file->is_loaded_by_psr0 = true;
         return; // required from the composer autoload PSR-0 path
       }
+      if (const auto &classmap_filename = composer.classmap_lookup(file_name); !classmap_filename.empty()) {
+        require_file(classmap_filename, false);
+        return; // required from the composer autoload classmap
+      }
     }
 
     // fallback to the default class autoloading scheme;
