@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 
+#include "runtime-common/core/allocator/global-memory-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
@@ -65,6 +66,13 @@ auto contextual_tags::try_get() noexcept -> std::optional<std::reference_wrapper
 }
 
 } // namespace kphp::log
+
+auto GlobalMemoryAllocator::get() noexcept -> GlobalMemoryAllocator& {
+  if (auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
+    return instance_state_ptr->global_memory_allocator;
+  }
+  kphp::log::error("can't find global memory allocator");
+}
 
 auto AllocatorState::get() noexcept -> const AllocatorState& {
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {

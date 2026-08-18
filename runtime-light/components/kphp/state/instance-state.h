@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/global-memory-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
@@ -86,6 +87,7 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
+  GlobalMemoryAllocator global_memory_allocator;
   AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
   RuntimeCoroutineAllocator coroutine_allocator{ComponentState::get().initial_instance_coroutine_memory_size,
                                                 ComponentState::get().min_instance_extra_coroutine_memory_size, 0};

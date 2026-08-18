@@ -35,19 +35,3 @@ auto RuntimeAllocator::realloc_script_memory(void* mem, size_t new_size, size_t 
 auto RuntimeAllocator::free_script_memory(void* mem, size_t size) noexcept -> void {
   m_allocator.free_script_memory(mem, size);
 }
-
-auto RuntimeAllocator::alloc_global_memory(size_t size) noexcept -> void* {
-  return m_allocator.alloc_global_memory(size);
-}
-
-auto RuntimeAllocator::alloc0_global_memory(size_t size) noexcept -> void* {
-  return m_allocator.alloc0_global_memory(size);
-}
-
-auto RuntimeAllocator::realloc_global_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void* {
-  return m_allocator.realloc_global_memory(mem, new_size, old_size);
-}
-
-auto RuntimeAllocator::free_global_memory(void* mem, size_t size) noexcept -> void {
-  m_allocator.free_global_memory(mem, size);
-}
