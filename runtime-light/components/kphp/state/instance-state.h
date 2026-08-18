@@ -8,7 +8,11 @@
 #include <cstdint>
 
 #include "common/mixin/not_copyable.h"
+<<<<<<< HEAD
 #include "runtime-common/core/allocator/script-allocator.h"
+    =======
+#include "runtime-common/core/allocator/global-memory-allocator.h"
+    >>>>>>> b84b13e98 (add global-memory-allocator)
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
@@ -44,14 +48,20 @@
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 
-/**
+    /**
  * Supported kinds of KPHP images:
  * 1. cli — works the same way as regular PHP script does
  * 2. server — automatically accepts a stream and expects it to contain either http or job worker request
  * 3. oneshot — can only accept one incoming stream
  * 4. multishot — can accept any number of incoming streams
  */
-enum class image_kind : uint8_t { invalid, cli, server, oneshot, multishot };
+    enum class image_kind : uint8_t {
+      invalid,
+      cli,
+      server,
+      oneshot,
+      multishot
+    };
 
 enum class instance_kind : uint8_t { invalid, cli, http_server, rpc_server, job_server, oneshot, multishot };
 

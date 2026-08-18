@@ -25,9 +25,4 @@ public:
   auto alloc0_script_memory(size_t size) noexcept -> void*;
   auto realloc_script_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
   auto free_script_memory(void* mem, size_t size) noexcept -> void;
-
-  auto alloc_global_memory(size_t size) noexcept -> void*;
-  auto alloc0_global_memory(size_t size) noexcept -> void*;
-  auto realloc_global_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
-  auto free_global_memory(void* mem, size_t size) noexcept -> void;
 };

@@ -1,13 +1,18 @@
 #pragma once
 
 #include "common/algorithms/simd-int-to-string.h"
+<<<<<<< HEAD
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
+    =======
+#include "runtime-common/core/allocator/global-memory-allocator.h"
+    >>>>>>> b84b13e98 (add global-memory-allocator)
 
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
 #endif
 
-inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
+    inline void
+    string_buffer::resize(string::size_type new_buffer_len) noexcept {
   string_buffer_lib_context& sb_context = RuntimeContext::get().sb_lib_context;
   if (new_buffer_len < sb_context.MIN_BUFFER_LEN) {
     new_buffer_len = sb_context.MIN_BUFFER_LEN;
