@@ -32,6 +32,7 @@
 #include "compiler/pipes/calc-const-types.h"
 #include "compiler/pipes/calc-empty-functions.h"
 #include "compiler/pipes/calc-locations.h"
+#include "compiler/pipes/calc-magic-const.h"
 #include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
@@ -267,6 +268,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<ConvertInvokeToFuncCallF>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}
     >> PassC<InstantiateFFIOperationsPass>{}
+    >> PassC<CalcMagicConstPass>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}
