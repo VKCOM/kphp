@@ -20,6 +20,7 @@
 #include "runtime-light/components/confdata/confdata-proxy/tl.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-query.h"
 #include "runtime-light/tl/tl-core.h"
@@ -63,14 +64,14 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   request.store(tls);
 
   // client-side timeout must outlive the server-side longpoll (SUBSCRIBE_TIMEOUT); 10x is a safe margin
-  auto expected_query{kphp::rpc::query::send(confdata_proxy_actor, SUBSCRIBE_TIMEOUT * 10, tls.view())};
+  auto expected_query{kphp::rpc::query::send(confdata_proxy_actor, SUBSCRIBE_TIMEOUT * 10, tls.view(), k2::RpcKind::TL_RPC)};
   if (!expected_query) [[unlikely]] {
     kphp::log::warning("confdata: failed to send subscribe request: {}", expected_query.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
   }
 
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_buffer{};
-  auto expected_response{co_await std::move(*expected_query).response([&response_buffer](size_t size) noexcept -> std::span<std::byte> {
+  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
     response_buffer.resize(size);
     return {response_buffer.data(), response_buffer.size()};
   })};
