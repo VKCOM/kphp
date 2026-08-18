@@ -13,7 +13,7 @@
 
 namespace kphp::memory::details {
 
-PoolAllocator::PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
+pool_allocator::pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create pool allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
   //                 oom_handling_mem_size);
@@ -21,14 +21,14 @@ PoolAllocator::PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, 
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto PoolAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void {
+auto pool_allocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void {
   kphp::log::assertion(buffer != nullptr);
   // kphp::log::debug("init pool allocator -> {:p}: buffer -> {:p}, script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
   //                  script_mem_size, oom_handling_mem_size);
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto PoolAllocator::free() noexcept -> void {
+auto pool_allocator::free() noexcept -> void {
   // kphp::log::debug("free pool allocator -> {:p}", reinterpret_cast<void*>(this));
   auto* extra_memory{memory_resource.get_extra_memory_head()};
   while (extra_memory->get_pool_payload_size() != 0) {
@@ -39,7 +39,7 @@ auto PoolAllocator::free() noexcept -> void {
   k2::free(memory_resource.memory_begin());
 }
 
-auto PoolAllocator::alloc_script_memory(size_t size) noexcept -> void* {
+auto pool_allocator::alloc_script_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate(size)};
   if (mem == nullptr) [[unlikely]] {
@@ -50,7 +50,7 @@ auto PoolAllocator::alloc_script_memory(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto PoolAllocator::alloc0_script_memory(size_t size) noexcept -> void* {
+auto pool_allocator::alloc0_script_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate0(size)};
   if (mem == nullptr) [[unlikely]] {
@@ -61,7 +61,7 @@ auto PoolAllocator::alloc0_script_memory(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto PoolAllocator::realloc_script_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
+auto pool_allocator::realloc_script_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
   kphp::log::assertion(new_size > old_size);
   void* new_mem{memory_resource.reallocate(old_mem, new_size, old_size)};
   if (new_mem == nullptr) [[unlikely]] {
@@ -72,35 +72,35 @@ auto PoolAllocator::realloc_script_memory(void* old_mem, size_t new_size, size_t
   return new_mem;
 }
 
-auto PoolAllocator::free_script_memory(void* mem, size_t size) noexcept -> void {
+auto pool_allocator::free_script_memory(void* mem, size_t size) noexcept -> void {
   kphp::log::assertion(size != 0);
   memory_resource.deallocate(mem, size);
 }
 
-auto PoolAllocator::alloc_global_memory(size_t size) noexcept -> void* {
+auto pool_allocator::alloc_global_memory(size_t size) noexcept -> void* {
   void* mem{k2::alloc(size)};
   kphp::log::assertion(mem != nullptr);
   return mem;
 }
 
-auto PoolAllocator::alloc0_global_memory(size_t size) noexcept -> void* {
+auto pool_allocator::alloc0_global_memory(size_t size) noexcept -> void* {
   void* mem{k2::alloc(size)};
   kphp::log::assertion(mem != nullptr);
   std::memset(mem, 0, size);
   return mem;
 }
 
-auto PoolAllocator::realloc_global_memory(void* old_mem, size_t new_size, size_t /*unused*/) noexcept -> void* {
+auto pool_allocator::realloc_global_memory(void* old_mem, size_t new_size, size_t /*unused*/) noexcept -> void* {
   void* mem{k2::realloc(old_mem, new_size)};
   kphp::log::assertion(mem != nullptr);
   return mem;
 }
 
-auto PoolAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept -> void {
+auto pool_allocator::free_global_memory(void* mem, size_t /*unused*/) noexcept -> void {
   k2::free(mem);
 }
 
-auto PoolAllocator::request_extra_memory(size_t requested_size) noexcept -> void {
+auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
 
@@ -114,6 +114,10 @@ auto PoolAllocator::request_extra_memory(size_t requested_size) noexcept -> void
 
   auto* extra_mem{alloc_global_memory(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
+}
+
+auto pool_allocator::get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource& {
+  return memory_resource;
 }
 
 } // namespace kphp::memory::details
