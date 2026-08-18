@@ -98,6 +98,10 @@ enum UpdateStatus {
   NewDescriptor = 2,
 };
 
+enum RpcKind {
+  TL_RPC = 0,
+};
+
 // k2-node will attempt to extract `compiler_version` from `extra_info` to add as a tag to the `k2_image_version` metric
 struct ImageInfo {
   // Base
@@ -426,16 +430,65 @@ int32_t k2_unlink(const char* path, size_t path_len);
 int32_t k2_component_access(size_t name_len, const char* name);
 
 /**
+ * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.
+ * This descriptor should be later used to call `k2_rpc_get_response_size` and `k2_rpc_fetch_response`.
+ * On failure return positive libc-like errno.
+ *
+ * The request is copied synchronously, so the caller may reuse the buffer after return.
+ *
+ * The returned descriptor is pollable like a stream - `k2_take_update` may return update on it when the response is ready
+ * and `k2_stream_status` can be called on it, returning read status is `Blocked` when response is not ready yet
+ * and `Available` when it is ready.
+ *
+ * @return return `0` on success. libc-like `errno` otherwise.
+ *
+ * Possible `errno` values:
+ * `EMFILE` => max descriptors count achieved.
+ * `ENODEV` => rpc client module is not available.
+ * `EINVAL` => invalid `actor_name` or request.
+ */
+int32_t k2_rpc_send_request(const char* actor_name, size_t actor_name_len, const void* request_ptr, size_t request_size, enum RpcKind rpc_kind,
+                            uint64_t* rpc_d);
+
+/**
+ * Try to get response size for the corresponding query of this `rpc_d`.
+ * Write 0 to `response_size` and return `EAGAIN` if response is not ready yet.
+ * Write positive response size value to `response_size` if response is ready and return 0.
+ *
+ * @return return `0` on success. libc-like `errno` otherwise
+ *
+ * Possible `errno` values:
+ * `EINVAL` => invalid `rpc_d` descriptor, for example, it is unknown descriptor, or not rpc descriptor.
+ * `EAGAIN` => response is not ready yet.
+ */
+int32_t k2_rpc_get_response_size(uint64_t rpc_d, size_t* response_size);
+
+/**
+ * Try to fetch response for the corresponding query of this `rpc_d`. If response is ready, write it to `buf` and return 0.
+ * Return `EAGAIN` if response is not ready yet and write nothing. Return `ENOBUFS` if `buf_size` < response length.
+ * User should get response size by calling `k2_rpc_get_response_size` first.
+ *
+ * @return return `0` on success. libc-like `errno` otherwise
+ *
+ * Possible `errno` values:
+ * `EINVAL`  => invalid `rpc_d` descriptor, for example, it is unknown descriptor, or not rpc descriptor.
+ * `EAGAIN`  => response is not ready yet.
+ * `ENOBUFS` => provided response buffer is not big enough, (`buf_size` < `response_size` value written by `k2_rpc_get_response_size`).
+ */
+int32_t k2_rpc_fetch_response(uint64_t rpc_d, void* buf, size_t buf_size);
+
+/**
  * If the write or read status is `Blocked` - then the platform ensures that
  * the component receives this `stream_d` via `k2_take_update` when the status is
  * no longer `Blocked` ("edge-triggered epoll"-like behaviour).
+ * Can be called on stream or rpc query descriptors.
  *
  * `status` will be filled with actual descriptor status on of success.
  * `s->libc_errno` used to represent errors.
  *
  * Some `errno` examples:
  * `EBADF` => d is not valid(never was valid or used after free)
- * `EBADR` => d is valid descriptor, but not a stream (probably, timer)
+ * `EBADR` => d is valid descriptor, but not a stream or rpc query (probably, timer)
  */
 void k2_stream_status(uint64_t stream_d, struct StreamStatus* status);
 

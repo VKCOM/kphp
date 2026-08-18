@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <span>
 
-#include "common/algorithms/find.h"
 #include "common/tl/constants/common.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -24,9 +23,6 @@ namespace kphp::rpc {
 std::pair<std::optional<dest_actor_flags_header>, uint32_t> regularize_extra_headers(std::span<const std::byte> payload, bool ignore_result) noexcept {
   kphp::log::assertion(payload.size() >= sizeof(uint32_t));
   const auto magic{*reinterpret_cast<const uint32_t*>(payload.data())};
-  if (vk::none_of_equal(magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS)) [[unlikely]] {
-    return {std::nullopt, 0};
-  }
 
   uint32_t cur_extra_header_size{0};
   uint32_t cur_extra_header_flags{EMPTY_FLAGS};
@@ -55,7 +51,7 @@ std::pair<std::optional<dest_actor_flags_header>, uint32_t> regularize_extra_hea
     break;
   }
   default:
-    kphp::log::error("unreachable");
+    // no wrapping headers. We may want to check `ignore_result`, so fall through
   }
 
   if (cur_extra_header_actor_id != EXPECTED_ACTOR_ID) [[unlikely]] {
@@ -68,10 +64,16 @@ std::pair<std::optional<dest_actor_flags_header>, uint32_t> regularize_extra_hea
                        "but 'true' was already set in RpcDestFlags or RpcDestActorFlags\n");
   }
 
-  return {dest_actor_flags_header{.op = TL_RPC_DEST_ACTOR_FLAGS,
-                                  .actor_id = EXPECTED_ACTOR_ID,
-                                  .flags = cur_extra_header_flags & ~vk::tl::common::rpc_invoke_req_extra_flags::no_result},
-          cur_extra_header_size};
+  if (ignore_result) {
+    cur_extra_header_flags |= vk::tl::common::rpc_invoke_req_extra_flags::no_result;
+  } else {
+    cur_extra_header_flags &= ~vk::tl::common::rpc_invoke_req_extra_flags::no_result;
+  }
+
+  if (cur_extra_header_flags == EMPTY_FLAGS) {
+    return {std::nullopt, cur_extra_header_size};
+  }
+  return {dest_actor_flags_header{.op = TL_RPC_DEST_ACTOR_FLAGS, .actor_id = EXPECTED_ACTOR_ID, .flags = cur_extra_header_flags}, cur_extra_header_size};
 }
 
 } // namespace kphp::rpc
