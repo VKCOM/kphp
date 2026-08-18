@@ -31,7 +31,3 @@ auto RuntimeAllocator::realloc_script_memory(void* mem, size_t new_size, size_t 
 auto RuntimeAllocator::free_script_memory(void* mem, size_t size) noexcept -> void {
   m_allocator_ref.get().free_script_memory(mem, size);
 }
-
-auto RuntimeAllocator::get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource& {
-  return m_allocator.memory_resource;
-}

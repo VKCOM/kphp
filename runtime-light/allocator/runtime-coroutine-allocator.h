@@ -10,7 +10,7 @@
 
 struct RuntimeCoroutineAllocator final {
 private:
-  kphp::memory::details::PoolAllocator m_allocator;
+  kphp::memory::details::pool_allocator m_allocator;
 
 public:
   static auto get() noexcept -> RuntimeCoroutineAllocator&;
@@ -30,6 +30,4 @@ public:
   auto alloc0_global_memory(size_t size) noexcept -> void*;
   auto realloc_global_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
   auto free_global_memory(void* mem, size_t size) noexcept -> void;
-
-  auto get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource&;
 };
