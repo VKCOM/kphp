@@ -10,38 +10,30 @@
 #include "runtime-common/core/allocator/details/malloc-interface.h"
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
 
-namespace kphp {
-
-namespace memory {
-
-namespace coro {
+namespace kphp::memory::coro {
 
 inline auto alloc(size_t size) noexcept -> void* {
-  return details::malloc_interface<RuntimeCoroutineAllocator::get>::alloc(size);
+  return kphp::memory::details::malloc_interface<RuntimeCoroutineAllocator::get>::alloc(size);
 }
 
 inline auto alloc_aligned(size_t size, std::align_val_t alignment) noexcept -> void* {
-  return details::malloc_interface<RuntimeCoroutineAllocator::get>::alloc_aligned(size, alignment);
+  return kphp::memory::details::malloc_interface<RuntimeCoroutineAllocator::get>::alloc_aligned(size, alignment);
 }
 
 inline auto calloc(size_t num, size_t size) noexcept -> void* {
-  return details::malloc_interface<RuntimeCoroutineAllocator::get>::calloc(num, size);
+  return kphp::memory::details::malloc_interface<RuntimeCoroutineAllocator::get>::calloc(num, size);
 }
 
 inline auto free(void* ptr) noexcept -> void {
-  details::malloc_interface<RuntimeCoroutineAllocator::get>::free(ptr);
+  kphp::memory::details::malloc_interface<RuntimeCoroutineAllocator::get>::free(ptr);
 }
 
 inline auto realloc(void* ptr, size_t new_size) noexcept -> void* {
-  return details::malloc_interface<RuntimeCoroutineAllocator::get>::realloc(ptr, new_size);
+  return kphp::memory::details::malloc_interface<RuntimeCoroutineAllocator::get>::realloc(ptr, new_size);
 }
 
 inline auto strdup(const char* str1) noexcept -> char* {
-  return details::malloc_interface<RuntimeCoroutineAllocator::get>::strdup(str1);
+  return kphp::memory::details::malloc_interface<RuntimeCoroutineAllocator::get>::strdup(str1);
 }
 
-} // namespace coro
-
-} // namespace memory
-
-} // namespace kphp
+} // namespace kphp::memory::coro

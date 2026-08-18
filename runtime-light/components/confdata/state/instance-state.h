@@ -35,6 +35,11 @@ struct InstanceState final : vk::not_copyable {
   auto init() noexcept -> void;
 
 private:
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);          // 16MiB
+  static constexpr auto DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);          // 1MiB
+  static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U); // 2MiB
+  static constexpr auto DEFAULT_MIN_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 0.5MiB
+
   auto run() noexcept -> kphp::coro::task<>;
   auto accept_loop() noexcept -> kphp::coro::task<>;
   auto service_loop() noexcept -> kphp::coro::task<>;

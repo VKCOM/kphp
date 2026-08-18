@@ -11,9 +11,9 @@
 
 namespace kphp::memory::details {
 
-struct PoolAllocator : vk::not_copyable {
-  PoolAllocator() = default;
-  PoolAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
+struct pool_allocator : vk::not_copyable {
+  pool_allocator() = default;
+  pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
   auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;
   auto free() noexcept -> void;
@@ -27,6 +27,8 @@ struct PoolAllocator : vk::not_copyable {
   auto alloc0_global_memory(size_t size) noexcept -> void*;
   auto realloc_global_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
   auto free_global_memory(void* mem, size_t size) noexcept -> void;
+
+  auto get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource&;
 
 private:
   auto request_extra_memory(size_t requested_size) noexcept -> void;

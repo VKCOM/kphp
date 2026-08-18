@@ -10,38 +10,30 @@
 #include "runtime-common/core/allocator/details/malloc-interface.h"
 #include "runtime-common/core/allocator/runtime-allocator.h"
 
-namespace kphp {
-
-namespace memory {
-
-namespace script {
+namespace kphp::memory::script {
 
 inline auto alloc(size_t size) noexcept -> void* {
-  return details::malloc_interface<RuntimeAllocator::get>::alloc(size);
+  return kphp::memory::details::malloc_interface<RuntimeAllocator::get>::alloc(size);
 }
 
 inline auto alloc_aligned(size_t size, std::align_val_t alignment) noexcept -> void* {
-  return details::malloc_interface<RuntimeAllocator::get>::alloc_aligned(size, alignment);
+  return kphp::memory::details::malloc_interface<RuntimeAllocator::get>::alloc_aligned(size, alignment);
 }
 
 inline auto calloc(size_t num, size_t size) noexcept -> void* {
-  return details::malloc_interface<RuntimeAllocator::get>::calloc(num, size);
+  return kphp::memory::details::malloc_interface<RuntimeAllocator::get>::calloc(num, size);
 }
 
 inline auto free(void* ptr) noexcept -> void {
-  details::malloc_interface<RuntimeAllocator::get>::free(ptr);
+  kphp::memory::details::malloc_interface<RuntimeAllocator::get>::free(ptr);
 }
 
 inline auto realloc(void* ptr, size_t new_size) noexcept -> void* {
-  return details::malloc_interface<RuntimeAllocator::get>::realloc(ptr, new_size);
+  return kphp::memory::details::malloc_interface<RuntimeAllocator::get>::realloc(ptr, new_size);
 }
 
 inline auto strdup(const char* str1) noexcept -> char* {
-  return details::malloc_interface<RuntimeAllocator::get>::strdup(str1);
+  return kphp::memory::details::malloc_interface<RuntimeAllocator::get>::strdup(str1);
 }
 
-} // namespace script
-
-} // namespace memory
-
-} // namespace kphp
+} // namespace kphp::memory::script
