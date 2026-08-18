@@ -14,11 +14,7 @@
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
-namespace kphp {
-
-namespace memory {
-
-namespace details {
+namespace kphp::memory::details {
 
 struct control_block {
 private:
@@ -58,7 +54,7 @@ static_assert(sizeof(control_block) == sizeof(uint64_t), "Control block's size m
 
 constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00; // 4GiB
 
-template<auto AllocatorGetter>
+template<auto get_allocator_func>
 struct malloc_interface {
   static auto alloc(size_t size) noexcept -> void* {
     constexpr size_t cb_size{sizeof(kphp::memory::details::control_block)};
@@ -67,7 +63,7 @@ struct malloc_interface {
       return nullptr;
     }
     const size_t total_size{size + cb_size};
-    void* base{AllocatorGetter().alloc_script_memory(total_size)};
+    void* base{get_allocator_func().alloc_script_memory(total_size)};
     if (unlikely(base == nullptr)) {
       php_warning("not enough script memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
       return base;
@@ -94,7 +90,7 @@ struct malloc_interface {
 
     // Request mem from underlying memory manager
     const size_t total_size{size + (align - 1) + cb_size};
-    void* base{AllocatorGetter().alloc_script_memory(total_size)};
+    void* base{get_allocator_func().alloc_script_memory(total_size)};
     if (unlikely(base == nullptr)) {
       php_warning("not enough script memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
       return base;
@@ -131,7 +127,7 @@ struct malloc_interface {
     const auto cb{kphp::memory::details::control_block::from_raw(*reinterpret_cast<uint64_t*>(mem - cb_size))}; // NOLINT
     void* base{reinterpret_cast<void*>(mem - cb.base_offset)};                                                  // NOLINT
 
-    AllocatorGetter().free_script_memory(base, cb.size);
+    get_allocator_func().free_script_memory(base, cb.size);
   }
 
   static auto realloc(void* ptr, size_t new_size) noexcept -> void* {
@@ -155,7 +151,7 @@ struct malloc_interface {
     void* new_ptr{alloc(new_size)};
     if (likely(new_ptr != nullptr)) {
       std::memcpy(new_ptr, ptr, std::min(new_size, old_size));
-      AllocatorGetter().free_script_memory(old_base, old_size);
+      get_allocator_func().free_script_memory(old_base, old_size);
     }
     return new_ptr;
   }
@@ -166,8 +162,4 @@ struct malloc_interface {
   }
 };
 
-} // namespace details
-
-} // namespace memory
-
-} // namespace kphp
+} // namespace kphp::memory::details
