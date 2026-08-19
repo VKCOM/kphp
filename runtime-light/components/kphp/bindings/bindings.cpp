@@ -6,7 +6,6 @@
 #include <functional>
 #include <optional>
 
-#include "runtime-common/core/allocator/global-memory-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/allocator/runtime-coroutine-allocator.h"
