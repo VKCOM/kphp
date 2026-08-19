@@ -82,7 +82,7 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
   const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
   cur_query.set_current_tl_function(rpc_query);
   if (TlRpcError err{}; TRY_CALL(bool, class_instance<C$VK$TL$RpcResponse>, err.try_fetch())) {
-    kphp::log::warning("!!! fetch_function_typed -> error");
+    kphp::log::warning("!!! fetch_function_typed -> error {}: {}", err.error_code, err.error_msg.c_str());
     return error_factory.make_error(std::move(err));
   }
 
