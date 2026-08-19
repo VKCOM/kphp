@@ -152,10 +152,22 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
 
   f$rpc_clean();
   reserve_header();
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  auto sp{rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE)};
+  for (auto b : sp) {
+    if (b != static_cast<std::byte>(0)) {
+      kphp::log::error("A SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
+    }
+  }
   auto fetcher{rpc_request.store_request()}; // THROWING
   // handle exceptions that could arise during store_request
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
     return kphp::rpc::query_info{};
+  }
+  for (auto b : sp) {
+    if (b != static_cast<std::byte>(0)) {
+      kphp::log::error("B SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
+    }
   }
 
   const auto query_info{kphp::rpc::send_request(actor, opt_timeout, ignore_answer, collect_responses_extra_info)};
@@ -305,6 +317,12 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   // We do this to have enough place for regularized header after `kphp::rpc::regularize_extra_headers(...)` call.
   // This optimization helps us avoid allocating and copying the whole request.
   std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(detail::RESERVED_HEADER_SIZE)};
+  auto sp{rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE)};
+  for (auto b : sp) {
+    if (b != static_cast<std::byte>(0)) {
+      kphp::log::error("C SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
+    }
+  }
   tl::magic magic;
   tl::fetcher debug_fetcherrr{request_buffer};
   kphp::log::assertion(magic.fetch(debug_fetcherrr));
