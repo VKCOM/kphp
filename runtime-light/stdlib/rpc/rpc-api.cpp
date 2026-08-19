@@ -357,6 +357,27 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     kphp::log::assertion(op.fetch(debug_fetcher));
 
     kphp::log::warning("REQUEST OP IS {:x}", op.value);
+
+  } else {
+
+    tl::fetcher debug_fetcher{request_buffer};
+
+    tl::magic magic;
+
+    kphp::log::assertion(magic.fetch(debug_fetcher));
+
+    if (magic.expect(TL_RPC_DEST_ACTOR)) {
+      tl::i64 actor_id{};
+      kphp::log::assertion(actor_id.fetch(debug_fetcher));
+
+      kphp::log::assertion(magic.fetch(debug_fetcher));
+    }
+
+    kphp::log::assertion(!magic.expect(TL_RPC_DEST_ACTOR_FLAGS));
+    kphp::log::assertion(!magic.expect(TL_RPC_DEST_FLAGS));
+    kphp::log::assertion(!magic.expect(TL_RPC_DEST_ACTOR));
+
+    kphp::log::warning("request OP IS {:x}", magic.value);
   }
 
   const size_t request_size{request_buffer.size_bytes()};
