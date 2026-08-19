@@ -10,7 +10,7 @@
 #include <cstring>
 
 #include "common/wrappers/likely.h"
-#include "runtime-common/core/allocator/global-memory-allocator.h"
+#include "runtime-common/core/allocator/global-memory.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
 namespace kphp::memory::platform {
@@ -24,7 +24,7 @@ inline void* alloc(size_t size) noexcept {
     return nullptr;
   }
   const size_t real_size{size + MALLOC_REPLACER_SIZE_OFFSET};
-  void* ptr{GlobalMemoryAllocator::get().alloc_global_memory(real_size)};
+  void* ptr{kphp::memory::global::alloc(real_size)};
 
   if (unlikely(ptr == nullptr)) {
     php_warning("not enough platform memory to allocate: %lu", size);
@@ -45,7 +45,7 @@ inline void* calloc(size_t num, size_t size) noexcept {
 inline void free(void* ptr) noexcept {
   if (likely(ptr != nullptr)) {
     void* real_ptr{static_cast<std::byte*>(ptr) - MALLOC_REPLACER_SIZE_OFFSET};
-    GlobalMemoryAllocator::get().free_global_memory(real_ptr, *static_cast<size_t*>(real_ptr));
+    kphp::memory::global::free(real_ptr, *static_cast<size_t*>(real_ptr));
   }
 }
 
@@ -65,7 +65,7 @@ inline void* realloc(void* ptr, size_t new_size) noexcept {
   void* new_ptr{kphp::memory::platform::alloc(new_size)};
   if (likely(new_ptr != nullptr)) {
     std::memcpy(new_ptr, ptr, std::min(new_size, old_size));
-    GlobalMemoryAllocator::get().free_global_memory(real_ptr, old_size);
+    kphp::memory::global::free(real_ptr, old_size);
   }
   return new_ptr;
 }
