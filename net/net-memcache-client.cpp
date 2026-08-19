@@ -539,7 +539,7 @@ int mcc_default_check_perm (struct connection *c) {
   if (aes_initialized <= 0) {
     return (!is_same_data_center(c, 1)) ? 0 : 1;
   }
-  return (!is_same_data_center(c, 1)) ? 2 : 1;
+  return (!is_same_data_center(c, 1)) ? 2 : 3;
 }
 
 /*int mcc_default_check_perm (struct connection *c) {
