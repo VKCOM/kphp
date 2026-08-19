@@ -305,6 +305,15 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   // We do this to have enough place for regularized header after `kphp::rpc::regularize_extra_headers(...)` call.
   // This optimization helps us avoid allocating and copying the whole request.
   std::span<std::byte> request_buffer{rpc_server_instance_st.tl_storer.view().subspan(detail::RESERVED_HEADER_SIZE)};
+  tl::magic magic;
+  tl::fetcher debug_fetcherrr{request_buffer};
+  kphp::log::assertion(magic.fetch(debug_fetcherrr));
+  kphp::log::warning("request_buffer start op: {:x}", magic.value);
+  if (magic.value == TL_RPC_DEST_ACTOR) {
+    debug_fetcherrr = tl::fetcher{request_buffer.subspan(sizeof(kphp::rpc::dest_actor_header))};
+    kphp::log::assertion(magic.fetch(debug_fetcherrr));
+    kphp::log::warning("request_buffer start op AFTER DEST ACTOR: {:x}", magic.value);
+  }
 
   if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
@@ -366,7 +375,9 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
     kphp::log::assertion(magic.fetch(debug_fetcher));
 
+    bool was_dest_actor_header = false;
     if (magic.expect(TL_RPC_DEST_ACTOR)) {
+      was_dest_actor_header = true;
       tl::i64 actor_id{};
       kphp::log::assertion(actor_id.fetch(debug_fetcher));
 
@@ -377,7 +388,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     kphp::log::assertion(!magic.expect(TL_RPC_DEST_FLAGS));
     kphp::log::assertion(!magic.expect(TL_RPC_DEST_ACTOR));
 
-    kphp::log::warning("request OP IS {:x}", magic.value);
+    kphp::log::warning("request OP IS {:x} was_dest_actor_header({})", magic.value, was_dest_actor_header);
   }
 
   const size_t request_size{request_buffer.size_bytes()};
