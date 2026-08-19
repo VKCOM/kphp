@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "runtime-common/core/allocator/details/pool-allocator.h"
-#include "runtime-common/core/allocator/global-memory-allocator.h"
+#include "runtime-common/core/allocator/global-memory.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -18,7 +18,7 @@ pool_allocator::pool_allocator(size_t script_mem_size, size_t min_extra_mem_size
     : m_min_extra_mem_size(min_extra_mem_size) {
   // kphp::log::debug("create pool allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
   //                 oom_handling_mem_size);
-  void* buffer{GlobalMemoryAllocator::get().alloc_global_memory(script_mem_size)};
+  void* buffer{kphp::memory::global::alloc(script_mem_size)};
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
@@ -90,7 +90,7 @@ auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> voi
 
   // kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
 
-  auto* extra_mem{GlobalMemoryAllocator::get().alloc_global_memory(extra_mem_size)};
+  auto* extra_mem{kphp::memory::global::alloc(extra_mem_size)};
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
 
