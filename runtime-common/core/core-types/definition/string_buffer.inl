@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/algorithms/simd-int-to-string.h"
-#include "runtime-common/core/allocator/global-memory-allocator.h"
+#include "runtime-common/core/allocator/global-memory.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
@@ -27,7 +27,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
   }
 
   string::size_type current_len = size();
-  if (void* new_mem = GlobalMemoryAllocator::get().realloc_global_memory(buffer_begin, new_buffer_len, buffer_len)) {
+  if (void* new_mem = kphp::memory::global::realloc(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char*>(new_mem);
     buffer_len = new_buffer_len;
     buffer_end = buffer_begin + current_len;
