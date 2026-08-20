@@ -916,18 +916,29 @@ void array<T>::copy_from(vk::span<std::byte> memory, const array<T1>& other) noe
 template<class T>
 template<class T1>
 void array<T>::copy_from_impl(array_inner* new_array, const array<T1>& other) noexcept {
+  // same-type copies don't need convert_to (it's an identity conversion);
+  // this also keeps array<Unknown> copyable: convert_to<Unknown> is ill-formed,
+  // as its convert(const T&) and convert(const Unknown&) overloads collide when T is Unknown
+  static constexpr auto convert_element{[](const T1& value) noexcept -> decltype(auto) {
+    if constexpr (std::is_same_v<T, T1>) {
+      return value;
+    } else {
+      return convert_to<T>::convert(value);
+    }
+  }};
+
   if (new_array->is_vector()) {
     uint32_t size = other.p->size;
     T1* it = reinterpret_cast<T1*>(other.p->entries());
     for (uint32_t i = 0; i < size; i++) {
-      new_array->push_back_vector_value(convert_to<T>::convert(it[i]));
+      new_array->push_back_vector_value(convert_element(it[i]));
     }
   } else {
     for (const typename array<T1>::array_bucket* it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
-        new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, convert_to<T>::convert(it->value));
+        new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, convert_element(it->value));
       } else {
-        new_array->set_map_value(overwrite_element::YES, it->int_key, convert_to<T>::convert(it->value));
+        new_array->set_map_value(overwrite_element::YES, it->int_key, convert_element(it->value));
       }
     }
   }
