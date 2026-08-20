@@ -89,7 +89,33 @@ void write_rpc_server_functions(CodeGenerator &W) {
   }
   W << deps << NL;
   W << ExternInclude{G->settings().runtime_headers.get()} << NL;
-  FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
+  FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request2(const class_instance<C$VK$TL$RpcFunctionFactory> & factory)" << BEGIN;
+          W << "auto start = tl_parse_save_pos();" << NL;
+  W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << "int tl_version = function_magic == 0x30324c54 ? 2 : 1; // TL2 marker" << NL;
+  W << "if (tl_version == 2) " << BEGIN;
+  W << "function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << END << NL;
+  W << "(void)tl_parse_restore_pos(start);" << NL;
+  W << "auto php_fun = f$VK$TL$RpcFunctionFactory$$createFunction(factory, function_magic);" << NL;
+  W << "if (php_fun.is_null())" << BEGIN
+    << "return f$rpc_server_fetch_request();" << NL
+    << END << NL
+    << "CurrentTlQuery::get().set_current_tl_function(f$VK$TL$RpcFunction$$getTLFunctionName(php_fun));" << NL
+    << "auto custom_fetcher = f$VK$TL$RpcFunction$$typedFetch(php_fun);" << NL
+    << "CHECK_EXCEPTION(" << NL
+    << "  php_warning(\"Exception when calling typedFetch for function magic: 0x%08x tl_version: %d\", function_magic, tl_version);" << NL
+    << "  return {};" << NL
+    << ")" << NL
+    << "if (custom_fetcher.is_null())" << BEGIN
+    << "php_warning(\"function returned by factory must not return null from typedFetch(): 0x%08x tl_version: %d\", function_magic, tl_version);" << NL
+    << "return {};" << NL
+    << END << NL
+    << "CurrentRpcServerQuery::get().save(make_tl_func_base_simple_wrapper(std::move(custom_fetcher)));" << NL
+    << "return php_fun;" << NL;
+  W << END << NL;
+
+  FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request()" << BEGIN;
   // PHP typedFetch expects full body with optional TL2 marker and function magic,
   // otherwise it cannot determine TL version.
   // C++ rpc_server_typed_fetch expects body after function magic.
