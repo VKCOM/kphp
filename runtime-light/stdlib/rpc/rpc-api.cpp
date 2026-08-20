@@ -164,6 +164,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
     return kphp::rpc::query_info{};
   }
+  sp = rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE);
   for (auto b : sp) {
     if (b != static_cast<std::byte>(0)) {
       kphp::log::error("B SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
