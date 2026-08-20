@@ -156,7 +156,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   auto sp{rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE)};
   for (auto b : sp) {
     if (b != static_cast<std::byte>(0)) {
-      kphp::log::error("A SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
+      kphp::log::error("AAA SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
     }
   }
   auto fetcher{rpc_request.store_request()}; // THROWING
@@ -165,9 +165,10 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
     return kphp::rpc::query_info{};
   }
   sp = rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE);
+  kphp::log::warning("NEW TL STORER TAKEN {}", sp.data() == rpc_server_instance_st.tl_storer.view().data());
   for (auto b : sp) {
     if (b != static_cast<std::byte>(0)) {
-      kphp::log::error("B SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
+      kphp::log::error("BBB SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
     }
   }
 
