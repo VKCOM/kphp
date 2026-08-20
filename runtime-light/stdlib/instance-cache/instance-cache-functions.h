@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <span>
 #include <string_view>
@@ -35,6 +36,10 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   }
   if (ttl < 0) [[unlikely]] {
     kphp::log::warning("instance_cache_store. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl, key.c_str());
+    ttl = 0;
+  }
+  if (constexpr int64_t max_ttl{std::numeric_limits<int64_t>::max() / 1000}; ttl > max_ttl) [[unlikely]] {
+    kphp::log::warning("instance_cache_store. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl, max_ttl, key.c_str());
     ttl = 0;
   }
 
@@ -105,6 +110,11 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
 }
 
 inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noexcept {
+  if (constexpr int64_t max_ttl{std::numeric_limits<int64_t>::max() / 1000}; ttl > max_ttl) [[unlikely]] {
+    kphp::log::warning("instance_cache_update_ttl. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl, max_ttl,
+                       key.c_str());
+    ttl = 0;
+  }
   if (ttl < 0) [[unlikely]] {
     kphp::log::warning("instance_cache_update_ttl. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl, key.c_str());
     ttl = 0;
