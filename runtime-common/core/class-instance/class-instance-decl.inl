@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstddef>
+
 #include "common/smart_ptrs/intrusive_ptr.h"
+#include "common/wrappers/span.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
@@ -71,8 +74,16 @@ public:
 
   inline class_instance& operator=(const Optional<bool>& null) noexcept;
   inline class_instance clone() const;
+  // constructs a copy of the instance in externally provided memory (no allocation, no ownership):
+  // memory must be 8-byte aligned and have at least estimate_memory_usage() bytes;
+  // the instance never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache)
+  inline class_instance clone(vk::span<std::byte> memory) const noexcept;
   template<class... Args>
   inline class_instance<T> alloc(Args&&... args) __attribute__((always_inline));
+  // constructs an instance in externally provided memory (no allocation, no ownership):
+  // memory must be 8-byte aligned and have at least sizeof(T) bytes
+  template<class... Args>
+  inline class_instance<T> alloc(vk::span<std::byte> memory, Args&&... args) __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
   inline void destroy() {
     o.reset();
@@ -103,11 +114,28 @@ public:
   }
 
   template<class S = T>
+  std::enable_if_t<!std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone(vk::span<std::byte> memory) const noexcept {
+    return clone(memory);
+  }
+
+  template<class S = T>
   std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone() const noexcept {
     // TODO this is used only for job workers. Should we use this logic for other?
     class_instance res;
     if (o) {
       res.o = vk::intrusive_ptr<T>{o->virtual_builtin_clone()};
+      res.o->set_refcnt(1);
+    }
+    return res;
+  }
+
+  template<class S = T>
+  std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone(vk::span<std::byte> memory) const noexcept {
+    // TODO this is used only for job workers. Should we use this logic for other?
+    class_instance res;
+    if (o) {
+      php_assert(memory.size() >= o->virtual_builtin_sizeof());
+      res.o = vk::intrusive_ptr<T>{o->virtual_builtin_construct_at(memory.data())};
       res.o->set_refcnt(1);
     }
     return res;
@@ -197,7 +225,9 @@ public:
 
 private:
   class_instance<T> clone_impl(std::true_type /*is empty*/) const;
+  class_instance<T> clone_impl(vk::span<std::byte> memory, std::true_type /*is empty*/) const noexcept;
   class_instance<T> clone_impl(std::false_type /*is empty*/) const;
+  class_instance<T> clone_impl(vk::span<std::byte> memory, std::false_type /*is empty*/) const noexcept;
 };
 
 template<class T, class... Args>

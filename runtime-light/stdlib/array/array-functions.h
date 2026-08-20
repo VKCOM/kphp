@@ -78,7 +78,8 @@ template<typename Result, typename U, typename Comparator>
 Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept {
   using array_inner = typename array<U>::array_inner;
   using array_bucket = typename array<U>::array_bucket;
-  int64_t n = arr.count();
+  using array_allocation = typename array<U>::allocation;
+  int64_t n{arr.count()};
 
   if (renumber) {
     if (n == 0) {
@@ -86,8 +87,8 @@ Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept 
     }
 
     if (!arr.is_vector()) {
-      array_inner* res = array_inner::create(n, true);
-      for (array_bucket* it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
+      array_inner* res{array<U>::create_from_allocation(array_allocation{n, true})};
+      for (array_bucket* it{arr.p->begin()}; it != arr.p->end(); it = arr.p->next(it)) {
         res->push_back_vector_value(it->value);
       }
 
@@ -97,7 +98,7 @@ Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept 
       arr.mutate_if_vector_shared();
     }
 
-    U* begin = reinterpret_cast<U*>(arr.p->entries());
+    U* begin{reinterpret_cast<U*>(arr.p->entries())};
     co_await async_sort<U, decltype(comparator)>(begin, begin + n, std::move(comparator));
     co_return;
   }
@@ -113,18 +114,18 @@ Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept 
   }
   auto& runtimeAllocator{RuntimeAllocator::get()};
 
-  auto** arTmp = static_cast<array_bucket**>(runtimeAllocator.alloc_script_memory(n * sizeof(array_bucket*)));
-  uint32_t i = 0;
-  for (array_bucket* it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
+  auto** arTmp{static_cast<array_bucket**>(runtimeAllocator.alloc_script_memory(n * sizeof(array_bucket*)))};
+  uint32_t i{0};
+  for (array_bucket* it{arr.p->begin()}; it != arr.p->end(); it = arr.p->next(it)) {
     arTmp[i++] = it;
   }
   kphp::log::assertion(i == n);
 
-  const auto hash_entry_cmp = []<typename Compare>(Compare compare, const array_bucket* lhs, const array_bucket* rhs) -> kphp::coro::task<bool> {
+  const auto hash_entry_cmp{[]<typename Compare>(Compare compare, const array_bucket* lhs, const array_bucket* rhs) noexcept -> kphp::coro::task<bool> {
     co_return (co_await std::invoke(compare, lhs->value, rhs->value)) > 0;
-  };
+  }};
 
-  const auto partial_hash_entry_cmp = std::bind_front(hash_entry_cmp, std::move(comparator));
+  const auto partial_hash_entry_cmp{std::bind_front(hash_entry_cmp, std::move(comparator))};
 
   co_await async_sort<array_bucket*, decltype(partial_hash_entry_cmp)>(arTmp, arTmp + n, partial_hash_entry_cmp);
 
