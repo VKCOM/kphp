@@ -4,7 +4,10 @@ set(K2_CONFDATA_COMPONENT_SRC
     ${RUNTIME_LIGHT_DIR}/components/confdata/confdata-component.cpp
     ${RUNTIME_LIGHT_DIR}/components/confdata/bindings/bindings.cpp
     ${RUNTIME_LIGHT_DIR}/components/confdata/state/component-state.cpp
-    ${RUNTIME_LIGHT_DIR}/components/confdata/state/instance-state.cpp)
+    ${RUNTIME_LIGHT_DIR}/components/confdata/state/instance-state.cpp
+    ${RUNTIME_LIGHT_DIR}/components/confdata/state/predefined-wildcards-builder.cpp
+    ${RUNTIME_LIGHT_DIR}/stdlib/confdata/confdata-keys.cpp
+    ${RUNTIME_LIGHT_DIR}/stdlib/confdata/predefined-wildcards.cpp)
 
 set(K2_CONFDATA_TL_SRC
     ${RUNTIME_LIGHT_DIR}/tl/tl-types.cpp
