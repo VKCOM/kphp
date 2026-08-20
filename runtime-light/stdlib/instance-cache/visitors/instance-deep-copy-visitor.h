@@ -41,12 +41,6 @@ public:
     this->memory_pool.init(memory_pool_buffer.data(), memory_pool_buffer.size());
   }
 
-  // arrays of Unknown are always empty (the element type was never inferred, so nothing can be written into them);
-  // this overload also avoids instantiating array<Unknown>'s copy constructor, which is ill-formed (convert_to<Unknown>)
-  bool process(array<Unknown>& /*unused*/) noexcept {
-    return true;
-  }
-
   template<class T>
   bool process(array<T>& arr) noexcept {
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
