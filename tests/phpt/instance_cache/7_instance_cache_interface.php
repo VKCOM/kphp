@@ -1,5 +1,4 @@
-@kphp_should_fail
-/Can not fetch instance of non-serializable class SimpleInterface with instance_cache_fetch call/
+@ok non-idempotent
 <?php
 
 require_once 'kphp_tester_include.php';

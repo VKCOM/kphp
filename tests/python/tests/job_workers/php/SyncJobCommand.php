@@ -1,9 +1,7 @@
 <?php
 
-/** @kphp-immutable-class
- *  @kphp-serializable */
+/** @kphp-immutable-class */
 class SyncJobCommand {
-  /** @kphp-serialized-field 0 */
   public $command = '';
 
   function __construct(string $command) {

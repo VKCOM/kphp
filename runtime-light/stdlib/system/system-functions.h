@@ -19,6 +19,7 @@
 #include <span>
 #include <string_view>
 #include <sys/types.h>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 

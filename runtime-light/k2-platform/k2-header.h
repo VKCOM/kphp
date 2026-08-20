@@ -251,8 +251,9 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
  * @return `0` on success. libc-like `errno` on error.
  *
  * Possible `errno`:
- * `EINVAL` => `name` is NULL, `name_len` is 0, `memory` is NULL, or `name` is
- *             not valid UTF-8.
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `memory` is NULL, `name` is
+ *             not valid UTF-8, or `ttl` is too small (non-zero and less than
+ *             100 ms).
  * `ENOENT` => `memory` was not allocated by `k2_alloc_shared_memory`.
  * `EEXIST` => Memory with this name already exists.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
@@ -276,6 +277,44 @@ int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* 
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
 int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size);
+
+/**
+ * Updates the TTL of published shared memory.
+ *
+ * @param `name` Name of the published memory region.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ * @param `ttl` New time-to-live in milliseconds, counted from this call.
+ *              Zero TTL means infinite life.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `name` is not valid UTF-8, or
+ *             `ttl` is too small (non-zero and less than 100 ms).
+ * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_update_ttl_shared_memory(const char* name, size_t name_len, uint64_t ttl);
+
+/**
+ * Deletes published shared memory by name.
+ *
+ * The name is removed immediately, so subsequent `k2_get_shared_memory` calls
+ * with this name will fail with `ENOENT`. The underlying memory is reclaimed
+ * only when the reference count reaches zero, so instances that already
+ * retrieved the memory keep valid pointers until they finish.
+ *
+ * @param `name` Name of the published memory region to delete.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, or `name` is not valid UTF-8.
+ * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_delete_shared_memory(const char* name, size_t name_len);
 
 /**
  * Immediately abort component execution.

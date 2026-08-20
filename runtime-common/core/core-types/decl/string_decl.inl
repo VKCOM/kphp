@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstddef>
+
+#include "common/wrappers/span.h"
+
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
 #endif
@@ -57,7 +61,8 @@ private:
     inline char* ref_data() const;
 
     inline static size_type new_capacity(size_type requested_capacity, size_type old_capacity);
-    inline static string_inner* create(size_type requested_capacity, size_type old_capacity);
+    inline static string_inner* create(size_type requested_capacity, size_type old_capacity) noexcept;
+    inline static string_inner* create(vk::span<std::byte> memory, size_type requested_capacity, size_type old_capacity) noexcept;
 
     inline char* reserve(size_type requested_capacity);
 
@@ -69,7 +74,8 @@ private:
 
     inline char* ref_copy();
 
-    inline char* clone(size_type requested_cap);
+    inline char* clone(size_type requested_cap) noexcept;
+    inline char* clone(vk::span<std::byte> memory, size_type requested_cap) noexcept;
   };
 
   inline string_inner* inner() const;
@@ -84,6 +90,8 @@ private:
   inline static char* create(size_type req, bool b);
 
   friend class string_cache;
+
+  inline void copy_from(vk::span<std::byte> memory, const string& other) noexcept;
 
 public:
   static constexpr size_type max_size() noexcept {
@@ -101,6 +109,10 @@ public:
   inline string();
   inline string(const string& str) noexcept;
   inline string(string&& str) noexcept;
+  // constructs a copy of str in externally provided memory (no allocation, no ownership):
+  // memory must be 8-byte aligned and have at least str.estimate_memory_usage() bytes (an upper bound of the copy's footprint);
+  // the string never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache)
+  inline string(vk::span<std::byte> memory, const string& str) noexcept;
   inline string(const char* s, size_type n);
   inline explicit string(const char* s);
   // IMPORTANT: this constructor may return read-only strings for n == 0 and n == 1.
