@@ -166,6 +166,7 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   }
   sp = rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE);
   kphp::log::warning("NEW TL STORER TAKEN {}", sp.data() == rpc_server_instance_st.tl_storer.view().data());
+  kphp::log::warning("TL FUNCTION NAME: {}", rpc_request.tl_function_name().c_str());
   for (auto b : sp) {
     if (b != static_cast<std::byte>(0)) {
       kphp::log::error("BBB SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
