@@ -15,7 +15,7 @@ namespace kphp::visitors {
 
 // computes how many bytes instance_deep_copy_visitor will carve for an instance graph,
 // so that the destination memory block can be allocated upfront; the two visitors must stay in sync
-class instance_deep_size_count_visitor : kphp::visitors::instance_deep_basic_visitor<instance_deep_size_count_visitor> {
+class instance_deep_size_count_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_size_count_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_size_count_visitor>;
 

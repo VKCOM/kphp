@@ -21,7 +21,7 @@ namespace kphp::visitors {
 // every reachable array/string/instance body is recreated inside the block via memory_pool, and the original's
 // fields are rewritten to point at the copies; all copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache),
 // so they are never freed individually — the owner of the block controls their lifetime
-class instance_deep_copy_visitor : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
+class instance_deep_copy_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor>;
 
