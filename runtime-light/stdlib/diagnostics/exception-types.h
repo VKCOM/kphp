@@ -133,15 +133,15 @@ inline void exception_initialize(const Throwable& e, const string& message, int6
 struct C$Exception : public C$Throwable {
   ~C$Exception() override = default;
 
-  C$Exception* virtual_builtin_clone() const noexcept {
+  C$Exception* virtual_builtin_clone() const noexcept override {
     return new C$Exception{*this};
   }
 
-  C$Exception* virtual_builtin_construct_at(void* ptr) const noexcept {
+  C$Exception* virtual_builtin_construct_at(void* ptr) const noexcept override {
     return new (ptr) C$Exception{*this};
   }
 
-  size_t virtual_builtin_sizeof() const noexcept {
+  size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
   }
 
@@ -186,15 +186,15 @@ inline string f$Exception$$getTraceAsString(const Exception& e) noexcept {
 struct C$Error : public C$Throwable {
   ~C$Error() override = default;
 
-  C$Error* virtual_builtin_clone() const noexcept {
+  C$Error* virtual_builtin_clone() const noexcept override {
     return new C$Error{*this};
   }
 
-  C$Error* virtual_builtin_construct_at(void* ptr) const noexcept {
+  C$Error* virtual_builtin_construct_at(void* ptr) const noexcept override {
     return new (ptr) C$Error{*this};
   }
 
-  size_t virtual_builtin_sizeof() const noexcept {
+  size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
   }
 
