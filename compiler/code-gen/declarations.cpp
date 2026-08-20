@@ -909,7 +909,7 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
   bool need_generic_accept =
-    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || (klass->need_instance_memory_estimate_visitor);
+    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || klass->need_instance_memory_estimate_visitor;
 
   if (!need_generic_accept && klass->json_encoders.empty()) {
     return;
@@ -1071,7 +1071,7 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
   bool need_generic_accept =
-    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || (klass->need_instance_memory_estimate_visitor);
+    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || klass->need_instance_memory_estimate_visitor;
 
   if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
     return;
