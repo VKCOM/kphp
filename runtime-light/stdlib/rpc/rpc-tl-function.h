@@ -53,6 +53,9 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual C$VK$TL$RpcFunction* virtual_builtin_clone() const noexcept {
     return nullptr;
   }
+  virtual C$VK$TL$RpcFunction* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
+    return nullptr;
+  }
 
   ~C$VK$TL$RpcFunction() override = default;
   virtual std::unique_ptr<tl_func_base> store() const = 0;
@@ -81,6 +84,9 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
     return 0;
   }
   virtual C$VK$TL$RpcFunctionReturnResult* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+  virtual C$VK$TL$RpcFunctionReturnResult* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 
@@ -112,6 +118,9 @@ struct C$VK$TL$RpcFunctionFetcher : abstract_refcountable_php_interface {
   virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
     return nullptr;
   }
+  virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
+    return nullptr;
+  }
 
   ~C$VK$TL$RpcFunctionFetcher() override = default;
 };
@@ -141,6 +150,9 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
     return 0;
   }
   virtual C$VK$TL$RpcResponse* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+  virtual C$VK$TL$RpcResponse* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 
