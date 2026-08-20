@@ -88,7 +88,6 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
   }
 
   if (mem.size() < hash_size + instance_size) [[unlikely]] {
-    // the shared memory under this key was not written by instance_cache_store for this class (or is corrupted)
     kphp::log::warning("instance_cache_fetch. shared memory is too small: size -> {}, expected at least -> {}, key -> {}", mem.size(),
                        hash_size + instance_size, key.c_str());
     return {};
@@ -98,7 +97,6 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
   std::memcpy(&stored_class_name_hash, mem.data(), sizeof(stored_class_name_hash));
 
   if (stored_class_name_hash != vk::murmur_hash<uint64_t>(class_name.c_str(), class_name.size())) {
-    kphp::log::warning("instance_cache_fetch. requested class doesn't match the stored one: requested -> {}, key -> {}", class_name.c_str(), key.c_str());
     return {};
   }
 
