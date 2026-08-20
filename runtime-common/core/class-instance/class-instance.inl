@@ -17,6 +17,11 @@ class_instance<T> class_instance<T>::clone_impl(std::true_type /*is empty*/) con
 }
 
 template<class T>
+class_instance<T> class_instance<T>::clone_impl(vk::span<std::byte> /* memory */, std::true_type /*is empty*/) const noexcept {
+  return class_instance<T>{}.empty_alloc();
+}
+
+template<class T>
 class_instance<T> class_instance<T>::clone_impl(std::false_type /*is empty*/) const {
   class_instance<T> res;
   if (o) {
@@ -27,8 +32,22 @@ class_instance<T> class_instance<T>::clone_impl(std::false_type /*is empty*/) co
 }
 
 template<class T>
+class_instance<T> class_instance<T>::clone_impl(vk::span<std::byte> memory, std::false_type /*is empty*/) const noexcept {
+  class_instance<T> res;
+  if (o) {
+    res.alloc(memory, *o);
+    res.o->set_refcnt(1);
+  }
+  return res;
+}
+
+template<class T>
 class_instance<T> class_instance<T>::clone() const {
   return clone_impl(std::is_empty<T>{});
+}
+template<class T>
+class_instance<T> class_instance<T>::clone(vk::span<std::byte> memory) const noexcept {
+  return clone_impl(memory, std::is_empty<T>{});
 }
 
 template<class T>
@@ -37,6 +56,18 @@ class_instance<T> class_instance<T>::alloc(Args&&... args) {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
   new (&o) vk::intrusive_ptr<T>(new T{std::forward<Args>(args)...});
+  return *this;
+}
+
+template<class T>
+template<class... Args>
+class_instance<T> class_instance<T>::alloc(vk::span<std::byte> memory, Args&&... args) {
+  static_assert(!std::is_empty<T>{}, "class T may not be empty");
+  php_assert(!o);
+  php_assert(memory.size() >= sizeof(T));
+  php_assert(reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(T) == 0);
+  T* ptr = new (memory.data()) T{std::forward<Args>(args)...};
+  new (&o) vk::intrusive_ptr<T>(ptr);
   return *this;
 }
 

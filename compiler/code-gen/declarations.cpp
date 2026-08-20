@@ -750,6 +750,8 @@ void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
 
 void ClassDeclaration::compile_get_hash(CodeGenerator &W, ClassPtr klass) {
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "int get_hash()", klass->get_hash());
+  // static type tag: same value for every object of this class, available without an instance (unlike virtual get_hash())
+  W << "constexpr static uint64_t CLASS_NAME_HASH{" << vk::murmur_hash<uint64_t>(klass->name.data(), klass->name.size()) << "ULL};" << NL << NL;
 }
 
 void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type) {
@@ -907,7 +909,7 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
   bool need_generic_accept =
-    klass->need_to_array_debug_visitor || (klass->need_instance_cache_visitors && !G->is_output_mode_k2()) || (klass->need_instance_memory_estimate_visitor);
+    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || (klass->need_instance_memory_estimate_visitor);
 
   if (!need_generic_accept && klass->json_encoders.empty()) {
     return;
@@ -939,6 +941,13 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     compile_accept_visitor(W, klass, "InstanceDeepDestroyVisitor");
   }
 
+  if (klass->need_instance_cache_visitors && G->is_output_mode_k2()) {
+    W << NL;
+    compile_accept_visitor(W, klass, "kphp::visitors::instance_deep_copy_visitor");
+    W << NL;
+    compile_accept_visitor(W, klass, "kphp::visitors::instance_deep_size_count_visitor");
+  }
+
   compile_accept_json_visitor(W, klass);
 }
 
@@ -962,6 +971,9 @@ void ClassDeclaration::compile_virtual_builtin_functions(CodeGenerator &W, Class
 
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
                        klass->src_name + "* virtual_builtin_clone()", "new " + klass->src_name + "{*this}");
+
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
+                       klass->src_name + "* virtual_builtin_construct_at(void* ptr)", "new (ptr) " + klass->src_name + "{*this}");
 }
 
 void ClassDeclaration::compile_wakeup(CodeGenerator &W, ClassPtr klass) {
@@ -1059,7 +1071,7 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
   bool need_generic_accept =
-    klass->need_to_array_debug_visitor || (klass->need_instance_cache_visitors && !G->is_output_mode_k2()) || (klass->need_instance_memory_estimate_visitor);
+    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || (klass->need_instance_memory_estimate_visitor);
 
   if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
     return;
@@ -1098,6 +1110,13 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
     compile_generic_accept_instantiations(W, klass, "InstanceDeepCopyVisitor");
     W << NL;
     compile_generic_accept_instantiations(W, klass, "InstanceDeepDestroyVisitor");
+  }
+
+  if (klass->need_instance_cache_visitors && G->is_output_mode_k2()) {
+    W << NL;
+    compile_generic_accept_instantiations(W, klass, "kphp::visitors::instance_deep_copy_visitor");
+    W << NL;
+    compile_generic_accept_instantiations(W, klass, "kphp::visitors::instance_deep_size_count_visitor");
   }
 
   W << NL;
