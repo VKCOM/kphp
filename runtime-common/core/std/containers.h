@@ -5,6 +5,7 @@
 #pragma once
 
 #include <deque>
+#include <forward_list>
 #include <functional>
 #include <list>
 #include <map>
@@ -40,6 +41,9 @@ using queue = std::queue<T, std::deque<T, Allocator<T>>>;
 
 template<class T, template<class> class Allocator>
 using list = std::list<T, Allocator<T>>;
+
+template<class T, template<class> class Allocator>
+using forward_list = std::forward_list<T, Allocator<T>>;
 
 template<class T, template<class> class Allocator>
 using vector = std::vector<T, Allocator<T>>;
