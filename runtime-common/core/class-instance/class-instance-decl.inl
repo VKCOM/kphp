@@ -131,7 +131,6 @@ public:
 
   template<class S = T>
   std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone(vk::span<std::byte> memory) const noexcept {
-    // TODO this is used only for job workers. Should we use this logic for other?
     class_instance res;
     if (o) {
       php_assert(memory.size() >= o->virtual_builtin_sizeof());
