@@ -24,6 +24,7 @@
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
+#include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
@@ -57,6 +58,17 @@ inline kphp::coro::task<std::expected<void, int32_t>> send_response(std::span<co
 }
 
 namespace detail {
+
+static constexpr size_t RESERVED_HEADER_SIZE{sizeof(kphp::rpc::dest_actor_flags_header)};
+
+// store bytes for `kphp::rpc::dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
+// we do this to avoid allocating new buffer for regularized rpc extra headers and copying whole request.
+inline void reserve_header() noexcept {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  kphp::rpc::dest_actor_flags_header reserved_header{};
+  static_assert(sizeof(reserved_header) == RESERVED_HEADER_SIZE);
+  rpc_server_instance_st.tl_storer.store_bytes({reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(reserved_header)});
+}
 
 kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
                                             bool ignore_answer) noexcept;
@@ -199,7 +211,8 @@ inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) 
 inline bool f$rpc_clean() noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   rpc_server_instance_st.tl_storer.clear();
-  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view()};
+  kphp::rpc::detail::reserve_header();
+  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view().subspan(kphp::rpc::detail::RESERVED_HEADER_SIZE)};
   return true;
 }
 
@@ -268,8 +281,9 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
   // as we are in a coroutine, we must own the data to prevent it from being overwritten by another coroutine,
   // so create a TLBuffer owned by this coroutine
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  tl::K2RpcResponse rpc_response{.value =
-                                     tl::k2RpcResponseHeader{.flags = {}, .extra_flags = {}, .extra = {}, .result = rpc_server_instance_st.tl_storer.view()}};
+  tl::K2RpcResponse rpc_response{
+      .value = tl::k2RpcResponseHeader{
+          .flags = {}, .extra_flags = {}, .extra = {}, .result = rpc_server_instance_st.tl_storer.view().subspan(kphp::rpc::detail::RESERVED_HEADER_SIZE)}};
   tl::storer tls{rpc_response.footprint()};
   rpc_response.store(tls);
 
