@@ -19,15 +19,15 @@
 struct InstanceState final : vk::not_copyable {
   enum class warmup_status : uint8_t { pending, done };
 
-  AllocatorState m_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE, 0};
+  AllocatorState m_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, DEFAULT_INSTANCE_MIN_EXTRA_MEMORY_POOL_SIZE, 0};
 
   warmup_status m_warmup_status{warmup_status::pending};
   kphp::confdata::pagination m_pagination{};
 
   kphp::log::contextual_tags m_instance_tags;
 
-  kphp::coro::instance_state coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
-  kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
+  kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_INSTANCE_MIN_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
+  kphp::coro::io_scheduler m_io_scheduler{m_coroutine_instance_state};
 
   InstanceState() noexcept = default;
   static auto get() noexcept -> InstanceState&;
@@ -35,10 +35,10 @@ struct InstanceState final : vk::not_copyable {
   auto init() noexcept -> void;
 
 private:
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);          // 16MiB
-  static constexpr auto DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);          // 1MiB
-  static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U); // 2MiB
-  static constexpr auto DEFAULT_MIN_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 0.5MiB
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);                   // 16MiB
+  static constexpr auto DEFAULT_INSTANCE_MIN_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);          // 1MiB
+  static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);          // 2MiB
+  static constexpr auto DEFAULT_INSTANCE_MIN_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 0.5MiB
 
   auto run() noexcept -> kphp::coro::task<>;
   auto accept_loop() noexcept -> kphp::coro::task<>;
