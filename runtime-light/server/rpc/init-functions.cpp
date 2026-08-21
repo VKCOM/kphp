@@ -194,6 +194,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   rpc_server_instance_st.request_stream = std::move(request_stream);
   rpc_server_instance_st.query_id = invoke_rpc.query_id.value;
+  rpc_server_instance_st.tl_storer.clear();
   rpc_server_instance_st.tl_storer.store_bytes(invoke_rpc.query);
   rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view()};
 

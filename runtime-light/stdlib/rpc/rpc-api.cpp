@@ -41,8 +41,6 @@ namespace kphp::rpc {
 
 namespace detail {
 
-static constexpr size_t RESERVED_HEADER_SIZE{sizeof(kphp::rpc::dest_actor_flags_header)};
-
 mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) [[unlikely]] {
     return {};
@@ -82,11 +80,11 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
   const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
   cur_query.set_current_tl_function(rpc_query);
   if (TlRpcError err{}; TRY_CALL(bool, class_instance<C$VK$TL$RpcResponse>, err.try_fetch())) {
-    kphp::log::warning("!!! fetch_function_typed -> error {}: {}", err.error_code, err.error_msg.c_str());
+    // kphp::log::warning("!!! fetch_function_typed -> error {}: {}", err.error_code, err.error_msg.c_str());
     return error_factory.make_error(std::move(err));
   }
 
-  kphp::log::warning("!!! fetch_function_typed -> response");
+  // kphp::log::warning("!!! fetch_function_typed -> response");
   // TODO: EOF handling
   return TRY_CALL(class_instance<C$VK$TL$RpcResponse>, class_instance<C$VK$TL$RpcResponse>, rpc_query.get()->result_fetcher->fetch_typed_response());
 }
@@ -112,15 +110,6 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   return rpc_tl_query;
 }
 
-// store bytes for `kphp::rpc::dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
-// we do this to avoid allocating new buffer for regularized rpc extra headers and copying whole request.
-void reserve_header() noexcept {
-  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  kphp::rpc::dest_actor_flags_header reserved_header{};
-  static_assert(sizeof(reserved_header) == RESERVED_HEADER_SIZE);
-  rpc_server_instance_st.tl_storer.store_bytes({reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(reserved_header)});
-}
-
 kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
                                             bool ignore_answer) noexcept {
   if (!tl_object.is_array()) [[unlikely]] {
@@ -129,7 +118,6 @@ kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed&
   }
 
   f$rpc_clean();
-  reserve_header();
   auto rpc_tl_query{store_function(tl_object)}; // THROWING
   // handle exceptions that could arise during store_function
   if (!TlRpcError::transform_exception_into_error_if_possible().empty() || rpc_tl_query.is_null()) [[unlikely]] {
@@ -151,7 +139,6 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
   }
 
   f$rpc_clean();
-  reserve_header();
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   auto sp{rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE)};
   for (auto b : sp) {
@@ -165,8 +152,6 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
     return kphp::rpc::query_info{};
   }
   sp = rpc_server_instance_st.tl_storer.view().subspan(0, detail::RESERVED_HEADER_SIZE);
-  kphp::log::warning("NEW TL STORER TAKEN {}", sp.data() == rpc_server_instance_st.tl_storer.view().data());
-  kphp::log::warning("TL FUNCTION NAME: {}", rpc_request.tl_function_name().c_str());
   for (auto b : sp) {
     if (b != static_cast<std::byte>(0)) {
       kphp::log::error("BBB SERVER RESERVED HEADER BUFFER IS NOT ZEROED");
@@ -302,7 +287,6 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
     kphp::log::warning("--- G ---");
     co_return std::move(err);
   }
-  kphp::log::warning("+++ H +++");
   co_return std::move(res);
 }
 
@@ -329,11 +313,10 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   tl::magic magic;
   tl::fetcher debug_fetcherrr{request_buffer};
   kphp::log::assertion(magic.fetch(debug_fetcherrr));
-  kphp::log::warning("request_buffer start op: {:x}", magic.value);
   if (magic.value == TL_RPC_DEST_ACTOR) {
     debug_fetcherrr = tl::fetcher{request_buffer.subspan(sizeof(kphp::rpc::dest_actor_header))};
     kphp::log::assertion(magic.fetch(debug_fetcherrr));
-    kphp::log::warning("request_buffer start op AFTER DEST ACTOR: {:x}", magic.value);
+    // kphp::log::warning("request_buffer start op AFTER DEST ACTOR: {:x}", magic.value);
   }
 
   if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
@@ -354,14 +337,14 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     // we do always have enough bytes for `new_header` before `request_body`, because we have reserved it before `send_request(...)` call.
     size_t new_header_offset{detail::RESERVED_HEADER_SIZE + cur_extra_header_size - new_header.size()};
 
-    kphp::log::warning("OPTIMIZATION SUCKS: {} - {} - {} - {} - {} - {} - {}",
-      reinterpret_cast<std::uintptr_t>(rpc_server_instance_st.tl_storer.view().data()),
-      reinterpret_cast<std::uintptr_t>(request_buffer.data()),
-      reinterpret_cast<std::uintptr_t>(request_body.data()),
-      detail::RESERVED_HEADER_SIZE,
-      cur_extra_header_size,
-      new_header.size(),
-      reinterpret_cast<std::uintptr_t>(rpc_server_instance_st.tl_storer.view().subspan(new_header_offset).data()));
+    // kphp::log::warning("OPTIMIZATION SUCKS: {} - {} - {} - {} - {} - {} - {}",
+    //   reinterpret_cast<std::uintptr_t>(rpc_server_instance_st.tl_storer.view().data()),
+    //   reinterpret_cast<std::uintptr_t>(request_buffer.data()),
+    //   reinterpret_cast<std::uintptr_t>(request_body.data()),
+    //   detail::RESERVED_HEADER_SIZE,
+    //   cur_extra_header_size,
+    //   new_header.size(),
+    //   reinterpret_cast<std::uintptr_t>(rpc_server_instance_st.tl_storer.view().subspan(new_header_offset).data()));
 
     request_buffer = rpc_server_instance_st.tl_storer.view().subspan(new_header_offset);
     std::ranges::copy(new_header, request_buffer.data());
@@ -386,7 +369,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
     kphp::log::assertion(op.fetch(debug_fetcher));
 
-    kphp::log::warning("REQUEST OP IS {:x}", op.value);
+    // kphp::log::warning("REQUEST OP IS {:x}", op.value);
 
   } else {
 
@@ -396,9 +379,9 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
     kphp::log::assertion(magic.fetch(debug_fetcher));
 
-    bool was_dest_actor_header = false;
+    // bool was_dest_actor_header = false;
     if (magic.expect(TL_RPC_DEST_ACTOR)) {
-      was_dest_actor_header = true;
+      // was_dest_actor_header = true;
       tl::i64 actor_id{};
       kphp::log::assertion(actor_id.fetch(debug_fetcher));
 
@@ -409,7 +392,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     kphp::log::assertion(!magic.expect(TL_RPC_DEST_FLAGS));
     kphp::log::assertion(!magic.expect(TL_RPC_DEST_ACTOR));
 
-    kphp::log::warning("request OP IS {:x} was_dest_actor_header({})", magic.value, was_dest_actor_header);
+    // kphp::log::warning("request OP IS {:x} was_dest_actor_header({})", magic.value, was_dest_actor_header);
   }
 
   const size_t request_size{request_buffer.size_bytes()};
