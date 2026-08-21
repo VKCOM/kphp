@@ -12,7 +12,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
-#include "runtime-light/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"
