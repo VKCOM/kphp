@@ -28,8 +28,8 @@ struct platform_allocator {
     return static_cast<value_type*>(kphp::memory::platform::alloc(n * sizeof(T)));
   }
 
-  constexpr void deallocate(T* p, size_t n) noexcept {
-    kphp::memory::platform::free(p, n * sizeof(T));
+  constexpr void deallocate(T* p, size_t /*unused*/) noexcept {
+    kphp::memory::platform::free(p);
   }
 };
 
