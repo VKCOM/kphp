@@ -9,16 +9,16 @@
 #include <variant>
 
 #include "common/containers/intrusive-list.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/coroutine-allocator.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace kphp::coro::detail {
 
 struct poll_info {
-  using timed_events = kphp::stl::multimap<k2::TimePoint, detail::poll_info&, kphp::memory::coroutine_allocator>;
-  using parked_polls = kphp::stl::multimap<k2::descriptor, detail::poll_info&, kphp::memory::coroutine_allocator>;
+  using timed_events = kphp::stl::multimap<k2::TimePoint, detail::poll_info&, kphp::memory::script_allocator>;
+  using parked_polls = kphp::stl::multimap<k2::descriptor, detail::poll_info&, kphp::memory::script_allocator>;
   using scheduled_coroutines = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>;
 
   // Each coroutine in the scheduler can be in one of the following states, represented by the `schedule_position` variant:

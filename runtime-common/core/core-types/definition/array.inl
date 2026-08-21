@@ -261,7 +261,7 @@ typename array<T>::array_inner* array<T>::array_inner::create(int64_t new_int_si
 
   auto shift_pointer_to_array_inner = [](void* mem) { return reinterpret_cast<array_inner*>(static_cast<char*>(mem) + sizeof(array_inner_fields_for_map)); };
 
-  array_inner* p = shift_pointer_to_array_inner(RuntimeAllocator::get().alloc0_script_memory(mem_size));
+  array_inner* p = shift_pointer_to_array_inner(RuntimeAllocator::get().calloc_script_memory(mem_size));
   p->is_vector_internal = false;
   p->ref_cnt = 0;
   p->max_key = -1;
