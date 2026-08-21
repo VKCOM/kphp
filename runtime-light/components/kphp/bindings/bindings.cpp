@@ -8,7 +8,6 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
-#include "runtime-light/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/components/kphp/state/image-state.h"
 #include "runtime-light/components/kphp/state/instance-state.h"
