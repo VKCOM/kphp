@@ -1,16 +1,19 @@
-//  Compiler for PHP (aka KPHP)
-//  Copyright (c) 2024 LLC «V Kontakte»
-//  Distributed under the GPL v3 License, see LICENSE.notice.txt
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
 #include <cstddef>
+#include <functional>
+#include <utility>
 
 #include "runtime-common/core/allocator/pool-allocator.h"
 
 struct RuntimeAllocator final {
 private:
   kphp::memory::pool_allocator m_allocator;
+  std::reference_wrapper<memory_resource::unsynchronized_pool_resource> m_script_memory_resource{m_allocator.get_memory_resource()};
 
 public:
   static auto get() noexcept -> RuntimeAllocator&;
@@ -27,6 +30,11 @@ public:
   auto free_script_memory(void* mem, size_t size) noexcept -> void;
 
   auto get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource& {
-    return m_allocator.get_memory_resource();
+    return m_script_memory_resource.get();
+  }
+
+  [[nodiscard]] auto replace_script_memory_resource(memory_resource::unsynchronized_pool_resource& replacement) noexcept
+      -> std::reference_wrapper<memory_resource::unsynchronized_pool_resource> {
+    return std::exchange(m_script_memory_resource, std::ref(replacement));
   }
 };
