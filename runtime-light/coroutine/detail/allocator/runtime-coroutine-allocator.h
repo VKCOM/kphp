@@ -7,7 +7,6 @@
 #include <cstddef>
 
 #include "runtime-common/core/allocator/pool-allocator.h"
-#include "runtime-light/coroutine/coroutine-state.h"
 
 namespace kphp::coro::detail::memory {
 
@@ -16,9 +15,7 @@ private:
   kphp::memory::pool_allocator m_allocator;
 
 public:
-  static auto get() noexcept -> RuntimeCoroutineAllocator& {
-    return kphp::coro::instance_state::get().coroutine_allocator;
-  }
+  static auto get() noexcept -> RuntimeCoroutineAllocator&;
 
   RuntimeCoroutineAllocator() = default;
 

@@ -33,7 +33,7 @@ auto alloc(size_t size) noexcept -> void* {
 void free(void* ptr) noexcept {
   if (likely(ptr != nullptr)) {
     void* real_ptr{static_cast<std::byte*>(ptr) - MALLOC_REPLACER_SIZE_OFFSET};
-    dl::heap_deallocate(ptr, reinterpret_cast<size_t>(real_ptr));
+    dl::heap_deallocate(real_ptr, *static_cast<size_t*>(real_ptr));
   }
 }
 

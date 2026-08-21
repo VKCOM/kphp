@@ -29,7 +29,7 @@ inline auto calloc(size_t num, size_t size) noexcept -> void* {
 
 auto free(void* ptr) noexcept -> void;
 
-void* realloc(void* ptr, size_t new_size) noexcept {
+inline auto realloc(void* ptr, size_t new_size) noexcept -> void* {
   if (unlikely(ptr == nullptr)) {
     return kphp::memory::platform::alloc(new_size);
   }
@@ -45,7 +45,7 @@ void* realloc(void* ptr, size_t new_size) noexcept {
   void* new_ptr{kphp::memory::platform::alloc(new_size)};
   if (likely(new_ptr != nullptr)) {
     std::memcpy(new_ptr, ptr, std::min(new_size, old_size));
-    kphp::memory::platform::free(real_ptr);
+    kphp::memory::platform::free(ptr);
   }
 
   return new_ptr;
