@@ -33,6 +33,19 @@ auto update_handler(std::span<const tl::confdata::KeyValuePair> events) noexcept
 } // namespace
 
 auto InstanceState::init() noexcept -> void {
+  const auto shared_memory_size{kphp::confdata::storage::memory_size(ComponentState::get().m_confdata_memory_limit)};
+  if (!shared_memory_size) [[unlikely]] {
+    kphp::log::error("invalid confdata shared memory size: error -> {}", std::to_underlying(shared_memory_size.error()));
+  }
+  auto shared_memory{k2::alloc_shared_memory(*shared_memory_size, kphp::confdata::storage::memory_alignment())};
+  if (!shared_memory) [[unlikely]] {
+    kphp::log::error("failed to allocate confdata shared memory: error -> {}", shared_memory.error());
+  }
+  auto initialized_storage{m_confdata_storage.init({static_cast<std::byte*>(*shared_memory), *shared_memory_size})};
+  if (!initialized_storage) [[unlikely]] {
+    kphp::log::error("failed to initialize confdata shared memory: error -> {}", std::to_underlying(initialized_storage.error()));
+  }
+
   auto main_task{run()};
   // initialize async stack
   auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
