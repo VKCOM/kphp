@@ -39,8 +39,8 @@ inline auto realloc(void* ptr, size_t new_size) noexcept -> void* {
     return nullptr;
   }
 
-  void* real_ptr{static_cast<std::byte*>(ptr) - sizeof(size_t)};
-  const size_t old_size{*static_cast<size_t*>(real_ptr)};
+  void* real_ptr{static_cast<std::byte*>(ptr) - MALLOC_REPLACER_SIZE_OFFSET};
+  const size_t old_size{*static_cast<size_t*>(real_ptr) - MALLOC_REPLACER_SIZE_OFFSET};
 
   void* new_ptr{kphp::memory::platform::alloc(new_size)};
   if (likely(new_ptr != nullptr)) {
