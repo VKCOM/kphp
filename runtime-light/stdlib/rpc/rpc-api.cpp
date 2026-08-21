@@ -353,7 +353,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     tl::i64 actor_id{};
     tl::mask flags{};
     tl::rpcInvokeReqExtra extra{};
-    tl::magic op;
+    // tl::magic op;
 
     tl::fetcher debug_fetcher{request_buffer};
 
@@ -365,9 +365,9 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
     kphp::log::assertion(flags.fetch(debug_fetcher));
 
-    kphp::log::assertion(extra.fetch(debug_fetcher, flags));
+    // kphp::log::assertion(extra.fetch(debug_fetcher, flags));
 
-    kphp::log::assertion(op.fetch(debug_fetcher));
+    // kphp::log::assertion(op.fetch(debug_fetcher));
 
     // kphp::log::warning("REQUEST OP IS {:x}", op.value);
 
