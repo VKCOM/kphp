@@ -21,7 +21,7 @@ void* RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
   return dl::allocate(size);
 }
 
-void* RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
+void* RuntimeAllocator::calloc_script_memory(size_t size) noexcept {
   return dl::allocate0(size);
 }
 

@@ -58,7 +58,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
         allocator.cpp
-        global-memory.cpp
+        platform-malloc-interface.cpp
         context/runtime-core-allocator.cpp
         context/runtime-context.cpp
         array_functions.cpp

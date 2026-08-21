@@ -266,7 +266,7 @@ string bc_mul_positive_impl(const char* lhs, int lint, int ldot, int lfrac, int 
   int result_size = result_len + result_scale + 3;
   string result(static_cast<string::size_type>(result_size), false);
 
-  int* res = (int*)RuntimeAllocator::get().alloc0_script_memory(static_cast<size_t>(sizeof(int) * result_size));
+  int* res = (int*)RuntimeAllocator::get().calloc_script_memory(static_cast<size_t>(sizeof(int) * result_size));
   for (int i = -lscale; i < llen; i++) {
     int x = (i < 0 ? lhs[lfrac - i - 1] : lhs[ldot - i - 1]) - '0';
     for (int j = -rscale; j < rlen; j++) {
@@ -319,7 +319,7 @@ string bc_div_positive_impl(const char* lhs, int lint, int ldot, int lfrac, int 
 
   int dividend_len = llen + lscale;
   int divider_len = rlen + rscale;
-  int* dividend = (int*)RuntimeAllocator::get().alloc0_script_memory(static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
+  int* dividend = (int*)RuntimeAllocator::get().calloc_script_memory(static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
   int* divider = (int*)RuntimeAllocator::get().alloc_script_memory(static_cast<size_t>(sizeof(int) * divider_len));
 
   for (int i = -lscale; i < llen; i++) {

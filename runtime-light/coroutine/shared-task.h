@@ -16,8 +16,8 @@
 #include <variant>
 
 #include "common/containers/intrusive-list.h"
-#include "runtime-light/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -125,16 +125,16 @@ public:
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::coro::alloc(n);
+    return kphp::coro::detail::memory::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::memory::coro::alloc_aligned(n, al);
+    return kphp::coro::detail::memory::alloc_aligned(n, al);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::memory::coro::free(ptr);
+    kphp::coro::detail::memory::free(ptr);
   }
 
 private:
