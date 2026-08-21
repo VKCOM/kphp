@@ -10,6 +10,7 @@
 
 #include "runtime-common/core/allocator/pool-allocator.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
 
 namespace kphp::coro {
 

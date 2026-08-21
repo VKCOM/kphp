@@ -22,8 +22,8 @@
 #include "common/containers/final_action.h"
 #include "common/containers/intrusive-list.h"
 #include "common/wrappers/overloaded.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/coroutine-allocator.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
@@ -49,7 +49,7 @@ class io_scheduler {
 
   kphp::coro::detail::timer_handle m_timer_handle;
   kphp::coro::detail::poll_info::timed_events m_timed_events;
-  kphp::stl::vector<k2::descriptor, kphp::memory::coroutine_allocator> m_accepted_descriptors;
+  kphp::stl::vector<k2::descriptor, kphp::memory::script_allocator> m_accepted_descriptors;
 
   kphp::coro::detail::poll_info::parked_polls m_parked_polls;
   kphp::coro::detail::poll_info::scheduled_coroutines m_scheduled_coroutines;
