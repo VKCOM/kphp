@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
@@ -60,9 +61,6 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using deque = kphp::stl::deque<T, kphp::memory::script_allocator>;
 
-  template<typename T>
-  using list = kphp::stl::list<T, kphp::memory::script_allocator>;
-
   // It's important to use `{}` instead of `= default` here.
   // In the second case clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful!
@@ -92,7 +90,8 @@ struct InstanceState final : vk::not_copyable {
 
   kphp::log::contextual_tags instance_tags;
 
-  kphp::coro::instance_state coroutine_instance_state;
+  kphp::coro::instance_state coroutine_instance_state{ComponentState::get().initial_instance_coroutine_memory_size,
+                                                      ComponentState::get().min_instance_extra_coroutine_memory_size, 0};
   kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
@@ -122,7 +121,7 @@ struct InstanceState final : vk::not_copyable {
   ErrorHandlingState error_handling_instance_state;
   KmlInstanceState kml_instance_state;
 
-  list<kphp::coro::task<>> shutdown_functions;
+  kphp::stl::list<kphp::coro::task<>, kphp::memory::script_allocator> shutdown_functions;
 
 private:
   kphp::coro::task<> init_cli_instance() noexcept;
