@@ -274,7 +274,7 @@ void PhpWorker::state_run() noexcept {
         if (conn != nullptr) {
           switch (mode) {
             case http_worker:
-              if (!flushed_http_connection) {
+              if (!flushed_http_code) {
                 http_return(conn, "ERROR", 5);
               }
               break;
@@ -448,7 +448,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t qu
   : conn(c)
   , data(std::move(query_data))
   , paused(false)
-  , flushed_http_connection(false)
+  , flushed_http_code(0)
   , terminate_flag(false)
   , terminate_reason(script_error_t::unclassified_error)
   , error_message("no error")

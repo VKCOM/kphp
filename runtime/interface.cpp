@@ -592,9 +592,9 @@ void f$flush() {
   }
   string_buffer const* http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const* http_headers = nullptr;
-  if (!php_worker->flushed_http_connection) {
+  if (!php_worker->flushed_http_code) {
     http_headers = get_headers();
-    php_worker->flushed_http_connection = true;
+    php_worker->flushed_http_code = http_return_code;
   }
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0, http_body->buffer(),
                                http_body->size());
@@ -612,7 +612,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
     headers_sent = true;
   }
   int ob_total_buffer = ob_merge_buffers();
-  if (php_worker.has_value() && php_worker->flushed_http_connection) {
+  if (php_worker.has_value() && php_worker->flushed_http_code) {
     string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
     php_assert(0);
@@ -640,6 +640,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       set_content_length_header(compressed->size());
     }
     const string_buffer* headers = get_headers();
+    php_worker->flushed_http_code = http_return_code;
     http_set_result(headers->buffer(), headers->size(), compressed->buffer(), compressed->size(), static_cast<int32_t>(exit_code));
 
     break;
