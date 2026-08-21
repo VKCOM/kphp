@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/components/confdata/confdata-proxy/sync-functions.h"
+#include "runtime-light/components/confdata/state/confdata-storage.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
@@ -23,6 +24,7 @@ struct InstanceState final : vk::not_copyable {
 
   warmup_status m_warmup_status{warmup_status::pending};
   kphp::confdata::pagination m_pagination{};
+  kphp::confdata::storage m_confdata_storage;
 
   kphp::log::contextual_tags m_instance_tags;
 

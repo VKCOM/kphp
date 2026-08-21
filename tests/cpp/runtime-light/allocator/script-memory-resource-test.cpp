@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <span>
 #include <type_traits>
@@ -17,6 +18,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/components/confdata/state/confdata-storage.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace {
@@ -73,7 +75,7 @@ auto test_routes_script_allocations_and_restores_default() noexcept -> void {
   auto& default_resource{allocator.memory_resource};
   const auto default_memory_before{default_resource.get_memory_stats().memory_used};
 
-  kphp::memory::with_script_memory_resource(shared_resource, [&]() noexcept {
+  kphp::memory::with_script_memory_resource(shared_resource, [&] noexcept {
     CHECK(std::addressof(allocator.current_script_memory_resource()) == std::addressof(shared_resource));
 
     kphp::memory::script_allocator<std::byte> script_allocator{};
@@ -100,11 +102,11 @@ auto test_nested_resources_restore_previous_target() noexcept -> void {
   auto& allocator{RuntimeAllocator::get()};
   kphp::memory::script_allocator<std::byte> script_allocator{};
 
-  kphp::memory::with_script_memory_resource(outer_resource, [&]() noexcept {
+  kphp::memory::with_script_memory_resource(outer_resource, [&] noexcept {
     auto* outer_memory_before{script_allocator.allocate(32)};
     CHECK(contains(outer_storage, outer_memory_before));
 
-    kphp::memory::with_script_memory_resource(inner_resource, [&]() noexcept {
+    kphp::memory::with_script_memory_resource(inner_resource, [&] noexcept {
       auto* inner_memory{script_allocator.allocate(32)};
       CHECK(contains(inner_storage, inner_memory));
       script_allocator.deallocate(inner_memory, 32);
@@ -128,7 +130,7 @@ auto test_zeroing_and_reallocation_use_replacement_resource() noexcept -> void {
   shared_resource.init(shared_storage.data(), shared_storage.size());
 
   auto& allocator{RuntimeAllocator::get()};
-  kphp::memory::with_script_memory_resource(shared_resource, [&]() noexcept {
+  kphp::memory::with_script_memory_resource(shared_resource, [&] noexcept {
     constexpr auto initial_size{static_cast<size_t>(32)};
     constexpr auto expanded_size{static_cast<size_t>(128)};
 
@@ -154,6 +156,50 @@ auto test_default_resource_can_request_extra_memory() noexcept -> void {
   CHECK(memory != nullptr);
   CHECK(allocator.memory_resource.get_extra_memory_head()->get_pool_payload_size() != 0);
   allocator.free_script_memory(memory, allocation_size);
+}
+
+auto test_confdata_storage_persists_values_between_mutations() noexcept -> void {
+  alignas(std::max_align_t) std::array<std::byte, TEST_RESOURCE_SIZE> shared_storage{};
+  kphp::confdata::storage storage{};
+  CHECK(storage.init(shared_storage).has_value());
+  CHECK(storage.memory().data() == shared_storage.data());
+  const auto default_memory_before{RuntimeAllocator::get().memory_resource.get_memory_stats().memory_used};
+
+  storage.mutate([&shared_storage](kphp::confdata::storage::map_type& values) noexcept {
+    CHECK(contains(shared_storage, std::addressof(values)));
+    values.emplace(string{"persistent-key"}, mixed{string{"persistent-value"}});
+    const auto& [key, value]{*values.begin()};
+    CHECK(contains(shared_storage, std::addressof(*values.begin())));
+    CHECK(contains(shared_storage, key.c_str()));
+    CHECK(value.is_string());
+    CHECK(contains(shared_storage, value.as_string().c_str()));
+  });
+
+  CHECK(storage.values().size() == 1);
+  CHECK(RuntimeAllocator::get().memory_resource.get_memory_stats().memory_used == default_memory_before);
+  storage.mutate([](kphp::confdata::storage::map_type& values) noexcept { values.clear(); });
+  CHECK(storage.values().empty());
+  storage.destroy();
+  CHECK(!storage.is_initialized());
+  CHECK(storage.memory().empty());
+}
+
+auto test_confdata_storage_rejects_invalid_memory() noexcept -> void {
+  alignas(std::max_align_t) std::array<std::byte, TEST_RESOURCE_SIZE> memory{};
+
+  kphp::confdata::storage misaligned_storage{};
+  const auto misaligned{misaligned_storage.init(std::span{memory}.subspan(1))};
+  CHECK(!misaligned.has_value());
+  CHECK(misaligned.error() == kphp::confdata::storage_error::misaligned_buffer);
+
+  kphp::confdata::storage undersized_storage{};
+  const auto undersized{undersized_storage.init(std::span{memory}.first(1))};
+  CHECK(!undersized.has_value());
+  CHECK(undersized.error() == kphp::confdata::storage_error::insufficient_buffer);
+
+  const auto overflow{kphp::confdata::storage::memory_size(std::numeric_limits<size_t>::max())};
+  CHECK(!overflow.has_value());
+  CHECK(overflow.error() == kphp::confdata::storage_error::size_overflow);
 }
 
 } // namespace
@@ -198,6 +244,8 @@ auto main() -> int {
   test_nested_resources_restore_previous_target();
   test_zeroing_and_reallocation_use_replacement_resource();
   test_default_resource_can_request_extra_memory();
+  test_confdata_storage_persists_values_between_mutations();
+  test_confdata_storage_rejects_invalid_memory();
   RuntimeAllocator::get().free();
   return 0;
 }
