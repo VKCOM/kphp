@@ -19,7 +19,7 @@ struct RuntimeAllocator final {
 #ifdef RUNTIME_LIGHT
 private:
   kphp::memory::pool_allocator m_allocator;
-  std::reference_wrapper<kphp::memory::pool_allocator> m_allocator_ref{m_allocator};
+  std::reference_wrapper<memory_resource::unsynchronized_pool_resource> m_script_memory_resource{m_allocator.get_memory_resource()};
 #endif
 
 public:
@@ -41,7 +41,12 @@ public:
 
 #ifdef RUNTIME_LIGHT
   auto get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource& {
-    return m_allocator_ref.get().get_memory_resource();
+    return m_script_memory_resource.get();
+  }
+
+  [[nodiscard]] auto replace_script_memory_resource(memory_resource::unsynchronized_pool_resource& replacement) noexcept
+      -> std::reference_wrapper<memory_resource::unsynchronized_pool_resource> {
+    return std::exchange(m_script_memory_resource, std::ref(replacement));
   }
 
   // The callback must run synchronously without yielding. Objects allocated by it
@@ -50,8 +55,8 @@ public:
   template<typename callback_type,
            std::enable_if_t<std::is_nothrow_invocable_v<callback_type> && std::is_same_v<std::invoke_result_t<callback_type>, void>, int32_t> = 0>
   auto with_allocator(kphp::memory::pool_allocator& replacement, callback_type&& callback) noexcept -> void {
-    const auto previous_allocator{std::exchange(m_allocator_ref, std::ref(replacement))};
-    const auto restore_allocator{vk::finally([this, previous_allocator]() noexcept { m_allocator_ref = previous_allocator; })};
+    const auto previous_allocator{replace_script_memory_resource(replacement.get_memory_resource())};
+    const auto restore_allocator{vk::finally([this, previous_allocator]() noexcept { m_script_memory_resource = previous_allocator; })};
     std::invoke(std::forward<callback_type>(callback));
   }
 #endif
