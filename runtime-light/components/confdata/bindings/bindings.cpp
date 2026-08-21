@@ -7,6 +7,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/components/confdata/state/component-state.h"
 #include "runtime-light/components/confdata/state/instance-state.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/io-scheduler.h"
@@ -18,11 +19,11 @@
 namespace kphp::coro {
 
 auto instance_state::get() noexcept -> instance_state& {
-  return InstanceState::get().coroutine_instance_state;
+  return InstanceState::get().m_coroutine_instance_state;
 }
 
 auto io_scheduler::get() noexcept -> io_scheduler& {
-  return InstanceState::get().io_scheduler;
+  return InstanceState::get().m_io_scheduler;
 }
 
 } // namespace kphp::coro
@@ -30,17 +31,16 @@ auto io_scheduler::get() noexcept -> io_scheduler& {
 namespace kphp::log {
 
 auto contextual_tags::try_get() noexcept -> std::optional<std::reference_wrapper<contextual_tags>> {
-  if (k2::instance_state() != nullptr) [[likely]] {
-    return InstanceState::get().instance_tags;
-  }
   return std::nullopt;
 }
 
 } // namespace kphp::log
 
 auto AllocatorState::get() noexcept -> const AllocatorState& {
-  if (k2::instance_state() != nullptr) [[likely]] {
-    return InstanceState::get().instance_allocator_state;
+  if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
+    return instance_state_ptr->m_allocator_state;
+  } else if (const auto* component_state_ptr{k2::component_state()}; component_state_ptr != nullptr) {
+    return component_state_ptr->m_allocator_state;
   }
   kphp::log::error("can't find allocator state");
 }

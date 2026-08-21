@@ -3,7 +3,12 @@
 set(K2_CONFDATA_COMPONENT_SRC
     ${RUNTIME_LIGHT_DIR}/components/confdata/confdata-component.cpp
     ${RUNTIME_LIGHT_DIR}/components/confdata/bindings/bindings.cpp
+    ${RUNTIME_LIGHT_DIR}/components/confdata/state/component-state.cpp
     ${RUNTIME_LIGHT_DIR}/components/confdata/state/instance-state.cpp)
+
+set(K2_CONFDATA_TL_SRC
+    ${RUNTIME_LIGHT_DIR}/tl/tl-types.cpp
+    ${RUNTIME_LIGHT_DIR}/tl/tl-functions.cpp)
 
 set(K2_CONFDATA_ALLOCATOR_SRC
     ${RUNTIME_LIGHT_DIR}/allocator/runtime-light-allocator.cpp
@@ -21,6 +26,7 @@ set(K2_CONFDATA_MEMORY_RESOURCE_SRC
 
 set(K2_CONFDATA_SRC
     ${K2_CONFDATA_COMPONENT_SRC}
+    ${K2_CONFDATA_TL_SRC}
     ${K2_CONFDATA_ALLOCATOR_SRC}
     ${K2_CONFDATA_DIAGNOSTICS_SRC}
     ${K2_CONFDATA_MEMORY_RESOURCE_SRC}

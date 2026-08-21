@@ -59,7 +59,22 @@ VISIBILITY_DEFAULT void k2_init_instance() {
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_warmup() {
-  return k2::PollStatus::PollFinishedOk;
+  k2::details::image_state_ptr = k2_image_state();
+  k2::details::component_state_ptr = k2_component_state();
+  k2::details::instance_state_ptr = k2_instance_state();
+
+  auto& instance{InstanceState::get()};
+  if (instance.m_warmup_status == InstanceState::warmup_status::done) {
+    return k2::PollStatus::PollFinishedOk;
+  }
+
+  // the initial sync is performed by the service loop; pump the scheduler and observe the status it sets
+  const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
+  if (instance.m_warmup_status == InstanceState::warmup_status::done) {
+    return k2::PollStatus::PollFinishedOk;
+  }
+  // PollFinishedOk while the sync is still incomplete means the scheduler has drained unexpectedly
+  return poll_status == k2::PollStatus::PollFinishedOk ? k2::PollStatus::PollFinishedError : poll_status;
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
