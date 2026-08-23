@@ -26,11 +26,13 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/poll-info.h"
 #include "runtime-light/coroutine/detail/task-self-deleting.h"
 #include "runtime-light/coroutine/detail/timer-handle.h"
 #include "runtime-light/coroutine/poll.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/when-any.h"
@@ -466,7 +468,7 @@ auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
 }
 
 inline auto io_scheduler::schedule() noexcept {
-  class schedule_operation {
+  class schedule_operation : private kphp::coro::task_allocator_guard {
     friend class io_scheduler;
     io_scheduler& m_scheduler;
     kphp::coro::async_stack_frame* m_async_stack_frame{};

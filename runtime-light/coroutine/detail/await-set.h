@@ -12,7 +12,10 @@
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/root-promise.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -125,14 +128,14 @@ public:
     m_ready_tasks = nullptr;
     detach_all();
     while (!m_tasks_storage.empty()) {
-      auto coroutine{m_tasks_storage.front()};
+      auto coroutine{std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(m_tasks_storage.front().address())};
       /*
        * We can remove pop_front() here, because list node will be destroyed after destruction of coroutine frame and in its
        * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
        * (in the future invariant [1] may not work).
        */
       m_tasks_storage.pop_front();
-      coroutine.destroy();
+      kphp::coro::destroy(coroutine, coroutine.promise().get_task_memory_resource());
     }
 
     m_tasks_count = 0;
@@ -166,7 +169,7 @@ private:
 };
 
 template<typename return_type, typename promise_type>
-class await_set_task_promise_base : public kphp::coro::async_stack_element {
+class await_set_task_promise_base : public kphp::coro::async_stack_element, public kphp::coro::root_promise {
   std::optional<std::reference_wrapper<await_broker<return_type>>> m_await_broker{};
   await_set_ready_task_element<return_type> m_ready_task_element{};
 
@@ -231,7 +234,7 @@ public:
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), get_task_memory_resource());
   }
 };
 
@@ -314,7 +317,7 @@ public:
 private:
   await_broker<return_type>& m_await_broker;
 
-  class awaiter {
+  class awaiter : private kphp::coro::task_allocator_guard {
     vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     await_broker<return_type>& m_await_broker;
     kphp::coro::async_stack_frame* caller_frame{};
