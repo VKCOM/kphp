@@ -79,9 +79,9 @@ private:
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);                // 1MiB
   static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(8U * 1024U * 1024U);                // 8MiB
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
-  static constexpr auto INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(0U);
-  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(0U);
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(0U);
+  static constexpr auto INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);                     // 2MiB
+  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(32U * 1024U);                 // 32KiB
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U);            // 512KiB
 
   void parse_env() noexcept;
 

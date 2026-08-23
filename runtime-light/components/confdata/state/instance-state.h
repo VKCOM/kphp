@@ -45,9 +45,9 @@ private:
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);          // 1MiB
   static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);          // 2MiB
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 0.5MiB
-  static constexpr auto INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(0U);
-  static constexpr auto DEFAULT_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(0U);
-  static constexpr auto DEFAULT_MIN_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(0U);
+  static constexpr auto INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U);                     // 512KiB
+  static constexpr auto DEFAULT_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(32U * 1024U);                    // 32KiB
+  static constexpr auto DEFAULT_MIN_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(128U * 1024U);               // 128 KiB
 
   auto run() noexcept -> kphp::coro::task<>;
   auto accept_loop() noexcept -> kphp::coro::task<>;
