@@ -26,7 +26,13 @@ struct InstanceState final : vk::not_copyable {
 
   kphp::log::contextual_tags m_instance_tags;
 
-  kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
+  kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE,
+                                                        DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE,
+                                                        0,
+                                                        INIT_INSTANCE_TASK_ALLOCATOR_SIZE,
+                                                        DEFAULT_TASK_ALLOCATOR_SEGMENT_SIZE,
+                                                        DEFAULT_MIN_EXTRA_TASK_MEMORY_POOL_SIZE,
+                                                        0};
   kphp::coro::io_scheduler m_io_scheduler{m_coroutine_instance_state};
 
   InstanceState() noexcept = default;
@@ -39,6 +45,9 @@ private:
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);          // 1MiB
   static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);          // 2MiB
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 0.5MiB
+  static constexpr auto INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(0U);
+  static constexpr auto DEFAULT_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(0U);
+  static constexpr auto DEFAULT_MIN_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(0U);
 
   auto run() noexcept -> kphp::coro::task<>;
   auto accept_loop() noexcept -> kphp::coro::task<>;
