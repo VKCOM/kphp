@@ -82,7 +82,7 @@ public:
     kphp::log::assertion(buffer != nullptr);
 
     m_segment_size = segment_size;
-    m_chunk_pool.init(buffer, script_mem_size, segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
+    m_chunk_pool.init(buffer, script_mem_size, m_segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
   }
 
   auto free() noexcept -> void {
