@@ -105,6 +105,10 @@ public:
     return m_curr_resource;
   }
 
+  auto segment_size() const noexcept -> size_t {
+    return m_segment_size;
+  }
+
   auto set(memory_resource::segmented_stack_resource<shared_chunk_pool>* resource) noexcept -> void {
     m_curr_resource = resource;
   }
@@ -120,6 +124,10 @@ public:
   auto alloc_script_memory(size_t size) noexcept -> void* {
     kphp::log::assertion(size != 0);
     kphp::log::assertion(m_curr_resource != nullptr);
+
+    if (size > m_segment_size) [[unlikely]] {
+      return nullptr;
+    }
 
     void* mem{m_curr_resource->allocate(size)};
     if (mem == nullptr) [[unlikely]] {

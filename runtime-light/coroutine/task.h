@@ -7,6 +7,7 @@
 #include <concepts>
 #include <coroutine>
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -65,17 +66,12 @@ struct promise_base : kphp::coro::async_stack_element {
   }
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::task::alloc(n);
-  }
-
-  template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
     return kphp::coro::detail::memory::task::alloc_aligned(n, al);
   }
 
-  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::coro::detail::memory::task::free(ptr);
+  auto operator delete(void* ptr, size_t n, std::align_val_t al) noexcept -> void {
+    kphp::coro::detail::memory::task::free_aligned(ptr, n, al);
   }
 
   void* m_next{};
