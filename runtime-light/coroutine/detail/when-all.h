@@ -16,7 +16,10 @@
 
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/root-promise.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -89,7 +92,7 @@ class when_all_ready_awaitable<std::tuple<task_types...>> {
   when_all_latch m_latch;
   std::tuple<task_types...> m_tasks;
 
-  struct awaiter {
+  struct awaiter : private kphp::coro::task_allocator_guard {
     bool m_started{};
     when_all_ready_awaitable& m_awaitable;
     kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
@@ -145,7 +148,7 @@ public:
 };
 
 template<typename return_type, typename promise_type>
-class when_all_task_promise_base : public kphp::coro::async_stack_element {
+class when_all_task_promise_base : public kphp::coro::async_stack_element, public kphp::coro::root_promise {
   when_all_latch* m_latch{};
 
 public:
@@ -198,7 +201,7 @@ public:
     async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), get_task_memory_resource());
   }
 };
 
@@ -270,7 +273,7 @@ public:
 
   ~when_all_task() {
     if (m_coroutine != nullptr) {
-      m_coroutine.destroy();
+      kphp::coro::destroy(m_coroutine, m_coroutine.promise().get_task_memory_resource());
     }
   }
 

@@ -9,7 +9,7 @@
 #include "runtime-common/core/allocator/details/malloc-interface.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 
-namespace kphp::coro::detail::memory {
+namespace kphp::coro::detail::memory::task {
 
 inline auto alloc(size_t size) noexcept -> void* {
   return kphp::memory::details::malloc_interface<kphp::coro::detail::memory::task_allocator::get>::alloc(size);
@@ -27,4 +27,4 @@ inline auto free(void* ptr) noexcept -> void {
   kphp::memory::details::malloc_interface<kphp::coro::detail::memory::task_allocator::get>::free(ptr);
 }
 
-} // namespace kphp::coro::detail::memory
+} // namespace kphp::coro::detail::memory::task

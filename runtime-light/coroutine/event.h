@@ -16,6 +16,7 @@
 #include "runtime-common/core/allocator/script-allocator-managed.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -32,7 +33,7 @@ class event {
     auto is_set() const noexcept -> bool;
   };
 
-  struct awaiter {
+  struct awaiter : private kphp::coro::task_allocator_guard {
     vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     bool m_suspended{};
     event_controller& m_controller;
