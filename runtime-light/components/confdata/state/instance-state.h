@@ -39,10 +39,6 @@ private:
 
   class reader_session;
 
-  // === MEMBERS ==================================================================================
-  static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE{static_cast<size_t>(16U * 1024U * 1024U)};               // 16MiB
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE{static_cast<size_t>(1U * 1024U * 1024U)}; // 1MiB
-
   const ComponentState& m_component_state{ComponentState::get()};
 
 public:
@@ -65,7 +61,13 @@ private:
   std::optional<int64_t> m_update_failure_old_offset; // We only report the last old offset
 
 public:
-  kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
+  kphp::coro::instance_state m_coroutine_instance_state{m_component_state.m_initial_instance_coroutine_memory_size,
+                                                        m_component_state.m_min_instance_extra_coroutine_memory_size,
+                                                        0,
+                                                        m_component_state.m_initial_instance_task_memory_size,
+                                                        m_component_state.m_instance_task_allocator_segment_size,
+                                                        m_component_state.m_min_instance_extra_task_memory_size,
+                                                        0};
   kphp::coro::io_scheduler m_io_scheduler{m_coroutine_instance_state};
 
   StringInstanceState m_string_state;
