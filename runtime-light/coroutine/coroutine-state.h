@@ -14,11 +14,10 @@ namespace kphp::coro {
 
 struct instance_state final : private vk::not_copyable {
 
-  instance_state(size_t initial_instance_coroutine_memory_size, size_t min_instance_extra_coroutine_memory_size, size_t oom_handling_coroutine_mem_size,
-                 size_t initial_instance_task_memory_size, size_t task_allocator_segment_size, size_t min_instance_extra_task_memory_size,
-                 size_t oom_handling_task_mem_size) noexcept
-      : coroutine_allocator{initial_instance_coroutine_memory_size, min_instance_extra_coroutine_memory_size, oom_handling_coroutine_mem_size},
-        task_allocator{initial_instance_task_memory_size, task_allocator_segment_size, min_instance_extra_task_memory_size, oom_handling_task_mem_size} {}
+  instance_state(size_t coroutine_memory_size, size_t extra_coroutine_memory_size, size_t oom_handling_coroutine_mem_size, size_t task_memory_size,
+                 size_t task_allocator_segment_size, size_t extra_task_memory_size, size_t oom_handling_task_mem_size) noexcept
+      : coroutine_allocator{coroutine_memory_size, extra_coroutine_memory_size, oom_handling_coroutine_mem_size},
+        task_allocator{task_memory_size, task_allocator_segment_size, extra_task_memory_size, oom_handling_task_mem_size} {}
 
   static instance_state& get() noexcept;
 

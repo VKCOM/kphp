@@ -91,7 +91,12 @@ struct InstanceState final : vk::not_copyable {
   kphp::log::contextual_tags instance_tags;
 
   kphp::coro::instance_state coroutine_instance_state{ComponentState::get().initial_instance_coroutine_memory_size,
-                                                      ComponentState::get().min_instance_extra_coroutine_memory_size, 0};
+                                                      ComponentState::get().min_instance_extra_coroutine_memory_size,
+                                                      0,
+                                                      ComponentState::get().initial_instance_task_memory_size,
+                                                      ComponentState::get().instance_task_allocator_segment_size,
+                                                      ComponentState::get().min_instance_extra_task_memory_size,
+                                                      0};
   kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
