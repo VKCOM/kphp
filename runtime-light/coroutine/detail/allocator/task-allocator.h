@@ -12,12 +12,14 @@
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-struct TaskAllocator final : private vk::not_copyable {
+namespace kphp::coro::detail::memory {
+
+struct task_allocator final : private vk::not_copyable {
   struct shared_chunk_pool {
     memory_resource::chunk_pool_resource& m_chunk_pool;
 
     shared_chunk_pool() noexcept
-        : m_chunk_pool{TaskAllocator::get().m_chunk_pool} {}
+        : m_chunk_pool{task_allocator::get().m_chunk_pool} {}
 
     auto init(void* /*unused*/, size_t /*unused*/, size_t /*unused*/) noexcept -> void {}
 
@@ -63,11 +65,11 @@ private:
   }
 
 public:
-  static auto get() noexcept -> TaskAllocator&;
+  static auto get() noexcept -> task_allocator&;
 
-  TaskAllocator() = default;
+  task_allocator() = default;
 
-  TaskAllocator(size_t script_mem_size, size_t segment_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
+  task_allocator(size_t script_mem_size, size_t segment_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
       : m_min_extra_mem_size{min_extra_mem_size} {
     void* buffer{kphp::memory::platform::alloc(script_mem_size)};
 
@@ -151,3 +153,5 @@ public:
     m_curr_resource->deallocate(mem, size);
   }
 };
+
+} // namespace kphp::coro::detail::memory
