@@ -20,7 +20,7 @@ namespace kphp::visitors {
 // deep-copies an instance graph into a caller-provided contiguous memory block (e.g. a shared memory region):
 // every reachable array/string/instance body is recreated inside the block via memory_pool, and the original's
 // fields are rewritten to point at the copies; all copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache),
-// so they are never freed individually — the owner of the block controls their lifetime
+// so they are never freed individually -- the owner of the block controls their lifetime
 class instance_deep_copy_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor>;
@@ -50,7 +50,7 @@ public:
     array<T> copied_array{carve(arr.calculate_memory_for_copying()), arr};
     const auto commit_copy{vk::finally([&arr, &copied_array]() noexcept { arr = std::move(copied_array); })};
 
-    // copying an empty array yields the global empty-array singleton instead of a real copy — nothing left to deep-copy
+    // copying an empty array yields the global empty-array singleton instead of a real copy -- nothing left to deep-copy
     if (copied_array.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
@@ -61,7 +61,7 @@ public:
     }
     // values of a primitive array were already memcpy'd by the array copy constructor, and there are no string keys to copy
     const bool primitive_array{is_primitive<T> && copied_array.has_no_string_keys()};
-    return primitive_array || Basic::process_range(copied_array.begin(), copied_array.end());
+    return primitive_array || Basic::process_range(copied_array.begin_no_mutate(), copied_array.end_no_mutate());
   }
 
   bool process(string& str) noexcept {

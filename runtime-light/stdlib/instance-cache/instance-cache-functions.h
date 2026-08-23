@@ -56,7 +56,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   }
   std::byte* mem{static_cast<std::byte*>(alloc_result.value())};
 
-  const uint64_t class_name_hash{static_cast<uint64_t>(InstanceType::CLASS_NAME_HASH)};
+  const uint64_t class_name_hash{InstanceType::CLASS_NAME_HASH};
   std::memcpy(mem, &class_name_hash, hash_size);
   // deep-copies the object graph into the inner area and rewrites the instance's fields to point at the copies,
   // so the whole graph ends up inside the shared-memory block; all copies are pinned with ExtraRefCnt::for_instance_cache
