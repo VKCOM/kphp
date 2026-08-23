@@ -8,18 +8,22 @@
 
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 
 namespace kphp::coro {
 
 struct instance_state final : private vk::not_copyable {
 
-  instance_state(size_t initial_instance_coroutine_memory_size, size_t min_instance_extra_coroutine_memory_size,
-                 size_t oom_handling_coroutine_mem_size) noexcept
-      : coroutine_allocator{initial_instance_coroutine_memory_size, min_instance_extra_coroutine_memory_size, oom_handling_coroutine_mem_size} {}
+  instance_state(size_t initial_instance_coroutine_memory_size, size_t min_instance_extra_coroutine_memory_size, size_t oom_handling_coroutine_mem_size,
+                 size_t initial_instance_task_memory_size, size_t task_allocator_segment_size, size_t min_instance_extra_task_memory_size,
+                 size_t oom_handling_task_mem_size) noexcept
+      : coroutine_allocator{initial_instance_coroutine_memory_size, min_instance_extra_coroutine_memory_size, oom_handling_coroutine_mem_size},
+        task_allocator{initial_instance_task_memory_size, task_allocator_segment_size, min_instance_extra_task_memory_size, oom_handling_task_mem_size} {}
 
   static instance_state& get() noexcept;
 
   kphp::coro::detail::memory::RuntimeCoroutineAllocator coroutine_allocator;
+  kphp::coro::detail::memory::task_allocator task_allocator;
   kphp::coro::async_stack_root coroutine_stack_root;
 };
 
