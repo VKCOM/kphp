@@ -150,6 +150,33 @@ void ComponentState::parse_min_instance_extra_coroutine_memory_size_arg(std::str
   kphp::log::info("set min instance extra coroutine memory size to {} bytes", min_instance_extra_coroutine_memory_size);
 }
 
+void ComponentState::parse_initial_instance_task_memory_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse initial instance task memory size, got {}", value_view);
+  }
+  initial_instance_task_memory_size = *parsed;
+  kphp::log::info("set initial instance task memory size to {} bytes", initial_instance_task_memory_size);
+}
+
+void ComponentState::parse_instance_task_allocator_segment_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse instance task allocator segment size, got {}", value_view);
+  }
+  instance_task_allocator_segment_size = *parsed;
+  kphp::log::info("set instance task allocator segment size to {} bytes", instance_task_allocator_segment_size);
+}
+
+void ComponentState::parse_min_instance_extra_task_memory_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse min instance extra task memory size, got {}", value_view);
+  }
+  min_instance_extra_task_memory_size = *parsed;
+  kphp::log::info("set min instance extra task memory size to {} bytes", min_instance_extra_task_memory_size);
+}
+
 void ComponentState::parse_args() noexcept {
   for (auto i = 0; i < argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -174,6 +201,12 @@ void ComponentState::parse_args() noexcept {
       parse_initial_instance_coroutine_memory_size_arg(value_view);
     } else if (key_view == MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_SIZE_ARG) {
       parse_min_instance_extra_coroutine_memory_size_arg(value_view);
+    } else if (key_view == INITIAL_INSTANCE_TASK_MEMORY_SIZE_ARG) {
+      parse_initial_instance_task_memory_size_arg(value_view);
+    } else if (key_view == INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE_ARG) {
+      parse_instance_task_allocator_segment_size_arg(value_view);
+    } else if (key_view == MIN_INSTANCE_EXTRA_TASK_MEMORY_SIZE_ARG) {
+      parse_min_instance_extra_task_memory_size_arg(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
