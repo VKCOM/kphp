@@ -286,7 +286,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   if (const auto& [opt_new_extra_header, cur_extra_header_size]{kphp::rpc::regularize_extra_headers(request_buffer, ignore_answer)}; opt_new_extra_header) {
     std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                           sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
-    std::span<const std::byte> request_body{request_buffer.subspan(cur_extra_header_size)};
+
+    // Let's name `request_body` as `request_buffer.subspan(cur_extra_header_size)}`
 
     // If `regularize_extra_headers` gave us new header, then we must serialize `new_header` before `request_body`.
     //
@@ -298,7 +299,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
     //
     // tl_storer will be: ... may be some bytes leaved here ... |our new header| |request-body|
 
-    // we do always have enough bytes for `new_header` before `request_body`, because we have reserved it before `send_request(...)` call.
+    // we do always have enough bytes for `new_header` before `request_body`, because we have reserved it in `f$rpc_clean(...)` call.
     size_t new_header_offset{detail::RESERVED_HEADER_SIZE + cur_extra_header_size - new_header.size()};
     request_buffer = rpc_server_instance_st.tl_storer.view().subspan(new_header_offset);
     std::ranges::copy(new_header, request_buffer.data());
