@@ -136,6 +136,7 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
              fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
 
   if (!G->is_output_mode_k2()) {
+    // in K2 mode fetch just reinterprets the shared memory block, so no visitor codegen is needed
     klass->deeply_require_instance_cache_visitor();
   }
 }

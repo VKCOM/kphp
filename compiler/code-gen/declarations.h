@@ -125,6 +125,7 @@ private:
   static void compile_has_wakeup_flag(CodeGenerator &W, ClassPtr klass);
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
   static void compile_get_hash(CodeGenerator &W, ClassPtr klass);
+  static void compile_class_name_hash(CodeGenerator &W, ClassPtr klass);
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
   static void compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass);
   static void compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass);

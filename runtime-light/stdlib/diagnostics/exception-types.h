@@ -16,15 +16,12 @@
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
+#include "runtime-light/stdlib/visitors/instance-deep-copy-visitor.h"
+#include "runtime-light/stdlib/visitors/instance-deep-estimate-size-visitor.h"
 
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;
 class InstanceReferencesCountingVisitor;
-
-namespace kphp::visitors {
-class instance_deep_copy_visitor;
-class instance_deep_size_count_visitor;
-} // namespace kphp::visitors
 
 // ================================================================================================
 
@@ -65,7 +62,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 
   virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
 
-  virtual void accept(kphp::visitors::instance_deep_size_count_visitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 
   virtual void accept(ToArrayVisitor& visitor) noexcept {
     generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)

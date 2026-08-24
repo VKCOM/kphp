@@ -247,23 +247,20 @@ size_t array<T>::array_inner::estimate_size(int64_t& new_int_size, bool is_vecto
 }
 
 template<class T>
-array<T>::allocation::allocation(int64_t new_int_size, bool is_vector) noexcept
-    : int_size_(new_int_size),
-      is_vector_(is_vector) {
-  const size_t mem_size = array_inner::estimate_size(int_size_, is_vector_);
+typename array<T>::allocation array<T>::allocation::allocate(int64_t new_int_size, bool is_vector) noexcept {
+  const size_t mem_size = array_inner::estimate_size(new_int_size, is_vector);
   auto* raw_mem =
-      static_cast<std::byte*>(is_vector_ ? RuntimeAllocator::get().alloc_script_memory(mem_size) : RuntimeAllocator::get().alloc0_script_memory(mem_size));
-  mem_ = vk::span<std::byte>{raw_mem, mem_size};
+      static_cast<std::byte*>(is_vector ? RuntimeAllocator::get().alloc_script_memory(mem_size) : RuntimeAllocator::get().alloc0_script_memory(mem_size));
+  return allocation{vk::span<std::byte>{raw_mem, mem_size}, new_int_size, is_vector};
 }
 
 template<class T>
-array<T>::allocation::allocation(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept
-    : int_size_(new_int_size),
-      is_vector_(is_vector) {
-  const size_t mem_size = array_inner::estimate_size(int_size_, is_vector_);
-  php_assert(memory.size() >= mem_size);
-  php_assert(reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) == 0);
-  mem_ = memory.first(mem_size);
+std::optional<typename array<T>::allocation> array<T>::allocation::from_external(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept {
+  const size_t mem_size = array_inner::estimate_size(new_int_size, is_vector);
+  if (memory.size() < mem_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) != 0) [[unlikely]] {
+    return std::nullopt;
+  }
+  return allocation{memory.first(mem_size), new_int_size, is_vector};
 }
 
 template<class T>
@@ -691,7 +688,7 @@ bool array<T>::mutate_if_vector_shared(uint32_t mul) {
 template<class T>
 bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
   if (p->ref_cnt > 0) {
-    array_inner* new_array = create_from_allocation(allocation{int_size, true});
+    array_inner* new_array = create_from_allocation(allocation::allocate(int_size, true));
 
     const auto size = static_cast<uint32_t>(p->size);
     T* it = (T*)p->entries();
@@ -710,7 +707,7 @@ bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
 template<class T>
 bool array<T>::mutate_if_map_shared(uint32_t mul) {
   if (p->ref_cnt > 0) {
-    array_inner* new_array = create_from_allocation(allocation{p->size * mul + 1, false});
+    array_inner* new_array = create_from_allocation(allocation::allocate(p->size * mul + 1, false));
 
     for (const array_bucket* it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
@@ -760,7 +757,7 @@ void array<T>::mutate_if_map_needs_space() {
   // not shared (ref_cnt == 0)
   if (p->size * 5 > 3 * p->buf_size) {
     int64_t new_int_size = p->size * 2 + 1;
-    array_inner* new_array = create_from_allocation(allocation{new_int_size, false});
+    array_inner* new_array = create_from_allocation(allocation::allocate(new_int_size, false));
 
     for (array_bucket* it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
@@ -791,7 +788,7 @@ void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
       mutate_to_size(int_size);
     } else {
       const int64_t new_int_size = std::max(int_size, int64_t{p->buf_size});
-      array_inner* new_array = create_from_allocation(allocation{new_int_size, false});
+      array_inner* new_array = create_from_allocation(allocation::allocate(new_int_size, false));
 
       if (is_vector()) {
         for (uint32_t it = 0; it != p->size; it++) {
@@ -866,7 +863,7 @@ typename array<T>::iterator array<T>::end() {
 
 template<class T>
 void array<T>::convert_to_map() {
-  array_inner* new_array = create_from_allocation(allocation{p->size + 4, false});
+  array_inner* new_array = create_from_allocation(allocation::allocate(p->size + 4, false));
 
   T* elements = reinterpret_cast<T*>(p->entries());
   const bool move_values = p->ref_cnt == 0;
@@ -894,23 +891,27 @@ void array<T>::copy_from(const array<T1>& other) noexcept {
     return;
   }
 
-  copy_from_impl(create_from_allocation(allocation{other.p->size, other.is_vector()}), other);
+  copy_from_impl(create_from_allocation(allocation::allocate(other.p->size, other.is_vector())), other);
 }
 
 template<class T>
 template<class T1>
-void array<T>::copy_from(vk::span<std::byte> memory, const array<T1>& other) noexcept {
+bool array<T>::copy_from(vk::span<std::byte> memory, const array<T1>& other) noexcept {
   if (other.empty()) {
     p = array_inner::empty_array();
-    return;
+    return true;
   }
 
+  auto alloc{allocation::from_external(memory, other.p->size, other.is_vector())};
+  if (!alloc.has_value()) [[unlikely]] {
+    return false;
+  }
   if (!other.is_vector()) {
     // map allocations require zeroed memory (hash entries use null pointers as empty markers)
-    int64_t int_size = other.p->size;
-    std::memset(memory.data(), 0, array_inner::estimate_size(int_size, false));
+    std::memset(alloc->memory().data(), 0, alloc->memory().size());
   }
-  copy_from_impl(create_from_allocation(allocation{memory, other.p->size, other.is_vector()}), other);
+  copy_from_impl(create_from_allocation(*alloc), other);
+  return true;
 }
 
 template<class T>
@@ -962,7 +963,7 @@ void array<T>::move_from(array<T1>&& other) noexcept {
     return;
   }
 
-  array_inner* new_array = create_from_allocation(allocation{other.p->size, other.is_vector()});
+  array_inner* new_array = create_from_allocation(allocation::allocate(other.p->size, other.is_vector()));
 
   if (new_array->is_vector()) {
     uint32_t size = other.p->size;
@@ -1000,7 +1001,7 @@ array<T>::array()
 
 template<class T>
 array<T>::array(const array_size& s)
-    : p(create_from_allocation(allocation{s.size, s.is_vector})) {}
+    : p(create_from_allocation(allocation::allocate(s.size, s.is_vector))) {}
 
 template<class T>
 template<class KeyT>
@@ -1034,8 +1035,12 @@ array<T>::array(array<T1>&& other) noexcept {
 }
 
 template<class T>
-array<T>::array(vk::span<std::byte> memory, const array<T>& other) noexcept {
-  copy_from(memory, other);
+std::optional<array<T>> array<T>::copy_in(vk::span<std::byte> memory, const array<T>& other) noexcept {
+  array res;
+  if (!res.copy_from(memory, other)) [[unlikely]] {
+    return std::nullopt;
+  }
+  return res;
 }
 
 template<class T>
@@ -1709,7 +1714,7 @@ array<T>& array<T>::operator+=(const array<T>& other) {
         uint32_t my_size = p->size;
         T* my_it = (T*)p->entries();
 
-        array_inner* new_array = create_from_allocation(allocation{max(size, my_size), true});
+        array_inner* new_array = create_from_allocation(allocation::allocate(max(size, my_size), true));
 
         for (uint32_t i = 0; i < my_size; i++) {
           new_array->push_back_vector_value(my_it[i]);
@@ -1733,7 +1738,7 @@ array<T>& array<T>::operator+=(const array<T>& other) {
 
       return *this;
     } else {
-      array_inner* new_array = create_from_allocation(allocation{p->size + other.p->size + 4, false});
+      array_inner* new_array = create_from_allocation(allocation::allocate(p->size + other.p->size + 4, false));
       T* it = (T*)p->entries();
 
       for (uint32_t i = 0; i != p->size; i++) {
@@ -1751,7 +1756,7 @@ array<T>& array<T>::operator+=(const array<T>& other) {
     uint32_t new_int_size = p->size + other.p->size;
 
     if (new_int_size * 5 > 3 * p->buf_size || p->ref_cnt > 0) {
-      array_inner* new_array = create_from_allocation(allocation{max(new_int_size, 2 * p->size) + 1, false});
+      array_inner* new_array = create_from_allocation(allocation::allocate(max(new_int_size, 2 * p->size) + 1, false));
 
       for (const array_bucket* it = p->begin(); it != p->end(); it = p->next(it)) {
         if (p->is_string_hash_entry(it)) {
@@ -1930,7 +1935,7 @@ void array<T>::sort(const T1& compare, bool renumber) {
     }
 
     if (!is_vector()) {
-      array_inner* res = create_from_allocation(allocation{n, true});
+      array_inner* res = create_from_allocation(allocation::allocate(n, true));
       for (array_bucket* it = p->begin(); it != p->end(); it = p->next(it)) {
         res->push_back_vector_value(it->value);
       }
@@ -2087,7 +2092,7 @@ T array<T>::shift() {
     array_size new_size = size().cut(count() - 1);
     const bool is_v = p->has_no_string_keys();
 
-    array_inner* new_array = create_from_allocation(allocation{new_size.size, is_v});
+    array_inner* new_array = create_from_allocation(allocation::allocate(new_size.size, is_v));
     array_bucket* it = p->begin();
     T res = it->value;
 
@@ -2126,7 +2131,7 @@ int64_t array<T>::unshift(const T& val) {
     array_size new_size = size();
     const bool is_v = p->has_no_string_keys();
 
-    array_inner* new_array = create_from_allocation(allocation{new_size.size + 1, is_v});
+    array_inner* new_array = create_from_allocation(allocation::allocate(new_size.size + 1, is_v));
     array_bucket* it = p->begin();
 
     if (is_v) {

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 
 #include "common/wrappers/span.h"
 #include "runtime-common/core/core-types/decl/array_iterator.h"
@@ -193,11 +194,17 @@ private:
     int64_t int_size_{0};
     bool is_vector_{false};
 
+    inline allocation(vk::span<std::byte> memory, int64_t int_size, bool is_vector) noexcept
+        : mem_{memory},
+          int_size_{int_size},
+          is_vector_{is_vector} {}
+
   public:
-    inline allocation(int64_t new_int_size, bool is_vector) noexcept;
+    // allocates script memory for an array of the given size
+    inline static allocation allocate(int64_t new_int_size, bool is_vector) noexcept;
     // takes ownership of the beginning of externally provided memory (no allocation):
-    // memory must be 8-byte aligned and have at least estimate_size(new_int_size, is_vector) bytes
-    inline allocation(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept;
+    // returns std::nullopt if the memory is smaller than estimate_size(new_int_size, is_vector) or misaligned
+    inline static std::optional<allocation> from_external(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept;
 
     vk::span<std::byte> memory() const noexcept {
       return mem_;
@@ -226,7 +233,7 @@ private:
   inline void copy_from(const array<T1>& other) noexcept;
 
   template<class T1>
-  inline void copy_from(vk::span<std::byte> memory, const array<T1>& other) noexcept;
+  inline bool copy_from(vk::span<std::byte> memory, const array<T1>& other) noexcept;
 
   template<class T1>
   inline void copy_from_impl(array_inner* new_array, const array<T1>& other) noexcept;
@@ -262,8 +269,9 @@ public:
 
   // constructs a copy of other in externally provided memory (no allocation, no ownership):
   // memory must be 8-byte aligned and have at least other.calculate_memory_for_copying() bytes;
-  // the array never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache)
-  inline array(vk::span<std::byte> memory, const array& other) noexcept;
+  // the array never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache);
+  // returns std::nullopt if the memory is insufficient or misaligned
+  inline static std::optional<array> copy_in(vk::span<std::byte> memory, const array& other) noexcept;
 
   template<class... Args>
   inline static array create(Args&&... args) __attribute__((always_inline));

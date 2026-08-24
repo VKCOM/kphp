@@ -68,8 +68,9 @@ string::string_inner* string::string_inner::create(size_type requested_capacity,
 string::string_inner* string::string_inner::create(vk::span<std::byte> memory, size_type requested_capacity, size_type old_capacity) noexcept {
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
-  php_assert(memory.size() >= new_size);
-  php_assert(reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) == 0);
+  if (memory.size() < new_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) != 0) [[unlikely]] {
+    return nullptr;
+  }
   string_inner* p = (string_inner*)memory.data();
   p->capacity = capacity;
   return p;
@@ -123,6 +124,9 @@ char* string::string_inner::clone(size_type requested_cap) noexcept {
 
 char* string::string_inner::clone(vk::span<std::byte> memory, size_type requested_cap) noexcept {
   string_inner* r = string_inner::create(memory, requested_cap, capacity);
+  if (r == nullptr) [[unlikely]] {
+    return nullptr;
+  }
   if (size) {
     memcpy(r->ref_data(), ref_data(), size);
   }
@@ -208,9 +212,12 @@ string::string(string&& str) noexcept
   str.p = string_cache::empty_string().ref_data();
 }
 
-string::string(vk::span<std::byte> memory, const string& str) noexcept
-    : p{} {
-  copy_from(memory, str);
+std::optional<string> string::copy_in(vk::span<std::byte> memory, const string& str) noexcept {
+  string res;
+  if (!res.copy_from(memory, str)) [[unlikely]] {
+    return std::nullopt;
+  }
+  return res;
 }
 
 string::string(const char* s, size_type n)
@@ -350,8 +357,12 @@ string string::copy_and_make_not_shared() const {
   return result;
 }
 
-void string::copy_from(vk::span<std::byte> memory, const string& other) noexcept {
-  p = other.inner()->clone(memory, other.size());
+bool string::copy_from(vk::span<std::byte> memory, const string& other) noexcept {
+  if (char* new_p{other.inner()->clone(memory, other.size())}; new_p != nullptr) [[likely]] {
+    p = new_p;
+    return true;
+  }
+  return false;
 }
 
 void string::force_reserve(size_type res) {

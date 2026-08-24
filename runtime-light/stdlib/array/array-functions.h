@@ -87,7 +87,7 @@ Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept 
     }
 
     if (!arr.is_vector()) {
-      array_inner* res{array<U>::create_from_allocation(array_allocation{n, true})};
+      array_inner* res{array<U>::create_from_allocation(array_allocation::allocate(n, true))};
       for (array_bucket* it{arr.p->begin()}; it != arr.p->end(); it = arr.p->next(it)) {
         res->push_back_vector_value(it->value);
       }

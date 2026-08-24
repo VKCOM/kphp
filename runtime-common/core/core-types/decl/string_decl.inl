@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 
 #include "common/wrappers/span.h"
 
@@ -91,7 +92,7 @@ private:
 
   friend class string_cache;
 
-  inline void copy_from(vk::span<std::byte> memory, const string& other) noexcept;
+  inline bool copy_from(vk::span<std::byte> memory, const string& other) noexcept;
 
 public:
   static constexpr size_type max_size() noexcept {
@@ -111,8 +112,9 @@ public:
   inline string(string&& str) noexcept;
   // constructs a copy of str in externally provided memory (no allocation, no ownership):
   // memory must be 8-byte aligned and have at least str.estimate_memory_usage() bytes (an upper bound of the copy's footprint);
-  // the string never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache)
-  inline string(vk::span<std::byte> memory, const string& str) noexcept;
+  // the string never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache);
+  // returns std::nullopt if the memory is insufficient or misaligned
+  inline static std::optional<string> copy_in(vk::span<std::byte> memory, const string& str) noexcept;
   inline string(const char* s, size_type n);
   inline explicit string(const char* s);
   // IMPORTANT: this constructor may return read-only strings for n == 0 and n == 1.

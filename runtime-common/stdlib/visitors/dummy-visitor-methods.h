@@ -12,7 +12,7 @@ class InstanceReferencesCountingVisitor;
 
 namespace kphp::visitors {
 class instance_deep_copy_visitor;
-class instance_deep_size_count_visitor;
+class instance_deep_estimate_size_visitor;
 } // namespace kphp::visitors
 
 struct DummyVisitorMethods {
@@ -29,5 +29,5 @@ struct DummyVisitorMethods {
   void accept(InstanceDeepDestroyVisitor& /*unused*/) noexcept {}
   // K2 counterparts of the instance cache visitors
   void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
-  void accept(kphp::visitors::instance_deep_size_count_visitor& /*unused*/) noexcept {}
+  void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 };

@@ -21,7 +21,7 @@ class CommonMemoryEstimateVisitor;
 
 namespace kphp::visitors {
 class instance_deep_copy_visitor;
-class instance_deep_size_count_visitor;
+class instance_deep_estimate_size_visitor;
 } // namespace kphp::visitors
 
 namespace job_worker_impl_ {
@@ -34,7 +34,7 @@ struct SendableBase : virtual abstract_refcountable_php_interface {
 
   virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
 
-  virtual void accept(kphp::visitors::instance_deep_size_count_visitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 
   virtual const char* get_class() const noexcept = 0;
   virtual int32_t get_hash() const noexcept = 0;
