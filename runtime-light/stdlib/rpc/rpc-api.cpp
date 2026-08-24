@@ -41,6 +41,24 @@ namespace kphp::rpc {
 
 namespace detail {
 
+// store bytes for `kphp::rpc::dest_actor_flags_header` in RpcServerInstanceState::tl_storer.
+// we do this to avoid allocating new buffer for regularized rpc extra headers and copying whole request.
+void reserve_header() noexcept {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  kphp::rpc::dest_actor_flags_header reserved_header{};
+  static_assert(sizeof(reserved_header) == RESERVED_HEADER_SIZE);
+  rpc_server_instance_st.tl_storer.store_bytes({reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(reserved_header)});
+}
+
+void clean_buffers() noexcept {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  rpc_server_instance_st.tl_storer.clear();
+  kphp::rpc::detail::reserve_header();
+  // TODO we need this just because we have one buffer for f$store_* functions and f$fetch_* functions.
+  // if we make another buffer for `rpc_server_instance_st.tl_fetcher`, then we don't need this.
+  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view().subspan(kphp::rpc::detail::RESERVED_HEADER_SIZE)};
+}
+
 mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) [[unlikely]] {
     return {};
