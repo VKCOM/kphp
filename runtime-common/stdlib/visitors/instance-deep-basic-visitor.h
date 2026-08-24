@@ -10,12 +10,13 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "common/type_traits/list_of_types.h"
 #include "runtime-common/core/runtime-core.h"
 
 namespace kphp::visitors {
 // high bit of the per-instance refcnt info word used by the legacy counting/destroy visitors:
 // the lower bits store the real reference count, the top bit marks the instance as visited
-constexpr uint32_t VISITED_INSTANCE_MASK{0x80000000};
+inline constexpr uint32_t VISITED_INSTANCE_MASK{0x80000000};
 
 // CRTP base for visitors that traverse an instance graph via compiler-generated accept() methods:
 // every field is dispatched to Child::process; a false result from any field is accumulated into is_ok()
@@ -76,6 +77,9 @@ public:
   }
 
 protected:
+  template<class T>
+  static constexpr bool is_primitive{vk::is_type_in_list<T, int64_t, double, bool, Optional<int64_t>, Optional<double>, Optional<bool>>::value};
+
   explicit instance_deep_basic_visitor(Child& child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept
       : memory_ref_cnt_{memory_ref_cnt},
         child_{child} {}

@@ -17,6 +17,7 @@
 
 #include "common/algorithms/compare.h"
 #include "common/algorithms/find.h"
+#include "common/algorithms/hashes.h"
 #include "common/tlo-parsing/tl-objects.h"
 #include "common/wrappers/fmt_format.h"
 #include "common/wrappers/iterator_range.h"
@@ -588,6 +589,7 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator& W, ClassPtr klass) {
   compile_has_wakeup_flag(W, klass);
   compile_get_class(W, klass);
   compile_get_hash(W, klass);
+  compile_class_name_hash(W, klass);
   compile_accept_visitor_methods(W, klass);
   compile_msgpack_declarations(W, klass);
   compile_virtual_builtin_functions(W, klass);
@@ -757,7 +759,12 @@ void ClassDeclaration::compile_get_class(CodeGenerator& W, ClassPtr klass) {
 
 void ClassDeclaration::compile_get_hash(CodeGenerator& W, ClassPtr klass) {
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "int get_hash()", klass->get_hash());
-  // static type tag: same value for every object of this class, available without an instance (unlike virtual get_hash())
+}
+
+void ClassDeclaration::compile_class_name_hash(CodeGenerator& W, ClassPtr klass) {
+  // static type tag: same value for every object of this class, available without an instance (unlike virtual get_hash());
+  // used by the K2 instance cache as part of the shared memory layout, so the hash function must match
+  // the one in f$instance_cache_fetch -- changing it makes images unable to read each other's entries
   W << "constexpr static uint64_t CLASS_NAME_HASH{" << vk::murmur_hash<uint64_t>(klass->name.data(), klass->name.size()) << "ULL};" << NL << NL;
 }
 
@@ -915,13 +922,8 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator& W, ClassPtr kl
   }
 }
 
-<<<<<<< HEAD
-void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator& W, ClassPtr klass) {
-  bool need_generic_accept = klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || (klass->need_instance_memory_estimate_visitor);
-=======
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator& W, ClassPtr klass) {
   bool need_generic_accept = klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || klass->need_instance_memory_estimate_visitor;
->>>>>>> 58be4d8bc (added kphp::visitors to C and C*)
 
   if (!need_generic_accept && klass->json_encoders.empty()) {
     return;
@@ -957,7 +959,7 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator& W, ClassPtr
     W << NL;
     compile_accept_visitor(W, klass, "kphp::visitors::instance_deep_copy_visitor");
     W << NL;
-    compile_accept_visitor(W, klass, "kphp::visitors::instance_deep_size_count_visitor");
+    compile_accept_visitor(W, klass, "kphp::visitors::instance_deep_estimate_size_visitor");
   }
 
   compile_accept_json_visitor(W, klass);
@@ -1124,7 +1126,7 @@ void ClassMembersDefinition::compile(CodeGenerator& W) const {
     W << NL;
     compile_generic_accept_instantiations(W, klass, "kphp::visitors::instance_deep_copy_visitor");
     W << NL;
-    compile_generic_accept_instantiations(W, klass, "kphp::visitors::instance_deep_size_count_visitor");
+    compile_generic_accept_instantiations(W, klass, "kphp::visitors::instance_deep_estimate_size_visitor");
   }
 
   W << NL;

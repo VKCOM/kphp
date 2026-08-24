@@ -20,7 +20,10 @@ namespace kphp::visitors {
 // deep-copies an instance graph into a caller-provided contiguous memory block (e.g. a shared memory region):
 // every reachable array/string/instance body is recreated inside the block via memory_pool, and the original's
 // fields are rewritten to point at the copies; all copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache),
-// so they are never freed individually -- the owner of the block controls their lifetime
+// so they are never freed individually -- the owner of the block controls their lifetime;
+// the block must be at least instance_deep_estimate_size_visitor's estimate for the same graph -- the two visitors must stay in sync;
+// on pool exhaustion (i.e. the estimate was insufficient) processing fails and false is returned,
+// leaving the instance partially rewritten -- its fields may already point into the block
 class instance_deep_copy_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor>;
@@ -36,7 +39,7 @@ public:
   instance_deep_copy_visitor& operator=(instance_deep_copy_visitor&&) = delete;
   ~instance_deep_copy_visitor() = default;
 
-  explicit instance_deep_copy_visitor(std::span<std::byte> memory_pool_buffer, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept
+  explicit instance_deep_copy_visitor(std::span<std::byte> memory_pool_buffer, ExtraRefCnt memory_ref_cnt) noexcept
       : Basic{*this, memory_ref_cnt} {
     this->memory_pool.init(memory_pool_buffer.data(), memory_pool_buffer.size());
   }
@@ -47,7 +50,11 @@ public:
       return true;
     }
 
-    array<T> copied_array{carve(arr.calculate_memory_for_copying()), arr};
+    auto copied{array<T>::copy_in(carve(arr.calculate_memory_for_copying()), arr)};
+    if (!copied.has_value()) [[unlikely]] {
+      return false;
+    }
+    array<T> copied_array{std::move(*copied)};
     const auto commit_copy{vk::finally([&arr, &copied_array]() noexcept { arr = std::move(copied_array); })};
 
     // copying an empty array yields the global empty-array singleton instead of a real copy -- nothing left to deep-copy
@@ -60,7 +67,7 @@ public:
       copied_array.set_reference_counter_to(extra_ref_cnt);
     }
     // values of a primitive array were already memcpy'd by the array copy constructor, and there are no string keys to copy
-    const bool primitive_array{is_primitive<T> && copied_array.has_no_string_keys()};
+    const bool primitive_array{Basic::template is_primitive<T> && copied_array.has_no_string_keys()};
     return primitive_array || Basic::process_range(copied_array.begin_no_mutate(), copied_array.end_no_mutate());
   }
 
@@ -69,7 +76,11 @@ public:
       return true;
     }
 
-    string copied_string{carve(str.estimate_memory_usage()), str};
+    auto copied{string::copy_in(carve(str.estimate_memory_usage()), str)};
+    if (!copied.has_value()) [[unlikely]] {
+      return false;
+    }
+    string copied_string{std::move(*copied)};
     const auto commit_copy{vk::finally([&str, &copied_string]() noexcept { str = std::move(copied_string); })};
 
     kphp::log::assertion(copied_string.get_reference_counter() == 1);
@@ -82,16 +93,13 @@ public:
   template<class I>
   bool process_instance(class_instance<I>& instance) noexcept {
     // keep the original instance alive for the whole traversal: copied_instances_table uses raw pointers to originals as keys
-    class_instance<I> instance_copy{instance};
+    class_instance<I> instance_keepalive{instance};
     const bool result{process(instance)};
     this->copied_instances_table.clear();
     return result;
   }
 
 private:
-  template<class T>
-  static constexpr bool is_primitive{vk::is_type_in_list<T, int64_t, double, bool, Optional<int64_t>, Optional<double>, Optional<bool>>::value};
-
   template<class I>
   bool process(class_instance<I>& instance) noexcept {
     if (instance.is_null()) {
@@ -106,7 +114,11 @@ private:
       return true;
     }
 
-    instance = instance.virtual_builtin_clone(carve(instance.estimate_memory_usage()));
+    // the original is known to be non-null here, so a null result means the carved buffer was too small
+    instance = instance.virtual_builtin_clone_in(carve(instance.estimate_memory_usage()));
+    if (instance.is_null()) [[unlikely]] {
+      return false;
+    }
     copied_instance_ptr = instance.get_base_raw_ptr();
 
     if (const auto extra_ref_cnt{get_memory_ref_cnt()}; extra_ref_cnt != 0) {
@@ -115,9 +127,13 @@ private:
     return Basic::process(instance);
   }
 
+  // returns an empty span when the pool is exhausted, so the caller can fail gracefully
   vk::span<std::byte> carve(size_t size) noexcept {
     const size_t aligned_size{memory_resource::details::align_for_chunk(size)};
-    return {static_cast<std::byte*>(this->memory_pool.get_from_pool(aligned_size)), aligned_size};
+    if (void* mem{this->memory_pool.get_from_pool(aligned_size, /*safe=*/true)}; mem != nullptr) [[likely]] {
+      return {static_cast<std::byte*>(mem), aligned_size};
+    }
+    return {};
   }
 
   memory_resource::monotonic_buffer_resource memory_pool;
