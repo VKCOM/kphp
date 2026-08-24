@@ -50,15 +50,6 @@ void reserve_header() noexcept {
   rpc_server_instance_st.tl_storer.store_bytes({reinterpret_cast<const std::byte*>(std::addressof(reserved_header)), sizeof(reserved_header)});
 }
 
-void clean_buffers() noexcept {
-  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  rpc_server_instance_st.tl_storer.clear();
-  kphp::rpc::detail::reserve_header();
-  // TODO we need this just because we have one buffer for f$store_* functions and f$fetch_* functions.
-  // if we make another buffer for `rpc_server_instance_st.tl_fetcher`, then we don't need this.
-  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view().subspan(kphp::rpc::detail::RESERVED_HEADER_SIZE)};
-}
-
 mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) [[unlikely]] {
     return {};
@@ -287,6 +278,15 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 }
 
 } // namespace detail
+
+void clean_buffers() noexcept {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  rpc_server_instance_st.tl_storer.clear();
+  kphp::rpc::detail::reserve_header();
+  // TODO we need this just because we have one buffer for f$store_* functions and f$fetch_* functions.
+  // if we make another buffer for `rpc_server_instance_st.tl_fetcher`, then we don't need this.
+  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view().subspan(kphp::rpc::detail::RESERVED_HEADER_SIZE)};
+}
 
 kphp::rpc::query_info send_request(std::string_view actor, std::optional<double> opt_timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};

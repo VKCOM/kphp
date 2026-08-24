@@ -61,8 +61,6 @@ namespace detail {
 
 static constexpr size_t RESERVED_HEADER_SIZE{sizeof(kphp::rpc::dest_actor_flags_header)};
 
-void clean_buffers() noexcept;
-
 kphp::rpc::query_info rpc_tl_query_one_impl(std::string_view actor, const mixed& tl_object, std::optional<double> opt_timeout, bool collect_resp_extra_info,
                                             bool ignore_answer) noexcept;
 
@@ -74,6 +72,8 @@ kphp::rpc::query_info typed_rpc_tl_query_one_impl(std::string_view actor, const 
 kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory) noexcept;
 
 } // namespace detail
+
+void clean_buffers() noexcept;
 
 } // namespace kphp::rpc
 
@@ -202,7 +202,7 @@ inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) 
 }
 
 inline bool f$rpc_clean() noexcept {
-  kphp::rpc::detail::clean_buffers();
+  kphp::rpc::clean_buffers();
   return true;
 }
 
