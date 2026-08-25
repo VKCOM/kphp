@@ -5,6 +5,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -18,8 +19,8 @@ namespace kphp::visitors {
 // the lower bits store the real reference count, the top bit marks the instance as visited
 inline constexpr uint32_t VISITED_INSTANCE_MASK{0x80000000};
 
-// CRTP base for visitors that traverse an instance graph via compiler-generated accept() methods:
-// every field is dispatched to Child::process; a false result from any field is accumulated into is_ok()
+// CRTP base for visitors that traverse an instance graph via compiler-generated accept() methods.
+// Every field is dispatched to Child::process, and a false result from any field is accumulated into is_ok().
 template<typename Child>
 class instance_deep_basic_visitor : vk::not_copyable {
 public:

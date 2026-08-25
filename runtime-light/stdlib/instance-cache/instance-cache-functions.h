@@ -22,7 +22,7 @@
 #include "runtime-light/stdlib/visitors/instance-deep-estimate-size-visitor.h"
 
 // shared memory layout: class_name_hash(u64) | class_instance shell | inner data
-// (deep copies of all arrays, strings and nested instance bodies reachable from the instance);
+// (deep copies of all arrays, strings and nested instance bodies reachable from the instance).
 template<typename InstanceType>
 bool f$instance_cache_store(const string& key, class_instance<InstanceType> instance, int64_t ttl = 0) noexcept {
   if (key.empty()) [[unlikely]] {
@@ -58,10 +58,12 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   const uint64_t class_name_hash{InstanceType::CLASS_NAME_HASH};
   std::memcpy(mem, &class_name_hash, hash_size);
   // deep-copies the object graph into the inner area and rewrites the instance's fields to point at the copies,
-  // so the whole graph ends up inside the shared-memory block; all copies are pinned with ExtraRefCnt::for_instance_cache
-  // and are never freed individually — the platform owns the block
+  // so the whole graph ends up inside the shared-memory block.
+  // All copies are pinned with ExtraRefCnt::for_instance_cache and are never freed individually -- the platform owns the block.
   kphp::visitors::instance_deep_copy_visitor copy_visitor{std::span{mem + hash_size + instance_size, estimated_size}, ExtraRefCnt::for_instance_cache};
   if (!copy_visitor.process_instance(instance)) [[unlikely]] {
+    // estimate_size_visitor and copy_visitor must stay in sync, so this should never actually happen.
+    // If this warning ever fires, it's a bug in one of the two visitors -- the allocated block above is leaked.
     kphp::log::warning("instance_cache_store. failed to deep-copy instance into shared memory: estimated size -> {}, key -> {}", estimated_size, key.c_str());
     return false;
   }
@@ -72,6 +74,8 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
     InstanceCacheInstanceState::get().request_cache.insert_or_assign(key, std::span{mem, hash_size + instance_size + estimated_size});
     return true;
   } else {
+    // publish is expected to always succeed here (ignore_if_exist=true, valid key/memory), so this should never actually happen.
+    // If this warning ever fires, the allocated block above is leaked, since it's never published and thus never reclaimed.
     kphp::log::warning("instance_cache_store. failed to publish shared memory: error -> {}, key -> {}", publish_result.error(), key.c_str());
     return false;
   }
@@ -87,33 +91,36 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
     kphp::log::warning("instance_cache_fetch. empty key is not supported");
     return {};
   }
-  std::span<const std::byte> mem{};
+  // unwraps and validates a shared memory block: returns a null instance if the block is malformed or belongs to another class
+  const auto unwrap{[&class_name, &key](std::span<const std::byte> mem) noexcept -> ClassInstanceType {
+    if (mem.size() < hash_size + instance_size) [[unlikely]] {
+      kphp::log::warning("instance_cache_fetch. shared memory is too small: size -> {}, expected at least -> {}, key -> {}", mem.size(),
+                         hash_size + instance_size, key.c_str());
+      return {};
+    }
+
+    uint64_t stored_class_name_hash{};
+    std::memcpy(&stored_class_name_hash, mem.data(), sizeof(stored_class_name_hash));
+
+    if (stored_class_name_hash != vk::murmur_hash<uint64_t>(class_name.c_str(), class_name.size())) [[unlikely]] {
+      kphp::log::warning("instance_cache_fetch. trying to fetch incompatible instance class: class -> {}, key -> {}", class_name.c_str(), key.c_str());
+      return {};
+    }
+
+    return *reinterpret_cast<const ClassInstanceType*>(mem.data() + hash_size);
+  }};
 
   auto& request_cache{InstanceCacheInstanceState::get().request_cache};
   if (auto it{request_cache.find(key)}; it != request_cache.end()) {
-    mem = it->second;
-  } else if (auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()})}; get_result.has_value()) {
-    mem = get_result.value();
-  } else {
-    return {};
+    return unwrap(it->second);
   }
 
-  if (mem.size() < hash_size + instance_size) [[unlikely]] {
-    kphp::log::warning("instance_cache_fetch. shared memory is too small: size -> {}, expected at least -> {}, key -> {}", mem.size(),
-                       hash_size + instance_size, key.c_str());
+  auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()})};
+  if (!get_result.has_value()) {
     return {};
   }
-
-  uint64_t stored_class_name_hash{};
-  std::memcpy(&stored_class_name_hash, mem.data(), sizeof(stored_class_name_hash));
-
-  if (stored_class_name_hash != vk::murmur_hash<uint64_t>(class_name.c_str(), class_name.size())) [[unlikely]] {
-    kphp::log::warning("instance_cache_fetch. trying to fetch incompatible instance class: class -> {}, key -> {}", class_name.c_str(), key.c_str());
-    return {};
-  }
-
-  request_cache.insert_or_assign(key, mem);
-  return *reinterpret_cast<const ClassInstanceType*>(mem.data() + hash_size);
+  request_cache.insert_or_assign(key, get_result.value());
+  return unwrap(get_result.value());
 }
 
 inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noexcept {
@@ -121,13 +128,13 @@ inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noex
     kphp::log::warning("instance_cache_update_ttl. empty key is not supported");
     return false;
   }
+  if (ttl < 0) [[unlikely]] {
+    kphp::log::warning("instance_cache_update_ttl. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl, key.c_str());
+    ttl = 0;
+  }
   if (constexpr int64_t max_ttl{std::numeric_limits<int64_t>::max() / 1000}; ttl > max_ttl) [[unlikely]] {
     kphp::log::warning("instance_cache_update_ttl. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl, max_ttl,
                        key.c_str());
-    ttl = 0;
-  }
-  if (ttl < 0) [[unlikely]] {
-    kphp::log::warning("instance_cache_update_ttl. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl, key.c_str());
     ttl = 0;
   }
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds

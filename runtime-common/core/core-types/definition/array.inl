@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <type_traits>
 
 #include "common/algorithms/fastmod.h"
@@ -259,6 +260,10 @@ std::optional<typename array<T>::allocation> array<T>::allocation::from_external
   const size_t mem_size = array_inner::estimate_size(new_int_size, is_vector);
   if (memory.size() < mem_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) != 0) [[unlikely]] {
     return std::nullopt;
+  }
+  if (!is_vector) {
+    // map allocations require zeroed memory
+    std::memset(memory.data(), 0, mem_size);
   }
   return allocation{memory.first(mem_size), new_int_size, is_vector};
 }
@@ -906,10 +911,6 @@ bool array<T>::copy_from(vk::span<std::byte> memory, const array<T1>& other) noe
   if (!alloc.has_value()) [[unlikely]] {
     return false;
   }
-  if (!other.is_vector()) {
-    // map allocations require zeroed memory (hash entries use null pointers as empty markers)
-    std::memset(alloc->memory().data(), 0, alloc->memory().size());
-  }
   copy_from_impl(create_from_allocation(*alloc), other);
   return true;
 }
@@ -917,9 +918,9 @@ bool array<T>::copy_from(vk::span<std::byte> memory, const array<T1>& other) noe
 template<class T>
 template<class T1>
 void array<T>::copy_from_impl(array_inner* new_array, const array<T1>& other) noexcept {
-  // same-type copies don't need convert_to (it's an identity conversion);
-  // this also keeps array<Unknown> copyable: convert_to<Unknown> is ill-formed,
-  // as its convert(const T&) and convert(const Unknown&) overloads collide when T is Unknown
+  // same-type copies don't need convert_to (it's an identity conversion).
+  // This also keeps array<Unknown> copyable: convert_to<Unknown> is ill-formed,
+  // as its convert(const T&) and convert(const Unknown&) overloads collide when T is Unknown.
   static constexpr auto convert_element{[](const T1& value) noexcept -> decltype(auto) {
     if constexpr (std::is_same_v<T, T1>) {
       return value;

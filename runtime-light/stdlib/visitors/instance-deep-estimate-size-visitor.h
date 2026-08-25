@@ -14,7 +14,8 @@
 namespace kphp::visitors {
 
 // computes how many bytes instance_deep_copy_visitor will carve for an instance graph,
-// so that the destination memory block can be allocated upfront; the two visitors must stay in sync
+// so that the destination memory block can be allocated upfront.
+// The two visitors must stay in sync.
 class instance_deep_estimate_size_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_estimate_size_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_estimate_size_visitor>;
@@ -22,7 +23,6 @@ public:
   using Basic = kphp::visitors::instance_deep_basic_visitor<instance_deep_estimate_size_visitor>;
   using Basic::process;
   using Basic::operator();
-  using Basic::get_memory_ref_cnt;
 
   instance_deep_estimate_size_visitor(const instance_deep_estimate_size_visitor&) = delete;
   instance_deep_estimate_size_visitor(instance_deep_estimate_size_visitor&&) = delete;
@@ -41,7 +41,8 @@ public:
 
     this->estimated_size += memory_resource::details::align_for_chunk(arr.calculate_memory_for_copying());
 
-    // primitive values are already accounted for wholesale above; only non-primitive values and string keys need traversal
+    // primitive values are already accounted for wholesale above.
+    // Only non-primitive values and string keys need traversal.
     const bool primitive_array{Basic::template is_primitive<T> && arr.has_no_string_keys()};
     return primitive_array || Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
   }

@@ -110,10 +110,10 @@ public:
   inline string();
   inline string(const string& str) noexcept;
   inline string(string&& str) noexcept;
-  // constructs a copy of str in externally provided memory (no allocation, no ownership):
-  // memory must be 8-byte aligned and have at least str.estimate_memory_usage() bytes (an upper bound of the copy's footprint);
-  // the string never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache);
-  // returns std::nullopt if the memory is insufficient or misaligned
+  // copies str into externally provided memory (no allocation/ownership).
+  // Memory must be aligned to alignof(string_inner) and >= str.estimate_memory_usage() bytes.
+  // Caller must pin it with a special ExtraRefCnt (e.g. for_instance_cache), since the string never frees it.
+  // Returns nullopt if memory is unfit.
   inline static std::optional<string> copy_in(vk::span<std::byte> memory, const string& str) noexcept;
   inline string(const char* s, size_type n);
   inline explicit string(const char* s);

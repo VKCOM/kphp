@@ -8,6 +8,7 @@
 #include <span>
 
 #include "common/containers/final_action.h"
+#include "common/wrappers/span.h"
 #include "runtime-common/core/memory-resource/details/memory_chunk_list.h"
 #include "runtime-common/core/memory-resource/monotonic_buffer_resource.h"
 #include "runtime-common/core/runtime-core.h"
@@ -17,13 +18,10 @@
 
 namespace kphp::visitors {
 
-// deep-copies an instance graph into a caller-provided contiguous memory block (e.g. a shared memory region):
-// every reachable array/string/instance body is recreated inside the block via memory_pool, and the original's
-// fields are rewritten to point at the copies; all copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache),
-// so they are never freed individually -- the owner of the block controls their lifetime;
-// the block must be at least instance_deep_estimate_size_visitor's estimate for the same graph -- the two visitors must stay in sync;
-// on pool exhaustion (i.e. the estimate was insufficient) processing fails and false is returned,
-// leaving the instance partially rewritten -- its fields may already point into the block
+// deep-copies an instance graph into a caller-provided memory block (e.g. shared memory), rewriting the original's fields to point at the copies.
+// Copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache) and never freed individually.
+// The block size must match instance_deep_estimate_size_visitor's estimate for the same graph. 
+// On pool exhaustion, processing fails (returns false) with the instance left partially rewritten.
 class instance_deep_copy_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor>;

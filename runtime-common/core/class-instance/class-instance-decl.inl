@@ -74,15 +74,15 @@ public:
 
   inline class_instance& operator=(const Optional<bool>& null) noexcept;
   inline class_instance clone() const;
-  // constructs a copy of the instance in externally provided memory (no allocation, no ownership):
-  // memory must be 8-byte aligned and have at least estimate_memory_usage() bytes;
-  // the instance never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache);
-  // returns a null instance if the memory is insufficient or misaligned
+  // copies the instance into externally provided memory (no allocation/ownership)
+  // memory must be aligned to alignof(T) and >= estimate_memory_usage() bytes
+  // caller must pin it with a special ExtraRefCnt (e.g. for_instance_cache), since the instance never frees it.
+  // Returns a null instance if memory is unfit.
   inline class_instance clone_in(vk::span<std::byte> memory) const noexcept;
   template<class... Args>
   inline class_instance<T> alloc(Args&&... args) __attribute__((always_inline));
-  // constructs an instance in externally provided memory (no allocation, no ownership):
-  // leaves the instance null if the memory is smaller than sizeof(T) or not aligned to alignof(T)
+  // constructs an instance in externally provided memory (no allocation/ownership)
+  // leaves it null if memory is smaller than sizeof(T) or misaligned
   template<class... Args>
   inline class_instance<T> alloc(vk::span<std::byte> memory, Args&&... args) noexcept __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
@@ -134,6 +134,8 @@ public:
   std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
     class_instance res;
     if (o) {
+      // alignof(S) is the base type's alignment, not the dynamic type's
+      // safe because all PHP classes have natural (pointer-sized) alignment, so it always matches the dynamic type's requirement
       if (memory.size() < o->virtual_builtin_sizeof() || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(S) != 0) [[unlikely]] {
         return res;
       }
