@@ -92,8 +92,11 @@ public:
     return allocated;
   }
 
-  auto deallocate(void* /*unused*/, size_t size) noexcept -> void {
+  auto deallocate(void* mem, size_t size) noexcept -> void {
     m_segment_curr -= size;
+
+    php_assert(static_cast<std::byte*>(mem) == m_segment_curr);
+
     if (unlikely(m_segment_curr == m_segment_begin)) {
       switch_to_old_segment();
     }
@@ -111,6 +114,10 @@ public:
 
   static auto segment_header_size() noexcept -> size_t {
     return sizeof(segment_list_node);
+  }
+
+  auto empty() const noexcept -> bool {
+    return m_head == nullptr;
   }
 };
 
