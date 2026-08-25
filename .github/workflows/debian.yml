@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - os: buster
-            compiler: g++
+            compiler: g++-10
             cpp: 17
             asan: off
             ubsan: off
