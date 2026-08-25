@@ -42,8 +42,11 @@ public:
 
   ~stack_scope() {
     if (m_owner) {
+      kphp::log::assertion(m_stack->empty());
+
       kphp::coro::detail::memory::task_allocator::get().set(nullptr);
       std::destroy_at(m_stack);
+      kphp::coro::detail::memory::free(m_stack);
     }
   }
 };
