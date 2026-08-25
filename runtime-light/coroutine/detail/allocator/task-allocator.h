@@ -125,10 +125,6 @@ public:
     kphp::log::assertion(size != 0);
     kphp::log::assertion(m_curr_resource != nullptr);
 
-    if (size > m_segment_size) [[unlikely]] {
-      return nullptr;
-    }
-
     void* mem{m_curr_resource->allocate(size)};
     if (mem == nullptr) [[unlikely]] {
       request_extra_memory(size);
