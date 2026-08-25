@@ -17,11 +17,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: buster
-            compiler: g++-10
-            cpp: 17
-            asan: off
-            ubsan: off
           - os: bullseye
             compiler: g++
             cpp: 17
