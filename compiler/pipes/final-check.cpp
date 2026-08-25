@@ -44,7 +44,6 @@ void check_class_immutableness(ClassPtr klass) {
 std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
 
 void check_fields_ic_compatibility(ClassPtr klass) {
-  // In case of K2 mode, all checks about serializability have already done
   bool flag = false;
   if (!klass->process_fields_ic_compatibility.compare_exchange_strong(flag, true, std::memory_order_acq_rel)) {
     return;
@@ -69,7 +68,6 @@ void check_fields_ic_compatibility(ClassPtr klass) {
 }
 
 void check_derivatives_ic_compatibility(ClassPtr klass) {
-  // In case of K2 mode, all checks about serializability have already done
   std::vector<ClassPtr> descendants = find_not_ic_compatibility_derivatives(klass);
   for (const auto &element : descendants) {
     kphp_error(false, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, element->name));

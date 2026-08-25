@@ -755,9 +755,8 @@ void ClassDeclaration::compile_get_hash(CodeGenerator &W, ClassPtr klass) {
 }
 
 void ClassDeclaration::compile_class_name_hash(CodeGenerator &W, ClassPtr klass) {
-  // static type tag: same value for every object of this class, available without an instance (unlike virtual get_hash());
-  // used by the K2 instance cache as part of the shared memory layout, so the hash function must match
-  // the one in f$instance_cache_fetch -- changing it makes images unable to read each other's entries
+  // hash of the class name, computed once at compile time -- same for every instance,
+  // unlike the virtual get_hash() it can be read without an instance at hand.
   W << "constexpr static uint64_t CLASS_NAME_HASH{" << vk::murmur_hash<uint64_t>(klass->name.data(), klass->name.size()) << "ULL};" << NL << NL;
 }
 

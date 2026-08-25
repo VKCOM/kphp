@@ -267,10 +267,10 @@ public:
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array(array<T1>&& other) noexcept __attribute__((always_inline));
 
-  // constructs a copy of other in externally provided memory (no allocation, no ownership):
-  // memory must be 8-byte aligned and have at least other.calculate_memory_for_copying() bytes;
-  // the array never frees this memory, so the caller is expected to protect it with a special ExtraRefCnt (e.g. for_instance_cache);
-  // returns std::nullopt if the memory is insufficient or misaligned
+  // copies other into externally provided memory (no allocation/ownership).
+  // Memory must be aligned to alignof(array_inner) and have at least other.calculate_memory_for_copying() bytes.
+  // The array never frees this memory, so the caller must protect it with a special ExtraRefCnt (e.g. for_instance_cache).
+  // Returns std::nullopt if the memory is unfit.
   inline static std::optional<array> copy_in(vk::span<std::byte> memory, const array& other) noexcept;
 
   template<class... Args>
