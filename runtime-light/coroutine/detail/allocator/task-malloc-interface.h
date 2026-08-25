@@ -88,9 +88,9 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
   const size_t total_size{size + (align - 1) + cb_size};
   auto* cb{reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(static_cast<std::byte*>(ptr) - cb_size)};
   if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::task_pool) [[likely]] {
-    task_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(cb) - cb->base_offset, total_size);
+    task_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
   } else {
-    RuntimeCoroutineAllocator::get().free_script_memory(reinterpret_cast<std::byte*>(cb) - cb->base_offset, total_size);
+    RuntimeCoroutineAllocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
   }
 }
 
