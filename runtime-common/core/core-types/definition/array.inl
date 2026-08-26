@@ -104,10 +104,10 @@ bool array<T>::is_int_key(const typename array<T>::key_type& key) {
 }
 
 template<>
-inline typename array<Unknown>::array_inner* array<Unknown>::array_inner::empty_array() {
+inline const typename array<Unknown>::array_inner* array<Unknown>::array_inner::empty_array() {
   // need this hack because gcc10 and newer complains about
   // "array subscript is outside array bounds of array<Unknown>::array_inner"
-  static array_inner_control empty_array[1]{{
+  static constexpr array_inner_control empty_array[1]{{
       true,
       ExtraRefCnt::for_global_const,
       -1,
@@ -115,12 +115,12 @@ inline typename array<Unknown>::array_inner* array<Unknown>::array_inner::empty_
       0,
       2,
   }};
-  return static_cast<array<Unknown>::array_inner*>(&empty_array[0]);
+  return static_cast<const array<Unknown>::array_inner*>(&empty_array[0]);
 }
 
 template<class T>
-typename array<T>::array_inner* array<T>::array_inner::empty_array() {
-  return reinterpret_cast<array_inner*>(array<Unknown>::array_inner::empty_array());
+const typename array<T>::array_inner* array<T>::array_inner::empty_array() {
+  return reinterpret_cast<const array_inner*>(array<Unknown>::array_inner::empty_array());
 }
 
 template<class T>
@@ -869,7 +869,7 @@ template<class T>
 template<class T1>
 void array<T>::copy_from(const array<T1>& other) {
   if (other.empty()) {
-    p = array_inner::empty_array();
+    p = const_cast<array_inner*>(array_inner::empty_array());
     return;
   }
 
@@ -900,7 +900,7 @@ template<class T>
 template<class T1>
 void array<T>::move_from(array<T1>&& other) noexcept {
   if (other.empty()) {
-    p = array_inner::empty_array();
+    p = const_cast<array_inner*>(array_inner::empty_array());
     return;
   }
 
@@ -944,7 +944,7 @@ array<T> array<T>::convert_from(const array<U>& other) {
 
 template<class T>
 array<T>::array()
-    : p(array_inner::empty_array()) {}
+    : p(const_cast<array_inner*>(array_inner::empty_array())) {}
 
 template<class T>
 array<T>::array(const array_size& s)
@@ -966,7 +966,7 @@ array<T>::array(const array<T>& other) noexcept
 template<class T>
 array<T>::array(array<T>&& other) noexcept
     : p(other.p) {
-  other.p = array_inner::empty_array();
+  other.p = const_cast<array_inner*>(array_inner::empty_array());
 }
 
 template<class T>
@@ -1004,7 +1004,7 @@ array<T>& array<T>::operator=(array&& other) noexcept {
   if (this != &other) {
     destroy();
     p = other.p;
-    other.p = array_inner::empty_array();
+    other.p = const_cast<array_inner*>(array_inner::empty_array());
   }
   return *this;
 }
@@ -1040,7 +1040,7 @@ array<T>::~array() {
 template<class T>
 void array<T>::clear() {
   destroy();
-  p = array_inner::empty_array();
+  p = const_cast<array_inner*>(array_inner::empty_array());
 }
 
 template<class T>

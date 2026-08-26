@@ -134,7 +134,7 @@ private:
     inline static size_t estimate_size(int64_t& new_int_size, bool is_vector);
     inline static array_inner* create(int64_t new_int_size, bool is_vector);
 
-    inline static array_inner* empty_array() __attribute__((always_inline));
+    inline static const array_inner* empty_array() __attribute__((always_inline));
 
     inline void dispose();
 
