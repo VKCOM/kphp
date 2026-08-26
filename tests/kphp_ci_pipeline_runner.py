@@ -183,7 +183,7 @@ def parse_args():
         type=str,
         dest="cc_name",
         default="gcc",
-        choices=["gcc", "clang", "clang-16", "clang-18", "clang-19"],
+        choices=["gcc", "gcc-11", "clang", "clang-16", "clang-18", "clang-19"],
         help="specify cc for compiling kphp",
     )
 
@@ -193,7 +193,7 @@ def parse_args():
         type=str,
         dest="cxx_name",
         default="g++",
-        choices=["g++", "clang++", "clang++-16", "clang++-18", "clang++-19"],
+        choices=["g++", "g++-11", "clang++", "clang++-16", "clang++-18", "clang++-19"],
         help="specify cxx for compiling kphp and running tests",
     )
 
