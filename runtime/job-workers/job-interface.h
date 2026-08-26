@@ -49,6 +49,7 @@ struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
   virtual void accept(CommonMemoryEstimateVisitor&) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept = 0;
+  virtual size_t virtual_builtin_alignof() const noexcept = 0;
   virtual SendingInstanceBase* virtual_builtin_clone() const noexcept = 0;
 
   virtual ~SendingInstanceBase() = default;
@@ -114,6 +115,10 @@ struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classe
 
   size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
+  }
+
+  size_t virtual_builtin_alignof() const noexcept override {
+    return alignof(C$KphpJobWorkerResponseError);
   }
 
   C$KphpJobWorkerResponseError* virtual_builtin_clone() const noexcept override {

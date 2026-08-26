@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include <algorithm>
 #include <memory>
 
 #include "runtime-common/core/memory-resource/memory_resource.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 
 namespace memory_resource {
 namespace details {
@@ -37,7 +39,17 @@ private:
 static_assert(sizeof(memory_chunk_list) == 8, "sizeof memory_chunk_list should be 8");
 
 inline constexpr size_t align_for_chunk(size_t size) noexcept {
-  return static_cast<size_t>((size + 7L) & -8L);
+  constexpr size_t align{8};
+  return (size + (align - 1)) & ~(align - 1);
+}
+
+inline constexpr size_t align_for_chunk(size_t size, size_t align) noexcept {
+  php_assert(align != 0 && (align & (align - 1)) == 0); // NOLINT
+  // we need to carve out X bytes such that size + (ptr % align) <= X holds for any ptr the pool may return.
+  // the pool only guarantees 8-byte aligned ptr, so the worst case is ptr % align == align - 8.
+  // requesting size + (align - 8), rounded up to the pool's 8-byte granularity, is therefore always enough.
+  const size_t padding{std::max(align, size_t{8}) - 8};
+  return align_for_chunk(size + padding);
 }
 
 inline constexpr size_t get_chunk_id(size_t aligned_size) noexcept {
