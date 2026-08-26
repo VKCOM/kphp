@@ -109,6 +109,10 @@ public:
   VertexAdaptor<op_lambda> get_lambda_function(const PhpDocComment *phpdoc, FunctionModifiers modifiers);
   VertexAdaptor<op_function> get_function(bool is_lambda, const PhpDocComment *phpdoc, FunctionModifiers modifiers);
 
+  VertexAdaptor<op_empty> get_attribute_group();
+  VertexAdaptor<op_empty> get_attribute();
+  VertexAdaptor<op_func_call> get_attribute_call();
+
   ClassMemberModifiers parse_class_member_modifier_mask();
   VertexPtr get_class_member(const PhpDocComment *phpdoc);
 
