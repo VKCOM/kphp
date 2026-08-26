@@ -5,6 +5,7 @@
 #pragma once
 
 #include <bit>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
@@ -49,6 +50,7 @@ private:
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_resource{nullptr};
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
+  bool m_stack_requested{false};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
     size_t extra_mem_size{std::max(m_min_extra_mem_size, requested_size)};
@@ -119,6 +121,14 @@ public:
     set(resource);
 
     return prev_resource;
+  }
+
+  auto request_stack_for_next_alloc() noexcept -> void {
+    m_stack_requested = true;
+  }
+
+  auto consume_stack_request() noexcept -> bool {
+    return std::exchange(m_stack_requested, false);
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {

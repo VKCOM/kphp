@@ -10,6 +10,7 @@
 #include <limits>
 #include <new>
 
+#include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 
@@ -20,7 +21,7 @@ private:
   static constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00; // 4GiB
 
 public:
-  enum class backend_type : uint8_t { task_pool, coroutine_pool };
+  enum class backend_type : uint8_t { task_pool, task_pool_owner, coroutine_pool };
 
   backend_type backend{};
   uint16_t base_offset{};
@@ -54,17 +55,33 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   const size_t total_size{size + (align - 1) + cb_size};
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
-  if (kphp::coro::detail::memory::task_allocator::get().current() == nullptr) {
-    base = RuntimeCoroutineAllocator::get().alloc_script_memory(total_size);
-    backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
-  } else {
+  auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
+  if (task_allocator.consume_stack_request()) {
     if (total_size <= kphp::coro::detail::memory::task_allocator::get().segment_size()) [[likely]] {
-      base = kphp::coro::detail::memory::task_allocator::get().alloc_script_memory(total_size);
-      backend = kphp::coro::detail::memory::task::control_block::backend_type::task_pool;
+      if (task_allocator.current() == nullptr) {
+        void* mem{kphp::coro::detail::memory::alloc_aligned(
+            sizeof(memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>),
+            static_cast<std::align_val_t>(alignof(memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>)))};
+
+        kphp::log::assertion(mem != nullptr);
+
+        auto* stack{
+            std::construct_at(static_cast<memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>*>(mem))};
+        task_allocator.init_resource(stack);
+        task_allocator.set(stack);
+        backend = kphp::coro::detail::memory::task::control_block::backend_type::task_pool_owner;
+      } else {
+        backend = kphp::coro::detail::memory::task::control_block::backend_type::task_pool;
+      }
+
+      base = task_allocator.alloc_script_memory(total_size);
     } else {
       base = RuntimeCoroutineAllocator::get().alloc_script_memory(total_size);
       backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
     }
+  } else {
+    base = RuntimeCoroutineAllocator::get().alloc_script_memory(total_size);
+    backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
   }
 
   if (base == nullptr) [[unlikely]] {
@@ -92,8 +109,15 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
   const size_t cb_size{sizeof(kphp::coro::detail::memory::task::control_block)};
   const size_t total_size{size + (align - 1) + cb_size};
   auto* cb{reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(static_cast<std::byte*>(ptr) - cb_size)};
+  auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
   if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::task_pool) {
-    kphp::coro::detail::memory::task_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+  } else if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::task_pool_owner) {
+    task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    auto* stack{task_allocator.current()};
+    task_allocator.set(nullptr);
+    std::destroy_at(stack);
+    kphp::coro::detail::memory::free(stack);
   } else {
     RuntimeCoroutineAllocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
   }
