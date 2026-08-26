@@ -4,17 +4,101 @@
 
 #include "compiler/composer.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include "common/algorithms/contains.h"
 #include "common/wrappers/fmt_format.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/composer-json-data.h"
 #include "compiler/kphp_assert.h"
+#include "compiler/lexer.h"
+#include "compiler/token.h"
 
 
 static bool file_exists(const std::string &filename) {
   return access(filename.c_str(), F_OK) == 0;
 };
+
+// Scans a single PHP file using KPHP's own lexer and returns all fully-qualified
+// class names declared in it.  Uses '/' as the namespace separator (the same
+// convention used by the rest of this file).
+//
+// Requires lexer_init() to have been called beforehand (guaranteed by the
+// compiler pipeline: lexer_init() runs before init_composer_class_loader()).
+static std::vector<std::string> collect_php_class_names(const std::string &filepath) {
+  std::ifstream f(filepath, std::ios::binary);
+  if (!f) {
+    return {};
+  }
+  std::string content{std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()};
+
+  std::vector<Token> tokens = php_text_to_tokens(content);
+
+  std::vector<std::string> result;
+  std::string ns_prefix;  // e.g. "Foo/Bar/" or ""
+
+  for (size_t i = 0; i < tokens.size(); ++i) {
+    const auto type = tokens[i].type();
+
+    // track namespace declarations: "namespace Foo\Bar;"
+    if (type == tok_namespace && i + 1 < tokens.size() && tokens[i + 1].type() == tok_func_name) {
+      std::string ns = static_cast<std::string>(tokens[i + 1].str_val);
+      std::replace(ns.begin(), ns.end(), '\\', '/');
+      ns_prefix = ns + "/";
+      ++i;
+      continue;
+    }
+
+    // detect class/interface/trait declarations
+    // the lexer produces: tok_class / tok_interface / tok_trait
+    // optionally preceded by tok_abstract or tok_final (which we can just skip)
+    if (type == tok_class || type == tok_interface || type == tok_trait) {
+      if (i + 1 < tokens.size() && tokens[i + 1].type() == tok_func_name) {
+        result.push_back(ns_prefix + static_cast<std::string>(tokens[i + 1].str_val));
+        ++i;
+      }
+      continue;
+    }
+  }
+
+  return result;
+}
+
+// Scans 'path' (a directory or a single .php file) for PHP class declarations
+// and inserts the found class_name→file_path pairs into 'out'.
+// Class names use '/' as the namespace separator.
+static void scan_classmap_path(const std::string &path,
+                                std::unordered_map<std::string, std::string> &out) {
+  namespace fs = std::filesystem;
+
+  std::error_code ec;
+  fs::path fsp{path};
+
+  if (fs::is_regular_file(fsp, ec) && fsp.extension() == ".php") {
+    for (const auto &cls : collect_php_class_names(path)) {
+      out.emplace(cls, path);
+    }
+    return;
+  }
+
+  if (fs::is_directory(fsp, ec)) {
+    const auto opts = fs::directory_options::skip_permission_denied;
+    for (const auto &entry : fs::recursive_directory_iterator(fsp, opts, ec)) {
+      if (!entry.is_regular_file()) {
+        continue;
+      }
+      if (entry.path().extension() != ".php") {
+        continue;
+      }
+      const std::string file_path = entry.path().string();
+      for (const auto &cls : collect_php_class_names(file_path)) {
+        out.emplace(cls, file_path);
+      }
+    }
+  }
+}
 
 std::string ComposerAutoloader::psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore) {
   std::string prefix = class_name;
@@ -102,6 +186,14 @@ std::string ComposerAutoloader::psr0_lookup(const std::string &class_name) const
   return file;
 }
 
+std::string ComposerAutoloader::classmap_lookup(const std::string &class_name) const {
+  auto it = autoload_classmap_.find(class_name);
+  if (it != autoload_classmap_.end() && file_exists(it->second)) {
+    return it->second;
+  }
+  return "";
+}
+
 void ComposerAutoloader::set_use_dev(bool v) {
   use_dev_ = v;
 }
@@ -153,6 +245,11 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   //       "file.php",
   //       <...>
   //     ],
+  //     "classmap": [
+  //       "src/",        // directory to scan for class declarations
+  //       "lib/Foo.php", // single file
+  //       <...>
+  //     ],
   //   }
   //   "autoload-dev": {
   //     "psr-4": {
@@ -165,6 +262,10 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   //     },
   //     "files": [
   //       "file.php",
+  //       <...>
+  //     ],
+  //     "classmap": [
+  //       "src/",
   //       <...>
   //     ],
   //   }
@@ -204,6 +305,12 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
     if (!autoload_psr4.is_dev || use_dev) {
       auto &at_prefix = autoload_psr4_[autoload_psr4.prefix];
       at_prefix.insert(at_prefix.end(), autoload_psr4.dirs.begin(), autoload_psr4.dirs.end());
+    }
+  }
+
+  for (const auto &classmap_entry : composer_json->autoload_classmap) {
+    if (!classmap_entry.is_dev || use_dev) {
+      scan_classmap_path(classmap_entry.path, autoload_classmap_);
     }
   }
 

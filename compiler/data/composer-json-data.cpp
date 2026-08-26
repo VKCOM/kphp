@@ -143,6 +143,12 @@ class ComposerJsonParser {
         parse_composer_json_autoload_file(y_filename, is_autoload_dev);
       }
     }
+    if (const auto &y_classmap = y_autoload["classmap"]) {
+      for (const auto &y_path : y_classmap) {
+        std::string abs_path = composer_json_dir->full_dir_name + as_string(y_path);
+        out->autoload_classmap.emplace_back(ComposerJsonData::AutoloadClassmapEntry{std::move(abs_path), is_autoload_dev});
+      }
+    }
   }
 
   // parse composer.json "require" and "require-dev"
