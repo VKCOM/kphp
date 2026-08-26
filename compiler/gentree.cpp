@@ -2186,6 +2186,12 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
         catch_op.set_location(location);
         catch_list.emplace_back(catch_op);
       }
+      if (test_expect(tok_finally)) {
+        kphp_error(0, "finally is unsupported");
+        next_cur();
+        get_statement();
+        return {};
+      }
       CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
       return VertexAdaptor<op_try>::create(VertexUtil::embrace(try_body), std::move(catch_list)).set_location(location);
