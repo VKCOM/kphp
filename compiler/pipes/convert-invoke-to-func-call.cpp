@@ -119,8 +119,11 @@ VertexPtr ConvertInvokeToFuncCallPass::on_clone(VertexAdaptor<op_clone> v_clone)
     return call_virt_clone;
   }
 
-  // clone $obj, when a class has the __clone() magic method, is replaced with { tmp = clone $obj; tmp->__clone(); $tmp }
-  if (klass->members.has_instance_method(ClassData::NAME_OF_CLONE)) {
+  // clone $obj, when a class (or any of its ancestors) has the __clone() magic method,
+  // is replaced with { tmp = clone $obj; tmp->__clone(); $tmp }
+  // find_instance_method_by_local_name walks the full parent_class chain, so an inherited
+  // __clone() from a base class is correctly invoked (fixes #57)
+  if (const auto *clone_method = klass->find_instance_method_by_local_name(ClassData::NAME_OF_CLONE)) {
     auto tmp_var = VertexAdaptor<op_var>::create().set_location(v_clone);
     tmp_var->str_val = gen_unique_name("tmp_for_clone");
     tmp_var->extra_type = op_ex_var_superlocal;
@@ -130,7 +133,7 @@ VertexPtr ConvertInvokeToFuncCallPass::on_clone(VertexAdaptor<op_clone> v_clone)
     auto call_magic_clone = VertexAdaptor<op_func_call>::create(tmp_var).set_location(v_clone);
     call_magic_clone->str_val = ClassData::NAME_OF_CLONE;
     call_magic_clone->extra_type = op_ex_func_call_arrow;
-    call_magic_clone->func_id = klass->members.get_instance_method(ClassData::NAME_OF_CLONE)->function;
+    call_magic_clone->func_id = clone_method->function;
 
     return VertexAdaptor<op_seq_rval>::create(set_clone_to_tmp, call_magic_clone, tmp_var).set_location(v_clone);
   }
