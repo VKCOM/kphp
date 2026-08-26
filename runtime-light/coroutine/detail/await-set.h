@@ -12,9 +12,7 @@
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
-#include "runtime-light/coroutine/root-promise.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -135,7 +133,7 @@ public:
        * (in the future invariant [1] may not work).
        */
       m_tasks_storage.pop_front();
-      kphp::coro::destroy(coroutine, coroutine.promise().get_task_memory_resource());
+      coroutine.destroy();
     }
 
     m_tasks_count = 0;
@@ -169,7 +167,7 @@ private:
 };
 
 template<typename return_type, typename promise_type>
-class await_set_task_promise_base : public kphp::coro::async_stack_element, public kphp::coro::root_promise {
+class await_set_task_promise_base : public kphp::coro::async_stack_element {
   std::optional<std::reference_wrapper<await_broker<return_type>>> m_await_broker{};
   await_set_ready_task_element<return_type> m_ready_task_element{};
 
@@ -234,7 +232,7 @@ public:
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
-    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), get_task_memory_resource());
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)));
   }
 };
 

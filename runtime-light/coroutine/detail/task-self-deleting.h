@@ -9,13 +9,10 @@
 #include <memory>
 
 #include "common/containers/intrusive-list.h"
-#include "runtime-common/core/memory-resource/segmented-stack-resource.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
-#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
-#include "runtime-light/coroutine/root-promise.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail {
@@ -24,7 +21,7 @@ namespace task_self_deleting {
 
 class task_self_deleting;
 
-struct promise_self_deleting : public kphp::coro::async_stack_element, public kphp::coro::root_promise {
+struct promise_self_deleting : public kphp::coro::async_stack_element {
   vk::intrusive::list_node<std::coroutine_handle<>> m_coroutine_node;
   memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_prev_resource{nullptr};
 
@@ -55,42 +52,12 @@ struct promise_self_deleting : public kphp::coro::async_stack_element, public kp
 
   static auto get_return_object_on_allocation_failure() noexcept -> task_self_deleting;
 
-  auto initial_suspend() noexcept {
-    struct initial_awaiter {
-      promise_self_deleting& m_promise;
-
-      constexpr auto await_ready() noexcept -> bool {
-        return false;
-      }
-
-      constexpr auto await_suspend(std::coroutine_handle<promise_self_deleting> /*unused*/) noexcept -> void {}
-
-      auto await_resume() noexcept -> void {
-        m_promise.m_prev_resource = kphp::coro::detail::memory::task_allocator::get().exchange(std::addressof(m_promise.get_task_memory_resource()));
-      }
-    };
-
-    return initial_awaiter{*this};
+  auto initial_suspend() noexcept -> std::suspend_always {
+    return {};
   }
 
-  auto final_suspend() noexcept {
-    struct final_awaiter {
-      promise_self_deleting& m_promise;
-
-      constexpr auto await_ready() noexcept -> bool {
-        return true;
-      }
-
-      auto await_suspend(std::coroutine_handle<promise_self_deleting> /*unused*/) noexcept -> void {
-        std::unreachable();
-      }
-
-      auto await_resume() const noexcept -> void {
-        kphp::coro::detail::memory::task_allocator::get().set(m_promise.m_prev_resource);
-      }
-    };
-
-    return final_awaiter{*this};
+  auto final_suspend() noexcept -> std::suspend_never {
+    return {};
   }
 
   auto return_void() const noexcept -> void {}
