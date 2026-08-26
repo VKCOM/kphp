@@ -63,6 +63,7 @@ std::string get_php_runtime_type(const vk::tlo_parsing::combinator *c, bool wrap
 std::string get_php_runtime_type(const vk::tlo_parsing::type *t);
 
 bool is_php_class_a_tl_function(ClassPtr klass);
+bool is_php_class_a_tl_function_not_in_tlo(ClassPtr klass);
 bool is_php_class_a_tl_constructor(ClassPtr klass);
 bool is_php_class_a_tl_polymorphic_type(ClassPtr klass);
 bool is_php_class_a_tl_array_item(ClassPtr klass);

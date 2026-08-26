@@ -525,6 +525,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << "return " << f_tl_cpp_struct_name << "::typed_store(this);" << NL;
     W << END << NL;
   }
+  if (tl2cpp::is_php_class_a_tl_function_not_in_tlo(klass)) {
+    // typedStore() should never return null for such a function, so this code is never executed
+    W << NL;
+    FunctionSignatureGenerator(W).set_final().set_const_this() << "std::unique_ptr<tl_func_base> store() " << BEGIN;
+    W << "return std::unique_ptr<tl_func_base>{};" << NL;
+    W << END << NL;
+  }
 
   compile_job_worker_shared_memory_piece_methods(W, true);
 
