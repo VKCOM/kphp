@@ -260,6 +260,10 @@ public:
   inline static constexpr size_t inner_sizeof() noexcept {
     return sizeof(string_inner);
   }
+  // required alignment of the memory passed to copy_in()
+  inline static constexpr size_t alignment() noexcept {
+    return alignof(string_inner);
+  }
   inline static string make_const_string_on_memory(const char* str, size_type len, void* memory, size_t memory_size);
 
   inline void destroy() __attribute__((always_inline));

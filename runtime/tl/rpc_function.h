@@ -43,6 +43,9 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
   }
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
   virtual C$VK$TL$RpcFunction* virtual_builtin_clone() const noexcept {
     return nullptr;
   }
@@ -69,6 +72,9 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual void accept(InstanceDeepDestroyVisitor&) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
+    return 0;
+  }
+  virtual size_t virtual_builtin_alignof() const noexcept {
     return 0;
   }
   virtual C$VK$TL$RpcFunctionReturnResult* virtual_builtin_clone() const noexcept {
@@ -98,6 +104,9 @@ struct C$VK$TL$RpcFunctionFetcher : abstract_refcountable_php_interface {
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
   }
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
   virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
     return nullptr;
   }
@@ -125,6 +134,9 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   }
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
+    return 0;
+  }
+  virtual size_t virtual_builtin_alignof() const noexcept {
     return 0;
   }
   virtual C$VK$TL$RpcResponse* virtual_builtin_clone() const noexcept {

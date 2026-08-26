@@ -82,6 +82,10 @@ struct C$Exception : public C$Throwable {
     return sizeof(*this);
   }
 
+  size_t virtual_builtin_alignof() const noexcept {
+    return alignof(C$Exception);
+  }
+
   const char* get_class() const noexcept override {
     return "Exception";
   }
@@ -96,6 +100,10 @@ struct C$Error : public C$Throwable {
 
   size_t virtual_builtin_sizeof() const noexcept {
     return sizeof(*this);
+  }
+
+  size_t virtual_builtin_alignof() const noexcept {
+    return alignof(C$Error);
   }
 
   const char* get_class() const noexcept override {

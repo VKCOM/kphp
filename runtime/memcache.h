@@ -68,6 +68,10 @@ public:
     return sizeof(*this);
   }
 
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return alignof(C$McMemcache);
+  }
+
   array<host> hosts{array_size{1, true}};
 };
 

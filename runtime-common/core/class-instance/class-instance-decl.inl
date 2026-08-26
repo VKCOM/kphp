@@ -110,6 +110,18 @@ public:
   }
 
   template<class S = T>
+  std::enable_if_t<!std::is_polymorphic<S>{}, size_t> alignment() const noexcept {
+    return alignof(T);
+  }
+
+  // for polymorphic types, alignof(T) is the base type's alignment, not the dynamic type's;
+  // virtual_builtin_alignof() dispatches to the dynamic type's actual alignment
+  template<class S = T>
+  std::enable_if_t<std::is_polymorphic<S>{}, size_t> alignment() const noexcept {
+    return o->virtual_builtin_alignof();
+  }
+
+  template<class S = T>
   std::enable_if_t<!std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone() const noexcept {
     return clone();
   }
@@ -134,9 +146,7 @@ public:
   std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
     class_instance res;
     if (o) {
-      // alignof(S) is the base type's alignment, not the dynamic type's
-      // safe because all PHP classes have natural (pointer-sized) alignment, so it always matches the dynamic type's requirement
-      if (memory.size() < o->virtual_builtin_sizeof() || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(S) != 0) [[unlikely]] {
+      if (memory.size() < o->virtual_builtin_sizeof() || reinterpret_cast<std::uintptr_t>(memory.data()) % o->virtual_builtin_alignof() != 0) [[unlikely]] {
         return res;
       }
       res.o = vk::intrusive_ptr<T>{o->virtual_builtin_construct_at(memory.data())};

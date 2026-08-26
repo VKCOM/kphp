@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <span>
 
 #include "common/containers/final_action.h"
@@ -20,7 +21,7 @@ namespace kphp::visitors {
 
 // deep-copies an instance graph into a caller-provided memory block (e.g. shared memory), rewriting the original's fields to point at the copies.
 // Copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache) and never freed individually.
-// The block size must match instance_deep_estimate_size_visitor's estimate for the same graph. 
+// The block size must match instance_deep_estimate_size_visitor's estimate for the same graph.
 // On pool exhaustion, processing fails (returns false) with the instance left partially rewritten.
 class instance_deep_copy_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
 public:
@@ -48,7 +49,7 @@ public:
       return true;
     }
 
-    auto copied{array<T>::copy_in(carve(arr.calculate_memory_for_copying()), arr)};
+    auto copied{array<T>::copy_in(carve(arr.calculate_memory_for_copying(), array<T>::alignment()), arr)};
     if (!copied.has_value()) [[unlikely]] {
       return false;
     }
@@ -74,7 +75,7 @@ public:
       return true;
     }
 
-    auto copied{string::copy_in(carve(str.estimate_memory_usage()), str)};
+    auto copied{string::copy_in(carve(str.estimate_memory_usage(), string::alignment()), str)};
     if (!copied.has_value()) [[unlikely]] {
       return false;
     }
@@ -113,7 +114,7 @@ private:
     }
 
     // the original is known to be non-null here, so a null result means the carved buffer was too small
-    instance = instance.virtual_builtin_clone_in(carve(instance.estimate_memory_usage()));
+    instance = instance.virtual_builtin_clone_in(carve(instance.estimate_memory_usage(), instance.alignment()));
     if (instance.is_null()) [[unlikely]] {
       return false;
     }
@@ -125,13 +126,20 @@ private:
     return Basic::process(instance);
   }
 
-  // returns an empty span when the pool is exhausted, so the caller can fail gracefully
-  vk::span<std::byte> carve(size_t size) noexcept {
-    const size_t aligned_size{memory_resource::details::align_for_chunk(size)};
-    if (void* mem{this->memory_pool.get_from_pool(aligned_size, /*safe=*/true)}; mem != nullptr) [[likely]] {
-      return {static_cast<std::byte*>(mem), aligned_size};
+  // returns an empty span when the pool is exhausted, so the caller can fail gracefully.
+  // the returned memory is aligned to `align`, regardless of what alignment the underlying pool happens to guarantee.
+  vk::span<std::byte> carve(size_t size, size_t align) noexcept {
+    size_t space{memory_resource::details::align_for_chunk(size, align)};
+    void* mem{this->memory_pool.get_from_pool(space, /*safe=*/true)};
+    if (mem == nullptr) [[unlikely]] {
+      return {};
     }
-    return {};
+    // align_for_chunk(size, align) reserves enough slack for this to always succeed
+    if (std::align(align, size, mem, space) == nullptr) [[unlikely]] {
+      kphp::log::warning("failed to align a carved memory block: size -> {}, align -> {}", size, align);
+      return {};
+    }
+    return {static_cast<std::byte*>(mem), size};
   }
 
   memory_resource::monotonic_buffer_resource memory_pool;

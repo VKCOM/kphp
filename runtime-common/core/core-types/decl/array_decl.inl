@@ -485,6 +485,11 @@ public:
   size_t estimate_memory_usage() const noexcept;
   size_t calculate_memory_for_copying() const noexcept;
 
+  // required alignment of the memory passed to copy_in()
+  static constexpr size_t alignment() noexcept {
+    return alignof(array_inner);
+  }
+
   template<typename U>
   static array<T> convert_from(const array<U>&);
 
