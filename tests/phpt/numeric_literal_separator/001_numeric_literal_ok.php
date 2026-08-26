@@ -7,6 +7,13 @@ echo 0b100_100_100;
 echo 0b1_1_1_1;
 echo 0b11_11;
 
+// int 8
+// Disabled until php8 on CI
+// echo 0o100_100;
+// echo 0o100_777_100;
+// echo 0o1_2_4_5;
+// echo 0o11_22;
+
 // int 10
 echo 100_100;
 echo 100_999_100;
