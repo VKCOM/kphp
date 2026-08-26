@@ -275,6 +275,7 @@ void PhpWorker::state_run() noexcept {
           switch (mode) {
             case http_worker:
               if (!flushed_http_code) {
+                flushed_http_code = 500;
                 http_return(conn, "ERROR", 5);
               }
               break;
