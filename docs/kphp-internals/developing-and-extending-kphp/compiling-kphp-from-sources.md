@@ -47,7 +47,7 @@ wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 Install packages
 ```bash
 apt-get update
-apt install git cmake-data=3.18* cmake=3.18* make patch re2c g++ gperf python3-minimal python3-jsonschema python3-six \
+apt install git cmake-data=3.18* cmake=3.18* make patch re2c g++ gperf python3-minimal python3-jsonschema \
             libfmt-dev libgtest-dev libgmock-dev \
             zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
             libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* composer
@@ -71,7 +71,7 @@ Install packages
 ```bash
 apt-get update
 apt install git cmake make g++ gperf netcat patch re2c \
-            python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools python3-six \
+            python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools \
             libfmt-dev libgtest-dev libgmock-dev \
             zlib1g-dev php7.4-dev libldap-dev libkrb5-dev mysql-server libmysqlclient-dev \
             libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* composer
@@ -86,7 +86,7 @@ brew tap shivammathur/php
 brew update
 brew install python@3.13 re2c cmake coreutils libiconv googletest shivammathur/php/php@7.4
 brew link --overwrite shivammathur/php/php@7.4
-python3.13 -m pip install jsonschema six
+python3.13 -m pip install jsonschema
 
 # Build kphp
 git clone https://github.com/VKCOM/kphp.git && cd kphp
