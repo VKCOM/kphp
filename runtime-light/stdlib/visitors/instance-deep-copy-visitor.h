@@ -89,6 +89,15 @@ public:
     return true;
   }
 
+  bool process(mixed& value) noexcept {
+    if (value.is_object()) {
+      kphp::log::warning("cannot perform deep copy: mixed contains an instance of {}. copying objects inside mixed is not allowed",
+                         value.as_object()->get_class());
+      return false;
+    }
+    return Basic::process(value);
+  }
+
   template<class I>
   bool process_instance(class_instance<I>& instance) noexcept {
     // keep the original instance alive for the whole traversal: copied_instances_table uses raw pointers to originals as keys
@@ -134,11 +143,8 @@ private:
     if (mem == nullptr) [[unlikely]] {
       return {};
     }
-    // align_for_chunk(size, align) reserves enough slack for this to always succeed
-    if (std::align(align, size, mem, space) == nullptr) [[unlikely]] {
-      kphp::log::warning("failed to align a carved memory block: size -> {}, align -> {}", size, align);
-      return {};
-    }
+
+    kphp::log::assertion(std::align(align, size, mem, space));
     return {static_cast<std::byte*>(mem), size};
   }
 

@@ -12,6 +12,7 @@
 
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/visitors/instance-deep-basic-visitor.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
@@ -80,6 +81,14 @@ public:
   }
 
   bool process(string& str) noexcept;
+
+  bool process(mixed& value) noexcept {
+    if (value.is_object()) {
+      php_warning("cannot perform deep copy: mixed contains an instance of %s. copying objects inside mixed is not allowed", value.as_object()->get_class());
+      return false;
+    }
+    return Basic::process(value);
+  }
 
   bool is_memory_limit_exceeded() const noexcept {
     return memory_limit_exceeded_;

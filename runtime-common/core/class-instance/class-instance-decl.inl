@@ -114,8 +114,6 @@ public:
     return alignof(T);
   }
 
-  // for polymorphic types, alignof(T) is the base type's alignment, not the dynamic type's;
-  // virtual_builtin_alignof() dispatches to the dynamic type's actual alignment
   template<class S = T>
   std::enable_if_t<std::is_polymorphic<S>{}, size_t> alignment() const noexcept {
     return o->virtual_builtin_alignof();
