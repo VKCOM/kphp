@@ -17,9 +17,7 @@
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
-#include "runtime-light/coroutine/root-promise.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -29,7 +27,7 @@ namespace kphp::coro {
 namespace shared_task_impl {
 
 template<typename promise_type>
-struct promise_base : public kphp::coro::async_stack_element, public kphp::coro::root_promise {
+struct promise_base : public kphp::coro::async_stack_element {
 private:
   struct not_started_tag {};
   struct done_tag {};
@@ -106,7 +104,7 @@ public:
       m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      kphp::coro::resume(handle, async_stack_root, get_task_memory_resource());
+      kphp::coro::resume(handle, async_stack_root);
     }
 
     // coroutine already completed, don't suspend
@@ -356,7 +354,7 @@ private:
     }
     auto coro{std::coroutine_handle<promise_type>::from_address(m_haddress)};
     if (!coro.promise().detach()) {
-      kphp::coro::destroy(coro, coro.promise().get_task_memory_resource());
+      coro.destroy();
     }
   }
 

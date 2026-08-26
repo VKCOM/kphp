@@ -13,10 +13,9 @@
 #include <utility>
 #include <variant>
 
+#include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
-#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
-#include "runtime-light/coroutine/root-promise.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -158,7 +157,7 @@ public:
 };
 
 template<typename return_type, typename promise_type>
-class when_any_task_promise_base : public kphp::coro::async_stack_element, public kphp::coro::root_promise {
+class when_any_task_promise_base : public kphp::coro::async_stack_element {
   when_any_latch* m_latch{};
 
 public:
@@ -211,7 +210,7 @@ public:
     async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), get_task_memory_resource());
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)));
   }
 };
 
@@ -294,7 +293,7 @@ public:
 
   ~when_any_task() {
     if (m_coroutine != nullptr) {
-      kphp::coro::destroy(m_coroutine, m_coroutine.promise().get_task_memory_resource());
+      m_coroutine.destroy();
     }
   }
 

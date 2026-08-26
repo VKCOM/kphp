@@ -16,7 +16,7 @@ private:
 
 public:
   task_allocator_guard() noexcept
-      : m_resource{kphp::coro::detail::memory::task_allocator::get().current()} {}
+      : m_resource{kphp::coro::detail::memory::task_allocator::get().exchange(nullptr)} {}
 
   ~task_allocator_guard() {
     kphp::coro::detail::memory::task_allocator::get().set(m_resource);
