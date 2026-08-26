@@ -199,7 +199,7 @@ public:
     async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)));
+    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
   }
 };
 
