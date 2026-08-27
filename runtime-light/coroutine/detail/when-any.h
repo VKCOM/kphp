@@ -132,9 +132,14 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
               result_variant_type{std::in_place_index<kphp::type_functions::variant_index<result_variant_type, task_result_type>()>, *std::move(task_result)};
         }
       }};
-      std::apply([&task_result_processor](auto&&... tasks) noexcept { (std::invoke(task_result_processor, std::forward<decltype(tasks)>(tasks)), ...); },
-                 std::move(m_awaitable.m_tasks));
+      std::apply(
+          [&task_result_processor](auto&&... tasks) noexcept {
+            (std::invoke(task_result_processor, std::forward<decltype(tasks)>(tasks)), ...);
+            (tasks.reset(), ...);
+          },
+          std::move(m_awaitable.m_tasks));
       kphp::log::assertion(m_awaitable.m_result.has_value());
+
       return std::move(*m_awaitable.m_result);
     }
   };
@@ -304,6 +309,12 @@ public:
 
   auto result() && noexcept {
     return m_coroutine.promise().result();
+  }
+
+  auto reset() noexcept -> void {
+    if (m_coroutine != nullptr) {
+      std::exchange(m_coroutine, nullptr).destroy();
+    }
   }
 };
 
