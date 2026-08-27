@@ -5,6 +5,7 @@
 #pragma once
 
 #include <bit>
+#include <source_location>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
@@ -163,6 +164,7 @@ public:
 
   auto free_script_memory(void* mem, size_t size) noexcept -> void {
     kphp::log::assertion(size != 0);
+    kphp::log::assertion(m_curr_resource != nullptr);
 
     m_curr_resource->deallocate(mem, size);
   }
