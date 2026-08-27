@@ -18,7 +18,6 @@ set(RUNTIME_LIGHT_LINK_FLAGS -stdlib=libc++ -static-libstdc++ -static-libgcc ${R
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/components/kphp/kphp.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
-include(${RUNTIME_LIGHT_DIR}/coroutine/coroutine.cmake)
 include(${RUNTIME_LIGHT_DIR}/server/server.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)

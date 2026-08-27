@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
+
 #include "runtime-light/allocator/allocator-state.h"
 
 auto RuntimeAllocator::get() noexcept -> RuntimeAllocator& {
