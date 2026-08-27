@@ -144,7 +144,7 @@ public:
   std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
     class_instance res;
     if (o) {
-      if (memory.size() < o->virtual_builtin_sizeof() || reinterpret_cast<std::uintptr_t>(memory.data()) % o->virtual_builtin_alignof() != 0) [[unlikely]] {
+      if (unlikely(memory.size() < o->virtual_builtin_sizeof() || reinterpret_cast<std::uintptr_t>(memory.data()) % o->virtual_builtin_alignof() != 0)) {
         return res;
       }
       res.o = vk::intrusive_ptr<T>{o->virtual_builtin_construct_at(memory.data())};
