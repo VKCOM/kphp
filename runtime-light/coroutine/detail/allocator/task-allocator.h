@@ -5,7 +5,6 @@
 #pragma once
 
 #include <bit>
-#include <source_location>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
