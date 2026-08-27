@@ -62,6 +62,9 @@ class TestClassA {
   /** @var tuple(TestClassB[]|null, int) */
   public $b;
 
+  /** @var shape(b:tuple(int, TestClassB|null), c:shape(arr:TestClassC[]))|null */
+  public $ab = null;
+
   /** @var string[] */
   public $huge_arr = [];
 }
