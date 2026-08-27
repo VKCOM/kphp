@@ -15,6 +15,7 @@
 #include "common/wrappers/overloaded.h"
 #include "runtime-common/core/allocator/script-allocator-managed.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -132,7 +133,7 @@ inline auto event::event_controller::set() noexcept -> void {
      * (in the future invariant [1] may not work).
      */
     awaiters.pop_front();
-    coroutine.resume();
+    kphp::coro::resume(coroutine);
   }
 }
 

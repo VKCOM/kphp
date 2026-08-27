@@ -15,6 +15,7 @@
 
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
@@ -60,7 +61,7 @@ public:
   auto notify_awaitable_completed() noexcept -> void {
     m_toggled = true;
     if (m_awaiting_coroutine != nullptr) {
-      m_awaiting_coroutine.resume();
+      kphp::coro::resume(m_awaiting_coroutine);
     }
   }
 };
@@ -210,7 +211,7 @@ public:
     async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)));
   }
 };
 

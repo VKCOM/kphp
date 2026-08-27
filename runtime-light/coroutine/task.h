@@ -13,7 +13,6 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -237,19 +236,6 @@ struct task {
   requires(std::same_as<void, T>)
   explicit operator task<U>() && noexcept {
     return task<U>{std::exchange(m_coro, {})};
-  }
-
-  /*
-   * This function is used to optimize allocation of task<T>. If this function is called task<T> is allocated with stack allocator.
-   * Task must be immediately co_await-ed.
-   * Usage:
-   * co_await kphp::coro::task::on_stack(f, 1, 2, 3);
-   */
-  template<typename F, typename... Args>
-  requires(std::is_invocable_v<F, Args...> && std::is_same_v<kphp::coro::task<T>, std::invoke_result_t<F, Args...>>)
-  static auto on_stack(F&& f, Args&&... args) noexcept -> kphp::coro::task<T> {
-    kphp::coro::detail::memory::task_allocator::get().request_stack_for_next_alloc();
-    return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
   }
 
 private:

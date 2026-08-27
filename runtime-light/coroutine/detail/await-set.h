@@ -12,6 +12,7 @@
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
@@ -83,7 +84,7 @@ public:
        * (in the future invariant [1] may not work).
        */
       m_awaiters.pop_front();
-      coroutine.resume();
+      kphp::coro::resume(coroutine);
     }
   }
 
@@ -151,7 +152,7 @@ public:
        * (in the future invariant [1] may not work).
        */
       awaiters.pop_front();
-      coroutine.resume();
+      kphp::coro::resume(coroutine);
     }
   }
 

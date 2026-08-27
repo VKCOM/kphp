@@ -938,7 +938,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "(" << "co_await ";
+        W << "(co_await kphp::coro::on_stack([](auto&&... args) noexcept { return ";
       }
       W << FunctionName(func);
     }
@@ -947,7 +947,12 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     const TypeData *tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-  W << "(";
+
+  if (func->is_interruptible && mode != func_call_mode::fork_call) {
+    W << "(std::forward<decltype(args)>(args)...); }";
+  } else {
+    W << "(";
+  }
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -960,6 +965,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
         args = array->args();
       }
     }
+  }
+
+  if (func->is_interruptible && mode != func_call_mode::fork_call && !args.empty()) {
+    W << ", ";
   }
 
   W << JoinValues(args, ", ");
