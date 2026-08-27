@@ -7,6 +7,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
 
