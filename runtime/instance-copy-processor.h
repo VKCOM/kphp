@@ -84,7 +84,7 @@ public:
 
   bool process(mixed& value) noexcept {
     if (value.is_object()) {
-      php_warning("cannot perform deep copy: mixed contains an instance of %s. copying objects inside mixed is not allowed", value.as_object()->get_class());
+      php_warning("cannot deep-copy a mixed value holding an object of class %s: objects inside mixed are not supported", value.as_object()->get_class());
       return false;
     }
     return Basic::process(value);

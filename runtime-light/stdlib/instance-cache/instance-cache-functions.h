@@ -22,7 +22,6 @@
 #include "runtime-light/stdlib/visitors/instance-deep-estimate-size-visitor.h"
 
 // shared memory layout: class_name_hash(u64) | class_instance shell | inner data
-// (deep copies of all arrays, strings and nested instance bodies reachable from the instance).
 template<typename InstanceType>
 bool f$instance_cache_store(const string& key, class_instance<InstanceType> instance, int64_t ttl = 0) noexcept {
   if (key.empty()) [[unlikely]] {
@@ -43,7 +42,10 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   }
 
   kphp::visitors::instance_deep_estimate_size_visitor estimate_size_visitor{};
-  estimate_size_visitor.process_instance(instance);
+  if (!estimate_size_visitor.process_instance(instance)) [[unlikely]] {
+    kphp::log::warning("instance_cache_store. failed to estimate instance size: key -> {}", key.c_str());
+    return false;
+  }
   const size_t estimated_size{estimate_size_visitor.get_estimated_size()};
   constexpr size_t instance_size{sizeof(class_instance<InstanceType>)};
   constexpr size_t hash_size{sizeof(uint64_t)};

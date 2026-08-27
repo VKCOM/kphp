@@ -91,7 +91,7 @@ public:
 
   bool process(mixed& value) noexcept {
     if (value.is_object()) {
-      kphp::log::warning("cannot perform deep copy: mixed contains an instance of {}. copying objects inside mixed is not allowed",
+      kphp::log::warning("cannot deep-copy a mixed value holding an object of class {}: objects inside mixed are not supported",
                          value.as_object()->get_class());
       return false;
     }

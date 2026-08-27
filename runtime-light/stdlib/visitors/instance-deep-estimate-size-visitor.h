@@ -10,6 +10,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/visitors/instance-deep-basic-visitor.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::visitors {
 
@@ -53,6 +54,15 @@ public:
     }
 
     return true;
+  }
+
+  bool process(mixed& value) noexcept {
+    if (value.is_object()) {
+      kphp::log::warning("cannot estimate the size of a mixed value holding an object of class {}: objects inside mixed are not supported",
+                         value.as_object()->get_class());
+      return false;
+    }
+    return Basic::process(value);
   }
 
   template<class I>
