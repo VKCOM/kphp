@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <forward_list>
 #include <functional>
 #include <list>
 #include <map>
@@ -87,6 +88,9 @@ using vector = std::vector<T, resource_allocator<T, Resource>>;
 
 template<class T, class Resource>
 using list = std::list<T, resource_allocator<T, Resource>>;
+
+template<class T, class Resource>
+using forward_list = std::forward_list<T, resource_allocator<T, Resource>>;
 
 template<class Resource>
 using string = std::basic_string<char, std::char_traits<char>, resource_allocator<char, Resource>>;
