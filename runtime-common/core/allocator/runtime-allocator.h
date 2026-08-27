@@ -15,7 +15,7 @@ private:
 public:
   static auto get() noexcept -> RuntimeAllocator&;
 
-  RuntimeAllocator() noexcept = default;
+  RuntimeAllocator() = default;
   RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
   auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;

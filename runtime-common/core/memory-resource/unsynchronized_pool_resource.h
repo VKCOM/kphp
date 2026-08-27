@@ -23,8 +23,6 @@ public:
   using monotonic_buffer_resource::memory_begin;
   using monotonic_buffer_resource::try_expand;
 
-  unsynchronized_pool_resource() noexcept = default;
-
   void init(void* buffer, size_t buffer_size, size_t oom_handling_buffer_size = 0) noexcept;
   void hard_reset() noexcept;
   void unfreeze_oom_handling_memory() noexcept;
