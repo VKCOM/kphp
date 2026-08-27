@@ -19,7 +19,7 @@ private:
   auto request_extra_memory(size_t requested_size) noexcept -> void;
 
 public:
-  pool_allocator() = default;
+  pool_allocator() noexcept = default;
   pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
 
   auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;
