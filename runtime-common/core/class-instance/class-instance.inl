@@ -36,7 +36,7 @@ class_instance<T> class_instance<T>::clone_in_impl(vk::span<std::byte> memory, s
   class_instance<T> res;
   if (o) {
     res.alloc(memory, *o); // res stays null if the memory is insufficient or misaligned
-    if (!res.is_null()) [[likely]] {
+    if (likely(!res.is_null())) {
       res.o->set_refcnt(1);
     }
   }
@@ -66,7 +66,7 @@ template<class... Args>
 class_instance<T> class_instance<T>::alloc(vk::span<std::byte> memory, Args&&... args) noexcept {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
-  if (memory.size() < sizeof(T) || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(T) != 0) [[unlikely]] {
+  if (unlikely(memory.size() < sizeof(T) || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(T) != 0)) {
     return *this;
   }
   T* ptr = new (memory.data()) T{std::forward<Args>(args)...};

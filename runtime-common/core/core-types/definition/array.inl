@@ -258,7 +258,7 @@ typename array<T>::allocation array<T>::allocation::allocate(int64_t new_int_siz
 template<class T>
 std::optional<typename array<T>::allocation> array<T>::allocation::from_external(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept {
   const size_t mem_size = array_inner::estimate_size(new_int_size, is_vector);
-  if (memory.size() < mem_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) != 0) [[unlikely]] {
+  if (unlikely(memory.size() < mem_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) != 0)) {
     return std::nullopt;
   }
   if (!is_vector) {
@@ -908,7 +908,7 @@ bool array<T>::copy_from(vk::span<std::byte> memory, const array<T1>& other) noe
   }
 
   auto alloc{allocation::from_external(memory, other.p->size, other.is_vector())};
-  if (!alloc.has_value()) [[unlikely]] {
+  if (unlikely(!alloc.has_value())) {
     return false;
   }
   copy_from_impl(create_from_allocation(*alloc), other);
@@ -1038,7 +1038,7 @@ array<T>::array(array<T1>&& other) noexcept {
 template<class T>
 std::optional<array<T>> array<T>::copy_in(vk::span<std::byte> memory, const array<T>& other) noexcept {
   array res;
-  if (!res.copy_from(memory, other)) [[unlikely]] {
+  if (unlikely(!res.copy_from(memory, other))) {
     return std::nullopt;
   }
   return res;

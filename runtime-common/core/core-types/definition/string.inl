@@ -68,7 +68,7 @@ string::string_inner* string::string_inner::create(size_type requested_capacity,
 string::string_inner* string::string_inner::create(vk::span<std::byte> memory, size_type requested_capacity, size_type old_capacity) noexcept {
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
-  if (memory.size() < new_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) != 0) [[unlikely]] {
+  if (unlikely(memory.size() < new_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) != 0)) {
     return nullptr;
   }
   string_inner* p = (string_inner*)memory.data();
@@ -124,7 +124,7 @@ char* string::string_inner::clone(size_type requested_cap) noexcept {
 
 char* string::string_inner::clone(vk::span<std::byte> memory, size_type requested_cap) noexcept {
   string_inner* r = string_inner::create(memory, requested_cap, capacity);
-  if (r == nullptr) [[unlikely]] {
+  if (unlikely(r == nullptr)) {
     return nullptr;
   }
   if (size) {
@@ -214,7 +214,7 @@ string::string(string&& str) noexcept
 
 std::optional<string> string::copy_in(vk::span<std::byte> memory, const string& str) noexcept {
   string res;
-  if (!res.copy_from(memory, str)) [[unlikely]] {
+  if (unlikely(!res.copy_from(memory, str))) {
     return std::nullopt;
   }
   return res;
@@ -358,7 +358,7 @@ string string::copy_and_make_not_shared() const {
 }
 
 bool string::copy_from(vk::span<std::byte> memory, const string& other) noexcept {
-  if (char* new_p{other.inner()->clone(memory, other.size())}; new_p != nullptr) [[likely]] {
+  if (char* new_p{other.inner()->clone(memory, other.size())}; likely(new_p != nullptr)) {
     p = new_p;
     return true;
   }
