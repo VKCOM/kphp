@@ -57,7 +57,6 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   const size_t total_size{size + (align - 1) + cb_size};
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
-  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack{nullptr};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
   if (task_allocator.consume_stack_request()) {
     if (total_size <= kphp::coro::detail::memory::task_allocator::get().segment_size()) [[likely]] {
@@ -68,7 +67,8 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
 
         kphp::log::assertion(mem != nullptr);
 
-        stack = std::construct_at(static_cast<memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>*>(mem));
+        auto* stack{
+            std::construct_at(static_cast<memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>*>(mem))};
         task_allocator.init_resource(stack);
         task_allocator.set(stack);
         backend = kphp::coro::detail::memory::task::control_block::backend_type::task_pool_owner;
@@ -96,7 +96,7 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   const uint64_t aligned_u{((base_u + cb_size) + (align - 1)) & ~(align - 1)};
   const uint64_t base_offset_u{aligned_u - base_u};
 
-  std::construct_at(reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(aligned_u - cb_size), stack, // NOLINT
+  std::construct_at(reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(aligned_u - cb_size), task_allocator.current(), // NOLINT
                     static_cast<uint16_t>(base_offset_u), backend);
 
   return reinterpret_cast<void*>(aligned_u); // NOLINT

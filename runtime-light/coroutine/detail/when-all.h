@@ -122,7 +122,14 @@ class when_all_ready_awaitable<std::tuple<task_types...>> {
         kphp::log::assertion(m_caller_async_stack_frame->async_stack_root != nullptr);
         m_caller_async_stack_frame->async_stack_root->top_async_stack_frame = m_caller_async_stack_frame;
       }
-      return std::apply([](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).result()...); }, std::move(m_awaitable.m_tasks));
+
+      return std::apply(
+          [](task_types&&... tasks) noexcept {
+            auto result{std::make_tuple(std::move(tasks).result()...)};
+            (tasks.reset(), ...);
+            return std::move(result);
+          },
+          std::move(m_awaitable.m_tasks));
     }
   };
 
@@ -282,6 +289,12 @@ public:
 
   auto result() && noexcept {
     return m_coroutine.promise().result();
+  }
+
+  auto reset() noexcept -> void {
+    if (m_coroutine != nullptr) {
+      std::exchange(m_coroutine, nullptr).destroy();
+    }
   }
 };
 
