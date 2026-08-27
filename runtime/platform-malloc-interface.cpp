@@ -2,10 +2,11 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
+
 #include <cstddef>
 
 #include "common/wrappers/likely.h"
-#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime/allocator.h"
 

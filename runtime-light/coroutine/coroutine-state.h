@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "common/mixin/not_copyable.h"
 
+#include "runtime-common/core/allocator/pool-allocator.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
 
 namespace kphp::coro {
 
@@ -18,7 +20,11 @@ struct instance_state final : private vk::not_copyable {
 
   static instance_state& get() noexcept;
 
-  kphp::coro::detail::memory::RuntimeCoroutineAllocator coroutine_allocator;
+  static kphp::memory::pool_allocator& get_coroutine_allocator() noexcept {
+    return kphp::coro::instance_state::get().coroutine_allocator;
+  }
+
+  kphp::memory::pool_allocator coroutine_allocator;
   kphp::coro::async_stack_root coroutine_stack_root;
 };
 

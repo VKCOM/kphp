@@ -21,7 +21,7 @@
 namespace kphp::coro {
 
 class event {
-  struct event_controller : public memory::script_allocator_managed, private vk::not_copyable {
+  struct event_controller : public kphp::memory::script_allocator_managed, private vk::not_copyable {
     // 1) std::monostate => not set and no coroutines are waiting
     // 2) non empty list => linked list of coroutines waiting for the event to trigger
     // 3) empty list => the event is triggered and all coroutines are resumed

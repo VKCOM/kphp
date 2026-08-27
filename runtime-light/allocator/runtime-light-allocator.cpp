@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
+
 #include "runtime-light/allocator/allocator-state.h"
 
 auto RuntimeAllocator::get() noexcept -> RuntimeAllocator& {
@@ -21,17 +22,17 @@ auto RuntimeAllocator::free() noexcept -> void {
 }
 
 auto RuntimeAllocator::alloc_script_memory(size_t size) noexcept -> void* {
-  return m_allocator.alloc(size);
+  return m_allocator.alloc_script_memory(size);
 }
 
 auto RuntimeAllocator::calloc_script_memory(size_t size) noexcept -> void* {
-  return m_allocator.calloc(size);
+  return m_allocator.calloc_script_memory(size);
 }
 
 auto RuntimeAllocator::realloc_script_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void* {
-  return m_allocator.realloc(mem, new_size, old_size);
+  return m_allocator.realloc_script_memory(mem, new_size, old_size);
 }
 
 auto RuntimeAllocator::free_script_memory(void* mem, size_t size) noexcept -> void {
-  m_allocator.free(mem, size);
+  m_allocator.free_script_memory(mem, size);
 }

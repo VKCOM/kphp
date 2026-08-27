@@ -64,8 +64,9 @@ struct InstanceState final : vk::not_copyable {
   // It's important to use `{}` instead of `= default` here.
   // In the second case clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful!
-  InstanceState() noexcept {
-    kml_instance_state.init(ComponentState::get().kml_component_state.max_buffer_size());
+  InstanceState() noexcept
+      : component_state{ComponentState::get()} {
+    kml_instance_state.init(component_state.kml_component_state.max_buffer_size());
   }
 
   static InstanceState& get() noexcept {
@@ -86,12 +87,14 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
-  AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
+  const ComponentState& component_state;
+
+  AllocatorState instance_allocator_state{component_state.initial_instance_memory_size, component_state.min_instance_extra_memory_size, 0};
 
   kphp::log::contextual_tags instance_tags;
 
-  kphp::coro::instance_state coroutine_instance_state{ComponentState::get().initial_instance_coroutine_memory_size,
-                                                      ComponentState::get().min_instance_extra_coroutine_memory_size, 0};
+  kphp::coro::instance_state coroutine_instance_state{component_state.initial_instance_coroutine_memory_size,
+                                                      component_state.min_instance_extra_coroutine_memory_size, 0};
   kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
