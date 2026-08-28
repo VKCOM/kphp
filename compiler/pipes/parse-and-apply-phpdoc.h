@@ -15,10 +15,10 @@ class ParseAndApplyPhpdocF final : public SyncPipeF<FunctionPtr> {
   using Base = SyncPipeF<FunctionPtr>;
 
 public:
-  bool forward_to_next_pipe(const FunctionPtr &f) override {
+  bool forward_to_next_pipe(const FunctionPtr& f) override {
     return !f->is_lambda() && !f->is_generic();
   }
 
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;
-  void on_finish(DataStream<FunctionPtr> &os) final;
+  void execute(FunctionPtr function, DataStream<FunctionPtr>& unused_os) final;
+  void on_finish(DataStream<FunctionPtr>& os) final;
 };

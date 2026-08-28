@@ -15,7 +15,7 @@
 using namespace ffi;
 
 inline long parse_string_span(string_span s) {
-  const auto *start = s.data_;
+  const auto* start = s.data_;
   long result = 0;
   int base = 10;
   if (start[0] == '0' && start[1] == 'b') {
@@ -34,19 +34,19 @@ inline long parse_string_span(string_span s) {
 
 static FFITypeKind int_type_by_size(size_t size, bool is_signed = true) {
   switch (size) {
-    case 1:
-      return is_signed ? FFITypeKind::Int8 : FFITypeKind::Uint8;
-    case 2:
-      return is_signed ? FFITypeKind::Int16 : FFITypeKind::Uint16;
-    case 4:
-      return is_signed ? FFITypeKind::Int32 : FFITypeKind::Uint32;
-    default:
-      return is_signed ? FFITypeKind::Int64 : FFITypeKind::Uint64;
+  case 1:
+    return is_signed ? FFITypeKind::Int8 : FFITypeKind::Uint8;
+  case 2:
+    return is_signed ? FFITypeKind::Int16 : FFITypeKind::Uint16;
+  case 4:
+    return is_signed ? FFITypeKind::Int32 : FFITypeKind::Uint32;
+  default:
+    return is_signed ? FFITypeKind::Int64 : FFITypeKind::Uint64;
   }
 }
 
-static void finalize_types(FFIType *type) {
-  const auto finalize = [](const FFIType *type) {
+static void finalize_types(FFIType* type) {
+  const auto finalize = [](const FFIType* type) {
     // we make an assumption that unsigned types have the same bit size as their signed counterparts
     static_assert(sizeof(unsigned) == sizeof(signed), "odd-sized unsigned");
     static_assert(sizeof(unsigned long) == sizeof(signed long), "odd-sized unsigned long");
@@ -104,14 +104,14 @@ static void finalize_types(FFIType *type) {
   };
 
   type->kind = finalize(type);
-  for (auto &member : type->members) {
+  for (auto& member : type->members) {
     finalize_types(member);
   }
 }
 
-FFIType *ParsingDriver::function_to_var(FFIType *function) {
+FFIType* ParsingDriver::function_to_var(FFIType* function) {
   function->kind = FFITypeKind::Var;
-  FFIType *function_ptr_type = alloc.new_type(FFITypeKind::FunctionPointer);
+  FFIType* function_ptr_type = alloc.new_type(FFITypeKind::FunctionPointer);
   function_ptr_type->members = std::move(function->members);
   function->members = {function_ptr_type};
   return function;
@@ -132,15 +132,15 @@ void ParsingDriver::add_missing_decls() {
 
   std::unordered_set<std::string> declared_types;
   declared_types.reserve(types.size());
-  for (const FFIType *type : types) {
+  for (const FFIType* type : types) {
     declared_types.insert(type->str);
   }
 
-  for (const auto &it : may_need_forward_decl) {
+  for (const auto& it : may_need_forward_decl) {
     if (vk::contains(declared_types, it.first)) {
       continue;
     }
-    FFIType *fwd_decl = alloc.new_type(it.second);
+    FFIType* fwd_decl = alloc.new_type(it.second);
     fwd_decl->str = it.first;
     add_type(fwd_decl);
   }
@@ -153,7 +153,7 @@ ParsingDriver::Result ParsingDriver::parse() {
 
   add_missing_decls();
 
-  for (FFIType *type : types) {
+  for (FFIType* type : types) {
     alloc.mark_used(type);
   }
   auto num_deleted = alloc.collect_garbage();
@@ -167,22 +167,20 @@ ParsingDriver::Result ParsingDriver::parse() {
   return result;
 }
 
-void ParsingDriver::add_type(FFIType *type) {
-  vk::finally([&] () {
-      lexer.reset_comment();
-  });
+void ParsingDriver::add_type(FFIType* type) {
+  vk::finally([&]() { lexer.reset_comment(); });
 
   if (type->kind == FFITypeKind::Unknown) {
     return;
   }
   if (vk::any_of_equal(type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
-    FFIType *fwd_decl = alloc.new_type(type->kind == FFITypeKind::Struct ? FFITypeKind::StructDef : FFITypeKind::UnionDef);
+    FFIType* fwd_decl = alloc.new_type(type->kind == FFITypeKind::Struct ? FFITypeKind::StructDef : FFITypeKind::UnionDef);
     fwd_decl->str = type->str;
     add_type(fwd_decl);
     return;
   }
   if (type->kind == FFITypeKind::_typesList) {
-    for (const auto &x : type->members) {
+    for (const auto& x : type->members) {
       add_type(x);
     }
     return;
@@ -191,8 +189,8 @@ void ParsingDriver::add_type(FFIType *type) {
   types.emplace_back(type);
 }
 
-void ParsingDriver::add_typedef(FFIType *type, FFIType *declarator) {
-  FFIType *combined_type = combine(DeclarationSpecifiers{type}, Declarator{declarator});
+void ParsingDriver::add_typedef(FFIType* type, FFIType* declarator) {
+  FFIType* combined_type = combine(DeclarationSpecifiers{type}, Declarator{declarator});
   finalize_types(combined_type);
 
   if (combined_type->kind == FFITypeKind::Function) {
@@ -203,7 +201,7 @@ void ParsingDriver::add_typedef(FFIType *type, FFIType *declarator) {
   }
 
   std::string alias_name = combined_type->str;
-  FFIType *aliased_type = combined_type->members[0];
+  FFIType* aliased_type = combined_type->members[0];
 
   if (vk::any_of_equal(aliased_type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
     may_need_forward_decl.emplace(aliased_type->str, aliased_type->kind == FFITypeKind::Struct ? FFITypeKind::StructDef : FFITypeKind::UnionDef);
@@ -217,7 +215,7 @@ void ParsingDriver::add_typedef(FFIType *type, FFIType *declarator) {
     }
     add_type(aliased_type); // save struct (or union) definition
     bool is_struct = (aliased_type->kind == FFITypeKind::StructDef);
-    FFIType *new_aliased_type = alloc.new_type(is_struct ? FFITypeKind::Struct : FFITypeKind::Union);
+    FFIType* new_aliased_type = alloc.new_type(is_struct ? FFITypeKind::Struct : FFITypeKind::Union);
     new_aliased_type->str = aliased_type->str;
     aliased_type = new_aliased_type;
   }
@@ -228,7 +226,7 @@ void ParsingDriver::add_typedef(FFIType *type, FFIType *declarator) {
     if (aliased_type->str.empty()) {
       aliased_type->str = alias_name;
     }
-    FFIType *new_aliased_type = alloc.new_type(FFITypeKind::Enum);
+    FFIType* new_aliased_type = alloc.new_type(FFITypeKind::Enum);
     new_aliased_type->str = aliased_type->str;
     aliased_type = new_aliased_type;
   }
@@ -239,7 +237,7 @@ void ParsingDriver::add_typedef(FFIType *type, FFIType *declarator) {
   }
 }
 
-void ParsingDriver::add_enumerator(FFIType *enum_list, FFIType *enumerator) {
+void ParsingDriver::add_enumerator(FFIType* enum_list, FFIType* enumerator) {
   int enum_value = enumerator->num;
   if (enumerator->num == 0 || enumerator->num == enum_list->num) {
     enum_value = enum_list->num++;
@@ -254,19 +252,19 @@ int ParsingDriver::stoi(string_span s) {
   return parse_string_span(s);
 }
 
-FFIType *ParsingDriver::combine(const TypeQualifier &type_qualifier, const DeclarationSpecifiers &decl_specs) {
+FFIType* ParsingDriver::combine(const TypeQualifier& type_qualifier, const DeclarationSpecifiers& decl_specs) {
   return combine(TypeSpecifier{type_qualifier.type}, decl_specs);
 }
 
-FFIType *ParsingDriver::combine(const TypeSpecifier &type_spec, const SpecifierQualifierList &list) {
+FFIType* ParsingDriver::combine(const TypeSpecifier& type_spec, const SpecifierQualifierList& list) {
   return combine(type_spec, DeclarationSpecifiers{list.type});
 }
 
-FFIType *ParsingDriver::combine(const TypeQualifier &type_qualifier, const SpecifierQualifierList &list) {
+FFIType* ParsingDriver::combine(const TypeQualifier& type_qualifier, const SpecifierQualifierList& list) {
   return combine(type_qualifier, DeclarationSpecifiers{list.type});
 }
 
-FFIType *ParsingDriver::combine(const TypeSpecifier &type_spec, const DeclarationSpecifiers &decl_specs) {
+FFIType* ParsingDriver::combine(const TypeSpecifier& type_spec, const DeclarationSpecifiers& decl_specs) {
   // TODO: errors for things like combine(char, char).
 
   if (decl_specs.type->kind == FFITypeKind::_typeFlags && type_spec.type->kind != FFITypeKind::_typeFlags) {
@@ -276,37 +274,37 @@ FFIType *ParsingDriver::combine(const TypeSpecifier &type_spec, const Declaratio
   if ((type_spec.type->flags & FFIType::Flag::Long) && (decl_specs.type->flags & FFIType::Flag::Long)) {
     flags |= FFIType::Flag::LongLong;
   }
-  FFIType *result = decl_specs.type;
+  FFIType* result = decl_specs.type;
   result->flags = static_cast<FFIType::Flag>(flags);
   return result;
 }
 
-FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const InitDeclaratorList &init_declarator_list) {
-  FFIType *result = alloc.new_type(FFITypeKind::_typesList);
-  for (auto &declarator : init_declarator_list.type->members) {
+FFIType* ParsingDriver::combine(const DeclarationSpecifiers& decl_specs, const InitDeclaratorList& init_declarator_list) {
+  FFIType* result = alloc.new_type(FFITypeKind::_typesList);
+  for (auto& declarator : init_declarator_list.type->members) {
     // init_declarator is basically a simple declarator right now
     result->members.emplace_back(combine(decl_specs, Declarator{declarator}));
   }
   return result;
 }
 
-FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const Declarator &declarator) {
+FFIType* ParsingDriver::combine(const DeclarationSpecifiers& decl_specs, const Declarator& declarator) {
   if (declarator.type->kind == FFITypeKind::Name) {
-    FFIType *result = alloc.new_type(FFITypeKind::Var);
+    FFIType* result = alloc.new_type(FFITypeKind::Var);
     result->str = declarator.type->str;
     result->members.emplace_back(decl_specs.type);
     return result;
   }
 
   if (declarator.type->kind == FFITypeKind::Function) {
-    FFIType *result = alloc.new_type();
+    FFIType* result = alloc.new_type();
     *result = *declarator.type;
     result->members[0] = decl_specs.type;
     return result;
   }
 
   if (declarator.type->kind == FFITypeKind::_pointerDeclarator) {
-    FFIType *ptr_type = alloc.new_type(FFITypeKind::Pointer);
+    FFIType* ptr_type = alloc.new_type(FFITypeKind::Pointer);
     ptr_type->num = declarator.type->num;
     // when typedef over a pointer is combined with a pointer type, we want to
     // merge it into a single pointer type with total indirection;
@@ -321,73 +319,74 @@ FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const D
   }
 
   if (declarator.type->kind == FFITypeKind::_arrayDeclarator) {
-    FFIType *array_type = alloc.new_type(FFITypeKind::Array);
-    FFIType *nested_declarator = combine_array_type(array_type, decl_specs.type, declarator.type);
+    FFIType* array_type = alloc.new_type(FFITypeKind::Array);
+    FFIType* nested_declarator = combine_array_type(array_type, decl_specs.type, declarator.type);
     return combine(DeclarationSpecifiers{array_type}, Declarator{nested_declarator});
   }
 
   return nullptr;
 }
 
-FFIType *ParsingDriver::combine(const Pointer &pointer, const DirectDeclarator &declarator) {
-  FFIType *result = alloc.new_type(FFITypeKind::_pointerDeclarator);
+FFIType* ParsingDriver::combine(const Pointer& pointer, const DirectDeclarator& declarator) {
+  FFIType* result = alloc.new_type(FFITypeKind::_pointerDeclarator);
   result->num = pointer.type->num;
   result->members.emplace_back(declarator.type);
   return result;
 }
 
-FFIType *ParsingDriver::combine(const Pointer &pointer, const DirectAbstractDeclarator &declarator) {
+FFIType* ParsingDriver::combine(const Pointer& pointer, const DirectAbstractDeclarator& declarator) {
   return combine(pointer, DirectDeclarator{declarator.type});
 }
 
-FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const AbstractDeclarator &declarator) {
+FFIType* ParsingDriver::combine(const DeclarationSpecifiers& decl_specs, const AbstractDeclarator& declarator) {
   if (declarator.type->kind == FFITypeKind::Pointer) {
-    FFIType *ptr_declarator = alloc.new_type(FFITypeKind::_pointerDeclarator);
+    FFIType* ptr_declarator = alloc.new_type(FFITypeKind::_pointerDeclarator);
     ptr_declarator->num = declarator.type->num;
-    FFIType *name = alloc.new_type(FFITypeKind::Name);
+    FFIType* name = alloc.new_type(FFITypeKind::Name);
     ptr_declarator->members.emplace_back(name);
     return combine(decl_specs, Declarator{ptr_declarator});
   }
 
-  return combine(decl_specs, Declarator{declarator.type});;
+  return combine(decl_specs, Declarator{declarator.type});
+  ;
 }
 
-FFIType *ParsingDriver::combine_array_type(FFIType *dst, FFIType *elem_type, FFIType *current) {
+FFIType* ParsingDriver::combine_array_type(FFIType* dst, FFIType* elem_type, FFIType* current) {
   dst->num = current->num;
   if (current->members[0]->kind != FFITypeKind::_arrayDeclarator) {
     dst->members.emplace_back(elem_type);
     return current->members[0];
   }
-  FFIType *nested_array_type = alloc.new_type(FFITypeKind::Array);
-  FFIType *declarator = combine_array_type(nested_array_type, elem_type, current->members[0]);
+  FFIType* nested_array_type = alloc.new_type(FFITypeKind::Array);
+  FFIType* declarator = combine_array_type(nested_array_type, elem_type, current->members[0]);
   dst->members.emplace_back(nested_array_type);
   return declarator;
 }
 
-FFIType *ParsingDriver::make_enum_member(string_span name, int value) {
-  FFIType *result = alloc.new_type(FFITypeKind::_enumMember);
+FFIType* ParsingDriver::make_enum_member(string_span name, int value) {
+  FFIType* result = alloc.new_type(FFITypeKind::_enumMember);
   result->str = name.to_string();
   result->num = value;
   return result;
 }
 
-FFIType *ParsingDriver::make_abstract_array_declarator(string_span size_str) {
-  FFIType *result = alloc.new_type(FFITypeKind::_arrayDeclarator);
+FFIType* ParsingDriver::make_abstract_array_declarator(string_span size_str) {
+  FFIType* result = alloc.new_type(FFITypeKind::_arrayDeclarator);
   result->num = parse_string_span(size_str);
-  FFIType *name = alloc.new_type(FFITypeKind::Name);
+  FFIType* name = alloc.new_type(FFITypeKind::Name);
   result->members.emplace_back(name);
   return result;
 }
 
-FFIType *ParsingDriver::make_array_declarator(FFIType *declarator, string_span size_str) {
-  FFIType *result = alloc.new_type(FFITypeKind::_arrayDeclarator);
+FFIType* ParsingDriver::make_array_declarator(FFIType* declarator, string_span size_str) {
+  FFIType* result = alloc.new_type(FFITypeKind::_arrayDeclarator);
   result->num = parse_string_span(size_str);
   result->members.emplace_back(declarator);
   return result;
 }
 
-FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
-  FFIType *function_type = alloc.new_type(FFITypeKind::Function);
+FFIType* ParsingDriver::make_function(FFIType* func_expr, FFIType* params) {
+  FFIType* function_type = alloc.new_type(FFITypeKind::Function);
   kphp_assert(vk::any_of_equal(func_expr->kind, FFITypeKind::Name, FFITypeKind::_pointerDeclarator));
   bool is_func_ptr = func_expr->kind == FFITypeKind::_pointerDeclarator;
   if (is_func_ptr) {
@@ -404,7 +403,7 @@ FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
       function_type->flags = static_cast<FFIType::Flag>(function_type->flags | FFIType::Flag::SignalSafe);
     }
   }
-  FFIType *result_type_placeholder = alloc.new_type(); // return type will be inserted here later
+  FFIType* result_type_placeholder = alloc.new_type(); // return type will be inserted here later
   function_type->members.emplace_back(result_type_placeholder);
   if (params) { // nullptr for a func with an empty param list
     if (!expr_mode && params->members.size() == 1 && params->members[0]->kind == FFITypeKind::Void) {
@@ -412,7 +411,7 @@ FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
       return function_type;
     }
 
-    for (FFIType *p : params->members) {
+    for (FFIType* p : params->members) {
       if (p->kind == FFITypeKind::_ellipsis) {
         function_type->flags = static_cast<FFIType::Flag>(function_type->flags | FFIType::Flag::Variadic);
         continue;
@@ -424,7 +423,7 @@ FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
       } else if (p->kind == FFITypeKind::Var) {
         function_type->members.emplace_back(p);
       } else {
-        FFIType *var = alloc.new_type(FFITypeKind::Var);
+        FFIType* var = alloc.new_type(FFITypeKind::Var);
         var->members.emplace_back(p);
         function_type->members.emplace_back(var);
       }
@@ -433,29 +432,29 @@ FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
   return function_type;
 }
 
-FFIType *ParsingDriver::make_pointer() {
-  FFIType *ptr = alloc.new_type(FFITypeKind::Pointer);
+FFIType* ParsingDriver::make_pointer() {
+  FFIType* ptr = alloc.new_type(FFITypeKind::Pointer);
   ptr->num = 1;
   return ptr;
 }
 
-FFIType *ParsingDriver::make_union_def(FFIType *fields) {
+FFIType* ParsingDriver::make_union_def(FFIType* fields) {
   return make_struct_or_union_def(fields, false);
 }
 
-FFIType *ParsingDriver::make_struct_def(FFIType *fields) {
+FFIType* ParsingDriver::make_struct_def(FFIType* fields) {
   return make_struct_or_union_def(fields, true);
 }
 
-FFIType *ParsingDriver::make_struct_or_union_def(FFIType *fields, bool is_struct) {
-  FFIType *struct_type = alloc.new_type(is_struct ? FFITypeKind::StructDef : FFITypeKind::UnionDef);
-  for (FFIType *list : fields->members) {
+FFIType* ParsingDriver::make_struct_or_union_def(FFIType* fields, bool is_struct) {
+  FFIType* struct_type = alloc.new_type(is_struct ? FFITypeKind::StructDef : FFITypeKind::UnionDef);
+  for (FFIType* list : fields->members) {
     kphp_assert(list->kind == FFITypeKind::_structFieldList);
     int num_names = list->members.size() - 1;
     for (int i = 0; i < num_names; i++) {
-      FFIType *declarator = list->members[i];
-      FFIType *field_type = list->members.back();
-      FFIType *field = combine(DeclarationSpecifiers{field_type}, Declarator{declarator});
+      FFIType* declarator = list->members[i];
+      FFIType* field_type = list->members.back();
+      FFIType* field = combine(DeclarationSpecifiers{field_type}, Declarator{declarator});
       if (field->kind == FFITypeKind::Function) {
         field = function_to_var(field);
       }
@@ -465,7 +464,7 @@ FFIType *ParsingDriver::make_struct_or_union_def(FFIType *fields, bool is_struct
   return struct_type;
 }
 
-void ParsingDriver::raise_error(const std::string &message) {
+void ParsingDriver::raise_error(const std::string& message) {
   // TODO: better error locations, more context information
   ffi::Location loc{0, 0};
   throw ParsingDriver::ParseError{loc, message};

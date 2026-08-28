@@ -20,17 +20,17 @@ void unlock(T locker) {
   locker->unlock();
 }
 
-inline bool try_lock(volatile int *locker) {
+inline bool try_lock(volatile int* locker) {
   return __sync_lock_test_and_set(locker, 1) == 0;
 }
 
-inline void lock(volatile int *locker) {
+inline void lock(volatile int* locker) {
   while (!try_lock(locker)) {
     usleep(250);
   }
 }
 
-inline void unlock(volatile int *locker) {
+inline void unlock(volatile int* locker) {
   assert(*locker == 1);
   __sync_lock_release(locker);
 }
@@ -38,9 +38,10 @@ inline void unlock(volatile int *locker) {
 class Lockable {
 private:
   volatile int x;
+
 public:
-  Lockable() :
-    x(0) {}
+  Lockable()
+      : x(0) {}
 
   virtual ~Lockable() = default;
 
@@ -57,9 +58,10 @@ template<class DataT>
 class AutoLocker {
 private:
   DataT ptr;
+
 public:
-  explicit AutoLocker(DataT ptr) :
-    ptr(ptr) {
+  explicit AutoLocker(DataT ptr)
+      : ptr(ptr) {
     lock(ptr);
   }
 

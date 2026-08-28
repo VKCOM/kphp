@@ -12,21 +12,21 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/utils/trie.h"
 
-inline std::vector<std::string> expand_template(const std::string &s);
+inline std::vector<std::string> expand_template(const std::string& s);
 
 template<typename T>
 struct Helper : private vk::not_copyable {
-  Trie<T *> trie;
-  T *on_fail;
+  Trie<T*> trie;
+  T* on_fail;
 
-  explicit Helper(T *on_fail) :
-    on_fail(on_fail) {
+  explicit Helper(T* on_fail)
+      : on_fail(on_fail) {
     assert(on_fail != nullptr);
   }
 
-  void add_rule(const std::string &rule_template, T *val_, bool need_expand = true) {
+  void add_rule(const std::string& rule_template, T* val_, bool need_expand = true) {
     if (need_expand) {
-      for (auto &rule : expand_template(rule_template)) {
+      for (auto& rule : expand_template(rule_template)) {
         trie.add(rule, val_);
       }
     } else {
@@ -34,15 +34,15 @@ struct Helper : private vk::not_copyable {
     }
   }
 
-  void add_simple_rule(const std::string &rule_template, T *val) {
+  void add_simple_rule(const std::string& rule_template, T* val) {
     add_rule(rule_template, val, false);
   }
 
-  T *get_default() {
+  T* get_default() {
     return on_fail;
   }
 
-  T *get_help(const char *s) {
+  T* get_help(const char* s) {
     if (auto best = trie.get_deepest(s)) {
       return *best;
     }
@@ -63,11 +63,11 @@ inline std::vector<std::string> expand_template_(vk::string_view str_template) {
 
       while (si < sn && str_template[si] != ']') {
         if (si + 1 < sn && str_template[si + 1] == '-') {
-          assert (si + 2 < sn);
+          assert(si + 2 < sn);
 
           char l = str_template[si];
           char r = str_template[si + 2];
-          assert (l < r);
+          assert(l < r);
           for (char c = l; c <= r; c++) {
             to_append += c;
           }
@@ -78,7 +78,7 @@ inline std::vector<std::string> expand_template_(vk::string_view str_template) {
           si++;
         }
       }
-      assert (si < sn);
+      assert(si < sn);
       si++;
     } else {
       to_append += str_template[si];
@@ -97,7 +97,7 @@ inline std::vector<std::string> expand_template_(vk::string_view str_template) {
   return all_possible_templates;
 }
 
-inline std::vector<std::string> expand_template(const std::string &s) {
+inline std::vector<std::string> expand_template(const std::string& s) {
   auto template_alternatives = split_skipping_delimeters(s, "|");
 
   std::vector<std::string> res;

@@ -49,17 +49,21 @@ private:
   int count_of_type_other = 0;
 
   int total_count = 0;
-  
+
   std::vector<OneBatchInfo> batches;
 
-  void inc_count_by_type(const TypeData *type);
+  void inc_count_by_type(const TypeData* type);
 
 public:
   static int detect_constants_batch_count(int n_constants);
-  static const ConstantsBatchedMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
+  static const ConstantsBatchedMem& prepare_mem_and_assign_offsets(const std::vector<VarPtr>& all_constants);
 
-  const std::vector<OneBatchInfo> &get_batches() const { return batches; }
-  const OneBatchInfo &get_batch(uint64_t batch_hash) const { return batches.at(batch_hash); }
+  const std::vector<OneBatchInfo>& get_batches() const {
+    return batches;
+  }
+  const OneBatchInfo& get_batch(uint64_t batch_hash) const {
+    return batches.at(batch_hash);
+  }
 };
 
 // While constants are initialized once in master process, mutable globals exists in each script
@@ -108,55 +112,59 @@ private:
 
 public:
   static int detect_globals_batch_count(int n_globals);
-  static const GlobalsBatchedMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals);
+  static const GlobalsBatchedMem& prepare_mem_and_assign_offsets(const std::vector<VarPtr>& all_globals);
 
-  const std::vector<OneBatchInfo> &get_batches() const { return batches; }
-  const OneBatchInfo &get_batch(int batch_idx) const { return batches.at(batch_idx); }
+  const std::vector<OneBatchInfo>& get_batches() const {
+    return batches;
+  }
+  const OneBatchInfo& get_batch(int batch_idx) const {
+    return batches.at(batch_idx);
+  }
 };
 
 struct ConstantsExternCollector {
   void add_extern_from_var(VarPtr var);
   void add_extern_from_init_val(VertexPtr init_val);
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 
 private:
   std::set<VarPtr> extern_constants;
 };
 
 struct ConstantsMemAllocation {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct GlobalsMemAllocation {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct PhpMutableGlobalsAssignCurrent {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct PhpMutableGlobalsDeclareInResumableClass {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct PhpMutableGlobalsAssignInResumableConstructor {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct PhpMutableGlobalsRefArgument {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct PhpMutableGlobalsConstRefArgument {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct GlobalVarInPhpGlobals {
   VarPtr global_var;
 
   explicit GlobalVarInPhpGlobals(VarPtr global_var)
-    : global_var(global_var) {}
+      : global_var(global_var) {}
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };

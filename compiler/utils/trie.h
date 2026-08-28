@@ -17,8 +17,8 @@ struct Trie : private vk::not_copyable {
   std::array<std::unique_ptr<Trie>, 256> next{};
   std::optional<T> val;
 
-  void add(const std::string &s, T val) {
-    Trie *cur = this;
+  void add(const std::string& s, T val) {
+    Trie* cur = this;
 
     for (char c : s) {
       if (cur->next[c] == nullptr) {
@@ -31,8 +31,8 @@ struct Trie : private vk::not_copyable {
     cur->val = std::move(val);
   }
 
-  std::optional<T> get_deepest(const char *s) {
-    auto *best = this;
+  std::optional<T> get_deepest(const char* s) {
+    auto* best = this;
 
     for (auto cur = this; *s && cur; ++s) {
       cur = cur->next[static_cast<uint8_t>(*s)].get();
@@ -44,4 +44,3 @@ struct Trie : private vk::not_copyable {
     return best->val;
   }
 };
-

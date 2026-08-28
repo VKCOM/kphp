@@ -24,5 +24,4 @@ public:
   VertexPtr on_exit_vertex(VertexPtr root) override;
 
   bool user_recursion(VertexPtr v) override;
-
 };

@@ -8,6 +8,7 @@
 
 class CalcValRefPass final : public FunctionPassBase {
   bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first);
+
 public:
   std::string get_description() override {
     return "Calc val ref";

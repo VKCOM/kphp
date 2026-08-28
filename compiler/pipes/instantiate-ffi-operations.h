@@ -35,9 +35,9 @@ public:
 
   // calc @return of FFI::new() and others, that can't be expressed in functions.txt
   // they are used in assumptions also
-  static const TypeHint *infer_from_ffi_static_new(VertexAdaptor<op_func_call> call);
-  static const TypeHint *infer_from_ffi_scope_new(VertexAdaptor<op_func_call> call, ClassPtr scope_class);
-  static const TypeHint *infer_from_ffi_static_cast(FunctionPtr f, VertexAdaptor<op_func_call> call);
-  static const TypeHint *infer_from_ffi_scope_cast(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr scope_class);
-  static const TypeHint *infer_from_ffi_array_get(FunctionPtr f, VertexAdaptor<op_func_call> call);
+  static const TypeHint* infer_from_ffi_static_new(VertexAdaptor<op_func_call> call);
+  static const TypeHint* infer_from_ffi_scope_new(VertexAdaptor<op_func_call> call, ClassPtr scope_class);
+  static const TypeHint* infer_from_ffi_static_cast(FunctionPtr f, VertexAdaptor<op_func_call> call);
+  static const TypeHint* infer_from_ffi_scope_cast(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr scope_class);
+  static const TypeHint* infer_from_ffi_array_get(FunctionPtr f, VertexAdaptor<op_func_call> call);
 };

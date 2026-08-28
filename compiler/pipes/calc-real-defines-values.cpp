@@ -30,16 +30,16 @@
  *    (functions and classes could be assigned some pipes before, but there's no reason to split them)
  */
 
-
-CalcRealDefinesAndAssignModulitesF::CalcRealDefinesAndAssignModulitesF() : Base() {
+CalcRealDefinesAndAssignModulitesF::CalcRealDefinesAndAssignModulitesF()
+    : Base() {
   auto val = VertexAdaptor<op_string>::create();
   val->set_string(G->settings().get_version());
-  DefineData *data = new DefineData("KPHP_COMPILER_VERSION", val, DefineData::def_const);
+  DefineData* data = new DefineData("KPHP_COMPILER_VERSION", val, DefineData::def_const);
   data->file_id = G->get_main_file();
   G->register_define(DefinePtr(data));
 }
 
-void CalcRealDefinesAndAssignModulitesF::execute(FunctionPtr f, DataStream<FunctionPtr> &unused_os) {
+void CalcRealDefinesAndAssignModulitesF::execute(FunctionPtr f, DataStream<FunctionPtr>& unused_os) {
   if (f->type == FunctionData::func_class_holder) {
     f->class_id->modulite = f->file_id->dir->nested_files_modulite;
   }
@@ -52,7 +52,7 @@ void CalcRealDefinesAndAssignModulitesF::execute(FunctionPtr f, DataStream<Funct
   Base::execute(f, unused_os);
 }
 
-void CalcRealDefinesAndAssignModulitesF::on_finish(DataStream<FunctionPtr> &os) {
+void CalcRealDefinesAndAssignModulitesF::on_finish(DataStream<FunctionPtr>& os) {
   stage::set_name("Calc real defines values");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();

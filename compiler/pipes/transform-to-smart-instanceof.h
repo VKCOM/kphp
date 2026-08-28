@@ -29,7 +29,7 @@ private:
   static VertexAdaptor<op_set> generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex);
   static VertexAdaptor<op_instanceof> get_instanceof_from_if_condition(VertexPtr if_cond);
   static VertexAdaptor<op_instanceof> get_instanceof_from_if_not_condition(VertexPtr if_cond);
-  void add_tmp_var_with_instance_cast(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd);
+  void add_tmp_var_with_instance_cast(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr& cmd);
   bool try_replace_if_not_instanceof_return(VertexAdaptor<op_if> v_if_not, VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived);
 
   bool on_if_user_recursion(VertexAdaptor<op_if> v_if);

@@ -17,16 +17,15 @@ private:
   static std::string convert_expr_to_human_readable(VertexPtr expr);
 
 public:
-  explicit ExprNode(VertexPtr expr) :
-    expr_(expr) {
-  }
+  explicit ExprNode(VertexPtr expr)
+      : expr_(expr) {}
 
- void copy_type_from(const TypeData *from) {
+  void copy_type_from(const TypeData* from) {
     type_ = from;
     recalc_state_ = recalc_st_waiting | recalc_bit_at_least_once;
   }
 
-  void recalc(TypeInferer *inferer);
+  void recalc(TypeInferer* inferer);
 
   VertexPtr get_expr() const {
     return expr_;
@@ -34,7 +33,7 @@ public:
 
   std::string get_description() final;
   std::string get_expr_human_readable() const;
-  const Location &get_location() const final;
+  const Location& get_location() const final;
 };
 
 } // namespace tinf

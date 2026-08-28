@@ -35,34 +35,32 @@ private:
   // Therefore, the system requires a total of MAX_THREADS_CNT + 2 threads to be available.
   TLSRaw arr[MAX_THREADS_COUNT + 2];
 
-  TLSRaw *get_raw(int id) {
+  TLSRaw* get_raw(int id) {
     assert(0 <= id && id <= 1 + MAX_THREADS_COUNT);
     return &arr[id];
   }
 
-  TLSRaw *get_raw() {
+  TLSRaw* get_raw() {
     return get_raw(get_thread_id());
   }
 
 public:
-  TLS() :
-    arr() {
-  }
+  TLS()
+      : arr() {}
 
-
-  T &get() {
+  T& get() {
     return get_raw()->data;
   }
 
-  T &get(int i) {
+  T& get(int i) {
     return get_raw(i)->data;
   }
 
-  T *operator->() {
+  T* operator->() {
     return &get();
   }
 
-  T &operator*() {
+  T& operator*() {
     return get();
   }
 
@@ -70,15 +68,15 @@ public:
     return MAX_THREADS_COUNT + 1;
   }
 
-  T *lock_get() {
-    TLSRaw *raw = get_raw();
+  T* lock_get() {
+    TLSRaw* raw = get_raw();
     bool ok = try_lock(&raw->locker);
     assert(ok);
     return &raw->data;
   }
 
-  void unlock_get(T *ptr) {
-    TLSRaw *raw = get_raw();
+  void unlock_get(T* ptr) {
+    TLSRaw* raw = get_raw();
     assert(&raw->data == ptr);
     unlock(&raw->locker);
   }
