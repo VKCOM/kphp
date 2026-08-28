@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from python.lib.testcase import WebServerAutoTestCase
 
@@ -5,7 +7,7 @@ from python.lib.testcase import WebServerAutoTestCase
 class TestBacktrace(WebServerAutoTestCase):
     @classmethod
     def extra_kphp2cpp_options(cls):
-        return {"KPHP_EXTRA_CXXFLAGS" : "-O0 -g"}
+        return {"KPHP_EXTRA_CXXFLAGS" : f"{os.environ.get('KPHP_EXTRA_CXXFLAGS', '')} -O0 -g"}
     
     def query(self, op: str):
         resp = self.web_server.http_post(uri="/test_backtrace", json=[{"op": op}])
