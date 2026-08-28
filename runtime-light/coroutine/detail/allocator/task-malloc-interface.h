@@ -58,7 +58,7 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (task_allocator.consume_stack_request()) {
+  if (task_allocator.check_stack_request()) {
     if (total_size <= kphp::coro::detail::memory::task_allocator::get().segment_size()) [[likely]] {
       if (task_allocator.current() == nullptr) {
         void* mem{kphp::coro::detail::memory::alloc_aligned(

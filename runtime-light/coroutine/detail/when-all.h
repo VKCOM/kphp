@@ -279,7 +279,7 @@ public:
 
   ~when_all_task() {
     if (m_coroutine != nullptr) {
-      m_coroutine.destroy();
+      kphp::coro::destroy(m_coroutine);
     }
   }
 
@@ -293,7 +293,7 @@ public:
 
   auto reset() noexcept -> void {
     if (m_coroutine != nullptr) {
-      std::exchange(m_coroutine, nullptr).destroy();
+      kphp::coro::destroy(std::exchange(m_coroutine, nullptr));
     }
   }
 };

@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 
 namespace kphp::coro {
@@ -33,6 +34,11 @@ inline void resume(std::coroutine_handle<> handle) noexcept {
   handle.resume();
 }
 
+inline void destroy(std::coroutine_handle<> handle) noexcept {
+  kphp::coro::task_allocator_guard guard;
+  handle.destroy();
+}
+
 /*
  * This function is used to optimize allocation of task<T>. If this function is called task<T> is allocated with stack allocator.
  * Task must be immediately co_await-ed.
@@ -41,7 +47,16 @@ inline void resume(std::coroutine_handle<> handle) noexcept {
  */
 template<typename F, typename... Args>
 static auto on_stack(F&& f, Args&&... args) noexcept {
-  kphp::coro::detail::memory::task_allocator::get().request_stack_for_next_alloc();
+  struct stack_allocation_guard {
+    stack_allocation_guard() noexcept {
+      kphp::coro::detail::memory::task_allocator::get().request_stack_for_next_alloc();
+    }
+
+    ~stack_allocation_guard() noexcept {
+      kphp::coro::detail::memory::task_allocator::get().consume_stack_request();
+    }
+  } guard;
+
   return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
