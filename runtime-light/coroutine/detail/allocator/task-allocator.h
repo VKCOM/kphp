@@ -5,7 +5,6 @@
 #pragma once
 
 #include <bit>
-#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
@@ -127,8 +126,12 @@ public:
     m_stack_requested = true;
   }
 
-  auto consume_stack_request() noexcept -> bool {
-    return std::exchange(m_stack_requested, false);
+  auto check_stack_request() const noexcept -> bool {
+    return m_stack_requested;
+  }
+
+  auto consume_stack_request() noexcept -> void {
+    m_stack_requested = false;
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {

@@ -18,6 +18,7 @@
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/metaprogramming/type-functions.h"
@@ -299,7 +300,7 @@ public:
 
   ~when_any_task() {
     if (m_coroutine != nullptr) {
-      m_coroutine.destroy();
+      kphp::coro::destroy(m_coroutine);
     }
   }
 
@@ -313,7 +314,7 @@ public:
 
   auto reset() noexcept -> void {
     if (m_coroutine != nullptr) {
-      std::exchange(m_coroutine, nullptr).destroy();
+      kphp::coro::destroy(std::exchange(m_coroutine, nullptr));
     }
   }
 };

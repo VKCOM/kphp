@@ -175,7 +175,8 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
+      : kphp::coro::task_allocator_guard(std::move(other)),
+        m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
         m_coro(std::exchange(other.m_coro, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
@@ -355,7 +356,7 @@ private:
     }
     auto coro{std::coroutine_handle<promise_type>::from_address(m_haddress)};
     if (!coro.promise().detach()) {
-      coro.destroy();
+      kphp::coro::destroy(coro);
     }
   }
 

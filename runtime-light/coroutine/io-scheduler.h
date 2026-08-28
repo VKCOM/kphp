@@ -485,7 +485,8 @@ inline auto io_scheduler::schedule() noexcept {
     schedule_operation& operator=(schedule_operation&&) = delete;
 
     schedule_operation(schedule_operation&& other) noexcept
-        : m_scheduler(other.m_scheduler),
+        : kphp::coro::task_allocator_guard(std::move(other)),
+          m_scheduler(other.m_scheduler),
           m_async_stack_frame(std::exchange(other.m_async_stack_frame, nullptr)),
           m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
           m_schedule_pos(std::exchange(other.m_schedule_pos, std::monostate{})) {

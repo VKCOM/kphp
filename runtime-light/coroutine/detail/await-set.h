@@ -118,7 +118,7 @@ public:
      */
     m_tasks_storage.erase(task_iterator);
     --m_tasks_count;
-    typed_handle.destroy();
+    kphp::coro::destroy(typed_handle);
 
     return result_t{std::move(result)};
   }
@@ -134,7 +134,7 @@ public:
        * (in the future invariant [1] may not work).
        */
       m_tasks_storage.pop_front();
-      coroutine.destroy();
+      kphp::coro::destroy(coroutine);
     }
 
     m_tasks_count = 0;
