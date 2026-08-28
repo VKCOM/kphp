@@ -260,7 +260,7 @@ public:
   inline static constexpr size_t inner_sizeof() noexcept {
     return sizeof(string_inner);
   }
-  // required alignment of the memory passed to copy_in()
+
   inline static constexpr size_t alignment() noexcept {
     return alignof(string_inner);
   }
