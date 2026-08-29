@@ -138,7 +138,11 @@ void FunctionParams::declare_cpp_param(CodeGenerator& W, VertexAdaptor<op_var> v
   } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
-  W << VarName(var_ptr);
+}
+
+void FunctionParams::declare_cpp_param(CodeGenerator& W, VertexAdaptor<op_var> var, const TypeName& type) const {
+  compile_cpp_param_type(W, var, type);
+  W << VarName(var->var_id);
 }
 
 void FunctionParams::declare_txt_param(CodeGenerator& W, VertexAdaptor<op_var> var, const TypeName& type) const {
