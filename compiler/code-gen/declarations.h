@@ -56,7 +56,13 @@ struct FunctionParams {
 
   void compile(CodeGenerator &W) const;
 
+  // Emits a bare, comma-separated list of parameter types (with the same const/reference
+  // qualifiers declare_cpp_param would use), without parameter names or default values.
+  // Suitable for use as an explicit template-argument list, e.g. `on_stack<Args...>`.
+  void compile_as_template_args(CodeGenerator &W) const;
+
 private:
+  void compile_cpp_param_type(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
   void declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
   void declare_txt_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const;
 };

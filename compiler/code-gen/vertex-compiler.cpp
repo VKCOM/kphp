@@ -938,7 +938,13 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "(co_await kphp::coro::on_stack([](auto&&... args) noexcept { return ";
+        W << "(co_await kphp::coro::on_stack";
+        if (!func->is_extern()) {
+          W << "<";
+          FunctionParams(func).compile_as_template_args(W);
+          W << ">";
+        }
+        W << "([](auto&&... args) noexcept { return ";
       }
       W << FunctionName(func);
     }
