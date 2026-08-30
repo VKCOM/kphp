@@ -111,7 +111,7 @@ FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_heade
   }
 }
 
-void FunctionParams::compile_cpp_param_type(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
+void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
   W << type << " ";
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
@@ -119,10 +119,6 @@ void FunctionParams::compile_cpp_param_type(CodeGenerator &W, VertexAdaptor<op_v
   } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
-}
-
-void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
-  compile_cpp_param_type(W, var, type);
   W << VarName(var->var_id);
 }
 
@@ -162,23 +158,6 @@ void FunctionParams::compile(CodeGenerator &W) const {
         break;
       }
     }
-    ii++;
-  }
-}
-
-void FunctionParams::compile_as_template_args(CodeGenerator &W) const {
-  bool first = true;
-  size_t ii = shift;
-  for (auto i : params) {
-    if (first) {
-      first = false;
-    } else {
-      W << ", ";
-    }
-    auto param = i.as<op_func_param>();
-    auto var = param->var();
-    TypeName type_gen(tinf::get_type(function, ii), style);
-    compile_cpp_param_type(W, var, type_gen);
     ii++;
   }
 }
