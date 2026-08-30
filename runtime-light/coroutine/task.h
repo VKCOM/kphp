@@ -12,7 +12,9 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "common/mixin/not_copyable.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -241,5 +243,51 @@ struct task {
 private:
   std::coroutine_handle<promise_type> m_coro{};
 };
+
+/*
+ * This function is used to optimize allocation of task<T>. If this function is called, task<T> is allocated with stack allocator.
+ * Result of this function must be immediately co_await-ed.
+ * It's strongly recommended to use this function instread of writing co_await f(1, 2, 3), where f returns task.
+ */
+template<typename F, typename... Args>
+static auto on_stack(F&& f, Args&&... args) noexcept {
+  using task_t = std::invoke_result_t<F, Args...>;
+
+  struct awaitable : private vk::not_copyable {
+  private:
+    task_t m_task;
+
+  public:
+    explicit awaitable(task_t task) noexcept
+        : m_task{std::move(task)} {}
+
+    auto operator co_await() && noexcept {
+      struct awaiter : private vk::not_copyable, public kphp::coro::task_impl::awaiter_base<typename task_t::promise_type> {
+      public:
+        explicit awaiter(std::coroutine_handle<typename task_t::promise_type> coro) noexcept
+            : kphp::coro::task_impl::awaiter_base<typename task_t::promise_type>{coro} {}
+
+        auto await_resume() noexcept {
+          kphp::coro::task_impl::awaiter_base<typename task_t::promise_type>::await_resume();
+          return kphp::coro::task_impl::awaiter_base<typename task_t::promise_type>::m_coro.promise().result();
+        }
+      };
+
+      return awaiter{m_task.get_handle()};
+    }
+  };
+
+  struct stack_allocation_guard {
+    stack_allocation_guard() noexcept {
+      kphp::coro::detail::memory::task_allocator::get().request_stack_for_next_alloc();
+    }
+
+    ~stack_allocation_guard() noexcept {
+      kphp::coro::detail::memory::task_allocator::get().consume_stack_request();
+    }
+  } guard;
+
+  return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
+}
 
 } // namespace kphp::coro
