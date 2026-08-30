@@ -844,29 +844,32 @@ VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator& W, Ver
   return new_call;
 }
 
-// `on_stack()` deduces its `Args` from whatever is passed to it, so a plain argument is forwarded
-// with its natural value category and never needs any help. The one exception is a parameter that
-// the callee itself binds by `T const &` (see FunctionParams::compile_cpp_param_type): if the
-// argument requires an implicit conversion there, the conversion produces a temporary that C++
-// would normally bind straight to that reference — but since the callee is a lazily-started
-// coroutine, the temporary is destroyed before the coroutine body ever runs, leaving a dangling
-// reference. Casting the argument to the declared parameter type here forces any such conversion
-// to happen in the caller's own frame (before entering on_stack's body), which keeps the resulting
-// temporary alive for the whole synchronous on_stack call. It's a no-op when the argument already
-// has that exact type. Other parameters (by-value, primitive, or genuine PHP `&$x` references) are
-// never touched: by-value parameters are copied/moved directly into the callee's frame regardless
-// of where a conversion happens, and reference params are always called with an already-matching
-// argument type (guaranteed by type inferring unification).
+/*
+* kphp::coro::on_stack() deduces its Args from whatever is passed to it, so a plain argument is forwarded
+* with its natural value category and never needs any help. The one exception is a parameter that
+* the callee itself binds by `T const &` (see FunctionParams::compile_cpp_param_type): if the
+* argument requires an implicit conversion there, the conversion produces a temporary that C++
+* would normally bind straight to that reference, but since the callee is a lazily-started
+* coroutine, the temporary is destroyed before the coroutine body ever runs, leaving a dangling
+* reference. Casting the argument to the declared parameter type here forces any such conversion
+* to happen in the caller's own frame (before entering kphp::coro::on_stack's body), which keeps the resulting
+* temporary alive for the whole synchronous on_stack call. It's a no-op when the argument already
+* has that exact type. Other parameters (by value, primitive or genuine PHP `&$x` references) are
+* never touched: by-value parameters are copied/moved directly into the callee's frame regardless
+* of where a conversion happens and reference params are always called with an already-matching
+* argument type (guaranteed by type inferring unification).
+*/
 static void compile_interruptible_call_args(CodeGenerator& W, FunctionPtr func, VertexRange args) {
   VertexRange params = func->get_params();
   auto param_it = params.begin();
-  size_t ii = 0;
+  size_t i = 0;
   bool first = true;
   for (auto arg : args) {
     if (!first) {
       W << ", ";
+    } else {
+      first = false;
     }
-    first = false;
 
     if (param_it == params.end()) {
       W << arg;
@@ -875,7 +878,7 @@ static void compile_interruptible_call_args(CodeGenerator& W, FunctionPtr func, 
 
     auto var = param_it->as<op_func_param>()->var();
     auto var_ptr = var->var_id;
-    const TypeData* param_type = tinf::get_type(func, ii);
+    const TypeData* param_type = tinf::get_type(func, i);
     bool needs_forced_const_ref = !var->ref_flag && !func->is_k2_fork &&
                                    (var_ptr->marked_as_const || (!func->has_variadic_param && var_ptr->is_read_only)) &&
                                    !param_type->is_primitive_type();
@@ -884,8 +887,9 @@ static void compile_interruptible_call_args(CodeGenerator& W, FunctionPtr func, 
     } else {
       W << arg;
     }
+
     ++param_it;
-    ++ii;
+    ++i;
   }
 }
 
@@ -994,6 +998,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
   } else {
     W << JoinValues(args, ", ");
   }
+  
   if (is_function_call_should_be_tracked(func)) {
     W << "))";
   }
