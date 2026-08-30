@@ -45,7 +45,7 @@ inline void destroy(std::coroutine_handle<> handle) noexcept {
  * Usage:
  * co_await kphp::coro::on_stack(f, 1, 2, 3);
  */
-template<typename... Args, typename F>
+template<typename F, typename... Args>
 static auto on_stack(F&& f, Args&&... args) noexcept {
   struct stack_allocation_guard {
     stack_allocation_guard() noexcept {

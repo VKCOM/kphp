@@ -130,7 +130,11 @@ FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_heade
   }
 }
 
+<<<<<<< HEAD
 void FunctionParams::declare_cpp_param(CodeGenerator& W, VertexAdaptor<op_var> var, const TypeName& type) const {
+=======
+void FunctionParams::declare_cpp_param(CodeGenerator& W, VertexAdaptor<op_var> var, const TypeName& type) const {
+>>>>>>> 23cffc0e7 (avoid implicit conversions inside on_stack)
   W << type << " ";
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
@@ -138,10 +142,13 @@ void FunctionParams::declare_cpp_param(CodeGenerator& W, VertexAdaptor<op_var> v
   } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
+<<<<<<< HEAD
 }
 
 void FunctionParams::declare_cpp_param(CodeGenerator& W, VertexAdaptor<op_var> var, const TypeName& type) const {
   compile_cpp_param_type(W, var, type);
+=======
+>>>>>>> 23cffc0e7 (avoid implicit conversions inside on_stack)
   W << VarName(var->var_id);
 }
 
