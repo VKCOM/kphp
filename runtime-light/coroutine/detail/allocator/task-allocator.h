@@ -46,7 +46,7 @@ struct task_allocator final : private vk::not_copyable {
 
 private:
   memory_resource::chunk_pool_resource m_chunk_pool;
-  memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_resource{nullptr};
+  memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
   bool m_stack_requested{false};
@@ -62,7 +62,7 @@ private:
 
     kphp::log::assertion(extra_mem != nullptr);
 
-    m_curr_resource->add_extra_memory(extra_mem, extra_mem_size);
+    m_chunk_pool.add_extra_memory(extra_mem, extra_mem_size);
   }
 
 public:
@@ -95,53 +95,53 @@ public:
     }
   }
 
-  auto init_resource(memory_resource::segmented_stack_resource<shared_chunk_pool>* resource) const noexcept -> void {
-    kphp::log::assertion(resource != nullptr);
+  auto init_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>* stack) const noexcept -> void {
+    kphp::log::assertion(stack != nullptr);
 
     // we can pass nullptr as buffer and 0 as buffer_size, because segment pool is already initialized
-    resource->init(nullptr, 0, m_segment_size);
-  }
-
-  auto current() const noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>* {
-    return m_curr_resource;
+    stack->init(nullptr, 0, m_segment_size);
   }
 
   auto segment_size() const noexcept -> size_t {
     return m_segment_size;
   }
 
-  auto set(memory_resource::segmented_stack_resource<shared_chunk_pool>* resource) noexcept -> void {
-    m_curr_resource = resource;
+  auto current_stack() const noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>* {
+    return m_curr_stack;
   }
 
-  auto
-  exchange(memory_resource::segmented_stack_resource<shared_chunk_pool>* resource) noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>* {
-    auto* prev_resource{m_curr_resource};
-    set(resource);
-
-    return prev_resource;
+  auto set_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>* stack) noexcept -> void {
+    m_curr_stack = stack;
   }
 
-  auto request_stack_for_next_alloc() noexcept -> void {
+  auto exchange_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>* stack) noexcept
+      -> memory_resource::segmented_stack_resource<shared_chunk_pool>* {
+    auto* prev{m_curr_stack};
+    set_stack(stack);
+
+    return prev;
+  }
+
+  auto request_stack_allocation() noexcept -> void {
     m_stack_requested = true;
   }
 
-  auto check_stack_request() const noexcept -> bool {
+  auto check_stack_allocation_requested() const noexcept -> bool {
     return m_stack_requested;
   }
 
-  auto consume_stack_request() noexcept -> void {
+  auto consume_stack_allocation_request() noexcept -> void {
     m_stack_requested = false;
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {
     kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_resource != nullptr);
+    kphp::log::assertion(m_curr_stack != nullptr);
 
-    void* mem{m_curr_resource->allocate(size)};
+    void* mem{m_curr_stack->allocate(size)};
     if (mem == nullptr) [[unlikely]] {
       request_extra_memory(size);
-      mem = m_curr_resource->allocate(size);
+      mem = m_curr_stack->allocate(size);
 
       kphp::log::assertion(mem != nullptr);
     }
@@ -151,12 +151,12 @@ public:
 
   auto calloc_script_memory(size_t size) noexcept -> void* {
     kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_resource != nullptr);
+    kphp::log::assertion(m_curr_stack != nullptr);
 
-    void* mem{m_curr_resource->allocate0(size)};
+    void* mem{m_curr_stack->allocate0(size)};
     if (mem == nullptr) [[unlikely]] {
       request_extra_memory(size);
-      mem = m_curr_resource->allocate0(size);
+      mem = m_curr_stack->allocate0(size);
 
       kphp::log::assertion(mem != nullptr);
     }
@@ -166,9 +166,9 @@ public:
 
   auto free_script_memory(void* mem, size_t size) noexcept -> void {
     kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_resource != nullptr);
+    kphp::log::assertion(m_curr_stack != nullptr);
 
-    m_curr_resource->deallocate(mem, size);
+    m_curr_stack->deallocate(mem, size);
   }
 };
 

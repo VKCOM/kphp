@@ -2,8 +2,9 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+
+#include "runtime-light/coroutine/coroutine-state.h"
 
 namespace kphp::coro::detail::memory {
 

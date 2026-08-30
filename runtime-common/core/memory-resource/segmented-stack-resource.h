@@ -28,7 +28,7 @@ class segmented_stack_resource : private vk::not_copyable {
   std::byte* m_segment_curr{nullptr};
 
   auto switch_to_new_segment(void* segment) noexcept -> void {
-    if (likely(m_head != nullptr)) {
+    if (m_head != nullptr) {
       m_head->m_curr = m_segment_curr;
     }
 
@@ -114,10 +114,6 @@ public:
 
   static auto segment_header_size() noexcept -> size_t {
     return sizeof(segment_list_node);
-  }
-
-  auto empty() const noexcept -> bool {
-    return m_head == nullptr;
   }
 };
 
