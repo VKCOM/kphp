@@ -250,7 +250,7 @@ private:
  * It's strongly recommended to use this function instread of writing co_await f(1, 2, 3), where f returns task.
  */
 template<typename F, typename... Args>
-static auto on_stack(F&& f, Args&&... args) noexcept {
+auto on_stack(F&& f, Args&&... args) noexcept {
   using task_t = std::invoke_result_t<F, Args...>;
 
   struct awaitable : private vk::not_copyable {
