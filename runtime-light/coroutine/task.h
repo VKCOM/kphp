@@ -250,7 +250,7 @@ private:
  * It's strongly recommended to use this function instread of writing co_await f(1, 2, 3), where f returns task.
  */
 template<typename F, typename... Args>
-auto on_stack(F&& f, Args&&... args) noexcept {
+[[nodiscard]] auto on_stack(F&& f, Args&&... args) noexcept {
   using task_t = std::invoke_result_t<F, Args...>;
 
   struct awaitable : private vk::not_copyable {
@@ -277,13 +277,13 @@ auto on_stack(F&& f, Args&&... args) noexcept {
     }
   };
 
-  struct stack_allocation_guard {
-    stack_allocation_guard() noexcept {
-      kphp::coro::detail::memory::task_allocator::get().request_stack_for_next_alloc();
+  struct stack_allocation_request_guard {
+    stack_allocation_request_guard() noexcept {
+      kphp::coro::detail::memory::task_allocator::get().request_stack_allocation();
     }
 
-    ~stack_allocation_guard() noexcept {
-      kphp::coro::detail::memory::task_allocator::get().consume_stack_request();
+    ~stack_allocation_request_guard() noexcept {
+      kphp::coro::detail::memory::task_allocator::get().consume_stack_allocation_request();
     }
   } guard;
 

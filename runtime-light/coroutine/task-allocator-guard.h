@@ -4,29 +4,30 @@
 
 #pragma once
 
+#include <utility>
+
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
-#include <utility>
 
 namespace kphp::coro {
 
 class task_allocator_guard : private vk::not_copyable {
 private:
-  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_resource{nullptr};
+  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_stack{nullptr};
   bool m_active{true};
 
 public:
   task_allocator_guard() noexcept
-      : m_resource{kphp::coro::detail::memory::task_allocator::get().exchange(nullptr)} {}
+      : m_stack{kphp::coro::detail::memory::task_allocator::get().exchange_stack(nullptr)} {}
 
   task_allocator_guard(task_allocator_guard&& other) noexcept
-      : m_resource{other.m_resource},
+      : m_stack{other.m_stack},
         m_active{std::exchange(other.m_active, false)} {}
 
   ~task_allocator_guard() {
     if (m_active) {
-      kphp::coro::detail::memory::task_allocator::get().set(m_resource);
+      kphp::coro::detail::memory::task_allocator::get().set_stack(m_stack);
     }
   }
 };

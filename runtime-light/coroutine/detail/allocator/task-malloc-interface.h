@@ -22,7 +22,7 @@ private:
   static constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00; // 4GiB
 
 public:
-  enum class backend_type : uint8_t { task_pool, task_pool_owner, coroutine_pool };
+  enum class backend_type : uint8_t { stack, stack_owner, coroutine_pool };
 
   memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack{nullptr};
   uint16_t base_offset{};
@@ -58,9 +58,9 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (task_allocator.check_stack_request()) {
-    if (total_size <= kphp::coro::detail::memory::task_allocator::get().segment_size()) [[likely]] {
-      if (task_allocator.current() == nullptr) {
+  if (task_allocator.check_stack_allocation_requested()) {
+    if (total_size <= task_allocator.segment_size()) [[likely]] {
+      if (task_allocator.current_stack() == nullptr) {
         void* mem{kphp::coro::detail::memory::alloc_aligned(
             sizeof(memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>),
             static_cast<std::align_val_t>(alignof(memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>)))};
@@ -69,11 +69,11 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
 
         auto* stack{
             std::construct_at(static_cast<memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>*>(mem))};
-        task_allocator.init_resource(stack);
-        task_allocator.set(stack);
-        backend = kphp::coro::detail::memory::task::control_block::backend_type::task_pool_owner;
+        task_allocator.init_stack(stack);
+        task_allocator.set_stack(stack);
+        backend = kphp::coro::detail::memory::task::control_block::backend_type::stack_owner;
       } else {
-        backend = kphp::coro::detail::memory::task::control_block::backend_type::task_pool;
+        backend = kphp::coro::detail::memory::task::control_block::backend_type::stack;
       }
 
       base = task_allocator.alloc_script_memory(total_size);
@@ -96,7 +96,7 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   const uint64_t aligned_u{((base_u + cb_size) + (align - 1)) & ~(align - 1)};
   const uint64_t base_offset_u{aligned_u - base_u};
 
-  std::construct_at(reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(aligned_u - cb_size), task_allocator.current(), // NOLINT
+  std::construct_at(reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(aligned_u - cb_size), task_allocator.current_stack(), // NOLINT
                     static_cast<uint16_t>(base_offset_u), backend);
 
   return reinterpret_cast<void*>(aligned_u); // NOLINT
@@ -112,15 +112,15 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
   const size_t total_size{size + (align - 1) + cb_size};
   auto* cb{reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(static_cast<std::byte*>(ptr) - cb_size)};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::task_pool) {
-    kphp::log::assertion(task_allocator.current() == cb->stack);
+  if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::stack) {
+    kphp::log::assertion(task_allocator.current_stack() == cb->stack);
 
     task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
-  } else if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::task_pool_owner) {
-    kphp::log::assertion(task_allocator.current() == cb->stack);
+  } else if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::stack_owner) {
+    kphp::log::assertion(task_allocator.current_stack() == cb->stack);
 
     task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
-    task_allocator.set(nullptr);
+    task_allocator.set_stack(nullptr);
     std::destroy_at(cb->stack);
     kphp::coro::detail::memory::free(cb->stack);
   } else {
