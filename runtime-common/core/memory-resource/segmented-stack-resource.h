@@ -66,7 +66,7 @@ public:
       return nullptr;
     }
 
-    if (unlikely(m_head == nullptr || size > m_segment_size - static_cast<size_t>(m_segment_curr - m_segment_begin))) {
+    if (m_head == nullptr || size > m_segment_size - static_cast<size_t>(m_segment_curr - m_segment_begin)) {
       void* new_segment{m_segment_pool.allocate()};
       if (unlikely(new_segment == nullptr)) {
         return nullptr;
@@ -97,7 +97,7 @@ public:
 
     php_assert(static_cast<std::byte*>(mem) == m_segment_curr);
 
-    if (unlikely(m_segment_curr == m_segment_begin)) {
+    if (m_segment_curr == m_segment_begin) {
       switch_to_old_segment();
     }
   }
