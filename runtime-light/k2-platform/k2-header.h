@@ -267,6 +267,11 @@ int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* 
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
  * @param `pointer` Return argument. On success (return code is 0), contains
  *                  pointer to the shared memory. Set to NULL on error.
+ * @param `early_expiration` When `true`, an entry close enough to its TTL
+ *                            deadline is treated as already expired (`ENOENT`)
+ *                            once per entry, so callers can refetch it in
+ *                            advance of the real deadline. When `false`, only
+ *                            the real TTL deadline is honored.
  *
  * @return `0` on success. libc-like `errno` on error.
  *
@@ -276,7 +281,7 @@ int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* 
  * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size);
+int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size, bool early_expiration);
 
 /**
  * Updates the TTL of published shared memory.
@@ -297,14 +302,12 @@ int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** poi
 int32_t k2_update_ttl_shared_memory(const char* name, size_t name_len, uint64_t ttl);
 
 /**
- * Deletes published shared memory by name.
+ * Expires published shared memory by name ahead of its TTL.
  *
- * The name is removed immediately, so subsequent `k2_get_shared_memory` calls
- * with this name will fail with `ENOENT`. The underlying memory is reclaimed
- * only when the reference count reaches zero, so instances that already
- * retrieved the memory keep valid pointers until they finish.
+ * The entry is not removed physically; its expiration is fast-forwarded so
+ * subsequent `k2_get_shared_memory` calls with this name fail with `ENOENT` immediately.
  *
- * @param `name` Name of the published memory region to delete.
+ * @param `name` Name of the published memory region to expire.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
  *
  * @return `0` on success. libc-like `errno` on error.
@@ -314,7 +317,7 @@ int32_t k2_update_ttl_shared_memory(const char* name, size_t name_len, uint64_t 
  * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_delete_shared_memory(const char* name, size_t name_len);
+int32_t k2_expire_shared_memory(const char* name, size_t name_len);
 
 /**
  * Immediately abort component execution.
