@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <memory>
 
@@ -20,48 +21,54 @@ union object_pool_slot {
   T m_obj;
 };
 
-template<typename T, size_t ChunkSize>
-struct object_pool_chunk {
-  object_pool_chunk* m_next{nullptr};
-  object_pool_slot<T> m_slots[ChunkSize];
+struct object_pool_chunk_header {
+  object_pool_chunk_header* m_next{nullptr};
 };
 
 } // namespace details
 
-template<typename T, size_t ChunkSize, template<typename> typename Allocator>
-class object_pool : private vk::not_copyable, private Allocator<vk::details::object_pool_chunk<T, ChunkSize>> {
+template<typename T, template<typename> typename Allocator>
+class object_pool : private vk::not_copyable, private Allocator<std::byte> {
 private:
-  static_assert(ChunkSize > 0, "ChunkSize must be greater than 0");
+  using allocator_traits = std::allocator_traits<Allocator<std::byte>>;
 
-  using allocator_traits = std::allocator_traits<Allocator<vk::details::object_pool_chunk<T, ChunkSize>>>;
-
-  vk::details::object_pool_chunk<T, ChunkSize>* m_head_chunk{nullptr};
+  size_t m_chunk_size{0};
+  size_t m_chunk_byte_size{0};
+  vk::details::object_pool_chunk_header* m_head_chunk{nullptr};
   vk::details::object_pool_slot<T>* m_head_free_slot{nullptr};
 
-  auto get_allocator() noexcept -> Allocator<vk::details::object_pool_chunk<T, ChunkSize>>& {
+  auto get_allocator() noexcept -> Allocator<std::byte>& {
     return *this;
   }
 
+  static auto slots_of(vk::details::object_pool_chunk_header* chunk) noexcept -> vk::details::object_pool_slot<T>* {
+    return reinterpret_cast<vk::details::object_pool_slot<T>*>(reinterpret_cast<std::byte*>(chunk) + sizeof(vk::details::object_pool_chunk_header));
+  }
+
   auto link_new_chunk() noexcept -> void {
-    vk::details::object_pool_chunk<T, ChunkSize>* chunk{allocator_traits::allocate(get_allocator(), 1)};
-    chunk->m_next = m_head_chunk;
-    m_head_chunk = chunk;
-    vk::details::object_pool_slot<T>* slots{chunk->m_slots};
-    slots->m_next = nullptr;
-    for (size_t i = 1; i < ChunkSize; ++i) {
-      (slots + i)->m_next = (slots + i - 1);
+    std::byte* mem{allocator_traits::allocate(get_allocator(), m_chunk_byte_size)};
+    m_head_chunk = new (mem) vk::details::object_pool_chunk_header{m_head_chunk};
+
+    vk::details::object_pool_slot<T>* slots{slots_of(m_head_chunk)};
+    slots[0].m_next = nullptr;
+    for (size_t i = 1; i < m_chunk_size; ++i) {
+      slots[i].m_next = std::addressof(slots[i - 1]);
     }
 
-    m_head_free_slot = slots + ChunkSize - 1;
+    m_head_free_slot = std::addressof(slots[m_chunk_size - 1]);
   }
 
 public:
-  object_pool() noexcept {
-    link_new_chunk();
-  }
+  object_pool() noexcept = default;
 
-  explicit object_pool(Allocator<vk::details::object_pool_chunk<T, ChunkSize>> allocator) noexcept
-      : Allocator<vk::details::object_pool_chunk<T, ChunkSize>>(std::move(allocator)) {
+  explicit object_pool(Allocator<std::byte> allocator) noexcept
+      : Allocator<std::byte>(std::move(allocator)) {}
+
+  auto init(size_t chunk_size) noexcept -> void {
+    assert(chunk_size > 0);
+
+    m_chunk_size = chunk_size;
+    m_chunk_byte_size = sizeof(vk::details::object_pool_chunk_header) + chunk_size * sizeof(vk::details::object_pool_slot<T>);
     link_new_chunk();
   }
 
@@ -90,7 +97,7 @@ public:
     auto* curr_chunk{m_head_chunk};
     while (curr_chunk != nullptr) {
       auto* next_chunk{curr_chunk->m_next};
-      allocator_traits::deallocate(get_allocator(), curr_chunk, 1);
+      allocator_traits::deallocate(get_allocator(), reinterpret_cast<std::byte*>(curr_chunk), m_chunk_byte_size);
       curr_chunk = next_chunk;
     }
   }
