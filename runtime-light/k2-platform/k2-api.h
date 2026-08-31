@@ -144,11 +144,11 @@ inline std::expected<void, int32_t> publish_shared_memory(std::string_view name,
   return {};
 }
 
-inline std::expected<std::span<const std::byte>, int32_t> get_shared_memory(std::string_view name) noexcept {
+inline std::expected<std::span<const std::byte>, int32_t> get_shared_memory(std::string_view name, bool early_expiration) noexcept {
   const void* pointer{nullptr};
   size_t size{};
-  if (auto error_code{k2_get_shared_memory(name.data(), name.length(), std::addressof(pointer), std::addressof(size))}; error_code != k2::errno_ok)
-      [[unlikely]] {
+  if (auto error_code{k2_get_shared_memory(name.data(), name.length(), std::addressof(pointer), std::addressof(size), early_expiration)};
+      error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {std::span{static_cast<const std::byte*>(pointer), size}};
@@ -161,8 +161,8 @@ inline std::expected<void, int32_t> update_ttl_shared_memory(std::string_view na
   return {};
 }
 
-inline std::expected<void, int32_t> delete_shared_memory(std::string_view name) noexcept {
-  if (auto error_code{k2_delete_shared_memory(name.data(), name.length())}; error_code != k2::errno_ok) [[unlikely]] {
+inline std::expected<void, int32_t> expire_shared_memory(std::string_view name) noexcept {
+  if (auto error_code{k2_expire_shared_memory(name.data(), name.length())}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};

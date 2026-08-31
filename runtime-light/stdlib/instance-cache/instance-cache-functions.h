@@ -117,7 +117,7 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
     return unwrap(it->second);
   }
 
-  auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()})};
+  auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()}, true)};
   if (!get_result.has_value()) {
     return {};
   }
@@ -149,5 +149,5 @@ inline bool f$instance_cache_delete(const string& key) noexcept {
     return false;
   }
   InstanceCacheInstanceState::get().request_cache.erase(key);
-  return k2::delete_shared_memory(std::string_view{key.c_str(), key.size()}).has_value();
+  return k2::expire_shared_memory(std::string_view{key.c_str(), key.size()}).has_value();
 }
