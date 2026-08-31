@@ -58,22 +58,16 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (task_allocator.check_stack_allocation_requested()) {
-    if (total_size <= task_allocator.segment_size()) [[likely]] {
-      if (task_allocator.current_stack() == nullptr) {
-
-        auto& stack{task_allocator.acquire_stack()};
-        task_allocator.set_stack(std::addressof(stack));
-        backend = kphp::coro::detail::memory::task::control_block::backend_type::stack_owner;
-      } else {
-        backend = kphp::coro::detail::memory::task::control_block::backend_type::stack;
-      }
-
-      base = task_allocator.alloc_script_memory(total_size);
+  if (task_allocator.check_stack_allocation_requested() && total_size <= task_allocator.segment_size()) {
+    if (task_allocator.current_stack() == nullptr) {
+      auto& stack{task_allocator.acquire_stack()};
+      task_allocator.set_stack(std::addressof(stack));
+      backend = kphp::coro::detail::memory::task::control_block::backend_type::stack_owner;
     } else {
-      base = RuntimeCoroutineAllocator::get().alloc_script_memory(total_size);
-      backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
+      backend = kphp::coro::detail::memory::task::control_block::backend_type::stack;
     }
+
+    base = task_allocator.alloc_script_memory(total_size);
   } else {
     base = RuntimeCoroutineAllocator::get().alloc_script_memory(total_size);
     backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
@@ -105,18 +99,22 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
   const size_t total_size{size + (align - 1) + cb_size};
   auto* cb{reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(static_cast<std::byte*>(ptr) - cb_size)};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::stack) {
+  switch (cb->backend) {
+  case kphp::coro::detail::memory::task::control_block::backend_type::stack:
     kphp::log::assertion(task_allocator.current_stack() == cb->stack);
 
     task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
-  } else if (cb->backend == kphp::coro::detail::memory::task::control_block::backend_type::stack_owner) {
+    break;
+  case kphp::coro::detail::memory::task::control_block::backend_type::stack_owner:
     kphp::log::assertion(task_allocator.current_stack() == cb->stack);
 
     task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
     task_allocator.set_stack(nullptr);
     task_allocator.release_stack(*cb->stack);
-  } else {
+    break;
+  case kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool:
     RuntimeCoroutineAllocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    break;
   }
 }
 
