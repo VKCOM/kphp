@@ -35,6 +35,7 @@ struct ComponentState final : private vk::not_copyable {
   uint64_t min_instance_extra_coroutine_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE};
   uint64_t initial_instance_task_memory_size{INIT_INSTANCE_TASK_ALLOCATOR_SIZE};
   uint64_t instance_task_allocator_segment_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE};
+  uint64_t instance_task_allocator_stack_pool_chunk_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE};
   uint64_t min_instance_extra_task_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE};
 
   ComponentState() noexcept {
@@ -72,6 +73,7 @@ private:
   static constexpr std::string_view MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_SIZE_ARG = "min-instance-extra-coroutine-memory-size";
   static constexpr std::string_view INITIAL_INSTANCE_TASK_MEMORY_SIZE_ARG = "initial-instance-task-memory-size";
   static constexpr std::string_view INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE_ARG = "instance-task-allocator-segment-size";
+  static constexpr std::string_view INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE_ARG = "instance-task-allocator-stack-pool-chunk-size";
   static constexpr std::string_view MIN_INSTANCE_EXTRA_TASK_MEMORY_SIZE_ARG = "min-instance-extra-task-memory-size";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U);                              // 1MiB
   static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U);                         // 64MiB
@@ -81,7 +83,8 @@ private:
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
   static constexpr auto INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);                     // 2MiB
   static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(32U * 1024U);                 // 32KiB
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U);            // 512KiB
+  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE = static_cast<size_t>(60U);
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 512KiB
 
   void parse_env() noexcept;
 
@@ -108,6 +111,8 @@ private:
   void parse_initial_instance_task_memory_size_arg(std::string_view) noexcept;
 
   void parse_instance_task_allocator_segment_size_arg(std::string_view) noexcept;
+
+  void parse_instance_task_allocator_stack_pool_chunk_size_arg(std::string_view) noexcept;
 
   void parse_min_instance_extra_task_memory_size_arg(std::string_view) noexcept;
 };

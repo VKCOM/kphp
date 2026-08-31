@@ -168,6 +168,15 @@ void ComponentState::parse_instance_task_allocator_segment_size_arg(std::string_
   kphp::log::info("set instance task allocator segment size to {} bytes", instance_task_allocator_segment_size);
 }
 
+void ComponentState::parse_instance_task_allocator_stack_pool_chunk_size_arg(std::string_view value_view) noexcept {
+  const auto parsed{parse_uint64(value_view)};
+  if (!parsed) {
+    kphp::log::error("couldn't parse instance task allocator stack pool chunk size, got {}", value_view);
+  }
+  instance_task_allocator_stack_pool_chunk_size = *parsed;
+  kphp::log::info("set instance task allocator stack pool chunk size to {} objects", instance_task_allocator_stack_pool_chunk_size);
+}
+
 void ComponentState::parse_min_instance_extra_task_memory_size_arg(std::string_view value_view) noexcept {
   const auto parsed{parse_uint64(value_view)};
   if (!parsed) {
@@ -205,6 +214,8 @@ void ComponentState::parse_args() noexcept {
       parse_initial_instance_task_memory_size_arg(value_view);
     } else if (key_view == INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE_ARG) {
       parse_instance_task_allocator_segment_size_arg(value_view);
+    } else if (key_view == INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE_ARG) {
+      parse_instance_task_allocator_stack_pool_chunk_size_arg(value_view);
     } else if (key_view == MIN_INSTANCE_EXTRA_TASK_MEMORY_SIZE_ARG) {
       parse_min_instance_extra_task_memory_size_arg(value_view);
     } else {
