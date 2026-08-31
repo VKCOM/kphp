@@ -246,8 +246,8 @@ private:
 
 /*
  * This function is used to optimize allocation of task<T>. If this function is called, task<T> is allocated with stack allocator.
- * Result of this function must be immediately co_await-ed.
- * It's strongly recommended to use this function instread of writing co_await f(1, 2, 3), where f returns task.
+ * Result of this function must be immediately co_await-ed (usage: co_await kphp::coro::on_stack(f, 1, 2, 3); ), if you don't follow this rule, it's UB.
+ * It's strongly recommended to use this function instead of writing co_await f(1, 2, 3), where f returns task<T>.
  */
 template<typename F, typename... Args>
 [[nodiscard]] auto on_stack(F&& f, Args&&... args) noexcept {
@@ -277,15 +277,8 @@ template<typename F, typename... Args>
     }
   };
 
-  struct stack_allocation_request_guard {
-    stack_allocation_request_guard() noexcept {
-      kphp::coro::detail::memory::task_allocator::get().request_stack_allocation();
-    }
-
-    ~stack_allocation_request_guard() noexcept {
-      kphp::coro::detail::memory::task_allocator::get().consume_stack_allocation_request();
-    }
-  } guard;
+  kphp::coro::detail::memory::task_allocator::get().request_stack_allocation();
+  auto final_action{vk::finally([]() { kphp::coro::detail::memory::task_allocator::get().consume_stack_allocation_request(); })};
 
   return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }
