@@ -2,13 +2,14 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime-common/core/allocator/pool-allocator.h"
+
 #include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <cstring>
 
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
-#include "runtime-common/core/allocator/pool-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::memory {
@@ -44,7 +45,7 @@ auto pool_allocator::free() noexcept -> void {
   kphp::memory::platform::free(memory_resource.memory_begin());
 }
 
-auto pool_allocator::alloc(size_t size) noexcept -> void* {
+auto pool_allocator::alloc_script_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
 
   void* mem{memory_resource.allocate(size)};
@@ -58,7 +59,7 @@ auto pool_allocator::alloc(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto pool_allocator::calloc(size_t size) noexcept -> void* {
+auto pool_allocator::calloc_script_memory(size_t size) noexcept -> void* {
   kphp::log::assertion(size != 0);
 
   void* mem{memory_resource.allocate0(size)};
@@ -72,7 +73,7 @@ auto pool_allocator::calloc(size_t size) noexcept -> void* {
   return mem;
 }
 
-auto pool_allocator::realloc(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
+auto pool_allocator::realloc_script_memory(void* old_mem, size_t new_size, size_t old_size) noexcept -> void* {
   kphp::log::assertion(new_size > old_size);
 
   void* new_mem{memory_resource.reallocate(old_mem, new_size, old_size)};
@@ -86,7 +87,7 @@ auto pool_allocator::realloc(void* old_mem, size_t new_size, size_t old_size) no
   return new_mem;
 }
 
-auto pool_allocator::free(void* mem, size_t size) noexcept -> void {
+auto pool_allocator::free_script_memory(void* mem, size_t size) noexcept -> void {
   kphp::log::assertion(size != 0);
 
   memory_resource.deallocate(mem, size);

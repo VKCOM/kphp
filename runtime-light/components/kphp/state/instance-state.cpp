@@ -141,7 +141,7 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     constexpr auto sapi_name{resolve_sapi_name<kind>()};
 
     auto& superglobals{php_script_mutable_globals_singleton.get_superglobals()};
-    superglobals.v$_ENV = ComponentState::get().env;
+    superglobals.v$_ENV = component_state.env;
 
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));

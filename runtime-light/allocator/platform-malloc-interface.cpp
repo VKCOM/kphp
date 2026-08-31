@@ -2,17 +2,17 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
+
 #include <cstddef>
 
-#include "common/wrappers/likely.h"
-#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace kphp::memory::platform {
 
 auto alloc(size_t size) noexcept -> void* {
-  if (unlikely(size > MALLOC_REPLACER_MAX_ALLOC - MALLOC_REPLACER_SIZE_OFFSET)) {
+  if (size > MALLOC_REPLACER_MAX_ALLOC - MALLOC_REPLACER_SIZE_OFFSET) [[unlikely]] {
     php_warning("attempt to allocate too much memory by malloc replacer : %lu", size);
     return nullptr;
   }
@@ -20,7 +20,7 @@ auto alloc(size_t size) noexcept -> void* {
   const size_t real_size{size + MALLOC_REPLACER_SIZE_OFFSET};
   void* ptr{k2::alloc(real_size)};
 
-  if (unlikely(ptr == nullptr)) {
+  if (ptr == nullptr) [[unlikely]] {
     php_warning("not enough platform memory to allocate: %lu", size);
     return ptr;
   }
@@ -31,7 +31,7 @@ auto alloc(size_t size) noexcept -> void* {
 }
 
 void free(void* ptr) noexcept {
-  if (likely(ptr != nullptr)) {
+  if (ptr != nullptr) [[likely]] {
     void* real_ptr{static_cast<std::byte*>(ptr) - MALLOC_REPLACER_SIZE_OFFSET};
     k2::free(real_ptr);
   }

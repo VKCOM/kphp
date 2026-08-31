@@ -25,10 +25,10 @@ public:
   auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;
   auto free() noexcept -> void;
 
-  auto alloc(size_t size) noexcept -> void*;
-  auto calloc(size_t size) noexcept -> void*;
-  auto realloc(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
-  auto free(void* mem, size_t size) noexcept -> void;
+  auto alloc_script_memory(size_t size) noexcept -> void*;
+  auto calloc_script_memory(size_t size) noexcept -> void*;
+  auto realloc_script_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void*;
+  auto free_script_memory(void* mem, size_t size) noexcept -> void;
 
   auto get_memory_resource() noexcept -> memory_resource::unsynchronized_pool_resource& {
     return memory_resource;
