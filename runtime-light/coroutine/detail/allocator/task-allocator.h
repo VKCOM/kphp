@@ -6,10 +6,12 @@
 
 #include <bit>
 
+#include "common/containers/object-pool.h"
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/core/memory-resource/chunk-pool-resource.h"
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
+#include "runtime-light/coroutine/detail/allocator/coroutine-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::memory {
@@ -45,6 +47,7 @@ struct task_allocator final : private vk::not_copyable {
   };
 
 private:
+  vk::object_pool<memory_resource::segmented_stack_resource<shared_chunk_pool>, kphp::coro::detail::memory::coroutine_allocator> m_stack_pool;
   memory_resource::chunk_pool_resource m_chunk_pool;
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
   size_t m_segment_size{0};
@@ -70,19 +73,20 @@ public:
 
   task_allocator() = default;
 
-  task_allocator(size_t script_mem_size, size_t segment_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
+  task_allocator(size_t script_mem_size, size_t segment_size, size_t stack_pool_chunk_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
       : m_min_extra_mem_size{min_extra_mem_size} {
     void* buffer{kphp::memory::platform::alloc(script_mem_size)};
 
     kphp::log::assertion(buffer != nullptr);
 
-    init(buffer, script_mem_size, segment_size, oom_handling_mem_size);
+    init(buffer, script_mem_size, stack_pool_chunk_size, segment_size, oom_handling_mem_size);
   }
 
-  auto init(void* buffer, size_t script_mem_size, size_t segment_size, size_t /*unused*/) noexcept -> void {
+  auto init(void* buffer, size_t script_mem_size, size_t stack_pool_chunk_size, size_t segment_size, size_t /*unused*/) noexcept -> void {
     kphp::log::assertion(buffer != nullptr);
 
     m_segment_size = segment_size;
+    m_stack_pool.init(stack_pool_chunk_size);
     m_chunk_pool.init(buffer, script_mem_size, m_segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
   }
 
@@ -95,11 +99,16 @@ public:
     }
   }
 
-  auto init_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>* stack) const noexcept -> void {
-    kphp::log::assertion(stack != nullptr);
-
+  auto acquire_stack() noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>& {
+    auto& stack{m_stack_pool.acquire()};
     // we can pass nullptr as buffer and 0 as buffer_size, because segment pool is already initialized
-    stack->init(nullptr, 0, m_segment_size);
+    stack.init(nullptr, 0, m_segment_size);
+
+    return stack;
+  }
+
+  auto release_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>& stack) noexcept -> void {
+    m_stack_pool.release(stack);
   }
 
   auto segment_size() const noexcept -> size_t {

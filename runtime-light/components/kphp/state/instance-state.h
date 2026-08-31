@@ -95,6 +95,7 @@ struct InstanceState final : vk::not_copyable {
                                                       0,
                                                       ComponentState::get().initial_instance_task_memory_size,
                                                       ComponentState::get().instance_task_allocator_segment_size,
+                                                      ComponentState::get().instance_task_allocator_stack_pool_chunk_size,
                                                       ComponentState::get().min_instance_extra_task_memory_size,
                                                       0};
   kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
