@@ -33,13 +33,10 @@ struct ComponentState final : private vk::not_copyable {
   uint64_t min_instance_extra_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE};
   uint64_t initial_instance_coroutine_memory_size{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE};
   uint64_t min_instance_extra_coroutine_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE};
-<<<<<<< HEAD
   uint64_t initial_instance_task_memory_size{INIT_INSTANCE_TASK_ALLOCATOR_SIZE};
   uint64_t instance_task_allocator_segment_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE};
   uint64_t instance_task_allocator_stack_pool_chunk_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE};
   uint64_t min_instance_extra_task_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE};
-=======
->>>>>>> kkotliar/k2_add_coroutine_memory
 
   ComponentState() noexcept {
     parse_env();

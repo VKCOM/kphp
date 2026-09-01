@@ -69,7 +69,7 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
 
     base = task_allocator.alloc_script_memory(total_size);
   } else {
-    base = RuntimeCoroutineAllocator::get().alloc_script_memory(total_size);
+    base = kphp::coro::detail::memory::runtime_coroutine_allocator::get().alloc_script_memory(total_size);
     backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
   }
 
@@ -113,7 +113,7 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
     task_allocator.release_stack(*cb->stack);
     break;
   case kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool:
-    RuntimeCoroutineAllocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    kphp::coro::detail::memory::runtime_coroutine_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
     break;
   }
 }
