@@ -13,43 +13,38 @@
 
 namespace vk {
 
-namespace details {
-
-template<typename T>
-union object_pool_slot {
-  object_pool_slot* m_next;
-  T m_obj;
-};
-
-struct object_pool_chunk_header {
-  object_pool_chunk_header* m_next{nullptr};
-};
-
-} // namespace details
-
 template<typename T, template<typename> typename Allocator>
 class object_pool : private vk::not_copyable, private Allocator<std::byte> {
 private:
   using allocator_traits = std::allocator_traits<Allocator<std::byte>>;
 
+  struct object_pool_chunk_header {
+    object_pool_chunk_header* m_next{nullptr};
+  };
+
+  union object_pool_slot {
+    object_pool_slot* m_next;
+    T m_obj;
+  };
+
   size_t m_chunk_size{0};
   size_t m_chunk_byte_size{0};
-  vk::details::object_pool_chunk_header* m_head_chunk{nullptr};
-  vk::details::object_pool_slot<T>* m_head_free_slot{nullptr};
+  object_pool_chunk_header* m_head_chunk{nullptr};
+  object_pool_slot* m_head_free_slot{nullptr};
 
   auto get_allocator() noexcept -> Allocator<std::byte>& {
     return *this;
   }
 
-  static auto slots_of(vk::details::object_pool_chunk_header* chunk) noexcept -> vk::details::object_pool_slot<T>* {
-    return reinterpret_cast<vk::details::object_pool_slot<T>*>(reinterpret_cast<std::byte*>(chunk) + sizeof(vk::details::object_pool_chunk_header));
+  static auto slots_of(object_pool_chunk_header* chunk) noexcept -> object_pool_slot* {
+    return reinterpret_cast<object_pool_slot*>(reinterpret_cast<std::byte*>(chunk) + sizeof(object_pool_chunk_header));
   }
 
   auto link_new_chunk() noexcept -> void {
     std::byte* mem{allocator_traits::allocate(get_allocator(), m_chunk_byte_size)};
-    m_head_chunk = new (mem) vk::details::object_pool_chunk_header{m_head_chunk};
+    m_head_chunk = new (mem) object_pool_chunk_header{m_head_chunk};
 
-    vk::details::object_pool_slot<T>* slots{slots_of(m_head_chunk)};
+    object_pool_slot* slots{slots_of(m_head_chunk)};
     slots[0].m_next = nullptr;
     for (size_t i = 1; i < m_chunk_size; ++i) {
       slots[i].m_next = std::addressof(slots[i - 1]);
@@ -68,7 +63,7 @@ public:
     assert(chunk_size > 0);
 
     m_chunk_size = chunk_size;
-    m_chunk_byte_size = sizeof(vk::details::object_pool_chunk_header) + chunk_size * sizeof(vk::details::object_pool_slot<T>);
+    m_chunk_byte_size = sizeof(object_pool_chunk_header) + chunk_size * sizeof(object_pool_slot);
     link_new_chunk();
   }
 
@@ -78,7 +73,7 @@ public:
       link_new_chunk();
     }
 
-    vk::details::object_pool_slot<T>* free_slot{m_head_free_slot};
+    object_pool_slot* free_slot{m_head_free_slot};
     m_head_free_slot = m_head_free_slot->m_next;
 
     new (free_slot) T(std::forward<Args>(args)...);
@@ -88,7 +83,7 @@ public:
 
   auto release(T& obj) noexcept -> void {
     obj.~T();
-    auto* slot{reinterpret_cast<vk::details::object_pool_slot<T>*>(std::addressof(obj))};
+    auto* slot{reinterpret_cast<object_pool_slot*>(std::addressof(obj))};
     slot->m_next = m_head_free_slot;
     m_head_free_slot = slot;
   }
