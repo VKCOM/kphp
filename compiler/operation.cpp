@@ -27,7 +27,7 @@ void OpInfo::init_static() {
   }
   was_init_static = 1;
 
-  static OpProperties default_properties; // TODO was not initialized, static added
+  static OpProperties default_properties; //TODO was not initialized, static added
   default_properties.cnst = cnst_not_func;
   std::fill(P, P + Operation_size, default_properties);
 #define FOREACH_OP(x) VertexAdaptor<x>::init_properties(&P[x]);
@@ -142,7 +142,7 @@ void OpInfo::init_static() {
 
 OpProperties OpInfo::P[Operation_size];
 int OpInfo::was_init_static = 0;
-// TODO: assert that 255 is enough
+//TODO: assert that 255 is enough
 Operation OpInfo::tok_to_op[255];
 Operation OpInfo::tok_to_binary_op[255];
 Operation OpInfo::tok_to_unary_op[255];

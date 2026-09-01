@@ -5,7 +5,7 @@
 #pragma once
 
 /*** Core ***/
-// Consists mostly of functions that require synchronization
+//Consists mostly of functions that require synchronization
 
 #include <string>
 #include <vector>

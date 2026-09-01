@@ -192,7 +192,7 @@ bool compiler_execute(CompilerSettings* settings) {
     G->parse_tracked_builtins(tracked_builtins_list);
   }
 
-  // TODO: call it with pthread_once on need
+  //TODO: call it with pthread_once on need
   lexer_init();
   if (G->is_output_mode_k2()) {
     k2_lexer_init();

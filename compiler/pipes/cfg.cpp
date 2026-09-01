@@ -210,8 +210,8 @@ void CFG::add_usage(Node node, UsagePtr usage) {
   if (!usage) {
     return;
   }
-  // fprintf(stderr, "%s is used at node %d with type %d\n", usage->v->get_string().c_str(), get_index(node), usage->type);
-  // hope that one node will contain usages of the same type
+  //fprintf(stderr, "%s is used at node %d with type %d\n", usage->v->get_string().c_str(), get_index(node), usage->type);
+  //hope that one node will contain usages of the same type
   kphp_assert(node_usages[node].empty() || node_usages[node].front()->type == usage->type);
   node_usages[node].emplace_front(usage);
   usage->node = node;
@@ -230,7 +230,7 @@ void CFG::add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag) 
 
 void CFG::add_edge(Node from, Node to) {
   if (from && to) {
-    // fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), get_index(from), get_index(to));
+    //fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), get_index(from), get_index(to));
     node_next[from].emplace_front(to);
     node_prev[to].emplace_front(from);
   }
@@ -1209,7 +1209,7 @@ void CFG::split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<Ve
     } else { // var_param_t
       bool is_param = std::find(parts[i].begin(), parts[i].end(), params[var->param_i].as<op_func_param>()->var()) != parts[i].end();
 
-      if (is_param) { // union of part that contains function argument
+      if (is_param) { //union of part that contains function argument
         new_var->param_i = var->param_i;
         new_var->init_val = var->init_val;
         new_var->is_read_only = var->is_read_only;
@@ -1308,7 +1308,7 @@ void CFG::calc_used(Node v) {
     node_stack.pop();
 
     node_dfs[v] = cur_dfs_step;
-    // fprintf (stdout, "calc_used %d\n", get_index (v));
+    //fprintf (stdout, "calc_used %d\n", get_index (v));
 
     for (VertexPtr node_subvertex : node_subvertices[v]) {
       node_subvertex->used_flag = true;
@@ -1379,7 +1379,7 @@ public:
         return v;
       }
       is_func_id_t conv = it->second;
-      // fprintf(stderr, "Variable %s have conv_type %d\n", var->var_id->name.c_str(), conv);
+      //fprintf(stderr, "Variable %s have conv_type %d\n", var->var_id->name.c_str(), conv);
 
       if (conv == 0) {
         kphp_warning(fmt_format("Unreachable code: variable type conditions creates contradiction for variable {}", var->get_string()));

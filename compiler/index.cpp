@@ -29,14 +29,14 @@ int64_t get_mtime(const struct stat& sb) {
   return sb.st_mtime * 1000000000ll + sb.st_mtim.tv_nsec;
 }
 
-// Index:
-//   holds some information about all files in given directory (and all its subdirs)
-//   can be synchronized with file system
-//   can be saved to file
-//   can be loaded from file
+//Index:
+//  holds some information about all files in given directory (and all its subdirs)
+//  can be synchronized with file system
+//  can be saved to file
+//  can be loaded from file
 //
-//   for a start, files will be indexed by their names
-//                hashes will be used in future
+//  for a start, files will be indexed by their names
+//               hashes will be used in future
 
 void File::calc_name_ext_and_others(const std::string& basedir) {
   kphp_assert(vk::string_view{path}.starts_with(basedir));
@@ -78,10 +78,10 @@ long long File::read_stat() {
     return -1;
   }
   on_disk = true;
-  // TODO: check if it is file
+  //TODO: check if it is file
   mtime = get_mtime(buf);
   file_size = buf.st_size;
-  // fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
+  //fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
   return 1;
 }
 
@@ -119,7 +119,7 @@ Index* Index::current_index = nullptr;
 
 int Index::scan_dir_callback(const char* fpath, const struct stat* sb, int typeflag, struct FTW* ftwbuf __attribute__((unused))) {
   if (typeflag == FTW_D) {
-    // skip
+    //skip
   } else if (typeflag == FTW_F) {
     // ignore index file
     if (current_index->index_file == fpath) {
@@ -129,7 +129,7 @@ int Index::scan_dir_callback(const char* fpath, const struct stat* sb, int typef
     File* f = current_index->on_new_file_during_scan_dir(realpath(fpath, full_path));
     f->on_disk = true;
     long long new_mtime = get_mtime(*sb);
-    // fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
+    //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
     if (f->mtime != new_mtime) {
       f->crc64 = -1;
       f->crc64_with_comments = -1;

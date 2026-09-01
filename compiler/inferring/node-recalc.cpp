@@ -151,7 +151,7 @@ NodeRecalc::NodeRecalc(tinf::Node* node, tinf::TypeInferer* inferer)
       inferer_(inferer) {}
 
 void NodeRecalc::on_changed() {
-  // fmt_fprintf(stderr, "{} : {} -> {}\n", node_->get_description(), type_out(node_->get_type()), type_out(new_type()));
+  //fmt_fprintf(stderr, "{} : {} -> {}\n", node_->get_description(), type_out(node_->get_type()), type_out(new_type()));
   new_type_->mark_classes_used();
   node_->set_type(new_type_);
   new_type_ = nullptr;

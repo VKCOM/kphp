@@ -43,7 +43,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
   case op_fork:
     rl_calc_all<val_none>(root);
     return;
-  case op_array: // TODO: in fact it is wrong
+  case op_array: //TODO: in fact it is wrong
   case op_tuple:
   case op_shape:
   case op_defined:
@@ -122,7 +122,7 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
   case op_throw:
     rl_calc_all<val_r>(root);
     break;
-  case op_unset: // TODO: fix it (???)
+  case op_unset: //TODO: fix it (???)
     rl_calc_all<val_l>(root);
     break;
   case op_try: {
@@ -141,7 +141,7 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     rl_calc_all<val_none>(root);
     break;
   case op_for:
-    // TODO: it may be untrue
+    //TODO: it may be untrue
     rl_calc_all<val_none, val_r>(root, 1);
     break;
   case op_global:
@@ -173,7 +173,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
 
   Operation tp = root->type();
 
-  // fprintf (stderr, "rl_calc (%p = %s)\n", root, OpInfo::str (tp).c_str());
+  //fprintf (stderr, "rl_calc (%p = %s)\n", root, OpInfo::str (tp).c_str());
 
   switch (OpInfo::rl(tp)) {
   case rl_set:

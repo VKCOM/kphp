@@ -16,7 +16,7 @@
 
 RestrictionIsset::RestrictionIsset(tinf::Node* a)
     : a_(a) {
-  // empty
+  //empty
 }
 
 std::string RestrictionIsset::get_description() {

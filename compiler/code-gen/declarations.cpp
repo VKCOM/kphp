@@ -214,7 +214,7 @@ TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, std
 //  x : (Either (Maybe (%Vector t1)) (Maybe (%VectorTotal t2)))
 // = Test t1 t2;
 // ********************** cl/C@VK@TL@Types@Test__int__graph_Vertex.h **********************
-// struct C$VK$TL$Types$Test__int__graph_Vertex : public abstract_refcountable_php_interface {
+//struct C$VK$TL$Types$Test__int__graph_Vertex : public abstract_refcountable_php_interface {
 //  using t1 = class_instance<C$VK$TL$Types$Either__maybe_array_int__VectorTotal__graph_Vertex>::ClassType::X::InnerType::ValueType;
 //  using t2 = class_instance<C$VK$TL$Types$Either__maybe_array_int__VectorTotal__graph_Vertex>::ClassType::Y::ClassType::t;
 //  virtual const char *get_class() const {
@@ -1113,12 +1113,12 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator& W, ClassPt
     return;
   }
 
-  // template<typename Packer>
-  // void msgpack_pack(Packer &packer) const {
-  //    packer.pack(tag_1);
-  //    packer.pack(field_1);
-  //    ...
-  // }
+  //template<typename Packer>
+  //void msgpack_pack(Packer &packer) const {
+  //   packer.pack(tag_1);
+  //   packer.pack(field_1);
+  //   ...
+  //}
 
   std::vector<std::string> body;
   uint16_t cnt_fields = 0;
@@ -1153,17 +1153,17 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator& W, Class
     return;
   }
 
-  // if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { SerializationLibContext::get().set_msgpack_error(vk::msgpack::TYPE_ERROR); return; }
-  // auto arr = msgpack_o.via.array;
-  // for (size_t i = 0; i < arr.size; i += 2) {
-  //   auto tag = arr.ptr[i].as<uint8_t>();
-  //   [[maybe_unused]] auto elem = arr.ptr[i + 1];
-  //   switch (tag) {
-  //     case tag_x: elem.convert(x); break;
-  //     case tag_s: elem.convert(s); break;
-  //     default   : break;
-  //   }
-  // }
+  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { SerializationLibContext::get().set_msgpack_error(vk::msgpack::TYPE_ERROR); return; }
+  //auto arr = msgpack_o.via.array;
+  //for (size_t i = 0; i < arr.size; i += 2) {
+  //  auto tag = arr.ptr[i].as<uint8_t>();
+  //  [[maybe_unused]] auto elem = arr.ptr[i + 1];
+  //  switch (tag) {
+  //    case tag_x: elem.convert(x); break;
+  //    case tag_s: elem.convert(s); break;
+  //    default   : break;
+  //  }
+  //}
   //
 
   std::vector<std::string> cases;

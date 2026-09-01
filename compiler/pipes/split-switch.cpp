@@ -30,7 +30,7 @@ private:
     state->str_val = state_name;
     auto expr = VertexAdaptor<op_set>::create(state, minus_one);
 
-    // TODO: auto_return instead of return true!
+    //TODO: auto_return instead of return true!
     auto true_val = VertexAdaptor<op_true>::create();
     auto new_return = VertexAdaptor<op_return>::create(true_val);
     auto seq = VertexAdaptor<op_seq>::create(expr, new_return);
@@ -51,7 +51,7 @@ private:
     }
 
     for (auto& i : *root) {
-      // TODO: hack... write proper Range
+      //TODO: hack... write proper Range
       bool is_cycle = OpInfo::type(i->type()) == cycle_op;
       i = prepare_switch_func(i, state_name, cycle_depth + is_cycle);
     }

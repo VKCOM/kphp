@@ -44,7 +44,7 @@ struct OpProperties {
 
 struct OpInfo {
   static int was_init_static;
-  // TODO: assert that 255 is enough
+  //TODO: assert that 255 is enough
   static Operation tok_to_op[255];
   static Operation tok_to_binary_op[255];
   static Operation tok_to_unary_op[255];

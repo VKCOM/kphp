@@ -49,7 +49,7 @@ void LexerData::add_token_(int shift, Args&&... tok) {
   tokens.emplace_back(std::forward<Args>(tok)...);
   tokens.back().line_num = line_num;
   tokens.back().debug_str = vk::string_view(code, code + shift);
-  // fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
+  //fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
   pass(shift);
   hack_last_tokens();
 }
@@ -635,7 +635,7 @@ bool TokenLexerOctChar::parse(LexerData* lexer_data) const {
     }
   }
 
-  // TODO: \777
+  //TODO: \777
   lexer_data->append_char(val);
   lexer_data->pass_raw((int)(t - s));
   return true;
@@ -733,7 +733,7 @@ void TokenLexerStringExpr::init() {
   h->add_simple_rule("\"", &vk::singleton<TokenLexerString>::get());
   h->add_rule("[a-zA-Z_$\\]", &vk::singleton<TokenLexerName>::get());
 
-  // TODO: double (?)
+  //TODO: double (?)
   h->add_rule("[0-9]|.[0-9]", &vk::singleton<TokenLexerNum>::get());
 
   h->add_rule(" |\t|\n|\r", &vk::singleton<TokenLexerSkip>::get());

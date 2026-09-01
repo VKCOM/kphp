@@ -155,7 +155,7 @@ void ExprNodeRecalc::recalc_foreach_param(VertexAdaptor<op_foreach_param> param)
 
 void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   VertexPtr arg = conv->expr();
-  // FIXME: (extra dependenty)
+  //FIXME: (extra dependenty)
   add_dependency(as_rvalue(arg));
   if (tinf::get_type(arg)->get_real_ptype() == tp_array) {
     set_lca(drop_optional(as_rvalue(arg)));
@@ -164,7 +164,7 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
     set_lca(TypeData::get_type(tp_Error));
   } else {
     recalc_ptype<tp_array>();
-    if (tinf::get_type(arg)->ptype() != tp_any) { // hack
+    if (tinf::get_type(arg)->ptype() != tp_any) { //hack
       set_lca_at(&MultiKey::any_key(1), tinf::get_type(arg)->get_real_ptype());
     }
   }
@@ -209,7 +209,7 @@ void ExprNodeRecalc::recalc_plus_minus(VertexAdaptor<meta_op_unary> expr) {
 }
 
 void ExprNodeRecalc::recalc_inc_dec(VertexAdaptor<meta_op_unary> expr) {
-  // or false ???
+  //or false ???
   set_lca(drop_optional(as_rvalue(expr->expr())));
 }
 
@@ -239,7 +239,7 @@ void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   VertexPtr lhs = expr->lhs();
   VertexPtr rhs = expr->rhs();
 
-  // FIXME: (extra dependency)
+  //FIXME: (extra dependency)
   add_dependency(as_rvalue(lhs));
   add_dependency(as_rvalue(rhs));
 
@@ -505,7 +505,7 @@ ExprNodeRecalc::ExprNodeRecalc(tinf::ExprNode* node, tinf::TypeInferer* inferer)
     : NodeRecalc(node, inferer) {}
 
 void ExprNodeRecalc::do_recalc() {
-  // fprintf (stderr, "recalc expr %d %p %s\n", get_thread_id(), node_, node_->get_description().c_str());
+  //fprintf (stderr, "recalc expr %d %p %s\n", get_thread_id(), node_, node_->get_description().c_str());
   VertexPtr expr = dynamic_cast<tinf::ExprNode*>(node_)->get_expr();
   stage::set_location(expr->get_location());
   recalc_expr(expr);

@@ -805,7 +805,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_array_literal(v_array);
   }
 
-  // TODO: may be this should be moved to tinf_check
+  //TODO: may be this should be moved to tinf_check
   return vertex;
 }
 

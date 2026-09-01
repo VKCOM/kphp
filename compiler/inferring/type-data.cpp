@@ -563,7 +563,7 @@ void TypeData::set_lca_at(const MultiKey& multi_key, const TypeData* rhs, bool s
 }
 
 void TypeData::fix_inf_array() {
-  // hack: used just to make current version stable
+  //hack: used just to make current version stable
   int depth = 0;
   const TypeData* cur = this;
   while (cur != nullptr) {

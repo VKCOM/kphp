@@ -16,5 +16,6 @@ IndentRequiresClause:             false
 RequiresClausePosition:           OwnLine
 IndentPPDirectives:               None
 InsertNewlineAtEOF:               true
+ReflowComments:                   false
 ...
 

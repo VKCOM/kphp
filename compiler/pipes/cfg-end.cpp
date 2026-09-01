@@ -33,7 +33,7 @@ bool operator!=(const MergeData& a, const MergeData& b) {
 static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr>& vars, const std::string& new_name) {
   VarPtr new_var = G->create_var(new_name, VarData::var_unknown_t);
   ;
-  // new_var->tinf = vars[0]->tinf; //hack, TODO: fix it
+  //new_var->tinf = vars[0]->tinf; //hack, TODO: fix it
   new_var->tinf_node.copy_type_from(tinf::get_type(vars[0]));
 
   int param_i = -1;
@@ -42,8 +42,8 @@ static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr>& vars, 
     if (var->type() == VarData::var_param_t) {
       param_i = var->param_i;
     } else if (var->type() == VarData::var_local_t) {
-      // FIXME: remember to remove all unused variables
-      // func->local_var_ids.erase (*i);
+      //FIXME: remember to remove all unused variables
+      //func->local_var_ids.erase (*i);
       auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
       if (function->local_var_ids.end() != tmp) {
         function->local_var_ids.erase(tmp);

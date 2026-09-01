@@ -136,7 +136,7 @@ inline void GenTree::skip_phpdoc_tokens() {
   // consider the phpdocs in unexpected locations like array or return to be an ordinary comment
   // (usually such phpdocs contain @see or some text, they don't have @var annotations)
   while (cur->type() == tok_phpdoc) {
-    // kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
+    //kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
     next_cur();
   }
   // phpdoc comments that need to be analyzed don't come here: see op_phpdoc_var
@@ -144,7 +144,7 @@ inline void GenTree::skip_phpdoc_tokens() {
 
 template<Operation EmptyOp, class FuncT, class ResultType>
 bool GenTree::gen_list(std::vector<ResultType>* res, FuncT f, TokenType delim) {
-  // Do not clear res. Result must be appended to it.
+  //Do not clear res. Result must be appended to it.
   bool prev_delim = false;
   bool next_delim = true;
 
@@ -301,7 +301,7 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
 }
 
 VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
-  // postfix operators x++, x--, x[] and x{}, x->y, x()
+  //postfix operators x++, x--, x[] and x{}, x->y, x()
   bool need = true;
   while (need && cur != end) {
     auto op = cur;
@@ -329,7 +329,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       } else {
         CE(expect(tok_clbrc, "'}'"));
       }
-      // TODO: it should be to separate operations
+      //TODO: it should be to separate operations
       if (!i) {
         auto v = VertexAdaptor<op_index>::create(res);
         res = v;
@@ -1629,9 +1629,9 @@ bool GenTree::check_seq_end() {
 }
 
 bool GenTree::check_statement_end() {
-  // if (test_expect (tok_clbrc)) {
-  // return true;
-  // }
+  //if (test_expect (tok_clbrc)) {
+  //return true;
+  //}
   if (!test_expect(tok_semicolon)) {
     stage::set_line(line_num);
     kphp_error(0, "Failed to parse statement. Expected `;`");
@@ -1858,8 +1858,8 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
     real_relative_dir.erase(0, lib_unified_dir.size() + 1);
   }
   // to properly handle the vendor/ folder, assert from below is commented-out
-  // string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
-  // kphp_error (processing_file->namespace_name == expected_namespace_name, fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
+  //string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
+  //kphp_error (processing_file->namespace_name == expected_namespace_name, fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
 
   next_cur();
   expect(tok_semicolon, "';'");

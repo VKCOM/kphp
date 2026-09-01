@@ -18,22 +18,21 @@ TypeInferer::TypeInferer()
     : finish_flag(false) {}
 
 void TypeInferer::recalc_node(Node* node) {
-  // fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+  //fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   if (node->try_start_recalc()) {
     Q->push(node);
   }
 }
 
 void TypeInferer::add_node(Node* node) {
-  // fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+  //fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   if (!node->was_recalc_started_at_least_once()) {
     recalc_node(node);
   }
 }
 
 void TypeInferer::add_edge(const Edge* edge) {
-  // fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to,
-  // edge->to->get_description().c_str());
+  //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
   edge->from->register_edge_from_this(edge);
   edge->to->register_edge_to_this(edge);
 }

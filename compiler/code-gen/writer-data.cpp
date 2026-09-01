@@ -132,7 +132,7 @@ void WriterData::dump(std::string& dest_str, const std::vector<Line>::iterator& 
       if (r == -1) {
         l = -1;
       }
-      // fprintf (stderr, "l = %d, r = %d\n", l, r);
+      //fprintf (stderr, "l = %d, r = %d\n", l, r);
       assert(l <= r);
       rev.resize(r - l + 1, -1);
     } else if (t == 2) {

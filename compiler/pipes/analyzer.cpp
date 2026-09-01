@@ -108,8 +108,8 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
     }
   }
   if (vertex->type() == op_set) {
-    // TODO: $x = (int)$x;
-    // check_set(vertex.as<op_set>());
+    //TODO: $x = (int)$x;
+    //check_set(vertex.as<op_set>());
     return vertex;
   }
   return vertex;

@@ -56,8 +56,7 @@ void VarNodeRecalc::do_recalc() {
 
       satisfied = !new_type_->error_flag() && is_less_or_equal_type(new_type_, node->type_restriction);
       if (!satisfied) {
-        //          fmt_print("rollback {} from {} to {} due to restriction {}\n", node->get_description(), colored_type_out(new_type_),
-        //          colored_type_out(before_type), colored_type_out(node->type_restriction));
+        //          fmt_print("rollback {} from {} to {} due to restriction {}\n", node->get_description(), colored_type_out(new_type_), colored_type_out(before_type), colored_type_out(node->type_restriction));
         on_restricted_type_mismatch(e, node->type_restriction);
         new_type_ = before_type->clone();
       }

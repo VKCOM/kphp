@@ -37,7 +37,7 @@ public:
   bool on_disk{false};
   bool needed{false};
   Target* target{nullptr};
-  // Don't know where else I can save it
+  //Don't know where else I can save it
   std::forward_list<std::string> includes;
   std::forward_list<std::string> lib_includes;
   bool compile_with_debug_info_flag{true};

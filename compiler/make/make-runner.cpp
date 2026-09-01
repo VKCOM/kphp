@@ -32,7 +32,7 @@ void MakeRunner::run_target(Target* target) {
 }
 
 void MakeRunner::ready_target(Target* target) {
-  // fprintf (stderr, "ready target %s\n", target->get_name().c_str());
+  //fprintf (stderr, "ready target %s\n", target->get_name().c_str());
   assert(!target->is_ready);
 
   targets_left--;
@@ -43,7 +43,7 @@ void MakeRunner::ready_target(Target* target) {
 }
 
 void MakeRunner::one_dep_ready_target(Target* target) {
-  // fprintf (stderr, "one_dep_ready target %s\n", target->get_name().c_str());
+  //fprintf (stderr, "one_dep_ready target %s\n", target->get_name().c_str());
   target->pending_deps--;
   assert(target->pending_deps >= 0);
   if (target->pending_deps == 0) {
@@ -110,7 +110,7 @@ static int run_cmd(const std::string& cmd) {
   }
 
   if (pid == 0) {
-    // prctl (PR_SET_PDEATHSIG, SIGKILL);
+    //prctl (PR_SET_PDEATHSIG, SIGKILL);
     execvp(argv[0], &argv[0]);
     perror("execvp failed: ");
     _exit(1);
@@ -192,7 +192,7 @@ bool MakeRunner::make_targets(const std::vector<Target*>& targets, const std::st
   ksignal(SIGINT, MakeRunner::sigint_handler);
   ksignal(SIGTERM, MakeRunner::sigint_handler);
 
-  // TODO: check timeouts
+  //TODO: check timeouts
   for (auto* target : targets) {
     // fprintf (stderr, "make target: %s\n", target->get_name().c_str());
     require_target(target);
@@ -268,7 +268,7 @@ bool MakeRunner::make_targets(const std::vector<Target*>& targets, const std::st
     }
   }
 
-  // TODO: use old handlers instead SIG_DFL
+  //TODO: use old handlers instead SIG_DFL
   ksignal(SIGINT, SIG_DFL);
   ksignal(SIGTERM, SIG_DFL);
   bool is_ready = true;
@@ -282,7 +282,7 @@ MakeRunner::MakeRunner(FILE* stats_file) noexcept
     : stats_file_(stats_file) {}
 
 MakeRunner::~MakeRunner() {
-  // TODO: delete targets
+  //TODO: delete targets
   for (auto* target : all_targets) {
     delete target;
   }

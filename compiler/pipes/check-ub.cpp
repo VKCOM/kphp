@@ -102,12 +102,12 @@ private:
 
   static int check(const UBMergeData& first, const UBMergeData& second) {
     int err = 0;
-    // sigsegv
+    //sigsegv
     check(first.functions_, second.index_refs_, is_var_written, UB_SIGSEGV, &err);
     check(second.functions_, first.index_refs_, is_var_written, UB_SIGSEGV, &err);
     check(first.writes_, second.writes_, is_same_var, UB_SIGSEGV, &err);
 
-    // just ub
+    //just ub
     check(first.reads_, second.writes_, is_same_var, UB_SIGSEGV, &err);
     check(first.writes_, second.reads_, is_same_var, UB_SIGSEGV, &err);
 

@@ -25,9 +25,9 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     }
 
     // There are 117 callbacks was passed to internal functions which throw exception
-    // bool extern_func_throws_exception = local->extern_func_call->get_func_id()->can_throw;
-    // bool callback_throws = !callback_passed_to_extern_func->can_throw;
-    // if (callback_throws && !extern_func_throws_exception) {
+    //bool extern_func_throws_exception = local->extern_func_call->get_func_id()->can_throw;
+    //bool callback_throws = !callback_passed_to_extern_func->can_throw;
+    //if (callback_throws && !extern_func_throws_exception) {
     //  kphp_error(false, "It's not allowed to throw exception in callback which was passed to internal function");
     //}
   }
@@ -47,7 +47,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     current_function->class_dep.insert(klass);
   }
 
-  // NB: There is no user functions in default values of any kind.
+  //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->func_id;
     // instead of just
@@ -86,7 +86,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     for (int ii = 0; ii < cnt_func_params; ++ii) {
       auto val = call->args()[ii];
       VarPtr to_var = other_function->param_ids[ii];
-      if (to_var->is_reference) { // passed as reference
+      if (to_var->is_reference) { //passed as reference
         while (val->type() == op_index) {
           val = val.as<op_index>()->array(); // from $a['b'] extract $a
         }

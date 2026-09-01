@@ -263,7 +263,7 @@ SrcFilePtr CompilerCore::register_file(const std::string& file_name, LibPtr owne
     short_file_name += extension;
   }
 
-  // register file if needed
+  //register file if needed
   TSHashTable<SrcFilePtr>::HTNode* node = file_ht.at(vk::std_hash(full_file_name));
   if (!node->data) {
     AutoLocker<Lockable*> locker(node);
