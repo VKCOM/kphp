@@ -5,28 +5,53 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/allocator/script-allocator.h"
-#include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/confdata/confdata-storage.h"
+#include "runtime-light/stdlib/confdata/predefined-wildcards.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/streams/stream.h"
 
 class ConfdataInstanceState final : private vk::not_copyable {
-  using hasher_type = decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); });
-
-  kphp::stl::unordered_map<string, mixed, kphp::memory::script_allocator, hasher_type> m_key_cache;
-  kphp::stl::unordered_map<string, array<mixed>, kphp::memory::script_allocator, hasher_type> m_wildcard_cache;
+  kphp::confdata::storage m_storage;
+  std::optional<kphp::component::stream> m_reader_lease;
+  kphp::confdata::storage::sample_id m_sample_id{kphp::confdata::storage::INVALID_SAMPLE_ID};
 
 public:
   ConfdataInstanceState() noexcept = default;
 
-  auto& key_cache() noexcept {
-    return m_key_cache;
-  }
+  auto init() noexcept -> kphp::coro::task<>;
+  auto release() noexcept -> void;
+  auto is_initialized() const noexcept -> bool;
+  auto values() const noexcept -> const kphp::confdata::storage::map_type&;
+  auto wildcards() const noexcept -> const kphp::confdata::predefined_wildcards&;
 
-  auto& wildcard_cache() noexcept {
-    return m_wildcard_cache;
-  }
-
-  static ConfdataInstanceState& get() noexcept;
+  static auto get() noexcept -> ConfdataInstanceState&;
 };
+
+inline auto ConfdataInstanceState::release() noexcept -> void {
+  if (!is_initialized()) {
+    return;
+  }
+  m_storage.close();
+  m_sample_id = kphp::confdata::storage::INVALID_SAMPLE_ID;
+  // Closing the stream is the release signal; the component owns the reader
+  // count and also observes this close when K2 terminates an instance abruptly.
+  m_reader_lease.reset();
+}
+
+inline auto ConfdataInstanceState::is_initialized() const noexcept -> bool {
+  return m_sample_id != kphp::confdata::storage::INVALID_SAMPLE_ID;
+}
+
+inline auto ConfdataInstanceState::values() const noexcept -> const kphp::confdata::storage::map_type& {
+  kphp::log::assertion(is_initialized());
+  return m_storage.values(m_sample_id);
+}
+
+inline auto ConfdataInstanceState::wildcards() const noexcept -> const kphp::confdata::predefined_wildcards& {
+  kphp::log::assertion(is_initialized());
+  return m_storage.wildcards();
+}

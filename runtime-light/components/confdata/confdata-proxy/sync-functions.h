@@ -34,15 +34,16 @@ struct pagination {
   bool m_has_synced{};
 };
 
-enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced };
+enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, storage_busy };
 
 namespace details {
 
 // Performs a single confdata.subscribe round-trip.
 // On success, invokes `event_handler(events)` once with the batch of received events and updates `to` pagination.
+// If the handler returns false, the batch is rejected with `storage_busy` and `to` is left unchanged so it can be requested again.
 // The batch is a view into the response buffer and is only valid for the duration of the call; empty batches are not delivered.
 // An empty event value means that the key has been deleted.
-template<std::invocable<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
+template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
 auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination& to,
                const event_handler_type& event_handler) noexcept -> kphp::coro::task<std::expected<void, kphp::confdata::subscribe_error>> {
   // subscribe is a longpoll method, so the timeout must cover the time confdata-proxy may hold the request open
@@ -91,7 +92,9 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
       overloaded{
           [&event_handler, &to](const tl::confdata::subscribeResponseOk& response) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
             if (const auto& events{response.events}; events.size() != 0) {
-              std::invoke(event_handler, std::span<const tl::confdata::KeyValuePair>{events.value});
+              if (!std::invoke(event_handler, std::span<const tl::confdata::KeyValuePair>{events.value})) {
+                return std::unexpected{kphp::confdata::subscribe_error::storage_busy};
+              }
             }
 
             to.m_page = response.new_page.value;
@@ -113,7 +116,7 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
 //
 // `event_handler` is invoked once per round-trip with a batch of events; the batch is only valid
 // for the duration of the call and must be copied if it needs to be retained.
-template<std::invocable<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
+template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
 auto sync(std::string_view confdata_proxy_actor,
           event_handler_type event_handler) noexcept -> kphp::coro::task<std::expected<kphp::confdata::pagination, kphp::confdata::subscribe_error>> {
   kphp::confdata::pagination p{};
@@ -132,7 +135,7 @@ auto sync(std::string_view confdata_proxy_actor,
 //
 // `event_handler` is invoked once per round-trip with a batch of events; the batch is only valid
 // for the duration of the call and must be copied if it needs to be retained.
-template<std::invocable<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
+template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
 auto update(std::string_view confdata_proxy_actor, kphp::confdata::pagination& from,
             event_handler_type event_handler) noexcept -> kphp::coro::task<std::expected<void, kphp::confdata::subscribe_error>> {
   // limits the update rate to at most one batch per interval
