@@ -1,5 +1,11 @@
+set(RUNTIME_LIGHT_CONFDATA_TEST_RUNTIME_CORE_SOURCES ${CORE_SRC})
+list(TRANSFORM RUNTIME_LIGHT_CONFDATA_TEST_RUNTIME_CORE_SOURCES PREPEND "${RUNTIME_COMMON_DIR}/")
+
 set(RUNTIME_LIGHT_CONFDATA_TEST_SOURCES
-    ${BASE_DIR}/runtime-light/components/confdata/state/predefined-wildcards-builder.cpp
+    ${RUNTIME_LIGHT_CONFDATA_TEST_RUNTIME_CORE_SOURCES}
+    ${BASE_DIR}/runtime-light/allocator/runtime-light-allocator.cpp
+    ${BASE_DIR}/runtime-light/memory-resource-impl/monotonic-light-buffer-resource.cpp
+    ${BASE_DIR}/runtime-light/stdlib/confdata/confdata-storage.cpp
     ${BASE_DIR}/runtime-light/stdlib/confdata/confdata-keys.cpp
     ${BASE_DIR}/runtime-light/stdlib/confdata/predefined-wildcards.cpp
     ${BASE_DIR}/tests/cpp/runtime-light/confdata/predefined-wildcards-test.cpp)
@@ -15,9 +21,13 @@ list(TRANSFORM RUNTIME_LIGHT_ALLOCATOR_TEST_RUNTIME_CORE_SOURCES PREPEND "${RUNT
 
 set(RUNTIME_LIGHT_ALLOCATOR_TEST_SOURCES
     ${RUNTIME_LIGHT_ALLOCATOR_TEST_RUNTIME_CORE_SOURCES}
+    ${BASE_DIR}/runtime-common/stdlib/serialization/json-functions.cpp
+    ${BASE_DIR}/runtime-common/stdlib/serialization/serialize-functions.cpp
     ${BASE_DIR}/runtime-light/allocator/runtime-light-allocator.cpp
-    ${BASE_DIR}/runtime-light/components/confdata/state/confdata-storage.cpp
     ${BASE_DIR}/runtime-light/memory-resource-impl/monotonic-light-buffer-resource.cpp
+    ${BASE_DIR}/runtime-light/stdlib/confdata/confdata-storage.cpp
+    ${BASE_DIR}/runtime-light/stdlib/confdata/confdata-keys.cpp
+    ${BASE_DIR}/runtime-light/stdlib/confdata/predefined-wildcards.cpp
     ${BASE_DIR}/tests/cpp/runtime-light/allocator/script-memory-resource-test.cpp)
 
 add_executable(unittests-runtime-light-allocator ${RUNTIME_LIGHT_ALLOCATOR_TEST_SOURCES})

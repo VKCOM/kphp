@@ -16,6 +16,7 @@
 #include "common/wrappers/overloaded.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/confdata/predefined-wildcards.h"
+#include "runtime-light/stdlib/confdata/wildcard-kind.h"
 
 // A port of runtime/confdata-keys.h (minus the blacklist) shared by the confdata component and the kphp client.
 // The client never includes this header directly; it's an implementation detail of the confdata sample reader/writer.
@@ -28,38 +29,14 @@
 //   - "predefined..." -> section = the matching predefined wildcard    (section_kind::predefined_wildcard)
 namespace kphp::confdata {
 
-enum class section_kind : uint8_t { simple_key, one_dot_wildcard, two_dots_wildcard, predefined_wildcard };
-
-inline auto classify_wildcard(std::string_view wildcard) noexcept -> section_kind {
-  size_t dots{0};
-  if (!wildcard.empty() && wildcard.back() == '.') {
-    for (const char c : wildcard) {
-      dots += (c == '.');
-      if (dots > 2) {
-        break;
-      }
-    }
-  }
-  switch (dots) {
-  case 1:
-    return section_kind::one_dot_wildcard;
-  case 2:
-    return section_kind::two_dots_wildcard;
-  default:
-    return section_kind::predefined_wildcard;
-  }
-}
-
 /**
  * @brief Classifies `section`; a would-be predefined wildcard that is not configured is reported
  *        as `section_kind::simple_key`.
  */
 inline auto classify_section(std::string_view section, const predefined_wildcards& wildcards) noexcept -> section_kind {
-  const auto kind{classify_wildcard(section)};
+  const auto kind{classify_wildcard_form(section)};
   return kind != section_kind::predefined_wildcard || wildcards.contains(section) ? kind : section_kind::simple_key;
 }
-
-// ================================================================================================
 
 enum class split_error : uint8_t { key_too_long, invalid_predefined_wildcard_length, not_a_two_dots_key };
 
@@ -68,8 +45,7 @@ enum class split_error : uint8_t { key_too_long, invalid_predefined_wildcard_len
  *        Instances are produced only by the `split_key*` factories, so every `key_views`
  *        is guaranteed to satisfy the protocol length bound (`int16_t`).
  */
-class key_views {
-public:
+struct key_views {
   // the remainder of a key: absent for simple keys, int-normalized like a PHP array key otherwise
   using remainder_type = std::variant<std::monostate, int64_t, std::string_view>;
 
@@ -86,6 +62,8 @@ private:
   friend auto split_key_with_predefined_wildcard(std::string_view key, size_t wildcard_len) noexcept -> std::expected<key_views, split_error>;
 
 public:
+  key_views() = delete;
+
   auto kind() const noexcept -> section_kind;
   auto raw_key() const noexcept -> std::string_view;
   auto section() const noexcept -> std::string_view;
@@ -171,14 +149,12 @@ public:
   auto remainder() const noexcept -> const mixed&;
 
   /**
-   * @return A heap copy of the section; the internal section aliases the stack buffer and the raw key,
-   *         so it must not escape the handles object.
+   * @return A heap copy of the section; the internal section aliases the stack buffer so it must not escape the handles object.
    */
   auto make_section_copy() const noexcept -> string;
 
   /**
-   * @return A heap copy of the remainder; the internal remainder aliases the stack buffer and the raw key,
-   *         so it must not escape the handles object.
+   * @return A heap copy of the remainder; the internal remainder aliases the stack buffer so it must not escape the handles object.
    */
   auto make_remainder_copy() const noexcept -> mixed;
 };

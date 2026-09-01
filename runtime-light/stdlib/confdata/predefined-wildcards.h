@@ -14,35 +14,99 @@
 #include <optional>
 #include <span>
 #include <string_view>
-#include <utility>
+
+#include "common/mixin/not_copyable.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-light/stdlib/confdata/wildcard-kind.h"
 
 namespace kphp::confdata {
 
 inline constexpr auto MAX_KEY_LENGTH{static_cast<size_t>(std::numeric_limits<int16_t>::max())};
-inline constexpr size_t PREDEFINED_WILDCARDS_ALIGNMENT{alignof(uint64_t)};
 
 enum class predefined_wildcards_error : uint8_t {
   empty_wildcard,
   wildcard_too_long,
   reserved_wildcard,
   non_canonical_wildcards,
-  size_overflow,
-  insufficient_buffer,
-  misaligned_buffer,
-  invalid_metadata,
-  unsupported_version,
+  already_initialized,
+  internal,
 };
 
-class predefined_wildcards final {
+inline auto validate_predefined_wildcard(std::string_view wildcard) noexcept -> std::expected<void, predefined_wildcards_error> {
+  if (wildcard.empty()) [[unlikely]] {
+    return std::unexpected{predefined_wildcards_error::empty_wildcard};
+  }
+  if (wildcard.size() > MAX_KEY_LENGTH) [[unlikely]] {
+    return std::unexpected{predefined_wildcards_error::wildcard_too_long};
+  }
+  if (classify_wildcard_form(wildcard) != section_kind::predefined_wildcard) [[unlikely]] {
+    return std::unexpected{predefined_wildcards_error::reserved_wildcard};
+  }
+  return {};
+}
+
+class storage;
+
+/**
+ * An immutable index of configured predefined wildcards.
+ *
+ * The owning strings and both lookup indexes retain the storage resource in
+ * their allocators, so their allocation domain does not depend on whichever
+ * script resource happens to be installed by the caller.
+ */
+class predefined_wildcards final : private vk::not_copyable {
+  using resource_type = memory_resource::unsynchronized_pool_resource;
+  using wildcard_string = memory_resource::stl::string<resource_type>;
+
+  struct transparent_string_hash final {
+    using is_transparent = void;
+
+    auto operator()(std::string_view value) const noexcept -> size_t {
+      return std::hash<std::string_view>{}(value);
+    }
+  };
+
+  struct transparent_string_equal final {
+    using is_transparent = void;
+
+    auto operator()(std::string_view lhs, std::string_view rhs) const noexcept -> bool {
+      return lhs == rhs;
+    }
+  };
+
+  using wildcard_set = memory_resource::stl::unordered_set<wildcard_string, resource_type, transparent_string_hash, transparent_string_equal>;
+  using wildcard_group = memory_resource::stl::vector<std::string_view, resource_type>;
+  using wildcard_groups =
+      memory_resource::stl::unordered_map<std::string_view, wildcard_group, resource_type, transparent_string_hash, transparent_string_equal>;
+
+  /** Candidates from one shortest-prefix group and the unmatched part of the queried key. */
+  struct matching_candidates final {
+    std::span<const std::string_view> wildcards;
+    std::string_view key_tail;
+  };
+
+  resource_type& m_resource;
+  // Owns each complete wildcard exactly once. References remain stable across
+  // unordered-set rehashes and the set is never mutated after initialization.
+  wildcard_set m_wildcards;
+  // Maps a shortest-length prefix to sorted views into `m_wildcards`.
+  wildcard_groups m_groups;
+  size_t m_shortest_wildcard_size{};
+  size_t m_max_matches_per_key{};
+  bool m_initialized{};
+
 public:
-  predefined_wildcards() noexcept = default;
+  explicit predefined_wildcards(resource_type& resource) noexcept;
 
   /**
-   * @brief Invokes `f(wildcard)` for every configured wildcard that is a prefix of `key`.
-   *        Matching wildcards are visited in ascending length order.
+   * Invokes `f(wildcard)` for every configured wildcard that is a prefix of
+   * `key`, in ascending length order.
+   *
+   * @return True if at least one wildcard matched.
    */
   template<std::invocable<std::string_view> F>
-  auto for_each_matching_wildcard(std::string_view key, const F& f) const noexcept -> void;
+  auto for_each_matching_wildcard(std::string_view key, const F& f) const noexcept -> bool;
 
   /** @return The shortest configured wildcard that is a prefix of `key`, if any. */
   auto shortest_matching_wildcard(std::string_view key) const noexcept -> std::optional<std::string_view>;
@@ -60,53 +124,39 @@ public:
   auto has_matching_wildcard(std::string_view key) const noexcept -> bool;
 
 private:
-  const std::byte* m_data{};
-  uint32_t m_entries_offset{};
-  uint32_t m_groups_offset{};
-  uint32_t m_wildcard_count{};
-  uint32_t m_group_count{};
-  uint32_t m_shortest_wildcard_size{};
-  uint32_t m_max_matches_per_key{};
+  /** Initializes the index from sorted, unique wildcards under the storage resource. */
+  auto initialize(std::span<const std::string_view> wildcards) noexcept -> std::expected<void, predefined_wildcards_error>;
 
-  predefined_wildcards(const std::byte* data, uint32_t entries_offset, uint32_t groups_offset, uint32_t wildcard_count, uint32_t group_count,
-                       uint32_t shortest_wildcard_size, uint32_t max_matches_per_key) noexcept;
+  auto find_matching_candidates(std::string_view key) const noexcept -> matching_candidates;
 
-  auto wildcard_at(uint32_t index) const noexcept -> std::string_view;
-  auto matching_group(std::string_view key) const noexcept -> std::pair<uint32_t, uint32_t>;
-
-  friend auto open_predefined_wildcards(std::span<const std::byte>) noexcept -> std::expected<predefined_wildcards, predefined_wildcards_error>;
+  friend class storage;
 };
 
-/** @brief Validates and opens relocatable immutable wildcard metadata. */
-auto open_predefined_wildcards(std::span<const std::byte> buffer) noexcept -> std::expected<predefined_wildcards, predefined_wildcards_error>;
+inline predefined_wildcards::predefined_wildcards(resource_type& resource) noexcept
+    : m_resource{resource},
+      m_wildcards{wildcard_set::allocator_type{resource}},
+      m_groups{wildcard_groups::allocator_type{resource}} {}
 
 template<std::invocable<std::string_view> F>
-auto predefined_wildcards::for_each_matching_wildcard(std::string_view key, const F& f) const noexcept -> void {
-  const auto [first_entry, entry_count]{matching_group(key)};
-  for (uint32_t i{0}; i < entry_count; ++i) {
-    const auto wildcard{wildcard_at(first_entry + i)};
-    if (wildcard.size() <= key.size() && key.starts_with(wildcard)) {
+auto predefined_wildcards::for_each_matching_wildcard(std::string_view key, const F& f) const noexcept -> bool {
+  const auto candidates{find_matching_candidates(key)};
+  bool matched{};
+  for (const auto& wildcard : candidates.wildcards) {
+    const auto wildcard_tail{wildcard.substr(m_shortest_wildcard_size)};
+    if (candidates.key_tail.starts_with(wildcard_tail)) {
       std::invoke(f, wildcard);
+      matched = true;
     }
   }
-}
-
-inline auto predefined_wildcards::shortest_matching_wildcard(std::string_view key) const noexcept -> std::optional<std::string_view> {
-  std::optional<std::string_view> result{};
-  for_each_matching_wildcard(key, [&result](std::string_view wildcard) noexcept {
-    if (!result.has_value()) {
-      result = wildcard;
-    }
-  });
-  return result;
+  return matched;
 }
 
 inline auto predefined_wildcards::max_matches_per_key() const noexcept -> size_t {
   return m_max_matches_per_key;
 }
 
-inline auto predefined_wildcards::has_matching_wildcard(std::string_view key) const noexcept -> bool {
-  return shortest_matching_wildcard(key).has_value();
+inline auto predefined_wildcards::contains(std::string_view wildcard) const noexcept -> bool {
+  return m_wildcards.contains(wildcard);
 }
 
 } // namespace kphp::confdata
@@ -131,17 +181,11 @@ struct std::formatter<kphp::confdata::predefined_wildcards_error> {
       return std::format_to(ctx.out(), "wildcard uses the implicit one-dot or two-dot form");
     case predefined_wildcards_error::non_canonical_wildcards:
       return std::format_to(ctx.out(), "wildcards are not sorted and unique");
-    case predefined_wildcards_error::size_overflow:
-      return std::format_to(ctx.out(), "metadata size overflow");
-    case predefined_wildcards_error::insufficient_buffer:
-      return std::format_to(ctx.out(), "insufficient metadata buffer");
-    case predefined_wildcards_error::misaligned_buffer:
-      return std::format_to(ctx.out(), "misaligned metadata buffer");
-    case predefined_wildcards_error::invalid_metadata:
-      return std::format_to(ctx.out(), "invalid wildcard metadata");
-    case predefined_wildcards_error::unsupported_version:
-      return std::format_to(ctx.out(), "unsupported wildcard metadata version");
+    case predefined_wildcards_error::already_initialized:
+      return std::format_to(ctx.out(), "wildcards are already initialized");
+    case predefined_wildcards_error::internal:
+      return std::format_to(ctx.out(), "unexpected internal error");
     }
-    return std::format_to(ctx.out(), "unknown wildcard metadata error");
+    return std::format_to(ctx.out(), "unknown wildcard error");
   }
 };
