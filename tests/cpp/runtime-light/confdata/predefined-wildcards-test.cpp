@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -16,8 +17,12 @@
 #include <variant>
 #include <vector>
 
-#include "runtime-light/components/confdata/state/predefined-wildcards-builder.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/confdata/confdata-keys.h"
+#include "runtime-light/stdlib/confdata/confdata-reader-lease.h"
+#include "runtime-light/stdlib/confdata/confdata-storage.h"
 #include "runtime-light/stdlib/confdata/predefined-wildcards.h"
 
 namespace {
@@ -54,18 +59,48 @@ auto check(bool condition, const char* expression, int line) noexcept -> void {
 
 #define CHECK(expression) check(static_cast<bool>(expression), #expression, __LINE__)
 
-auto make_metadata(std::vector<std::string_view> wildcards, std::vector<std::byte>& storage) -> predefined_wildcards {
-  for (const auto wildcard : wildcards) {
-    CHECK(kphp::confdata::validate_predefined_wildcard(wildcard).has_value());
+constexpr auto DEFAULT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)};
+constexpr auto SHARED_STORAGE_SIZE{static_cast<size_t>(256U * 1024U)};
+
+class wildcard_fixture final {
+  alignas(std::max_align_t) std::array<std::byte, SHARED_STORAGE_SIZE> m_memory{};
+  kphp::confdata::storage m_storage;
+
+public:
+  explicit wildcard_fixture(std::vector<std::string_view> wildcards) noexcept {
+    for (const auto wildcard : wildcards) {
+      CHECK(kphp::confdata::validate_predefined_wildcard(wildcard).has_value());
+    }
+    std::ranges::sort(wildcards);
+    wildcards.erase(std::ranges::unique(wildcards).begin(), wildcards.end());
+    CHECK(m_storage.init(m_memory).has_value());
+    CHECK(m_storage.initialize_wildcards(wildcards).has_value());
   }
-  std::ranges::sort(wildcards);
-  wildcards.erase(std::ranges::unique(wildcards).begin(), wildcards.end());
-  const auto metadata_size{kphp::confdata::predefined_wildcards_metadata_size(wildcards)};
-  CHECK(metadata_size.has_value());
-  storage.resize(*metadata_size);
-  const auto metadata{kphp::confdata::write_predefined_wildcards(storage, wildcards)};
-  CHECK(metadata.has_value());
-  return *metadata;
+
+  ~wildcard_fixture() {
+    m_storage.close();
+  }
+
+  auto wildcards() const noexcept -> const predefined_wildcards& {
+    return m_storage.wildcards();
+  }
+
+  auto storage() const noexcept -> const kphp::confdata::storage& {
+    return m_storage;
+  }
+};
+
+auto make_wildcards(std::vector<std::string_view> wildcards) -> wildcard_fixture {
+  return wildcard_fixture{std::move(wildcards)};
+}
+
+auto initialize_noncanonical(std::span<const std::string_view> wildcards) -> std::expected<void, predefined_wildcards_error> {
+  alignas(std::max_align_t) std::array<std::byte, SHARED_STORAGE_SIZE> memory{};
+  kphp::confdata::storage storage{};
+  CHECK(storage.init(memory).has_value());
+  auto result{storage.initialize_wildcards(wildcards)};
+  storage.close();
+  return result;
 }
 
 auto matching(const predefined_wildcards& wildcards, std::string_view key) -> std::vector<std::string_view> {
@@ -123,13 +158,15 @@ auto test_validation_and_formatting() -> void {
   CHECK(kphp::confdata::validate_predefined_wildcard("foo.").error() == predefined_wildcards_error::reserved_wildcard);
   CHECK(kphp::confdata::validate_predefined_wildcard("foo.bar.").error() == predefined_wildcards_error::reserved_wildcard);
   CHECK(kphp::confdata::validate_predefined_wildcard("foo").has_value());
+  CHECK(kphp::confdata::validate_predefined_wildcard("foo.bar").has_value());
+  CHECK(kphp::confdata::validate_predefined_wildcard("foo.bar.baz.").has_value());
   CHECK(kphp::confdata::validate_predefined_wildcard("foo...").has_value());
   CHECK(std::format("{}", predefined_wildcards_error::empty_wildcard) == "empty wildcard");
 }
 
 auto test_empty_predefined_wildcards_matrix() -> void {
-  std::vector<std::byte> storage{};
-  const auto wildcards{make_metadata({}, storage)};
+  const auto fixture{make_wildcards({})};
+  const auto& wildcards{fixture.wildcards()};
 
   for (const std::string_view key : {"", ".", "..", "abc", "abc.", "abc.def", "abc.def.", "abc.def.ghi", "abc.def.ghi."}) {
     CHECK(matching(wildcards, key).empty());
@@ -157,12 +194,11 @@ auto test_empty_predefined_wildcards_matrix() -> void {
   for (const auto& sample : sections) {
     CHECK(kphp::confdata::classify_section(sample.section, wildcards) == sample.kind);
   }
-  CHECK(!storage.empty());
 }
 
 auto test_predefined_wildcards_matrix() -> void {
-  std::vector<std::byte> storage{};
-  const auto wildcards{make_metadata({"a", "ab", "abc", "c"}, storage)};
+  const auto fixture{make_wildcards({"a", "ab", "abc", "c"})};
+  const auto& wildcards{fixture.wildcards()};
 
   for (const std::string_view key : {"", ".", "..", "xyz", "xyz.abc"}) {
     CHECK(matching(wildcards, key).empty());
@@ -224,37 +260,27 @@ auto test_predefined_wildcards_matrix() -> void {
   CHECK(!wildcards.is_top_level_wildcard("missing"));
 }
 
-auto test_relocation() -> void {
-  std::vector<std::byte> original_storage{};
-  const auto original{make_metadata({"foo", "foobar", "zip"}, original_storage)};
-  std::vector<std::byte> relocated_storage{original_storage};
+auto test_shared_storage_index() -> void {
+  const auto fixture{make_wildcards({"foo", "foobar", "zip"})};
+  kphp::confdata::storage reader{};
+  CHECK(reader.open(fixture.storage().memory()).has_value());
 
-  const auto relocated{kphp::confdata::open_predefined_wildcards(relocated_storage)};
-  CHECK(relocated.has_value());
-  CHECK(matching(*relocated, "foobar.value") == (std::vector<std::string_view>{"foo", "foobar"}));
-  const auto shortest{relocated->shortest_matching_wildcard("foobar.value")};
+  const auto& wildcards{reader.wildcards()};
+  CHECK(matching(wildcards, "foobar.value") == (std::vector<std::string_view>{"foo", "foobar"}));
+  const auto shortest{wildcards.shortest_matching_wildcard("foobar.value")};
   CHECK(shortest.has_value());
-  const auto relocated_bytes{std::as_bytes(std::span{relocated_storage})};
-  CHECK(reinterpret_cast<const std::byte*>(shortest->data()) >= relocated_bytes.data());
-  CHECK(reinterpret_cast<const std::byte*>(shortest->data()) < relocated_bytes.data() + relocated_bytes.size());
-  CHECK(original.max_matches_per_key() == relocated->max_matches_per_key());
+  const auto shared_memory{reader.memory()};
+  CHECK(reinterpret_cast<const std::byte*>(shortest->data()) >= shared_memory.data());
+  CHECK(reinterpret_cast<const std::byte*>(shortest->data()) < shared_memory.data() + shared_memory.size());
+  CHECK(fixture.wildcards().max_matches_per_key() == wildcards.max_matches_per_key());
+  reader.close();
 }
 
-auto test_invalid_metadata() -> void {
+auto test_noncanonical_wildcards() -> void {
   const std::vector<std::string_view> noncanonical{"b", "a"};
-  CHECK(kphp::confdata::predefined_wildcards_metadata_size(noncanonical).error() == predefined_wildcards_error::non_canonical_wildcards);
-
-  std::vector<std::byte> storage{};
-  static_cast<void>(make_metadata({"abc"}, storage));
-  storage.front() ^= std::byte{1};
-  const auto corrupted{kphp::confdata::open_predefined_wildcards(storage)};
-  CHECK(!corrupted.has_value());
-  CHECK(corrupted.error() == predefined_wildcards_error::invalid_metadata);
-
-  std::vector<std::byte> misaligned_storage(storage.size() + 1);
-  const auto misaligned{kphp::confdata::open_predefined_wildcards(std::span<const std::byte>{misaligned_storage}.subspan(1))};
-  CHECK(!misaligned.has_value());
-  CHECK(misaligned.error() == predefined_wildcards_error::misaligned_buffer);
+  const auto result{initialize_noncanonical(noncanonical)};
+  CHECK(!result.has_value());
+  CHECK(result.error() == predefined_wildcards_error::non_canonical_wildcards);
 }
 
 auto test_zero_dots_key_matrix() -> void {
@@ -390,9 +416,9 @@ auto test_explicit_predefined_wildcard_matrix() -> void {
 }
 
 auto test_automatic_predefined_wildcard_matrix() -> void {
-  std::vector<std::byte> storage{};
-  // Implicit one-dot/two-dot sections are deliberately excluded from predefined metadata.
-  const auto wildcards{make_metadata({"abc", "abc.xyz", "cde", "cd"}, storage)};
+  // Implicit one-dot/two-dot sections are deliberately excluded from the configured index.
+  const auto fixture{make_wildcards({"abc", "abc.xyz", "cde", "cd"})};
+  const auto& wildcards{fixture.wildcards()};
   const std::vector<key_sample> samples{
       {"abc", section_kind::predefined_wildcard, "abc", string_remainder("")},
       {"abc.", section_kind::predefined_wildcard, "abc", string_remainder(".")},
@@ -441,14 +467,66 @@ auto test_key_splitting_errors() -> void {
   CHECK(oversized.error() == kphp::confdata::split_error::key_too_long);
 }
 
+auto test_reader_lease_handshake() -> void {
+  const kphp::confdata::reader_lease empty{};
+  CHECK(!empty.is_valid());
+  CHECK(!kphp::confdata::reader_lease::create("", 3).has_value());
+  CHECK(!kphp::confdata::reader_lease::create("confdata", kphp::confdata::storage::INVALID_SAMPLE_ID).has_value());
+
+  const auto lease{kphp::confdata::reader_lease::create("kphp-confdata", 7)};
+  CHECK(lease.has_value());
+  CHECK(lease->is_valid());
+  CHECK(lease->sample_id() == 7);
+  CHECK(lease->shared_memory_name() == "kphp-confdata");
+}
+
 } // namespace
+
+extern "C" void* k2_alloc(size_t size, size_t align) {
+  const auto actual_align{std::max(align, alignof(std::max_align_t))};
+  const auto actual_size{(size + actual_align - 1) / actual_align * actual_align};
+  return std::aligned_alloc(actual_align, actual_size);
+}
+
+extern "C" void* k2_realloc(void* memory, size_t new_size) {
+  return std::realloc(memory, new_size);
+}
+
+extern "C" void k2_free(void* memory) {
+  std::free(memory);
+}
+
+extern "C" void k2_log(size_t /*level*/, size_t /*len*/, const char* /*msg*/, size_t /*kv_count*/, const LogKeyValuePair* /*kv_pairs*/) {}
+
+extern "C" void k2_exit(int32_t /*exit_code*/) {
+  std::abort();
+}
+
+void runtime_error(const char* /*unused*/, ...) {}
+
+void php_warning(const char* /*unused*/, ...) {}
+
+void php_error(const char* /*unused*/, ...) {}
+
+[[noreturn]] void critical_error_handler() {
+  std::abort();
+}
+
+[[noreturn]] void php_assert__(const char* /*unused*/, const char* /*unused*/, int /*unused*/) {
+  std::abort();
+}
+
+auto AllocatorState::get() noexcept -> const AllocatorState& {
+  static AllocatorState allocator_state{DEFAULT_ALLOCATOR_SIZE, DEFAULT_ALLOCATOR_SIZE, 0};
+  return allocator_state;
+}
 
 auto main() -> int {
   test_validation_and_formatting();
   test_empty_predefined_wildcards_matrix();
   test_predefined_wildcards_matrix();
-  test_relocation();
-  test_invalid_metadata();
+  test_shared_storage_index();
+  test_noncanonical_wildcards();
   test_zero_dots_key_matrix();
   test_one_dot_empty_remainder_matrix();
   test_one_dot_string_remainder_matrix();
@@ -459,5 +537,7 @@ auto main() -> int {
   test_explicit_predefined_wildcard_matrix();
   test_automatic_predefined_wildcard_matrix();
   test_key_splitting_errors();
+  test_reader_lease_handshake();
+  RuntimeAllocator::get().free();
   return 0;
 }

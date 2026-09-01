@@ -158,6 +158,8 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     http_server_instance_state.add_header(kphp::http::headers::CONTENT_TYPE, DEFAULT_CONTENT_TYPE, false);
   }
 
+  co_await confdata_instance_state.init(); // TODO: we need to init it only if required to
+
   // specific initialization
   if constexpr (kind == image_kind::cli) {
     co_await init_cli_instance();
@@ -224,4 +226,5 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session_is_finished = true;
     web_state.session.reset();
   }
+  confdata_instance_state.release();
 }

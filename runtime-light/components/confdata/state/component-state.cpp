@@ -11,8 +11,8 @@
 #include <string_view>
 #include <system_error>
 
-#include "runtime-light/components/confdata/state/predefined-wildcards-builder.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/confdata/predefined-wildcards.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 auto ComponentState::parse_confdata_memory_limit_arg(std::string_view value_view) noexcept -> void {
@@ -63,6 +63,24 @@ auto ComponentState::parse_predefined_wildcards_arg(std::string_view value_view)
   m_predefined_wildcards.erase(std::ranges::unique(m_predefined_wildcards).begin(), m_predefined_wildcards.end());
 }
 
+auto ComponentState::parse_initial_instance_memory_size_arg(std::string_view value_view) noexcept -> void {
+  size_t parsed{};
+  const auto [end, error]{std::from_chars(value_view.begin(), value_view.end(), parsed)};
+  if (value_view.empty() || error != std::errc{} || end != value_view.end() || parsed == 0) [[unlikely]] {
+    kphp::log::error("{} must be a positive integer, got '{}'", INITIAL_INSTANCE_MEMORY_SIZE_ARG, value_view);
+  }
+  m_initial_instance_memory_size = parsed;
+}
+
+auto ComponentState::parse_min_instance_extra_memory_size_arg(std::string_view value_view) noexcept -> void {
+  size_t parsed{};
+  const auto [end, error]{std::from_chars(value_view.begin(), value_view.end(), parsed)};
+  if (value_view.empty() || error != std::errc{} || end != value_view.end() || parsed == 0) [[unlikely]] {
+    kphp::log::error("{} must be a positive integer, got '{}'", MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG, value_view);
+  }
+  m_min_instance_extra_memory_size = parsed;
+}
+
 auto ComponentState::parse_args() noexcept -> void {
   for (auto i{0}; i < m_argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -75,6 +93,10 @@ auto ComponentState::parse_args() noexcept -> void {
       parse_confdata_proxy_actor_name_arg(value_view);
     } else if (key_view == PREDEFINED_WILDCARDS_ARG) {
       parse_predefined_wildcards_arg(value_view);
+    } else if (key_view == INITIAL_INSTANCE_MEMORY_SIZE_ARG) {
+      parse_initial_instance_memory_size_arg(value_view);
+    } else if (key_view == MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG) {
+      parse_min_instance_extra_memory_size_arg(value_view);
     } else {
       kphp::log::error("unexpected argument: {}", key_view);
     }

@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -34,7 +35,7 @@ void with_script_memory_resource(memory_resource::unsynchronized_pool_resource& 
   const auto previous_resource{allocator.replace_script_memory_resource(resource)};
   const auto restore_resource{vk::finally([&allocator, &resource, previous_resource] noexcept {
     kphp::log::assertion(std::addressof(allocator.current_script_memory_resource()) == std::addressof(resource));
-    static_cast<void>(allocator.replace_script_memory_resource(previous_resource.get()));
+    std::ignore = allocator.replace_script_memory_resource(previous_resource.get());
   })};
   std::invoke(std::forward<callback_type>(callback));
 }

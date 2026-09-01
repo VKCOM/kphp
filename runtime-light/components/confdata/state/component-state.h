@@ -27,6 +27,8 @@ public:
   size_t m_confdata_memory_limit{};
   kphp::stl::string<kphp::memory::script_allocator> m_confdata_proxy_actor_name;
   kphp::stl::vector<std::string_view, kphp::memory::script_allocator> m_predefined_wildcards;
+  size_t m_initial_instance_memory_size{DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE};
+  size_t m_min_instance_extra_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE};
 
   ComponentState() noexcept;
   static auto get() noexcept -> const ComponentState&;
@@ -36,12 +38,18 @@ private:
   auto parse_confdata_memory_limit_arg(std::string_view) noexcept -> void;
   auto parse_confdata_proxy_actor_name_arg(std::string_view) noexcept -> void;
   auto parse_predefined_wildcards_arg(std::string_view) noexcept -> void;
+  auto parse_initial_instance_memory_size_arg(std::string_view) noexcept -> void;
+  auto parse_min_instance_extra_memory_size_arg(std::string_view) noexcept -> void;
   auto parse_args() noexcept -> void;
 
   static constexpr std::string_view CONFDATA_MEMORY_LIMIT_ARG{"confdata-memory-limit"};
   static constexpr std::string_view CONFDATA_PROXY_ACTOR_NAME_ARG{"confdata-proxy-actor-name"};
   static constexpr std::string_view PREDEFINED_WILDCARDS_ARG{"predefined-wildcards"};
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)}; // 1MiB
+  static constexpr std::string_view INITIAL_INSTANCE_MEMORY_SIZE_ARG{"initial-instance-memory-size"};
+  static constexpr std::string_view MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG{"min-instance-extra-memory-size"};
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)};              // 1MiB
+  static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE{static_cast<size_t>(64U * 1024U * 1024U)}; // 64MiB
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE{64U * 1024U * 1024U};                    // 64MiB
 };
 
 inline ComponentState::ComponentState() noexcept {
