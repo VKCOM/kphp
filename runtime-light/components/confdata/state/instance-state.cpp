@@ -40,7 +40,7 @@ auto InstanceState::init() noexcept -> void {
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
-  co_await kphp::coro::when_all(service_loop(), accept_loop()); // both never return
+  co_await kphp::coro::when_all(std::bind_front(&InstanceState::service_loop, this), std::bind_front(&InstanceState::accept_loop, this)); // both never return
   kphp::log::assertion(false);
 }
 
