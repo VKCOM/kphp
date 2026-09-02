@@ -64,8 +64,7 @@ struct InstanceState final : vk::not_copyable {
   // It's important to use `{}` instead of `= default` here.
   // In the second case clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful!
-  InstanceState() noexcept
-      : component_state{ComponentState::get()} {
+  InstanceState() noexcept {
     kml_instance_state.init(component_state.kml_component_state.max_buffer_size());
   }
 
@@ -87,7 +86,7 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
-  const ComponentState& component_state;
+  const ComponentState& component_state{ComponentState::get()};
 
   AllocatorState instance_allocator_state{component_state.initial_instance_memory_size, component_state.min_instance_extra_memory_size, 0};
 
