@@ -657,7 +657,7 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator& W) {
   true_expr_tp = tinf::get_type(true_expr);
   false_expr_tp = tinf::get_type(false_expr);
 
-  //TODO: optimize type_out
+  // TODO: optimize type_out
   if (type_out(true_expr_tp) != type_out(false_expr_tp)) {
     res_tp = tinf::get_type(root);
   }
@@ -938,7 +938,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "(" << "co_await ";
+        W << "(co_await kphp::coro::on_stack([](auto&&... args) noexcept { return ";
       }
       W << FunctionName(func);
     }
@@ -947,7 +947,12 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     const TypeData* tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-  W << "(";
+
+  if (func->is_interruptible && mode != func_call_mode::fork_call) {
+    W << "(std::forward<decltype(args)>(args)...); }";
+  } else {
+    W << "(";
+  }
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -1115,7 +1120,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
   auto params = root->params();
 
-  //foreach (xs as [key =>] x)
+  // foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
   VertexPtr x = params->x();
   VertexPtr key;
@@ -1128,7 +1133,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   const TypeData* xs_type = tinf::get_type(xs);
 
   W << BEGIN;
-  //save array to 'xs_copy_str'
+  // save array to 'xs_copy_str'
   W << TypeName(xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
   std::string it = gen_unique_name("it");
@@ -1140,7 +1145,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   W << TypeName(tinf::get_type(x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
-  //save key
+  // save key
   if (key) {
     W << key << " = " << it << ".get_key();" << NL;
   }
@@ -1148,7 +1153,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
 
 void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W) {
   auto params = root->params();
-  //foreach (xs as [key =>] x)
+  // foreach (xs as [key =>] x)
   VertexPtr x = params->x();
   VertexPtr xs = params->xs();
   VertexPtr key;
@@ -1169,16 +1174,16 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator&
   }
 
   W << BEGIN;
-  //save array to 'xs_copy_str'
+  // save array to 'xs_copy_str'
   W << temp_var << " = " << xs << ";" << NL;
   W << temp_var << "$it = const_begin(" << temp_var << ");" << NL;
   W << temp_var << "$it$end = const_end(" << temp_var << ");" << NL;
   W << "for (; " << temp_var << "$it != " << temp_var << "$it$end; ++" << temp_var << "$it) " << BEGIN;
 
-  //save value
+  // save value
   W << x << " = " << temp_var << "$it" << ".get_value();" << NL;
 
-  //save key
+  // save key
   if (key) {
     W << key << " = " << temp_var << "$it" << ".get_key();" << NL;
   }
@@ -1188,7 +1193,7 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator& W) {
   auto params = root->params();
   auto cmd = root->cmd();
 
-  //foreach (xs as [key =>] x)
+  // foreach (xs as [key =>] x)
   if (params->x()->ref_flag) {
     compile_foreach_ref_header(root, W);
   } else {
@@ -1470,10 +1475,10 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
   W << Indent(-2) << "public:" << NL << Indent(+2);
 
-  //ReturnT
+  // ReturnT
   W << "using ReturnT = " << TypeName(tinf::get_type(func, -1)) << ";" << NL;
 
-  //CONSTRUCTOR
+  // CONSTRUCTOR
   FunctionSignatureGenerator(W) << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
   bool has_members_in_constructor = !func->param_ids.empty() || !func->local_var_ids.empty() || func->has_global_vars_inside;
   if (has_members_in_constructor) {
@@ -1518,6 +1523,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << Indent(-2);
   W << END << ";" << NL;
 
+<<<<<<< HEAD
   //CALL FUNCTION
 <<<<<<< HEAD
   W << FunctionDeclaration(func, false) << " " << BEGIN;
@@ -1526,6 +1532,11 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << FunctionDeclaration(func, false) << " " << BEGIN;
   W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
 >>>>>>> b444d2c69 (revert formatting in vertex-compiler)
+=======
+  // CALL FUNCTION
+  W << FunctionDeclaration(func, false) << " " << BEGIN;
+  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
+>>>>>>> dc71b0d14 (formatting)
 
   const auto var_name_gen = [](CodeGenerator& W, VarPtr var) { W << VarName(var); };
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
@@ -1533,7 +1544,11 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << "));" << NL;
   W << END << NL;
 
+<<<<<<< HEAD
   //FORK FUNCTION
+=======
+  // FORK FUNCTION
+>>>>>>> dc71b0d14 (formatting)
   W << FunctionForkDeclaration(func, false) << " " << BEGIN;
   W << "return fork_resumable(new " << FunctionClassName(func) << "(";
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
@@ -1603,7 +1618,7 @@ static bool can_save_ref(VertexPtr v) {
   if (v->type() == op_func_call) {
     FunctionPtr func = v.as<op_func_call>()->func_id;
     if (func->is_extern()) {
-      //todo
+      // todo
       return false;
     }
     return true;
@@ -2004,7 +2019,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator& W) {
   std::string arr_name = "tmp_array";
   W << TypeName(type) << " " << arr_name << " = ";
 
-  //TODO: check
+  // TODO: check
   if (type->ptype() == tp_array) {
     W << TypeName(type);
   } else {
@@ -2101,7 +2116,7 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
 
 void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator& W __attribute__((unused))) {
   W << "false";
-  //TODO: it is not CodeGen part
+  // TODO: it is not CodeGen part
 }
 
 bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator& W) {
@@ -2316,6 +2331,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
     break;
   case op_global:
   case op_static:
+<<<<<<< HEAD
     //already processed
     break;
   case op_throw:
@@ -2440,6 +2456,9 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
   case op_global:
   case op_static:
     //already processed
+=======
+    // already processed
+>>>>>>> dc71b0d14 (formatting)
     break;
   case op_throw:
     compile_throw(root.as<op_throw>(), W);
@@ -2583,7 +2602,10 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
   default:
     kphp_fail();
     break;
+<<<<<<< HEAD
   }
+=======
+>>>>>>> dc71b0d14 (formatting)
   }
 
 } // anonymous namespace
