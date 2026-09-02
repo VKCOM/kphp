@@ -59,6 +59,22 @@ auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename 
   }
 }
 
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto id_managed(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
+  auto& fork_instance_st{ForkInstanceState::get()};
+  const auto saved_fork_id{fork_instance_st.current_id};
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
+    co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+    fork_instance_st.current_id = saved_fork_id;
+    co_return;
+  } else {
+    auto value{co_await kphp::coro::on_stack(std::move(f), std::move(args)...)};
+    fork_instance_st.current_id = saved_fork_id;
+    co_return std::move(value);
+  }
+}
+
 template<typename return_type>
 auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
   auto& fork_instance_st{ForkInstanceState::get()};

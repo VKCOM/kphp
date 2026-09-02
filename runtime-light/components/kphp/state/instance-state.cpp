@@ -61,27 +61,22 @@ void InstanceState::init_script_execution() noexcept {
   kphp::coro::task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
-  auto main_task{std::invoke(
-      [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
-        // wrap script with additional check for unhandled exception
-        script_task = std::invoke(
-            [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
-              co_await script_task;
-              if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
-                kphp::log::error("unhandled exception {}", std::move(exception));
-              }
-            },
-            std::move(script_task));
-        kphp::log::assertion(co_await kphp::coro::on_stack([](int64_t fork_id_arg) noexcept { return f$wait_concurrently(fork_id_arg); },
-                                                           kphp::forks::start(std::move(script_task))));
-      },
-      std::move(script_task))};
-  // initialize async stack
-  auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
-  main_task_async_stack_frame.async_stack_root = std::addressof(coroutine_instance_state.coroutine_stack_root);
-  coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = std::addressof(main_task_async_stack_frame);
+  auto main_task{[](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
+    // wrap script with additional check for unhandled exception
+    script_task = std::invoke(
+        [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
+          co_await script_task;
+          if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
+            kphp::log::error("unhandled exception {}", std::move(exception));
+          }
+        },
+        std::move(script_task));
+    kphp::log::assertion(co_await kphp::coro::on_stack([](int64_t fork_id_arg) noexcept { return f$wait_concurrently(fork_id_arg); },
+                                                       kphp::forks::start(std::move(script_task))));
+  }};
+
   // spawn main task onto the scheduler
-  kphp::log::assertion(io_scheduler.spawn(std::move(main_task)));
+  kphp::log::assertion(io_scheduler.spawn(std::move(main_task), std::move(script_task)));
 }
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {

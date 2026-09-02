@@ -7,17 +7,20 @@
 #include <tuple>
 #include <utility>
 
+#include "common/type_traits/lazy-identity.h"
+#include "common/type_traits/lazy-invoke-result.h"
+#include "common/type_traits/lazy_conditional.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/detail/when-all.h"
 #include "runtime-light/coroutine/type-traits.h"
-
 namespace kphp::coro {
 
-template<kphp::coro::concepts::awaitable... awaitable_types>
-[[nodiscard]] auto when_all(awaitable_types... awaitables) noexcept {
-  return detail::when_all::when_all_ready_awaitable<
-      std::tuple<detail::when_all::when_all_task<typename kphp::coro::awaitable_traits<awaitable_types>::awaiter_return_type>...>>{
-      detail::when_all::make_when_all_task(std::move(awaitables))...};
+template<typename... Args>
+requires(((kphp::coro::concepts::awaitable<Args> || kphp::coro::is_task_function_v<Args>) && ...))
+[[nodiscard]] auto when_all(Args&&... args) noexcept {
+  return detail::when_all::when_all_ready_awaitable<std::tuple<detail::when_all::when_all_task<typename kphp::coro::awaitable_traits<
+      vk::lazy_conditional_t<kphp::coro::is_task_function_v<Args>, vk::lazy_invoke_result<Args>, vk::lazy_identity<Args>>>::awaiter_return_type>...>>{
+      detail::when_all::make_when_all_task(std::forward<Args>(args))...};
 }
 
 } // namespace kphp::coro

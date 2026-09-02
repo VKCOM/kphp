@@ -35,12 +35,8 @@ auto update_handler(std::span<const tl::confdata::KeyValuePair> events) noexcept
 
 auto InstanceState::init() noexcept -> void {
   auto main_task{run()};
-  // initialize async stack
-  auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
-  main_task_async_stack_frame.async_stack_root = std::addressof(m_coroutine_instance_state.coroutine_stack_root);
-  m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = std::addressof(main_task_async_stack_frame);
   // spawn main task onto the scheduler
-  kphp::log::assertion(m_io_scheduler.spawn(std::move(main_task)));
+  kphp::log::assertion(m_io_scheduler.spawn(&InstanceState::run, this));
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
