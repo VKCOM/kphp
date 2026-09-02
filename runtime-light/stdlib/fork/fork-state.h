@@ -8,6 +8,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
@@ -15,6 +16,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-storage.h"
@@ -67,6 +69,30 @@ public:
 
     const int64_t fork_id{next_fork_id--};
     auto fork_task{std::invoke(fork_coroutine, std::move(task), fork_id)};
+    forks.emplace(
+        fork_id,
+        fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(fork_task)});
+    return std::make_pair(fork_id, std::move(fork_task));
+  }
+
+  template<typename F, typename... Args>
+  requires(kphp::coro::is_task_function_v<F, Args...>)
+  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(F&& f, Args&&... args) noexcept {
+    static constexpr auto fork_coroutine{[](F f, Args... args, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
+      ForkInstanceState::get().current_id = fork_id;
+
+      kphp::forks::details::storage s{};
+      if constexpr (std::same_as<std::invoke_result_t<F, Args...>, void>) {
+        co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+        s.store();
+      } else {
+        s.store<std::invoke_result_t<F, Args...>>(co_await kphp::coro::on_stack(std::move(f), std::move(args)...));
+      }
+      co_return s;
+    }};
+
+    const int64_t fork_id{next_fork_id--};
+    auto fork_task{std::invoke(fork_coroutine, std::forward<F>(f), std::forward<Args>(args)..., fork_id)};
     forks.emplace(
         fork_id,
         fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(fork_task)});

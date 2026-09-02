@@ -180,7 +180,7 @@ public:
    */
   template<typename F, typename... Args, kphp::concepts::duration duration_type>
   requires(kphp::coro::is_task_function_v<F, Args...>)
-  [[nodiscard]] auto schedule(F f, Args... args, duration_type timeout) noexcept
+  [[nodiscard]] auto schedule(duration_type timeout, F f, Args... args) noexcept
       -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type, timeout_status>>;
 
   /**
@@ -648,7 +648,7 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
 
 template<typename F, typename... Args, kphp::concepts::duration duration_type>
 requires(kphp::coro::is_task_function_v<F, Args...>)
-[[nodiscard]] auto io_scheduler::schedule(F f, Args... args, duration_type timeout) noexcept
+[[nodiscard]] auto io_scheduler::schedule(duration_type timeout, F f, Args... args) noexcept
     -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type, timeout_status>> {
   using expected_return_type = typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type;
 

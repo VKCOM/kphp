@@ -110,7 +110,7 @@ private:
       // The protocol design assumes that interrupting the transfer in the middle of a frame leads to critical error.
       // Therefore, we need to write the request in a separate coroutine.
       // This technique prevents integrity violations when this coroutine is cancelled.
-      kphp::coro::io_scheduler::get().start(process_write(t, qid, payload));
+      kphp::coro::io_scheduler::get().start(&writer::process_write, this, t, qid, payload);
       co_await req_finish_notifier[qid];
 
       kphp::log::assertion(req_status.contains(qid));
@@ -150,7 +150,8 @@ private:
 
       while (!ctx.get()->interrupted.is_set()) {
         // Read response header or interrupt
-        auto read_header_res{co_await kphp::coro::when_any(t.get()->stream.read(resp_header_buf), interrupter)};
+        auto read_header_res{co_await kphp::coro::when_any(
+            std::bind_front(&kphp::component::stream::read, std::addressof(t.get()->stream), std::span<std::byte>{resp_header_buf}), interrupter)};
         // An interrupt has occurred
         if (std::holds_alternative<kphp::coro::void_value>(read_header_res)) [[unlikely]] {
           kphp::log::debug("reader has been interrupted");

@@ -57,8 +57,10 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
   auto wait_result{co_await kphp::coro::on_stack(
-      [](auto task_arg, auto timeout_arg) noexcept { return kphp::coro::io_scheduler::get().schedule(std::move(task_arg), timeout_arg); },
-      wait_queue_next_task(await_set.next()), timeout)};
+      [](auto timeout_arg, auto await_set_awaitable_arg) noexcept {
+        return kphp::coro::io_scheduler::get().schedule(timeout_arg, wait_queue_next_task, std::move(await_set_awaitable_arg));
+      },
+      timeout, await_set.next())};
   if (!wait_result) {
     co_return std::nullopt;
   }
@@ -96,7 +98,7 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
       }};
 
   auto& await_set{(*opt_await_set).get()};
-  await_set.push(wait_queue_wrapper_task(std::move(fork_task), fork_id));
+  await_set.push(wait_queue_wrapper_task, std::move(fork_task), fork_id);
 }
 
 } // namespace kphp::forks
@@ -120,8 +122,11 @@ inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) noexcept {
-  auto task{kphp::forks::wait_queue_next(queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout}))};
-  auto opt_result{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
+  auto opt_result{co_await kphp::coro::on_stack(
+      [](int64_t queue_id_arg, std::chrono::nanoseconds timeout_arg) noexcept {
+        return kphp::forks::id_managed(kphp::forks::wait_queue_next<std::chrono::nanoseconds>, queue_id_arg, timeout_arg);
+      },
+      queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout}))};
   co_return opt_result ? *opt_result : Optional<int64_t>{false};
 }
 

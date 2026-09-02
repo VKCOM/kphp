@@ -637,7 +637,7 @@ public:
   socket& operator=(socket&& other) noexcept {
     if (this != std::addressof(other)) {
       if (!finalized()) {
-        kphp::coro::io_scheduler::get().spawn(finalizer(std::move(m_stream), std::move(m_buf)));
+        kphp::coro::io_scheduler::get().spawn(finalizer, std::move(m_stream), std::move(m_buf));
       }
 
       m_open = std::exchange(other.m_open, false);
@@ -649,7 +649,7 @@ public:
 
   ~socket() override {
     if (!finalized()) {
-      kphp::coro::io_scheduler::get().spawn(finalizer(std::move(m_stream), std::move(m_buf)));
+      kphp::coro::io_scheduler::get().spawn(finalizer, std::move(m_stream), std::move(m_buf));
     }
   }
 
