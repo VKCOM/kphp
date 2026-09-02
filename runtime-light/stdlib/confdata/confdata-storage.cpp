@@ -386,6 +386,9 @@ auto storage::memory_size(size_t memory_limit) noexcept -> std::expected<size_t,
   if (!layout) [[unlikely]] {
     return std::unexpected{layout.error()};
   }
+  if (memory_limit > memory_resource::memory_buffer_limit()) [[unlikely]] {
+    return std::unexpected{storage_error::memory_limit_exceeded};
+  }
   return layout->m_total_size;
 }
 
@@ -393,7 +396,7 @@ auto storage::is_valid_sample_id(sample_id id) noexcept -> bool {
   return id < SAMPLE_COUNT;
 }
 
-auto storage::init(std::span<std::byte> memory) noexcept -> std::expected<void, storage_error> {
+auto storage::init(std::span<std::byte> memory, size_t oom_handling_size) noexcept -> std::expected<void, storage_error> {
   kphp::log::assertion(!is_initialized());
   if (reinterpret_cast<uintptr_t>(memory.data()) % alignof(shared_state) != 0) [[unlikely]] {
     return std::unexpected{storage_error::misaligned_buffer};
@@ -406,12 +409,20 @@ auto storage::init(std::span<std::byte> memory) noexcept -> std::expected<void, 
     return std::unexpected{storage_error::insufficient_buffer};
   }
 
+  const auto pool_memory{memory.subspan(layout->m_pool_offset)};
+  if (pool_memory.size() > memory_resource::memory_buffer_limit()) [[unlikely]] {
+    return std::unexpected{storage_error::memory_limit_exceeded};
+  }
+  if (oom_handling_size >= pool_memory.size()) [[unlikely]] {
+    return std::unexpected{storage_error::invalid_oom_handling_size};
+  }
+
   m_memory = memory;
   m_state = std::construct_at(reinterpret_cast<shared_state*>(m_memory.data()));
   m_active_sample = 0;
   m_state->m_total_size = memory.size();
   m_state->m_pool_offset = layout->m_pool_offset;
-  auto pool_memory{memory.subspan(m_state->m_pool_offset)};
+  m_oom_threshold = pool_memory.size() - oom_handling_size;
   m_state->m_resource.init(pool_memory.data(), pool_memory.size());
   return {};
 }
@@ -449,6 +460,7 @@ auto storage::close() noexcept -> void {
   m_memory = {};
   m_active_sample = INVALID_SAMPLE_ID;
   m_has_committed_sample = false;
+  m_oom_threshold = 0;
 }
 
 auto storage::initialize_wildcards(std::span<const std::string_view> wildcards) noexcept -> std::expected<void, predefined_wildcards_error> {
@@ -457,6 +469,18 @@ auto storage::initialize_wildcards(std::span<const std::string_view> wildcards) 
   std::expected<void, predefined_wildcards_error> result{};
   with_storage_resource([this, wildcards, &result] noexcept { result = m_state->m_wildcards.initialize(wildcards); });
   return result;
+}
+
+auto storage::memory_usage() const noexcept -> storage_memory_usage {
+  kphp::log::assertion(is_initialized());
+  kphp::log::assertion(m_oom_threshold != 0);
+  const auto& memory_stats{m_state->m_resource.get_memory_stats()};
+  return {.m_used = memory_stats.real_memory_used, .m_oom_threshold = m_oom_threshold, .m_capacity = memory_stats.memory_limit};
+}
+
+auto storage::is_oom_threshold_reached() const noexcept -> bool {
+  const auto usage{memory_usage()};
+  return usage.m_used >= usage.m_oom_threshold;
 }
 
 auto storage::wildcards() const noexcept -> const predefined_wildcards& {
@@ -511,6 +535,20 @@ auto storage::begin_update(bool copy_active_sample) noexcept -> std::optional<ed
   kphp::log::assertion(!m_update_in_progress);
   kphp::log::assertion(is_valid_sample_id(m_active_sample));
   reclaim_retired_samples();
+
+  if (copy_active_sample) {
+    constexpr auto max_node_size{map_type::allocator_type::max_value_type_size()};
+    const auto active_size{m_state->m_samples[m_active_sample].m_values.size()};
+    if (active_size > std::numeric_limits<size_t>::max() / max_node_size) [[unlikely]] {
+      return std::nullopt;
+    }
+    const auto required_size{active_size * max_node_size};
+    const auto usage{memory_usage()};
+    if (usage.m_used >= usage.m_oom_threshold || required_size >= usage.m_oom_threshold - usage.m_used || !resource().is_enough_memory_for(required_size))
+        [[unlikely]] {
+      return std::nullopt;
+    }
+  }
 
   const auto destination{static_cast<sample_id>((m_active_sample + 1) % SAMPLE_COUNT)};
   const auto& sample{m_state->m_samples[destination]};

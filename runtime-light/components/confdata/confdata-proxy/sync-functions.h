@@ -34,13 +34,13 @@ struct pagination {
   bool m_has_synced{};
 };
 
-enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, storage_busy };
+enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected };
 
 namespace details {
 
 // Performs a single confdata.subscribe round-trip.
 // On success, invokes `event_handler(events)` once with the batch of received events and updates `to` pagination.
-// If the handler returns false, the batch is rejected with `storage_busy` and `to` is left unchanged so it can be requested again.
+// If the handler returns false, the batch is rejected with `batch_rejected` and `to` is left unchanged so it can be requested again.
 // The batch is a view into the response buffer and is only valid for the duration of the call; empty batches are not delivered.
 // An empty event value means that the key has been deleted.
 template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
@@ -93,7 +93,7 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
           [&event_handler, &to](const tl::confdata::subscribeResponseOk& response) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
             if (const auto& events{response.events}; events.size() != 0) {
               if (!std::invoke(event_handler, std::span<const tl::confdata::KeyValuePair>{events.value})) {
-                return std::unexpected{kphp::confdata::subscribe_error::storage_busy};
+                return std::unexpected{kphp::confdata::subscribe_error::batch_rejected};
               }
             }
 

@@ -497,6 +497,49 @@ auto test_confdata_storage_decoded_values() noexcept -> void {
   storage.close();
 }
 
+auto test_confdata_storage_detects_oom_threshold_with_headroom_left() noexcept -> void {
+  constexpr auto payload_size{static_cast<size_t>(64U * 1024U)};
+  constexpr auto oom_handling_size{static_cast<size_t>(48U * 1024U)};
+  constexpr auto value_size{static_cast<size_t>(20U * 1024U)};
+
+  alignas(std::max_align_t) std::array<std::byte, payload_size * 2> shared_memory{};
+  const auto required_size{kphp::confdata::storage::memory_size(payload_size)};
+  CHECK(required_size.has_value());
+  CHECK(*required_size <= shared_memory.size());
+
+  kphp::confdata::storage storage{};
+  CHECK(storage.init(std::span{shared_memory}.first(*required_size), oom_handling_size).has_value());
+  const auto initial_usage{storage.memory_usage()};
+  CHECK(initial_usage.m_used == 0);
+  CHECK(initial_usage.m_oom_threshold == payload_size - oom_handling_size);
+  CHECK(initial_usage.m_capacity == payload_size);
+  CHECK(!storage.is_oom_threshold_reached());
+
+  auto initial_editor{storage.start_sync()};
+  CHECK(upsert_shared(initial_editor, "stable-key", [] noexcept { return mixed{string{"stable-value"}}; }));
+  initial_editor.commit();
+  const auto stable_sample{storage.acquire_active_sample()};
+
+  std::array<char, value_size> value{};
+  std::ranges::fill(value, 'x');
+  auto editor{start_update(storage)};
+  CHECK(upsert_shared(editor, "large-value", [&value] noexcept { return mixed{string{value.data(), static_cast<string::size_type>(value.size())}}; }));
+
+  const auto threshold_usage{storage.memory_usage()};
+  CHECK(threshold_usage.m_used >= threshold_usage.m_oom_threshold);
+  CHECK(threshold_usage.m_used < threshold_usage.m_capacity);
+  CHECK(storage.is_oom_threshold_reached());
+  editor.cancel();
+
+  const auto sample_after_cancel{storage.acquire_active_sample()};
+  CHECK(sample_after_cancel == stable_sample);
+  CHECK(storage.values(sample_after_cancel).contains(string{"stable-key"}));
+  CHECK(!storage.values(sample_after_cancel).contains(string{"large-value"}));
+  storage.release_sample(sample_after_cancel);
+  storage.release_sample(stable_sample);
+  storage.close();
+}
+
 auto test_confdata_storage_rejects_invalid_memory() noexcept -> void {
   alignas(std::max_align_t) std::array<std::byte, TEST_RESOURCE_SIZE> memory{};
 
@@ -513,6 +556,20 @@ auto test_confdata_storage_rejects_invalid_memory() noexcept -> void {
   const auto overflow{kphp::confdata::storage::memory_size(std::numeric_limits<size_t>::max())};
   CHECK(!overflow.has_value());
   CHECK(overflow.error() == kphp::confdata::storage_error::size_overflow);
+
+  const auto excessive_limit{kphp::confdata::storage::memory_size(memory_resource::memory_buffer_limit() + size_t{1})};
+  CHECK(!excessive_limit.has_value());
+  CHECK(excessive_limit.error() == kphp::confdata::storage_error::memory_limit_exceeded);
+
+  constexpr auto payload_size{static_cast<size_t>(8U * 1024U)};
+  alignas(std::max_align_t) std::array<std::byte, TEST_RESOURCE_SIZE> memory_with_payload{};
+  const auto required_size{kphp::confdata::storage::memory_size(payload_size)};
+  CHECK(required_size.has_value());
+  CHECK(*required_size <= memory_with_payload.size());
+  kphp::confdata::storage invalid_oom_handling_storage{};
+  const auto invalid_oom_handling{invalid_oom_handling_storage.init(std::span{memory_with_payload}.first(*required_size), payload_size)};
+  CHECK(!invalid_oom_handling.has_value());
+  CHECK(invalid_oom_handling.error() == kphp::confdata::storage_error::invalid_oom_handling_size);
 
   kphp::confdata::storage invalid_storage{};
   const auto invalid{invalid_storage.open(memory)};
@@ -574,6 +631,7 @@ auto main() -> int {
   test_confdata_storage_deletes_all_predefined_representations();
   test_confdata_storage_update_is_atomic();
   test_confdata_storage_decoded_values();
+  test_confdata_storage_detects_oom_threshold_with_headroom_left();
   test_confdata_storage_rejects_invalid_memory();
   RuntimeAllocator::get().free();
   return 0;
