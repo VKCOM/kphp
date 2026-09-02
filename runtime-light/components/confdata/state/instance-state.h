@@ -28,10 +28,18 @@ struct InstanceState final : vk::not_copyable {
   // === TYPES ====================================================================================
   enum class warmup_status : uint8_t { pending, done };
 
-  struct confdata_piece_creation_error final {
-    enum class stage : uint8_t { memory_size, shared_memory_allocation, storage_initialization, wildcard_initialization };
+  struct confdata_sync_error final {
+    enum class stage : uint8_t {
+      memory_size,
+      shared_memory_allocation,
+      storage_initialization,
+      wildcard_initialization,
+      oom_threshold,
+      synchronization,
+      shared_memory_publication
+    };
 
-    /** Step that failed while constructing the unpublished piece. */
+    /** Step that failed while preparing and publishing the replacement piece. */
     stage m_stage;
     /** Error code produced by that step's underlying API. */
     int32_t m_code;
@@ -49,7 +57,7 @@ private:
     };
 
     /** K2 allocation owned and eventually released wholesale by this piece. */
-    [[maybe_unused]] void* m_memory{};
+    void* m_memory{};
     /** Number of reader sessions that still refer to this piece. */
     size_t m_readers{};
     /** Non-owning writer view over the allocation. */
@@ -65,8 +73,8 @@ private:
     auto operator=(const confdata_piece&) -> confdata_piece& = delete;
     auto operator=(confdata_piece&&) -> confdata_piece& = delete;
 
-    static auto create(confdata_piece_list& owner, size_t memory_limit, std::span<const std::string_view> predefined_wildcards) noexcept
-        -> std::expected<confdata_piece_list::iterator, confdata_piece_creation_error>;
+    static auto create(confdata_piece_list& owner, size_t memory_limit, size_t oom_handling_size,
+                       std::span<const std::string_view> predefined_wildcards) noexcept -> std::expected<confdata_piece_list::iterator, confdata_sync_error>;
 
     auto storage() noexcept -> kphp::confdata::storage&;
     auto acquire_active_sample() noexcept -> kphp::confdata::storage::sample_id;
@@ -108,8 +116,9 @@ private:
   auto serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<>;
 
   auto service_loop() noexcept -> kphp::coro::task<>;
-  auto perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_piece_creation_error>>;
-  auto try_apply_events(kphp::confdata::storage::editor& editor, std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool;
+  auto perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_sync_error>>;
+  auto try_apply_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
+                        std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool;
   auto apply_incremental_events(std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool;
 };
 

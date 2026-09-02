@@ -24,6 +24,15 @@ auto ComponentState::parse_confdata_memory_limit_arg(std::string_view value_view
   m_confdata_memory_limit = parsed;
 }
 
+auto ComponentState::parse_confdata_oom_handling_size_arg(std::string_view value_view) noexcept -> void {
+  size_t parsed{};
+  const auto [end, error]{std::from_chars(value_view.begin(), value_view.end(), parsed)};
+  if (value_view.empty() || error != std::errc{} || end != value_view.end() || parsed == 0) [[unlikely]] {
+    kphp::log::error("{} must be a positive integer, got '{}'", CONFDATA_OOM_HANDLING_SIZE_ARG, value_view);
+  }
+  m_confdata_oom_handling_size = parsed;
+}
+
 auto ComponentState::parse_confdata_proxy_actor_name_arg(std::string_view value_view) noexcept -> void {
   m_confdata_proxy_actor_name = value_view;
 }
@@ -89,6 +98,8 @@ auto ComponentState::parse_args() noexcept -> void {
 
     if (key_view == CONFDATA_MEMORY_LIMIT_ARG) {
       parse_confdata_memory_limit_arg(value_view);
+    } else if (key_view == CONFDATA_OOM_HANDLING_SIZE_ARG) {
+      parse_confdata_oom_handling_size_arg(value_view);
     } else if (key_view == CONFDATA_PROXY_ACTOR_NAME_ARG) {
       parse_confdata_proxy_actor_name_arg(value_view);
     } else if (key_view == PREDEFINED_WILDCARDS_ARG) {

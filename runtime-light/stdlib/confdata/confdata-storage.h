@@ -25,7 +25,16 @@
 
 namespace kphp::confdata {
 
-enum class storage_error : uint8_t { misaligned_buffer, insufficient_buffer, size_overflow, invalid_storage };
+enum class storage_error : uint8_t { misaligned_buffer, insufficient_buffer, size_overflow, memory_limit_exceeded, invalid_oom_handling_size, invalid_storage };
+
+struct storage_memory_usage final {
+  /** Allocator frontier, including fragmentation that cannot be reused directly. */
+  size_t m_used{};
+  /** Usage at which the writer must rotate to a freshly synchronized piece. */
+  size_t m_oom_threshold{};
+  /** Complete allocator capacity, including OOM-handling headroom. */
+  size_t m_capacity{};
+};
 
 struct key_views;
 
@@ -100,6 +109,8 @@ private:
   bool m_update_in_progress{};
   /** Distinguishes a fresh sync piece from an incrementally updated one. */
   bool m_has_committed_sample{};
+  /** Writer-local usage boundary that leaves the configured recovery headroom. */
+  size_t m_oom_threshold{};
 
   // === METHODS ==================================================================================
 public:
@@ -114,11 +125,19 @@ public:
   auto wildcards() const noexcept -> const predefined_wildcards&;
 
   // Writer-side API.
-  /** Constructs a new writer-side storage in `memory`. */
-  auto init(std::span<std::byte> memory) noexcept -> std::expected<void, storage_error>;
+  /**
+   * Constructs a new writer-side storage in `memory`.
+   *
+   * `oom_handling_size` remains allocatable so an in-flight operation can
+   * finish safely, but reaching that final part of the pool asks the writer to
+   * discard the unpublished update and rotate to a new piece.
+   */
+  auto init(std::span<std::byte> memory, size_t oom_handling_size = 0) noexcept -> std::expected<void, storage_error>;
   /** Builds the immutable wildcard index owned by this shared-memory piece. */
   auto initialize_wildcards(std::span<const std::string_view> wildcards) noexcept -> std::expected<void, predefined_wildcards_error>;
   auto memory() const noexcept -> std::span<const std::byte>;
+  auto memory_usage() const noexcept -> storage_memory_usage;
+  auto is_oom_threshold_reached() const noexcept -> bool;
   /** Pins the current sample for a newly connected reader. */
   auto acquire_active_sample() noexcept -> sample_id;
   /** Releases the sample when that reader disconnects. */
