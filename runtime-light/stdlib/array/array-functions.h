@@ -267,7 +267,7 @@ kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typenam
                                                                                                                                          F f) noexcept {
   for (const auto& it : std::as_const(a)) {
     bool condition{};
-    if constexpr (kphp::coro::is_task_function_v < F, typename array<T>::const_iterator::value_type >>) {
+    if constexpr (kphp::coro::is_task_function_v<F, typename array<T>::const_iterator::value_type>) {
       condition = co_await kphp::coro::on_stack(f, it.get_value());
     } else if constexpr (kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>) {
       condition = co_await std::invoke(f, it.get_value());
