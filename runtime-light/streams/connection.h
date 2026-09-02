@@ -142,7 +142,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }
 
     const auto finalizer{vk::finally([state] noexcept { state.get()->m_unwatch_event.reset(); })};
-    const auto v{co_await kphp::coro::when_any(unwatch_awaiter(std::move(state)), descriptor_awaiter(descriptor))};
+    const auto v{co_await kphp::coro::when_any(std::bind_front(unwatch_awaiter, std::move(state)), std::bind_front(descriptor_awaiter, descriptor))};
     if (std::holds_alternative<std::monostate>(v)) {
       if constexpr (kphp::coro::is_task_function_v<on_abort_handler_type>) {
         co_await kphp::coro::on_stack(std::move(h));
@@ -155,7 +155,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
   }};
 
   m_shared_state.get()->m_unwatch_event.emplace();
-  if (!kphp::coro::io_scheduler::get().spawn(watcher(m_stream.descriptor(), m_shared_state, std::forward<on_abort_handler_type>(h)))) [[unlikely]] {
+  if (!kphp::coro::io_scheduler::get().spawn(watcher, m_stream.descriptor(), m_shared_state, std::forward<on_abort_handler_type>(h))) [[unlikely]] {
     m_shared_state.get()->m_unwatch_event.reset();
     return std::unexpected{k2::errno_ebusy};
   }

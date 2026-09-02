@@ -360,9 +360,12 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
           return {reinterpret_cast<std::byte*>(response_exp->buffer()), size};
         }};
 
-        auto fetch_task{kphp::rpc::query::response(std::move(q), response_buffer_provider)};
         auto fetch_result{co_await kphp::coro::on_stack(
-            [](auto fetch_task_arg) noexcept { return kphp::coro::io_scheduler::get().schedule(std::move(fetch_task_arg)); }, std::move(fetch_task))};
+            [](kphp::rpc::query q_arg, auto response_buffer_provider_arg) noexcept {
+              return kphp::coro::io_scheduler::get().schedule(kphp::rpc::query::response<decltype(response_buffer_provider_arg)>, std::move(q_arg),
+                                                              std::move(response_buffer_provider_arg));
+            },
+            std::move(q), response_buffer_provider)};
         if (!fetch_result) [[unlikely]] {
           response_exp = std::unexpected{fetch_result.error()};
         }
