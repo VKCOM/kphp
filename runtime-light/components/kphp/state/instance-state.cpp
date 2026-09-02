@@ -149,6 +149,10 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
   }
 
+  if (component_state.confdata_link_available) {
+    co_await confdata_instance_state.init();
+  }
+
   if constexpr (kind == image_kind::cli || kind == image_kind::server) {
     // TODO set these headers in CLI and HTTP modes only
     static constexpr std::string_view DEFAULT_SERVER_NAME{"nginx/0.3.33"};
@@ -157,8 +161,6 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     http_server_instance_state.add_header(kphp::http::headers::SERVER, DEFAULT_SERVER_NAME, false);
     http_server_instance_state.add_header(kphp::http::headers::CONTENT_TYPE, DEFAULT_CONTENT_TYPE, false);
   }
-
-  co_await confdata_instance_state.init(); // TODO: we need to init it only if required to
 
   // specific initialization
   if constexpr (kind == image_kind::cli) {
