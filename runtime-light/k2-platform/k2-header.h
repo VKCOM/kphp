@@ -236,22 +236,6 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
 int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
 
 /**
- * Releases a shared-memory allocation owned by the calling instance.
- * Existing reader references remain valid until they are released; the
- * allocation becomes reclaimable once no references remain.
- *
- * @param `memory` Pointer previously returned by `k2_alloc_shared_memory`.
- *
- * @return `0` on success. libc-like `errno` on error.
- *
- * Possible `errno`:
- * `EINVAL` => `memory` is NULL.
- * `ENOENT` => `memory` was not allocated by `k2_alloc_shared_memory`.
- * `ENOSYS` => Shared memory subsystem is unavailable on this host.
- */
-int32_t k2_free_shared_memory(void* memory);
-
-/**
  * Publishes shared memory with a name and TTL, making it discoverable by other instances.
  *
  * @param `name` Name to associate with the memory region. Should be valid
