@@ -137,13 +137,6 @@ inline std::expected<void*, int32_t> alloc_shared_memory(size_t size, size_t ali
   return pointer;
 }
 
-inline std::expected<void, int32_t> free_shared_memory(void* memory) noexcept {
-  if (const auto error_code{k2_free_shared_memory(memory)}; error_code != k2::errno_ok) [[unlikely]] {
-    return std::unexpected{error_code};
-  }
-  return {};
-}
-
 inline std::expected<void, int32_t> publish_shared_memory(std::string_view name, const void* memory, uint64_t ttl, bool as_mut, bool ignore_if_exist) noexcept {
   if (const auto error_code{k2_publish_shared_memory(name.data(), name.size(), memory, ttl, as_mut, ignore_if_exist)}; error_code != k2::errno_ok)
       [[unlikely]] {
