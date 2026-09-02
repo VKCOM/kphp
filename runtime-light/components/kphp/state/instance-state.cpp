@@ -141,12 +141,16 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     constexpr auto sapi_name{resolve_sapi_name<kind>()};
 
     auto& superglobals{php_script_mutable_globals_singleton.get_superglobals()};
-    superglobals.v$_ENV = ComponentState::get().env;
+    superglobals.v$_ENV = component_state.env;
 
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
     superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
+  }
+
+  if (component_state.confdata_link_available) {
+    co_await confdata_instance_state.init();
   }
 
   if constexpr (kind == image_kind::cli || kind == image_kind::server) {
@@ -157,8 +161,6 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     http_server_instance_state.add_header(kphp::http::headers::SERVER, DEFAULT_SERVER_NAME, false);
     http_server_instance_state.add_header(kphp::http::headers::CONTENT_TYPE, DEFAULT_CONTENT_TYPE, false);
   }
-
-  co_await confdata_instance_state.init(); // TODO: we need to init it only if required to
 
   // specific initialization
   if constexpr (kind == image_kind::cli) {

@@ -15,6 +15,7 @@
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/confdata/confdata-constants.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/kml/kml-state.h"
 
@@ -31,6 +32,8 @@ struct ComponentState final : private vk::not_copyable {
   bool exit_after_response{};
   uint64_t initial_instance_memory_size{INIT_INSTANCE_ALLOCATOR_SIZE};
   uint64_t min_instance_extra_memory_size{DEFAULT_MIN_EXTRA_MEMORY_POOL_SIZE};
+
+  bool confdata_link_available{k2::component_access(kphp::confdata::COMPONENT_LINK_ALIAS) == k2::errno_ok};
 
   ComponentState() noexcept {
     parse_env();
