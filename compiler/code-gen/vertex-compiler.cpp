@@ -657,7 +657,7 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator& W) {
   true_expr_tp = tinf::get_type(true_expr);
   false_expr_tp = tinf::get_type(false_expr);
 
-  // TODO: optimize type_out
+  //TODO: optimize type_out
   if (type_out(true_expr_tp) != type_out(false_expr_tp)) {
     res_tp = tinf::get_type(root);
   }
@@ -938,7 +938,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "(co_await kphp::coro::on_stack([](auto&&... args) noexcept { return ";
+        W << "(" << "co_await ";
       }
       W << FunctionName(func);
     }
@@ -947,12 +947,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     const TypeData* tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-
-  if (func->is_interruptible && mode != func_call_mode::fork_call) {
-    W << "(std::forward<decltype(args)>(args)...); }";
-  } else {
-    W << "(";
-  }
+  W << "(";
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -1120,7 +1115,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
   auto params = root->params();
 
-  // foreach (xs as [key =>] x)
+  //foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
   VertexPtr x = params->x();
   VertexPtr key;
@@ -1133,7 +1128,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   const TypeData* xs_type = tinf::get_type(xs);
 
   W << BEGIN;
-  // save array to 'xs_copy_str'
+  //save array to 'xs_copy_str'
   W << TypeName(xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
   std::string it = gen_unique_name("it");
@@ -1145,7 +1140,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   W << TypeName(tinf::get_type(x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
-  // save key
+  //save key
   if (key) {
     W << key << " = " << it << ".get_key();" << NL;
   }
@@ -1153,7 +1148,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
 
 void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W) {
   auto params = root->params();
-  // foreach (xs as [key =>] x)
+  //foreach (xs as [key =>] x)
   VertexPtr x = params->x();
   VertexPtr xs = params->xs();
   VertexPtr key;
@@ -1174,16 +1169,16 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator&
   }
 
   W << BEGIN;
-  // save array to 'xs_copy_str'
+  //save array to 'xs_copy_str'
   W << temp_var << " = " << xs << ";" << NL;
   W << temp_var << "$it = const_begin(" << temp_var << ");" << NL;
   W << temp_var << "$it$end = const_end(" << temp_var << ");" << NL;
   W << "for (; " << temp_var << "$it != " << temp_var << "$it$end; ++" << temp_var << "$it) " << BEGIN;
 
-  // save value
+  //save value
   W << x << " = " << temp_var << "$it" << ".get_value();" << NL;
 
-  // save key
+  //save key
   if (key) {
     W << key << " = " << temp_var << "$it" << ".get_key();" << NL;
   }
@@ -1193,7 +1188,7 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator& W) {
   auto params = root->params();
   auto cmd = root->cmd();
 
-  // foreach (xs as [key =>] x)
+  //foreach (xs as [key =>] x)
   if (params->x()->ref_flag) {
     compile_foreach_ref_header(root, W);
   } else {
@@ -1475,10 +1470,10 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
   W << Indent(-2) << "public:" << NL << Indent(+2);
 
-  // ReturnT
+  //ReturnT
   W << "using ReturnT = " << TypeName(tinf::get_type(func, -1)) << ";" << NL;
 
-  // CONSTRUCTOR
+  //CONSTRUCTOR
   FunctionSignatureGenerator(W) << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
   bool has_members_in_constructor = !func->param_ids.empty() || !func->local_var_ids.empty() || func->has_global_vars_inside;
   if (has_members_in_constructor) {
@@ -1524,8 +1519,13 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << END << ";" << NL;
 
   //CALL FUNCTION
+<<<<<<< HEAD
   W << FunctionDeclaration(func, false) << " " << BEGIN;
   W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
+=======
+  W << FunctionDeclaration(func, false) << " " << BEGIN;
+  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
+>>>>>>> b444d2c69 (revert formatting in vertex-compiler)
 
   const auto var_name_gen = [](CodeGenerator& W, VarPtr var) { W << VarName(var); };
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
@@ -1603,7 +1603,7 @@ static bool can_save_ref(VertexPtr v) {
   if (v->type() == op_func_call) {
     FunctionPtr func = v.as<op_func_call>()->func_id;
     if (func->is_extern()) {
-      // todo
+      //todo
       return false;
     }
     return true;
@@ -2004,7 +2004,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator& W) {
   std::string arr_name = "tmp_array";
   W << TypeName(type) << " " << arr_name << " = ";
 
-  // TODO: check
+  //TODO: check
   if (type->ptype() == tp_array) {
     W << TypeName(type);
   } else {
@@ -2101,7 +2101,7 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
 
 void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator& W __attribute__((unused))) {
   W << "false";
-  // TODO: it is not CodeGen part
+  //TODO: it is not CodeGen part
 }
 
 bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator& W) {
@@ -2425,6 +2425,129 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
         W << root.as<op_clone>()->expr() << ".clone()";
         break;
       }
+      break;
+    }
+  case op_string:
+    compile_string(root.as<op_string>(), W);
+    break;
+
+  case op_if:
+    compile_if(root.as<op_if>(), W);
+    break;
+  case op_return:
+    compile_return(root.as<op_return>(), W);
+    break;
+  case op_global:
+  case op_static:
+    //already processed
+    break;
+  case op_throw:
+    compile_throw(root.as<op_throw>(), W);
+    break;
+  case op_continue:
+  case op_break:
+    compile_break_continue(root.as<meta_op_goto>(), W);
+    break;
+  case op_try:
+    compile_try(root.as<op_try>(), W);
+    break;
+  case op_fork:
+    compile_fork(root.as<op_fork>(), W);
+    break;
+  case op_async:
+    compile_async(root.as<op_async>(), W);
+    break;
+  case op_function:
+    compile_function(root.as<op_function>(), W);
+    break;
+  case op_ffi_cdata_value_ref:
+    compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
+    break;
+  case op_ffi_new:
+    compile_ffi_new(root.as<op_ffi_new>(), W);
+    break;
+  case op_ffi_addr:
+    compile_ffi_addr(root.as<op_ffi_addr>(), W);
+    break;
+  case op_ffi_cast:
+    compile_ffi_cast(root.as<op_ffi_cast>(), W);
+    break;
+  case op_ffi_load_call:
+    compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
+    break;
+  case op_ffi_array_get:
+    compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
+    break;
+  case op_ffi_array_set:
+    compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
+    break;
+  case op_func_call:
+    compile_func_call_fast(root.as<op_func_call>(), W);
+    break;
+  case op_callback_of_builtin:
+    compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
+    break;
+  case op_string_build:
+    compile_string_build(root.as<op_string_build>(), W);
+    break;
+  case op_index:
+    compile_index(root.as<op_index>(), W);
+    break;
+  case op_instance_prop:
+    compile_instance_prop(root.as<op_instance_prop>(), W);
+    break;
+  case op_isset:
+    compile_xset(root.as<meta_op_xset>(), W);
+    break;
+  case op_list:
+    compile_list(root.as<op_list>(), W);
+    break;
+  case op_array:
+    compile_array(root.as<op_array>(), W);
+    break;
+  case op_tuple:
+    compile_tuple(root.as<op_tuple>(), W);
+    break;
+  case op_shape:
+    compile_shape(root.as<op_shape>(), W);
+    break;
+  case op_unset:
+    compile_xset(root.as<meta_op_xset>(), W);
+    break;
+  case op_empty:
+  case op_phpdoc_var:
+    break;
+  case op_defined:
+    compile_defined(root.as<op_defined>(), W);
+    break;
+  case op_conv_array_l:
+    compile_conv_l(root.as<op_conv_array_l>(), W);
+    break;
+  case op_conv_int_l:
+    compile_conv_l(root.as<op_conv_int_l>(), W);
+    break;
+  case op_conv_string_l:
+    compile_conv_l(root.as<op_conv_string_l>(), W);
+    break;
+  case op_set_value:
+    compile_set_value(root.as<op_set_value>(), W);
+    break;
+  case op_push_back:
+    compile_push_back(root.as<op_push_back>(), W);
+    break;
+  case op_push_back_return:
+    compile_push_back_return(root.as<op_push_back_return>(), W);
+    break;
+  case op_noerr:
+    compile_noerr(root.as<op_noerr>(), W);
+    break;
+  case op_clone: {
+    const auto* tp = tinf::get_type(root);
+    if (auto klass = tp->class_type()) {
+      if (klass->is_class()) {
+        W << root.as<op_clone>()->expr() << ".clone()";
+        break;
+      }
       if (klass->is_ffi_cdata()) {
         W << "ffi_clone(" << root.as<op_clone>()->expr() << ")";
         break;
@@ -2461,7 +2584,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
     kphp_fail();
     break;
   }
-}
+  }
 
 } // anonymous namespace
 
