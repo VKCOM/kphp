@@ -250,6 +250,10 @@ private:
  * It's strongly recommended to use this function instead of writing co_await f(1, 2, 3), where f returns task<T>.
  */
 template<typename F, typename... Args>
+requires(std::invocable<F, Args...> &&
+         requires {
+           { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
+         })
 [[nodiscard]] auto on_stack(F&& f, Args&&... args) noexcept {
   using task_t = std::invoke_result_t<F, Args...>;
 
@@ -277,8 +281,9 @@ template<typename F, typename... Args>
     }
   };
 
-  kphp::coro::detail::memory::task_allocator::get().request_stack_allocation();
-  auto final_action{vk::finally([]() { kphp::coro::detail::memory::task_allocator::get().consume_stack_allocation_request(); })};
+  auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
+  task_allocator.request_stack_allocation();
+  auto final_action{vk::finally([&task_allocator]() { task_allocator.consume_stack_allocation_request(); })};
 
   return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }

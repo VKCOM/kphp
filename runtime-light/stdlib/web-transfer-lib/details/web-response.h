@@ -13,6 +13,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/component/inter-component-session/client.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-error.h"
@@ -82,7 +83,10 @@ inline auto process_simple_response(std::span<const std::byte> request) noexcept
     }
   }};
 
-  if (auto res{co_await (*session).get()->client.query(request, std::move(response_buffer_provider), response_handler)}; !res) [[unlikely]] {
+  if (auto res{co_await kphp::coro::on_stack(
+          &kphp::component::inter_component_session::client::query<decltype(response_buffer_provider), decltype(response_handler)>, (*session).get()->client,
+          request, std::move(response_buffer_provider), response_handler)};
+      !res) [[unlikely]] {
     kphp::log::error("failed to send request of Simple descriptor processing");
   }
   if (err.has_value()) [[unlikely]] {

@@ -17,6 +17,7 @@
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -28,6 +29,7 @@ class event {
     // 2) non empty list => linked list of coroutines waiting for the event to trigger
     // 3) empty list => the event is triggered and all coroutines are resumed
     std::variant<std::monostate, vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>> m_state;
+    kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
 
     auto set() noexcept -> void;
     auto unset() noexcept -> void;
@@ -42,7 +44,8 @@ class event {
     kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
 
     explicit awaiter(event_controller& event_controller) noexcept
-        : m_controller(event_controller),
+        : kphp::coro::task_allocator_guard(event_controller.m_task_allocator),
+          m_controller(event_controller),
           m_async_stack_root(kphp::coro::instance_state::get().coroutine_stack_root) {}
 
     awaiter(const awaiter&) = delete;
@@ -133,7 +136,7 @@ inline auto event::event_controller::set() noexcept -> void {
      * (in the future invariant [1] may not work).
      */
     awaiters.pop_front();
-    kphp::coro::resume(coroutine);
+    kphp::coro::resume(coroutine, m_task_allocator);
   }
 }
 

@@ -975,7 +975,9 @@ kphp::coro::task<Optional<string>> preg_replace_callback_impl(kphp::regex::regex
       matches.set_value(key, value.to_string());
     }
     string replacement{};
-    if constexpr (kphp::coro::is_async_function_v<F, array<string>>) {
+    if constexpr (kphp::coro::is_task_function_v<F, array<string>>) {
+      replacement = co_await kphp::coro::on_stack(callback, std::move(matches));
+    } else if constexpr (kphp::coro::is_async_function_v<F, array<string>>) {
       replacement = co_await std::invoke(callback, std::move(matches));
     } else {
       replacement = std::invoke(callback, std::move(matches));
@@ -1235,7 +1237,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(kphp::regex::regexp r
     co_return Optional<string>{};
   }
 
-  co_return co_await kphp::regex::details::preg_replace_callback_impl(regex, callback, subject, count, limit);
+  co_return co_await kphp::coro::on_stack(kphp::regex::details::preg_replace_callback_impl<F>, regex, std::move(callback), std::move(subject), count, limit);
 }
 
 template<class F>
@@ -1247,7 +1249,12 @@ kphp::coro::task<mixed> f$preg_replace_callback(kphp::regex::regexp regex, F cal
   }
 
   if (!subject.is_array()) {
-    co_return co_await f$preg_replace_callback(regex, std::move(callback), subject.to_string(), limit, opt_count, flags);
+    co_return co_await kphp::coro::on_stack(
+        [](kphp::regex::regexp regex_arg, F callback_arg, string subject_arg, int64_t limit_arg,
+           Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+          return f$preg_replace_callback(regex_arg, std::move(callback_arg), std::move(subject_arg), limit_arg, opt_count_arg, flags_arg);
+        },
+        regex, std::move(callback), subject.to_string(), limit, opt_count, flags);
   }
 
   int64_t count{};
@@ -1257,7 +1264,12 @@ kphp::coro::task<mixed> f$preg_replace_callback(kphp::regex::regexp regex, F cal
   array<mixed> result{subject_arr.size()};
   for (const auto& it : subject_arr) {
     int64_t replace_one_count{};
-    if (auto replace_result{co_await f$preg_replace_callback(regex, callback, it.get_value().to_string(), limit, replace_one_count, flags)};
+    if (auto replace_result{co_await kphp::coro::on_stack(
+            [](kphp::regex::regexp regex_arg, F callback_arg, string subject_arg, int64_t limit_arg,
+               Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+              return f$preg_replace_callback(regex_arg, std::move(callback_arg), std::move(subject_arg), limit_arg, opt_count_arg, flags_arg);
+            },
+            regex, callback, it.get_value().to_string(), limit, replace_one_count, flags)};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result.set_value(it.get_key(), std::move(replace_result.val()));
@@ -1281,7 +1293,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
     co_return Optional<string>{};
   }
   const kphp::regex::regexp regex{std::move(pattern), subject};
-  co_return co_await kphp::regex::details::preg_replace_callback_impl(regex, callback, subject, count, limit);
+  co_return co_await kphp::coro::on_stack(kphp::regex::details::preg_replace_callback_impl<F>, regex, std::move(callback), std::move(subject), count, limit);
 }
 
 template<class F>
@@ -1294,7 +1306,12 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
   }
 
   if (!pattern.is_array()) {
-    co_return co_await f$preg_replace_callback(pattern.to_string(), std::move(callback), subject, limit, opt_count, flags);
+    co_return co_await kphp::coro::on_stack(
+        [](string pattern_arg, F callback_arg, string subject_arg, int64_t limit_arg,
+           Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+          return f$preg_replace_callback(std::move(pattern_arg), std::move(callback_arg), std::move(subject_arg), limit_arg, opt_count_arg, flags_arg);
+        },
+        pattern.to_string(), std::move(callback), subject, limit, opt_count, flags);
   }
 
   int64_t count{};
@@ -1304,7 +1321,12 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
   const auto& pattern_arr{pattern.as_array()};
   for (const auto& it : pattern_arr) {
     int64_t replace_one_count{};
-    if (auto replace_result{co_await f$preg_replace_callback(it.get_value().to_string(), callback, std::move(result), limit, replace_one_count, flags)};
+    if (auto replace_result{co_await kphp::coro::on_stack(
+            [](string pattern_arg, F callback_arg, string subject_arg, int64_t limit_arg,
+               Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+              return f$preg_replace_callback(std::move(pattern_arg), std::move(callback_arg), std::move(subject_arg), limit_arg, opt_count_arg, flags_arg);
+            },
+            it.get_value().to_string(), callback, std::move(result), limit, replace_one_count, flags)};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result = std::move(replace_result.val());
@@ -1330,7 +1352,12 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
   }
 
   if (!subject.is_array()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), subject.to_string(), limit, opt_count, flags);
+    co_return co_await kphp::coro::on_stack(
+        [](mixed pattern_arg, F callback_arg, string subject_arg, int64_t limit_arg,
+           Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+          return f$preg_replace_callback(std::move(pattern_arg), std::move(callback_arg), std::move(subject_arg), limit_arg, opt_count_arg, flags_arg);
+        },
+        std::move(pattern), std::move(callback), subject.to_string(), limit, opt_count, flags);
   }
 
   int64_t count{};
@@ -1340,7 +1367,12 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
   array<mixed> result{subject_arr.size()};
   for (const auto& it : subject_arr) {
     int64_t replace_one_count{};
-    if (auto replace_result{co_await f$preg_replace_callback(pattern, callback, it.get_value().to_string(), limit, replace_one_count, flags)};
+    if (auto replace_result{co_await kphp::coro::on_stack(
+            [](mixed pattern_arg, F callback_arg, string subject_arg, int64_t limit_arg,
+               Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+              return f$preg_replace_callback(std::move(pattern_arg), std::move(callback_arg), std::move(subject_arg), limit_arg, opt_count_arg, flags_arg);
+            },
+            pattern, callback, it.get_value().to_string(), limit, replace_one_count, flags)};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result.set_value(it.get_key(), std::move(replace_result.val()));
@@ -1358,7 +1390,13 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
                              Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count,
                              int64_t flags) noexcept -> decltype(f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback),
                                                                                          std::forward<T3>(subject).val(), limit, opt_count, flags)) {
-  co_return co_await f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, opt_count, flags);
+  co_return co_await kphp::coro::on_stack(
+      [](T1&& pattern_arg, T2&& callback_arg, T3&& subject_arg, int64_t limit_arg,
+         Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count_arg, int64_t flags_arg) noexcept {
+        return f$preg_replace_callback(std::forward<T1>(pattern_arg), std::forward<T2>(callback_arg), std::forward<T3>(subject_arg).val(), limit_arg,
+                                       opt_count_arg, flags_arg);
+      },
+      std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, opt_count, flags);
 }
 
 // === preg_split implementation ==================================================================

@@ -44,9 +44,13 @@ public:
 
 template<typename F, typename... Args>
 requires std::invocable<F, Args...>
-inline constexpr bool is_async_function_v = requires {
+inline constexpr bool is_task_function_v = requires {
   { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
-} || requires {
+};
+
+template<typename F, typename... Args>
+requires std::invocable<F, Args...>
+inline constexpr bool is_async_function_v = is_task_function_v<F, Args...> || requires {
   { static_cast<kphp::coro::shared_task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
 };
 

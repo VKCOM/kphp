@@ -21,7 +21,9 @@ void f$register_shutdown_function(F&& f, Args&&... args) noexcept {
   // 2. parameters are passed by value.
   auto shutdown_function_task{std::invoke(
       [](F f, Args... args) noexcept -> kphp::coro::task<> {
-        if constexpr (kphp::coro::is_async_function_v<F, Args...>) {
+        if constexpr (kphp::coro::is_task_function_v<F, Args...>) {
+          co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+        } else if constexpr (kphp::coro::is_async_function_v<F, Args...>) {
           co_await std::invoke(std::move(f), std::move(args)...);
         } else {
           std::invoke(std::move(f), std::move(args)...);

@@ -187,7 +187,7 @@ auto update(std::string_view confdata_proxy_actor, kphp::confdata::pagination& f
     if (auto expected{co_await subscribe(confdata_proxy_actor, from, event_handler)}; !expected) [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
-    co_await kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL);
+    co_await kphp::coro::on_stack([]() noexcept { return kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL); });
   }
 }
 

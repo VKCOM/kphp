@@ -125,7 +125,7 @@ inline auto stream::open(std::string_view target, k2::stream_kind stream_kind) n
 
 template<kphp::concepts::duration duration_type>
 auto stream::accept(duration_type timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
-  const auto descriptor{co_await kphp::coro::io_scheduler::get().accept(timeout)};
+  const auto descriptor{co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::accept<duration_type>, kphp::coro::io_scheduler::get(), timeout)};
   if (descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     kphp::log::warning("failed to accept a stream within a specified timeout: {}", timeout);
     co_return std::nullopt;
@@ -162,7 +162,9 @@ inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro:
   }
 
   for (size_t read{}; read < buf.size();) {
-    switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)) {
+    switch (co_await kphp::coro::on_stack([](kphp::coro::io_scheduler& scheduler_arg,
+                                             k2::descriptor descriptor_arg) noexcept { return scheduler_arg.poll(descriptor_arg, kphp::coro::poll_op::read); },
+                                          m_scheduler, m_descriptor)) {
     case kphp::coro::poll_status::event:
       [[likely]] read += k2::read(m_descriptor, buf.subspan(read));
       break;
@@ -183,7 +185,7 @@ auto stream::read_all(F f) const noexcept -> kphp::coro::task<std::expected<void
   std::array<std::byte, CHUNK_SIZE> chunk; // NOLINT
 
   for (;;) {
-    auto expected{co_await read(chunk)};
+    auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::read, this, chunk)};
     if (!expected || *expected == 0) {
       co_return expected.transform([](auto) noexcept {});
     }
@@ -198,7 +200,9 @@ inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp
   }
 
   for (size_t written{}; written < buf.size();) {
-    switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::write)) {
+    switch (co_await kphp::coro::on_stack([](kphp::coro::io_scheduler& scheduler_arg,
+                                             k2::descriptor descriptor_arg) noexcept { return scheduler_arg.poll(descriptor_arg, kphp::coro::poll_op::write); },
+                                          m_scheduler, m_descriptor)) {
     case kphp::coro::poll_status::event:
       [[likely]] written += k2::write(m_descriptor, buf.subspan(written));
       break;
@@ -214,7 +218,7 @@ inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp
 }
 
 inline auto stream::write_all(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  auto expected{co_await write(buf)};
+  auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::write, this, buf)};
   if (!expected) [[unlikely]] {
     co_return std::unexpected{expected.error()};
   }

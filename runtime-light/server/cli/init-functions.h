@@ -44,14 +44,14 @@ inline kphp::coro::task<> finalize_cli_server() noexcept {
   const auto system_buffer{std::invoke(transformer, output_instance_state.output_buffers.system_buffer().get())};
 
   auto& output_stream{*cli_instance_state.output_stream};
-  if (auto expected{co_await output_stream.write(system_buffer)}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::write, output_stream, system_buffer)}; !expected) [[unlikely]] {
     kphp::log::error("can't write system buffer to output: stream -> {}, error code -> {}", output_stream.descriptor(), expected.error());
   }
 
   auto user_buffers{output_instance_state.output_buffers.user_buffers() |
                     std::views::filter([](const string_buffer& buffer) noexcept { return buffer.size() > 0; }) | std::views::transform(transformer)};
   for (const auto& buffer : user_buffers) {
-    if (auto expected{co_await output_stream.write(buffer)}; !expected) [[unlikely]] {
+    if (auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::write, output_stream, buffer)}; !expected) [[unlikely]] {
       kphp::log::error("can't write user buffer to output: stream -> {}, error code -> {}", output_stream.descriptor(), expected.error());
     }
   }

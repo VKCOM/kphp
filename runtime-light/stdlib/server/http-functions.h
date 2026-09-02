@@ -12,6 +12,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -77,7 +78,9 @@ bool f$header_register_callback(F&& f) noexcept {
 
   auto headers_callback_task{std::invoke(
       [](F f) noexcept -> kphp::coro::task<> {
-        if constexpr (kphp::coro::is_async_function_v<F>) {
+        if constexpr (kphp::coro::is_task_function_v<F>) {
+          co_await kphp::coro::on_stack(std::move(f));
+        } else if constexpr (kphp::coro::is_async_function_v<F>) {
           co_await std::invoke(std::move(f));
         } else {
           std::invoke(std::move(f));
