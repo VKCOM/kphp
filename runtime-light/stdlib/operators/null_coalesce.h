@@ -50,7 +50,9 @@ ReturnType perform_fallback(FallbackType&& value_fallback) noexcept {
 template<class ReturnType, class FallbackType>
 requires(kphp::coro::is_async_function_v<FallbackType>)
 kphp::coro::task<ReturnType> perform_fallback(FallbackType&& value_fallback) noexcept {
-  co_return co_await kphp::coro::on_stack(perform_fallback_impl<ReturnType, FallbackType>, std::forward<FallbackType>(value_fallback), nullptr);
+  co_return co_await kphp::coro::on_stack(
+      [](FallbackType&& value_fallback_arg) noexcept { return perform_fallback_impl<ReturnType>(std::forward<FallbackType>(value_fallback_arg), nullptr); },
+      std::forward<FallbackType>(value_fallback));
 }
 
 } // namespace null_coalesce_impl_
@@ -107,8 +109,11 @@ public:
   template<class FallbackType>
   requires(kphp::coro::is_async_function_v<FallbackType>)
   kphp::coro::task<ResultType> finalize(FallbackType&& fallback) noexcept {
-    co_return result_ ? std::move(*result_)
-                      : co_await kphp::coro::on_stack(null_coalesce_impl_::perform_fallback<ResultType, FallbackType>, std::forward<FallbackType>(fallback));
+    co_return result_
+        ? std::move(*result_)
+        : co_await kphp::coro::on_stack(
+              [](FallbackType&& fallback_arg) noexcept { return null_coalesce_impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback_arg)); },
+              std::forward<FallbackType>(fallback));
   }
 
   ~NullCoalesce() noexcept {

@@ -1396,7 +1396,7 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
         return f$preg_replace_callback(std::forward<T1>(pattern_arg), std::forward<T2>(callback_arg), std::forward<T3>(subject_arg).val(), limit_arg,
                                        opt_count_arg, flags_arg);
       },
-      std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, opt_count, flags);
+      std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject), limit, opt_count, flags);
 }
 
 // === preg_split implementation ==================================================================

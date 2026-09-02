@@ -196,7 +196,10 @@ public:
   }
 
   auto final_suspend() const noexcept {
-    struct completion_notifier {
+    struct completion_notifier : private kphp::coro::task_allocator_guard {
+      explicit completion_notifier(kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
+          : kphp::coro::task_allocator_guard(task_allocator) {}
+
       constexpr auto await_ready() const noexcept {
         return false;
       }
@@ -207,7 +210,8 @@ public:
 
       constexpr auto await_resume() const noexcept -> void {}
     };
-    return completion_notifier{};
+
+    return completion_notifier{m_latch->task_allocator()};
   }
 
   auto unhandled_exception() const noexcept -> void {

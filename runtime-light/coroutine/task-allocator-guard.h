@@ -31,10 +31,6 @@ public:
         m_stack{other.m_stack},
         m_active{std::exchange(other.m_active, false)} {}
 
-  auto task_allocator() const noexcept -> kphp::coro::detail::memory::task_allocator& {
-    return m_task_allocator;
-  }
-
   ~task_allocator_guard() {
     if (m_active) {
       m_task_allocator.set_stack(m_stack);

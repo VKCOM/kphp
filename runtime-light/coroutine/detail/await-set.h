@@ -201,7 +201,10 @@ public:
   }
 
   auto final_suspend() const noexcept {
-    struct completion_notifier {
+    struct completion_notifier : private kphp::coro::task_allocator_guard {
+
+      explicit completion_notifier(kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
+          : kphp::coro::task_allocator_guard(task_allocator) {}
 
       constexpr auto await_ready() const noexcept {
         return false;
@@ -216,7 +219,8 @@ public:
 
       constexpr auto await_resume() const noexcept -> void {}
     };
-    return completion_notifier{};
+
+    return completion_notifier{m_await_broker->get().task_allocator()};
   }
 
   void unhandled_exception() const noexcept {
@@ -240,7 +244,7 @@ public:
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
-    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), await_broker.task_allocator());
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), m_await_broker->get().task_allocator());
   }
 };
 
