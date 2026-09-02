@@ -102,12 +102,32 @@ public:
   auto spawn(coroutine_type coroutine) noexcept -> bool;
 
   /**
+   * @brief Spawns a new task to be executed by the scheduler.
+   * @param f The function, that returns task to spawn.
+   * @param Args Arguments for function.
+   * @return True if the coroutine was successfully spawned, false otherwise.
+   */
+  template<typename F, typename... Args>
+  requires(kphp::coro::is_task_function_v<F, Args...>)
+  auto spawn(F&& f, Args&&... args) noexcept -> bool;
+
+  /**
    * @brief Spawns a new coroutine that immediately starts the passed coroutine.
    * @param corotuine The coroutine to start.
    * @return True if the coroutine was successfully started, false otherwise.
    */
   template<kphp::coro::concepts::coroutine coroutine_type>
   auto start(coroutine_type coroutine) noexcept -> bool;
+
+  /**
+   * @brief Spawns a new task that immediately starts the passed coroutine.
+   * @param f The function, that returns task to start.
+   * @param Args Arguments for function.
+   * @return True if the coroutine was successfully started, false otherwise.
+   */
+  template<typename F, typename... Args>
+  requires(kphp::coro::is_task_function_v<F, Args...>)
+  auto start(F&& f, Args&&... args) noexcept -> bool;
 
   /**
    * @brief Schedules the current coroutine to be resumed later.
@@ -131,6 +151,15 @@ public:
   template<kphp::coro::concepts::coroutine coroutine_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type>;
   /**
+   * @brief Schedules a task for execution.
+   * @param f The function, that returns task to schedule.
+   * @return A task that will yield the task's return value when completed.
+   */
+  template<typename F, typename... Args>
+  requires(kphp::coro::is_task_function_v<F, Args...>)
+  [[nodiscard]] auto schedule(F f,
+                              Args... args) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type>;
+  /**
    * @brief Schedules a coroutine with a timeout.
    * @param coroutine The coroutine to schedule.
    * @param timeout Maximum duration to wait for the coroutine to complete.
@@ -141,6 +170,18 @@ public:
   template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine, duration_type timeout) noexcept
       -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>>;
+  /**
+   * @brief Schedules a task with a timeout.
+   * @param f The function, that returns task to schedule.
+   * @param timeout Maximum duration to wait for the task to complete.
+   *        - Zero or negative: behaves like schedule(f, args...) - schedules the task for execution without timeout.
+   *        - Positive: rounded up to the next whole millisecond.
+   * @return A task that yields either the task's result or kphp::coro::timeout_status::timeout.
+   */
+  template<typename F, typename... Args, kphp::concepts::duration duration_type>
+  requires(kphp::coro::is_task_function_v<F, Args...>)
+  [[nodiscard]] auto schedule(F f, Args... args, duration_type timeout) noexcept
+      -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type, timeout_status>>;
 
   /**
    * @brief Polls a descriptor for I/O events.
@@ -456,9 +497,33 @@ auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
   return true;
 }
 
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto io_scheduler::spawn(F&& f, Args&&... args) noexcept -> bool {
+  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::forward<F>(f), std::forward<Args>(args)...)};
+  auto handle{owned_task.get_handle()};
+  if (!handle || handle.done()) [[unlikely]] {
+    return false;
+  }
+  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
+  return true;
+}
+
 template<kphp::coro::concepts::coroutine coroutine_type>
 auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
+  auto handle{owned_task.get_handle()};
+  if (!handle || handle.done()) [[unlikely]] {
+    return false;
+  }
+  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
+  return true;
+}
+
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto io_scheduler::start(F&& f, Args&&... args) noexcept -> bool {
+  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::forward<F>(f), std::forward<Args>(args)...)};
   auto handle{owned_task.get_handle()};
   if (!handle || handle.done()) [[unlikely]] {
     return false;
@@ -546,6 +611,14 @@ auto io_scheduler::schedule(coroutine_type coroutine) noexcept -> kphp::coro::ta
   co_return co_await std::move(coroutine);
 }
 
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+[[nodiscard]] auto
+io_scheduler::schedule(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type> {
+  co_await schedule();
+  co_return co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+}
+
 template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
 auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noexcept
     -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>> {
@@ -553,15 +626,45 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
 
   if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
-      co_await kphp::coro::on_stack([this](coroutine_type coroutine_arg) noexcept { return schedule(std::move(coroutine_arg)); }, std::move(coroutine));
+      co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<coroutine_type>, this, std::move(coroutine));
       co_return std::expected<expected_return_type, timeout_status>{};
     } else {
       co_return std::expected<expected_return_type, timeout_status>{
-          co_await kphp::coro::on_stack([this](coroutine_type coroutine_arg) noexcept { return schedule(std::move(coroutine_arg)); }, std::move(coroutine))};
+          co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<coroutine_type>, this, std::move(coroutine))};
     }
   }
 
   auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(std::chrono::ceil<std::chrono::milliseconds>(timeout)))};
+  if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
+    co_return std::unexpected{std::move(std::get<1>(result))};
+  }
+
+  if constexpr (std::is_void_v<expected_return_type>) {
+    co_return std::expected<expected_return_type, timeout_status>{};
+  } else {
+    co_return std::expected<expected_return_type, timeout_status>{std::move(std::get<0>(result))};
+  }
+}
+
+template<typename F, typename... Args, kphp::concepts::duration duration_type>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+[[nodiscard]] auto io_scheduler::schedule(F f, Args... args, duration_type timeout) noexcept
+    -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type, timeout_status>> {
+  using expected_return_type = typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type;
+
+  if (timeout <= duration_type::zero()) [[unlikely]] {
+    if constexpr (std::is_void_v<expected_return_type>) {
+      co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<decltype(f), decltype(args)...>, this, std::move(f), std::move(args)...);
+      co_return std::expected<expected_return_type, timeout_status>{};
+    } else {
+      co_return std::expected<expected_return_type, timeout_status>{
+          co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<decltype(f), decltype(args)...>, this, std::move(f), std::move(args)...)};
+    }
+  }
+
+  auto result{
+      co_await kphp::coro::when_any(std::bind_front(std::move(f), std::move(args)...), std::bind_front(&kphp::coro::io_scheduler::make_timeout_task, this,
+                                                                                                       std::chrono::ceil<std::chrono::milliseconds>(timeout)))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }

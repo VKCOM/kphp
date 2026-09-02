@@ -13,6 +13,7 @@
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/await-set.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -50,6 +51,14 @@ public:
   void push(awaitable_type awaitable) noexcept {
     kphp::log::assertion(m_await_broker != nullptr);
     m_await_broker->start_task(detail::await_set::make_await_set_task(std::move(awaitable)), m_coroutine_stack_root, STACK_RETURN_ADDRESS);
+  }
+
+  template<typename F, typename... Args>
+  requires kphp::coro::is_task_function_v<F, Args...>
+  void push(F&& f, Args&&... args) noexcept {
+    kphp::log::assertion(m_await_broker != nullptr);
+    m_await_broker->start_task(detail::await_set::make_await_set_task(std::forward<F>(f), std::forward<Args>(args)...), m_coroutine_stack_root,
+                               STACK_RETURN_ADDRESS);
   }
 
   auto next() noexcept {

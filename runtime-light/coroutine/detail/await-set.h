@@ -9,6 +9,7 @@
 #include <expected>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
@@ -387,6 +388,17 @@ auto make_await_set_task(awaitable_type coroutine) noexcept -> await_set_task<ty
     co_await std::move(coroutine);
   } else {
     co_yield co_await std::move(coroutine);
+  }
+}
+
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto make_await_set_task(F f, Args... args) noexcept
+    -> await_set_task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
+    co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+  } else {
+    co_yield co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
   }
 }
 

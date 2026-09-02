@@ -13,6 +13,7 @@
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail {
@@ -111,6 +112,13 @@ inline auto promise_self_deleting::get_return_object_on_allocation_failure() noe
 template<kphp::coro::concepts::awaitable awaitable_type>
 auto make_task_self_deleting(awaitable_type awaitable) noexcept -> task_self_deleting::task_self_deleting {
   co_await std::move(awaitable);
+  co_return;
+}
+
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto make_task_self_deleting(F f, Args... args) noexcept -> task_self_deleting::task_self_deleting {
+  co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
   co_return;
 }
 
