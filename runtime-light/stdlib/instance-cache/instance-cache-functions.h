@@ -117,7 +117,7 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
     return unwrap(it->second);
   }
 
-  auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()}, true)};
+  auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()})};
   if (!get_result.has_value()) {
     return {};
   }
