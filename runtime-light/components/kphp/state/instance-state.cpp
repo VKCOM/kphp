@@ -72,7 +72,8 @@ void InstanceState::init_script_execution() noexcept {
               }
             },
             std::move(script_task));
-        kphp::log::assertion(co_await f$wait_concurrently(kphp::forks::start(std::move(script_task))));
+        kphp::log::assertion(co_await kphp::coro::on_stack([](int64_t fork_id_arg) noexcept { return f$wait_concurrently(fork_id_arg); },
+                                                           kphp::forks::start(std::move(script_task))));
       },
       std::move(script_task))};
   // initialize async stack
@@ -85,7 +86,7 @@ void InstanceState::init_script_execution() noexcept {
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
   instance_kind_ = instance_kind::cli;
-  auto opt_output_stream{co_await kphp::component::stream::accept()};
+  auto opt_output_stream{co_await kphp::coro::on_stack([]() noexcept { return kphp::component::stream::accept(); })};
   kphp::log::assertion(opt_output_stream.has_value());
   kphp::cli::init_cli_server(std::move(*opt_output_stream));
 }
@@ -101,12 +102,13 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
     server.set_value(string{SERVER_SIGNATURE.data(), SERVER_SIGNATURE.size()}, string{SERVER_SIGNATURE_VALUE.data(), SERVER_SIGNATURE_VALUE.size()});
   }
 
-  auto opt_request_stream{co_await kphp::component::stream::accept()};
+  auto opt_request_stream{co_await kphp::coro::on_stack([]() noexcept { return kphp::component::stream::accept(); })};
   kphp::log::assertion(opt_request_stream.has_value());
   auto request_stream{std::move(*opt_request_stream)};
 
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> request{};
-  if (auto expected{co_await kphp::component::fetch_request(request_stream, kphp::component::read_ext::append(request))}; !expected) [[unlikely]] {
+  auto f{kphp::component::read_ext::append(request)};
+  if (auto expected{co_await kphp::coro::on_stack(kphp::component::fetch_request<decltype(f)>, request_stream, std::move(f))}; !expected) [[unlikely]] {
     kphp::log::error("failed to read a request: stream -> {}", request_stream.descriptor());
   }
 
@@ -160,9 +162,9 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
 
   // specific initialization
   if constexpr (kind == image_kind::cli) {
-    co_await init_cli_instance();
+    co_await kphp::coro::on_stack(&InstanceState::init_cli_instance, this);
   } else if constexpr (kind == image_kind::server) {
-    co_await init_server_instance();
+    co_await kphp::coro::on_stack(&InstanceState::init_server_instance, this);
   }
 }
 
@@ -174,13 +176,13 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::mul
 // === finalization ===============================================================================
 
 kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
-  co_await kphp::cli::finalize_cli_server();
+  co_await kphp::coro::on_stack(kphp::cli::finalize_cli_server);
 }
 
 kphp::coro::task<> InstanceState::finalize_server_instance() const noexcept {
   switch (instance_kind()) {
   case instance_kind::http_server: {
-    co_await kphp::http::finalize_server();
+    co_await kphp::coro::on_stack(kphp::http::finalize_server);
     break;
   }
   case instance_kind::rpc_server:
@@ -209,10 +211,10 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   case image_kind::multishot:
     break;
   case image_kind::cli:
-    co_await finalize_cli_instance();
+    co_await kphp::coro::on_stack(&InstanceState::finalize_cli_instance, this);
     break;
   case image_kind::server:
-    co_await finalize_server_instance();
+    co_await kphp::coro::on_stack(&InstanceState::finalize_server_instance, this);
     break;
   default:
     kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));

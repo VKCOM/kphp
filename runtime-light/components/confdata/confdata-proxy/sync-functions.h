@@ -71,10 +71,12 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   }
 
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_buffer{};
-  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
+  auto response_buffer_provider{[&response_buffer](size_t size) noexcept -> std::span<std::byte> {
     response_buffer.resize(size);
     return {response_buffer.data(), response_buffer.size()};
-  })};
+  }};
+  auto expected_response{co_await kphp::coro::on_stack(kphp::rpc::query::response<decltype(response_buffer_provider)>, std::move(*expected_query),
+                                                       std::move(response_buffer_provider))};
   if (!expected_response) [[unlikely]] {
     kphp::log::warning("confdata: failed to fetch subscribe response: {}", expected_response.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
@@ -118,7 +120,8 @@ auto sync(std::string_view confdata_proxy_actor,
           event_handler_type event_handler) noexcept -> kphp::coro::task<std::expected<kphp::confdata::pagination, kphp::confdata::subscribe_error>> {
   kphp::confdata::pagination p{};
   for (; !p.m_has_synced;) {
-    if (auto expected{co_await details::subscribe(confdata_proxy_actor, p, event_handler)}; !expected) [[unlikely]] {
+    if (auto expected{co_await kphp::coro::on_stack(details::subscribe<decltype(event_handler)>, confdata_proxy_actor, p, event_handler)}; !expected)
+        [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
   }
@@ -143,10 +146,11 @@ auto update(std::string_view confdata_proxy_actor, kphp::confdata::pagination& f
   }
 
   for (;;) {
-    if (auto expected{co_await details::subscribe(confdata_proxy_actor, from, event_handler)}; !expected) [[unlikely]] {
+    if (auto expected{co_await kphp::coro::on_stack(details::subscribe<decltype(event_handler)>, confdata_proxy_actor, from, event_handler)}; !expected)
+        [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
-    co_await kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL);
+    co_await kphp::coro::on_stack([]() noexcept { return kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL); });
   }
 }
 

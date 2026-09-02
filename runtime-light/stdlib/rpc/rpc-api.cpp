@@ -203,7 +203,8 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
-  auto response_expected{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
+  auto task{*std::exchange(opt_awaiter_task, std::nullopt)};
+  auto response_expected{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
   if (!response_expected) [[unlikely]] {
     co_return TlRpcError::make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
@@ -260,7 +261,8 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
-  auto response_expected{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
+  auto task{*std::exchange(opt_awaiter_task, std::nullopt)};
+  auto response_expected{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
   if (!response_expected) [[unlikely]] {
     co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
@@ -359,7 +361,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
         }};
 
         auto fetch_task{kphp::rpc::query::response(std::move(q), response_buffer_provider)};
-        auto fetch_result{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
+        auto fetch_result{co_await kphp::coro::on_stack(
+            [](auto fetch_task_arg) noexcept { return kphp::coro::io_scheduler::get().schedule(std::move(fetch_task_arg)); }, std::move(fetch_task))};
         if (!fetch_result) [[unlikely]] {
           response_exp = std::unexpected{fetch_result.error()};
         }

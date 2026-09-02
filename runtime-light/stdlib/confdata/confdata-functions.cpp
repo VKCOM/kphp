@@ -68,7 +68,8 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+  auto task{kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response))};
+  if (!co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))) [[unlikely]] {
     co_return mixed{};
   }
 
@@ -112,7 +113,8 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
   response.reserve(CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY);
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+  auto task{kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response))};
+  if (!co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))) [[unlikely]] {
     co_return array<mixed>{};
   }
 

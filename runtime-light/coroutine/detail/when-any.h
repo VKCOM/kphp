@@ -28,13 +28,15 @@ namespace kphp::coro::detail::when_any {
 class when_any_latch {
   bool m_toggled{};
   std::coroutine_handle<> m_awaiting_coroutine;
+  kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
 
 public:
   when_any_latch() noexcept = default;
 
   when_any_latch(when_any_latch&& other) noexcept
       : m_toggled(std::exchange(other.m_toggled, false)),
-        m_awaiting_coroutine(std::exchange(other.m_awaiting_coroutine, {})) {}
+        m_awaiting_coroutine(std::exchange(other.m_awaiting_coroutine, {})),
+        m_task_allocator(other.m_task_allocator) {}
 
   auto operator=(when_any_latch&& other) noexcept -> when_any_latch& {
     if (this != std::addressof(other)) {
@@ -61,8 +63,12 @@ public:
   auto notify_awaitable_completed() noexcept -> void {
     m_toggled = true;
     if (m_awaiting_coroutine != nullptr) {
-      kphp::coro::resume(m_awaiting_coroutine);
+      kphp::coro::resume(m_awaiting_coroutine, m_task_allocator);
     }
+  }
+
+  auto task_allocator() noexcept -> kphp::coro::detail::memory::task_allocator& {
+    return m_task_allocator;
   }
 };
 
@@ -98,7 +104,8 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
     kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
 
     explicit awaiter(when_any_ready_awaitable& awaitable) noexcept
-        : m_awaitable(awaitable) {}
+        : kphp::coro::task_allocator_guard(awaitable.m_latch.task_allocator()),
+          m_awaitable(awaitable) {}
 
     auto await_ready() noexcept -> bool {
       kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
@@ -216,7 +223,11 @@ public:
     async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)));
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), m_latch->task_allocator());
+  }
+
+  auto task_allocator() noexcept -> kphp::coro::detail::memory::task_allocator& {
+    return m_latch->task_allocator();
   }
 };
 
@@ -299,7 +310,7 @@ public:
 
   ~when_any_task() {
     if (m_coroutine != nullptr) {
-      kphp::coro::destroy(m_coroutine);
+      kphp::coro::destroy(m_coroutine, m_coroutine.promise().task_allocator());
     }
   }
 
@@ -313,7 +324,7 @@ public:
 
   auto reset() noexcept -> void {
     if (m_coroutine != nullptr) {
-      kphp::coro::destroy(std::exchange(m_coroutine, nullptr));
+      kphp::coro::destroy(std::exchange(m_coroutine, nullptr), m_coroutine.promise().task_allocator());
     }
   }
 };

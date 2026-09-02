@@ -65,7 +65,8 @@ kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance,
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::Bool{}.footprint()> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
+  auto task{kphp::component::query(stream, tls.view(), response)};
+  if (!co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))) [[unlikely]] {
     co_return false;
   }
 
@@ -95,7 +96,8 @@ kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, str
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+  auto task{kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response))};
+  if (!co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))) [[unlikely]] {
     co_return InstanceType{};
   }
 
@@ -134,7 +136,8 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t tt
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::Bool{}.footprint()> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
+  auto task{kphp::component::query(stream, tls.view(), response)};
+  if (!co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))) [[unlikely]] {
     co_return false;
   }
 
@@ -158,7 +161,8 @@ inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::Bool{}.footprint()> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
+  auto task{kphp::component::query(stream, tls.view(), response)};
+  if (!co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))) [[unlikely]] {
     co_return false;
   }
 

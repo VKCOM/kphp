@@ -186,7 +186,7 @@ inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_inf
 }
 
 inline auto io_scheduler::make_timeout_task(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<timeout_status> {
-  co_await schedule(timeout);
+  co_await kphp::coro::on_stack([this](std::chrono::milliseconds timeout_arg) noexcept { return schedule(timeout_arg); }, timeout);
   co_return timeout_status::timeout;
 }
 
@@ -438,7 +438,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
        */
       scheduled_coroutines.pop_front();
       kphp::log::assertion(static_cast<bool>(coroutine));
-      kphp::coro::resume(coroutine, m_coro_instance_state.coroutine_stack_root);
+      kphp::coro::resume(coroutine, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
     }
   }
 
@@ -463,7 +463,7 @@ auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   if (!handle || handle.done()) [[unlikely]] {
     return false;
   }
-  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root);
+  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
   return true;
 }
 
@@ -476,7 +476,8 @@ inline auto io_scheduler::schedule() noexcept {
     kphp::coro::detail::poll_info::schedule_position m_schedule_pos{std::monostate{}};
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
-        : m_scheduler(scheduler),
+        : kphp::coro::task_allocator_guard(scheduler.m_coro_instance_state.task_allocator),
+          m_scheduler(scheduler),
           m_async_stack_frame(m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame) {}
 
   public:
@@ -533,7 +534,7 @@ auto io_scheduler::schedule(duration_type timeout) noexcept -> kphp::coro::task<
   }
 
   // poll_op is not actually used here
-  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read, m_coro_instance_state.task_allocator};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
   poll_info.m_schedule_position = add_timer_token(std::chrono::ceil<std::chrono::milliseconds>(timeout), poll_info);
   co_await poll_info;
@@ -552,10 +553,11 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
 
   if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
-      co_await schedule(std::move(coroutine));
+      co_await kphp::coro::on_stack([this](coroutine_type coroutine_arg) noexcept { return schedule(std::move(coroutine_arg)); }, std::move(coroutine));
       co_return std::expected<expected_return_type, timeout_status>{};
     } else {
-      co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
+      co_return std::expected<expected_return_type, timeout_status>{
+          co_await kphp::coro::on_stack([this](coroutine_type coroutine_arg) noexcept { return schedule(std::move(coroutine_arg)); }, std::move(coroutine))};
     }
   }
 
@@ -612,7 +614,7 @@ auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, 
     break;
   }
 
-  kphp::coro::detail::poll_info poll_info{descriptor, poll_op};
+  kphp::coro::detail::poll_info poll_info{descriptor, poll_op, m_coro_instance_state.task_allocator};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
   if (timeout <= duration_type::zero()) {
     poll_info.m_schedule_position = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);
@@ -632,7 +634,7 @@ auto io_scheduler::accept(duration_type timeout) noexcept -> kphp::coro::task<k2
   }
 
   // poll_op is not actually used here
-  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read, m_coro_instance_state.task_allocator};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
   if (timeout <= duration_type::zero()) {
     poll_info.m_schedule_position = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);

@@ -122,7 +122,8 @@ auto query::response(query self, B response_buffer_provider) noexcept -> kphp::c
     co_return get_ready_response(self.m_descriptor, std::move(response_buffer_provider));
   }
 
-  switch (co_await kphp::coro::io_scheduler::get().poll(self.m_descriptor, kphp::coro::poll_op::read, timeout)) {
+  switch (co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::poll<decltype(timeout)>, kphp::coro::io_scheduler::get(), self.m_descriptor,
+                                        kphp::coro::poll_op::read, timeout)) {
   case kphp::coro::poll_status::event:
     co_return get_ready_response(self.m_descriptor, std::move(response_buffer_provider));
   case kphp::coro::poll_status::timeout:

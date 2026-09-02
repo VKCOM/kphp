@@ -19,6 +19,7 @@
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -62,7 +63,7 @@ public:
           }
 
           auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
-          kphp::coro::resume(coroutine, async_stack_root);
+          kphp::coro::resume(coroutine, async_stack_root, promise.task_allocator());
         }
       }
 
@@ -105,7 +106,7 @@ public:
       m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      kphp::coro::resume(handle, async_stack_root);
+      kphp::coro::resume(handle, async_stack_root, m_task_allocator);
     }
 
     // coroutine already completed, don't suspend
@@ -125,6 +126,10 @@ public:
     return m_refcnt-- != 1;
   }
 
+  auto task_allocator() noexcept -> kphp::coro::detail::memory::task_allocator& {
+    return m_task_allocator;
+  }
+
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
     return kphp::coro::detail::memory::alloc(n);
@@ -142,6 +147,7 @@ public:
 private:
   uint32_t m_refcnt{1};
   std::variant<not_started_tag, done_tag, vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>> m_state;
+  kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
 };
 
 template<typename promise_type>
@@ -172,7 +178,8 @@ protected:
 
 public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
-      : m_coro(coro) {}
+      : kphp::coro::task_allocator_guard(coro.promise().task_allocator()),
+        m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
       : kphp::coro::task_allocator_guard(std::move(other)),
@@ -356,7 +363,7 @@ private:
     }
     auto coro{std::coroutine_handle<promise_type>::from_address(m_haddress)};
     if (!coro.promise().detach()) {
-      kphp::coro::destroy(coro);
+      kphp::coro::destroy(coro, coro.promise().task_allocator());
     }
   }
 

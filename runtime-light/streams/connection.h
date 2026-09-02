@@ -13,6 +13,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/event.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/streams/stream.h"
@@ -130,7 +131,8 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }};
 
     static constexpr auto descriptor_awaiter{[](k2::descriptor descriptor) noexcept -> kphp::coro::task<std::monostate> {
-      co_await kphp::coro::io_scheduler::get().poll(descriptor, kphp::coro::poll_op::close);
+      co_await kphp::coro::on_stack(
+          [](k2::descriptor descriptor_arg) noexcept { return kphp::coro::io_scheduler::get().poll(descriptor_arg, kphp::coro::poll_op::close); }, descriptor);
       co_return std::monostate{};
     }};
 
@@ -142,7 +144,9 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     const auto finalizer{vk::finally([state] noexcept { state.get()->m_unwatch_event.reset(); })};
     const auto v{co_await kphp::coro::when_any(unwatch_awaiter(std::move(state)), descriptor_awaiter(descriptor))};
     if (std::holds_alternative<std::monostate>(v)) {
-      if constexpr (kphp::coro::is_async_function_v<on_abort_handler_type>) {
+      if constexpr (kphp::coro::is_task_function_v<on_abort_handler_type>) {
+        co_await kphp::coro::on_stack(std::move(h));
+      } else if constexpr (kphp::coro::is_async_function_v<on_abort_handler_type>) {
         co_await std::invoke(std::move(h));
       } else {
         std::invoke(std::move(h));

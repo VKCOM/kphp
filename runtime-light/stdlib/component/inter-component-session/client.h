@@ -70,7 +70,7 @@ private:
       tl::InterComponentSessionRequestHeader req_header{.size = {payload.size_bytes()}};
       tl::storer tls{req_header.footprint()};
       req_header.store(tls);
-      if (auto res{co_await t.get()->stream.write(tls.view())}; !res) [[unlikely]] {
+      if (auto res{co_await kphp::coro::on_stack(&kphp::component::stream::write, t.get()->stream, tls.view())}; !res) [[unlikely]] {
         req_status[qid] = res.error();
         req_finish_notifier[qid].set();
         co_return;
@@ -80,7 +80,7 @@ private:
       kphp::log::assertion(is_occupied && occupied_by == qid);
 
       // Write payload
-      if (auto res{co_await t.get()->stream.write(payload)}; !res) [[unlikely]] {
+      if (auto res{co_await kphp::coro::on_stack(&kphp::component::stream::write, t.get()->stream, payload)}; !res) [[unlikely]] {
         req_status[qid] = res.error();
         req_finish_notifier[qid].set();
         co_return;
@@ -181,7 +181,7 @@ private:
           std::span<std::byte> sink_resp{sink_buffer.data(), sink_buffer.size()};
           kphp::log::debug("response buffer provider is not present for query #{}, read response into dummy buffer", qid);
           // Read dummy payload
-          if (auto res{co_await t.get()->stream.read(sink_resp)}; !res) [[unlikely]] {
+          if (auto res{co_await kphp::coro::on_stack(&kphp::component::stream::read, t.get()->stream, sink_resp)}; !res) [[unlikely]] {
             kphp::log::warning("an error occurred while reading the payload from a stream: {}", res.error());
             ctx.get()->error = res.error();
             break;
@@ -194,7 +194,7 @@ private:
         ctx.get()->query2resp[qid] = resp;
 
         // Read payload
-        if (auto res{co_await t.get()->stream.read(resp)}; !res) [[unlikely]] {
+        if (auto res{co_await kphp::coro::on_stack(&kphp::component::stream::read, t.get()->stream, resp)}; !res) [[unlikely]] {
           kphp::log::warning("an error occurred while reading the payload from a stream: {}", res.error());
           ctx.get()->error = res.error();
           break;
@@ -316,9 +316,10 @@ auto client::query(std::span<const std::byte> request, B response_buffer_provide
   // Register a new query and send the request
   reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::move(response_buffer_provider)});
   kphp::log::debug("client creates query #{}", query_id);
-  if (auto res{co_await writer.write(transport, query_id, request)}; !res) [[unlikely]] {
+  if (auto res{co_await kphp::coro::on_stack(&writer::write, writer, transport, query_id, request)}; !res) [[unlikely]] {
     co_return std::move(res);
   }
+
   kphp::log::debug("client wrote request for query #{}", query_id);
 
   auto response_readiness_status{response_readiness::pending};
@@ -352,10 +353,12 @@ template<std::invocable<size_t> B>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
 auto client::query(std::span<const std::byte> request, B response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   std::span<std::byte> response{};
-  auto res{co_await query(request, std::move(response_buffer_provider), [&response](std::span<std::byte> resp) noexcept -> client::response_readiness {
+  auto response_handler{[&response](std::span<std::byte> resp) noexcept -> client::response_readiness {
     response = resp;
     return response_readiness::ready;
-  })};
+  }};
+  auto res{co_await kphp::coro::on_stack(&client::query<decltype(response_buffer_provider), this, decltype(response_handler)>, request,
+                                         std::move(response_buffer_provider), std::move(response_handler))};
   if (!res.has_value()) [[unlikely]] {
     co_return std::unexpected{res.error()};
   }

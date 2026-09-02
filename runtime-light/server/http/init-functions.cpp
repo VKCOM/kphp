@@ -260,7 +260,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
       auto& http_server_instance_st{HttpServerInstanceState::get()};
       kphp::log::assertion(http_server_instance_st.connection.has_value());
       if (http_server_instance_st.connection->get_ignore_abort_level() == 0) {
-        co_await kphp::system::exit(1);
+        co_await kphp::coro::on_stack(kphp::system::exit, 1);
       }
     }};
 
@@ -465,7 +465,8 @@ kphp::coro::task<> finalize_server() noexcept {
     tl::storer tls{http_response.footprint()};
     http_response.store(tls);
 
-    if (auto expected{co_await kphp::component::send_response(http_server_instance_st.connection->get_stream(), tls.view())}; !expected) [[unlikely]] {
+    if (auto expected{co_await kphp::coro::on_stack(kphp::component::send_response, http_server_instance_st.connection->get_stream(), tls.view())}; !expected)
+        [[unlikely]] {
       kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
     }
     http_server_instance_st.response_state = kphp::http::response_state::completed;

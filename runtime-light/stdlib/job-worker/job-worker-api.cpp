@@ -84,19 +84,19 @@ kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double time
 // ================================================================================================
 
 kphp::coro::task<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept {
-  const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, false)};
+  const auto fork_id{co_await kphp::coro::on_stack(kphp_job_worker_start_impl, std::move(request), timeout, false)};
   co_return fork_id != kphp::forks::INVALID_ID ? fork_id : false;
 }
 
 kphp::coro::task<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept {
-  const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, true)};
+  const auto fork_id{co_await kphp::coro::on_stack(kphp_job_worker_start_impl, std::move(request), timeout, true)};
   co_return fork_id != kphp::forks::INVALID_ID;
 }
 
 kphp::coro::task<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept {
   array<Optional<int64_t>> fork_ids{requests.size()};
   for (const auto& it : requests) {
-    const auto fork_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
+    const auto fork_id{co_await kphp::coro::on_stack(kphp_job_worker_start_impl, it.get_value(), timeout, false)};
     fork_ids.set_value(it.get_key(), fork_id != kphp::forks::INVALID_ID ? fork_id : false);
   }
   co_return fork_ids;

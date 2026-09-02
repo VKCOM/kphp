@@ -203,7 +203,7 @@ inline Optional<int64_t> f$random_int(int64_t min, int64_t max) noexcept {
 
 inline kphp::coro::task<string> f$uniqid(string prefix = string{}, bool more_entropy = false) noexcept {
   if (!more_entropy) {
-    co_await f$usleep(1);
+    co_await kphp::coro::on_stack(f$usleep, 1);
   }
 
   auto [sec, susec]{random_impl_::system_seconds_and_micros()};

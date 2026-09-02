@@ -672,7 +672,7 @@ inline auto socket::finalized() const noexcept -> bool {
 }
 
 inline auto socket::finalizer(kphp::component::stream stream, kphp::stl::vector<std::byte, kphp::memory::script_allocator> buf) noexcept -> kphp::coro::task<> {
-  std::ignore = co_await stream.write_all({buf});
+  std::ignore = co_await kphp::coro::on_stack(&kphp::component::stream::write_all, stream, std::span<const std::byte>{buf});
 }
 
 inline auto socket::open(std::string_view scheme) noexcept -> std::expected<socket, int32_t> {
@@ -707,7 +707,7 @@ inline auto socket::read(std::span<std::byte> buf) noexcept -> kphp::coro::task<
   if (!m_open) [[unlikely]] {
     co_return std::unexpected{k2::errno_enodev};
   }
-  co_return co_await m_stream.read(buf);
+  co_return co_await kphp::coro::on_stack(&kphp::component::stream::read, m_stream, buf);
 }
 
 inline auto socket::get_contents() noexcept -> kphp::coro::task<std::expected<string, int32_t>> {
@@ -719,7 +719,7 @@ inline auto socket::flush() noexcept -> kphp::coro::task<std::expected<void, int
     co_return std::unexpected{k2::errno_enodev};
   }
 
-  if (auto expected{co_await m_stream.write_all({m_buf})}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::write_all, m_stream, std::span<const std::byte>{m_buf})}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
   m_buf.clear();
@@ -727,7 +727,7 @@ inline auto socket::flush() noexcept -> kphp::coro::task<std::expected<void, int
 }
 
 inline auto socket::close() noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  if (auto expected{co_await flush()}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(&socket::flush, this)}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
 

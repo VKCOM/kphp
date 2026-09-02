@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 
 namespace kphp::coro {
@@ -18,8 +19,8 @@ namespace kphp::coro {
  * capturing one of the stack frames in the synchronous stack trace.
  * All calls to resume() method of handle must be made with this function.
  */
-inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
-  kphp::coro::task_allocator_guard guard;
+inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept {
+  kphp::coro::task_allocator_guard guard{task_allocator};
   auto* previous_stack_frame{std::exchange(stack_root.stop_sync_stack_frame, reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS))};
   handle.resume();
   stack_root.stop_sync_stack_frame = previous_stack_frame;
@@ -28,13 +29,16 @@ inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root)
 /*
  * All calls to resume() method of handle must be made with this function.
  */
-inline void resume(std::coroutine_handle<> handle) noexcept {
-  kphp::coro::task_allocator_guard guard;
+inline void resume(std::coroutine_handle<> handle, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept {
+  kphp::coro::task_allocator_guard guard{task_allocator};
   handle.resume();
 }
 
-inline void destroy(std::coroutine_handle<> handle) noexcept {
-  kphp::coro::task_allocator_guard guard;
+/*
+ * All calls to destroy() method of handle must be made with this function (except for task<T> destructor).
+ */
+inline void destroy(std::coroutine_handle<> handle, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept {
+  kphp::coro::task_allocator_guard guard{task_allocator};
   handle.destroy();
 }
 

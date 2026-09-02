@@ -20,5 +20,5 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept;
 kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept;
 
 inline kphp::coro::task<array<mixed>> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
-  co_return co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard));
+  co_return co_await kphp::coro::on_stack(f$confdata_get_values_by_any_wildcard, std::move(wildcard));
 }
