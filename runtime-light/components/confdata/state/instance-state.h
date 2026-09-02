@@ -57,7 +57,7 @@ private:
     };
 
     /** K2 allocation owned and eventually released wholesale by this piece. */
-    void* m_memory{};
+    [[maybe_unused]] void* m_memory{}; // TODO: remove maybe_unused
     /** Number of reader sessions that still refer to this piece. */
     size_t m_readers{};
     /** Non-owning writer view over the allocation. */
