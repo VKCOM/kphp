@@ -251,7 +251,7 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
   constexpr auto CURL_MULTI_INFO_READ_OPTION = 0;
 
   auto task{kphp::web::property::get(kphp::web::composite::transfer{multi_id}, CURL_MULTI_INFO_READ_OPTION, kphp::web::property::get_policy::load)};
-  auto props{co_await kphp::coro::on_stack(kphp::forks::id_managed < decltype(task), std::move(task))};
+  auto props{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
   if (!props.has_value()) [[unlikely]] {
     multi_ctx.set_errno(props.error().code, props.error().description);
     kphp::web::curl::print_warning("could not get info message of multi handle", std::move(props.error()));

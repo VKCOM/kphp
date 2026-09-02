@@ -357,7 +357,7 @@ auto client::query(std::span<const std::byte> request, B response_buffer_provide
     response = resp;
     return response_readiness::ready;
   }};
-  auto res{co_await kphp::coro::on_stack(&client::query<decltype(response_buffer_provider), this, decltype(response_handler)>, request,
+  auto res{co_await kphp::coro::on_stack(&client::query<decltype(response_buffer_provider), decltype(response_handler)>, this, request,
                                          std::move(response_buffer_provider), std::move(response_handler))};
   if (!res.has_value()) [[unlikely]] {
     co_return std::unexpected{res.error()};

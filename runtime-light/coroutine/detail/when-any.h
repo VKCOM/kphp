@@ -17,6 +17,7 @@
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -140,9 +141,9 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
         }
       }};
       std::apply(
-          [&task_result_processor](auto&&... tasks) noexcept {
+          [&task_result_processor, &latch = m_awaitable.m_latch](auto&&... tasks) noexcept {
             (std::invoke(task_result_processor, std::forward<decltype(tasks)>(tasks)), ...);
-            (tasks.reset(), ...);
+            (tasks.reset(latch.task_allocator()), ...);
           },
           std::move(m_awaitable.m_tasks));
       kphp::log::assertion(m_awaitable.m_result.has_value());
@@ -225,10 +226,6 @@ public:
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
     kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), m_latch->task_allocator());
   }
-
-  auto task_allocator() noexcept -> kphp::coro::detail::memory::task_allocator& {
-    return m_latch->task_allocator();
-  }
 };
 
 template<typename return_type>
@@ -310,7 +307,7 @@ public:
 
   ~when_any_task() {
     if (m_coroutine != nullptr) {
-      kphp::coro::destroy(m_coroutine, m_coroutine.promise().task_allocator());
+      kphp::coro::destroy(m_coroutine, kphp::coro::detail::memory::task_allocator::get());
     }
   }
 
@@ -322,9 +319,9 @@ public:
     return m_coroutine.promise().result();
   }
 
-  auto reset() noexcept -> void {
+  auto reset(kphp::coro::detail::memory::task_allocator& task_allocator) noexcept -> void {
     if (m_coroutine != nullptr) {
-      kphp::coro::destroy(std::exchange(m_coroutine, nullptr), m_coroutine.promise().task_allocator());
+      kphp::coro::destroy(std::exchange(m_coroutine, nullptr), task_allocator);
     }
   }
 };

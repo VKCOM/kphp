@@ -162,6 +162,10 @@ public:
     return m_tasks_count;
   }
 
+  kphp::coro::detail::memory::task_allocator& task_allocator() noexcept {
+    return m_task_allocator;
+  }
+
   ~await_broker() {
     abort_all();
   }
@@ -235,7 +239,7 @@ public:
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
-    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), m_await_broker.m_task_allocator);
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), await_broker.task_allocator());
   }
 };
 
@@ -325,7 +329,7 @@ private:
 
   public:
     explicit awaiter(await_broker<return_type>& await_broker) noexcept
-        : kphp::coro::task_allocator_guard(await_broker.m_task_allocator),
+        : kphp::coro::task_allocator_guard(await_broker.task_allocator()),
           m_await_broker(await_broker) {}
 
     awaiter(awaiter&& other) noexcept = delete;
