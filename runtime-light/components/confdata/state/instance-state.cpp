@@ -48,18 +48,28 @@ auto decode_value(const tl::confdata::keyValuePair& event) noexcept -> mixed {
   return string{event.value.value.data(), static_cast<string::size_type>(event.value.value.size())};
 }
 
+auto report_reached_oom_threshold(const kphp::confdata::storage& storage) noexcept -> bool {
+  if (!storage.is_oom_threshold_reached()) {
+    return false;
+  }
+  const auto usage{storage.memory_usage()};
+  kphp::log::warning("confdata shared-memory OOM threshold reached: used -> {}, threshold -> {}, capacity -> {}", usage.m_used, usage.m_oom_threshold,
+                     usage.m_capacity);
+  return true;
+}
+
 } // namespace
 
 template<>
-struct std::formatter<InstanceState::confdata_piece_creation_error> {
+struct std::formatter<InstanceState::confdata_sync_error> {
   template<typename parse_context_type>
   constexpr auto parse(parse_context_type& ctx) const noexcept {
     return ctx.begin();
   }
 
   template<typename format_context_type>
-  auto format(const InstanceState::confdata_piece_creation_error& error, format_context_type& ctx) const noexcept {
-    using stage = InstanceState::confdata_piece_creation_error::stage;
+  auto format(const InstanceState::confdata_sync_error& error, format_context_type& ctx) const noexcept {
+    using stage = InstanceState::confdata_sync_error::stage;
 
     std::string_view stage_name{"unknown"};
     switch (error.m_stage) {
@@ -74,6 +84,15 @@ struct std::formatter<InstanceState::confdata_piece_creation_error> {
       break;
     case stage::wildcard_initialization:
       stage_name = "predefined wildcard initialization";
+      break;
+    case stage::oom_threshold:
+      stage_name = "OOM threshold check";
+      break;
+    case stage::synchronization:
+      stage_name = "clean synchronization";
+      break;
+    case stage::shared_memory_publication:
+      stage_name = "shared memory publication";
       break;
     }
     return std::format_to(ctx.out(), "{}: error -> {}", stage_name, error.m_code);
@@ -112,38 +131,47 @@ InstanceState::confdata_piece::confdata_piece(const creation_token& /* token */,
     : m_memory{memory} {}
 
 InstanceState::confdata_piece::~confdata_piece() {
+  if (m_storage.is_initialized()) {
+    m_storage.close();
+  }
+  // TODO:
   // if (const auto released{k2::free_shared_memory(m_memory)}; !released) [[unlikely]] {
-    // kphp::log::warning("failed to free confdata shared memory: error -> {}", released.error());
+  //   kphp::log::warning("failed to free confdata shared memory: error -> {}", released.error());
   // }
 }
 
-auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t memory_limit, std::span<const std::string_view> predefined_wildcards) noexcept
-    -> std::expected<confdata_piece_list::iterator, confdata_piece_creation_error> {
-  using creation_stage = confdata_piece_creation_error::stage;
-
+auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t memory_limit, size_t oom_handling_size,
+                                           std::span<const std::string_view> predefined_wildcards) noexcept
+    -> std::expected<confdata_piece_list::iterator, confdata_sync_error> {
   kphp::log::assertion(owner.empty());
 
   const auto shared_memory_size{kphp::confdata::storage::memory_size(memory_limit)};
   if (!shared_memory_size) [[unlikely]] {
-    return std::unexpected{
-        confdata_piece_creation_error{.m_stage = creation_stage::memory_size, .m_code = static_cast<int32_t>(std::to_underlying(shared_memory_size.error()))}};
+    return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::memory_size,
+                                               .m_code = static_cast<int32_t>(std::to_underlying(shared_memory_size.error()))}};
   }
 
   const auto shared_memory{k2::alloc_shared_memory(*shared_memory_size, kphp::confdata::storage::memory_alignment())};
   if (!shared_memory) [[unlikely]] {
-    return std::unexpected{confdata_piece_creation_error{.m_stage = creation_stage::shared_memory_allocation, .m_code = shared_memory.error()}};
+    return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::shared_memory_allocation, .m_code = shared_memory.error()}};
   }
 
   const auto piece_it{owner.emplace(owner.end(), creation_token{}, *shared_memory)};
-  if (const auto initialized{piece_it->m_storage.init({static_cast<std::byte*>(*shared_memory), *shared_memory_size})}; !initialized) [[unlikely]] {
-    const confdata_piece_creation_error error{.m_stage = creation_stage::storage_initialization,
-                                              .m_code = static_cast<int32_t>(std::to_underlying(initialized.error()))};
+  if (const auto initialized{piece_it->m_storage.init({static_cast<std::byte*>(*shared_memory), *shared_memory_size}, oom_handling_size)}; !initialized)
+      [[unlikely]] {
+    const confdata_sync_error error{.m_stage = confdata_sync_error::stage::storage_initialization,
+                                    .m_code = static_cast<int32_t>(std::to_underlying(initialized.error()))};
     owner.erase(piece_it);
     return std::unexpected{error};
   }
   if (const auto initialized{piece_it->m_storage.initialize_wildcards(predefined_wildcards)}; !initialized) [[unlikely]] {
-    const confdata_piece_creation_error error{.m_stage = creation_stage::wildcard_initialization,
-                                              .m_code = static_cast<int32_t>(std::to_underlying(initialized.error()))};
+    const confdata_sync_error error{.m_stage = confdata_sync_error::stage::wildcard_initialization,
+                                    .m_code = static_cast<int32_t>(std::to_underlying(initialized.error()))};
+    owner.erase(piece_it);
+    return std::unexpected{error};
+  }
+  if (piece_it->m_storage.is_oom_threshold_reached()) [[unlikely]] {
+    const confdata_sync_error error{.m_stage = confdata_sync_error::stage::oom_threshold, .m_code = k2::errno_enomem};
     owner.erase(piece_it);
     return std::unexpected{error};
   }
@@ -239,46 +267,49 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
   co_await reader_disconnected;
 }
 
-auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_piece_creation_error>> {
+auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_sync_error>> {
   // A separate one-node list owns the unpublished piece and later permits a
   // zero-allocation transfer into the registry.
   confdata_piece_list pending_piece{};
-  const auto created_piece{confdata_piece::create(pending_piece, m_component_state.m_confdata_memory_limit, m_component_state.m_predefined_wildcards)};
+  const auto created_piece{confdata_piece::create(pending_piece, m_component_state.m_confdata_memory_limit, m_component_state.m_confdata_oom_handling_size,
+                                                  m_component_state.m_predefined_wildcards)};
   if (!created_piece) [[unlikely]] {
     co_return std::unexpected{created_piece.error()};
   }
   auto& piece{**created_piece};
 
-  for (;;) {
-    auto sync_editor{piece.storage().start_sync()};
-
-    auto sync_result{co_await kphp::confdata::sync(confdata_proxy_actor, [this, &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
-      return try_apply_events(sync_editor, events);
-    })};
-    if (!sync_result) [[unlikely]] {
-      kphp::log::warning("confdata sync failed: error -> {}, retrying", std::to_underlying(sync_result.error()));
-      sync_editor.cancel();
-      co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
-      continue;
-    }
-
-    sync_editor.commit();
-    // Existing readers keep their mapped allocation; future lookups of the
-    // stable name resolve to this newly published piece.
-    if (auto published{k2::publish_shared_memory(kphp::confdata::SHARED_MEMORY_NAME, piece.storage().memory().data(), 0, true, true)}; !published)
-        [[unlikely]] {
-      kphp::log::error("failed to publish confdata shared memory: error -> {}", published.error());
-    }
-    // Only successfully synchronized and published pieces enter the registry,
-    // so its last element is always the current piece.
-    const auto retired_piece_it{m_confdata_pieces.empty() ? m_confdata_pieces.end() : std::prev(m_confdata_pieces.end())};
-    m_confdata_pieces.splice(m_confdata_pieces.end(), pending_piece);
-    if (retired_piece_it != m_confdata_pieces.end()) {
-      erase_if_retired_and_unused(retired_piece_it);
-    }
-    m_pagination = *std::move(sync_result);
-    co_return std::expected<void, confdata_piece_creation_error>{};
+  auto sync_editor{piece.storage().start_sync()};
+  auto sync_result{co_await kphp::confdata::sync(confdata_proxy_actor,
+                                                 [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+                                                   return try_apply_events(storage, sync_editor, events);
+                                                 })};
+  if (!sync_result) [[unlikely]] {
+    sync_editor.cancel();
+    co_return std::unexpected{
+        confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(sync_result.error()))}};
   }
+  if (report_reached_oom_threshold(piece.storage())) [[unlikely]] {
+    sync_editor.cancel();
+    co_return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::oom_threshold, .m_code = k2::errno_enomem}};
+  }
+
+  sync_editor.commit();
+  // Existing readers keep their mapped allocation; future lookups of the
+  // stable name resolve to this newly published piece.
+  if (const auto published{k2::publish_shared_memory(kphp::confdata::SHARED_MEMORY_NAME, piece.storage().memory().data(), 0, true, true)}; !published)
+      [[unlikely]] {
+    co_return std::unexpected{
+        confdata_sync_error{.m_stage = confdata_sync_error::stage::shared_memory_publication, .m_code = static_cast<int32_t>(published.error())}};
+  }
+  // Only successfully synchronized and published pieces enter the registry,
+  // so its last element is always the current piece.
+  const auto retired_piece_it{m_confdata_pieces.empty() ? m_confdata_pieces.end() : std::prev(m_confdata_pieces.end())};
+  m_confdata_pieces.splice(m_confdata_pieces.end(), pending_piece);
+  if (retired_piece_it != m_confdata_pieces.end()) {
+    erase_if_retired_and_unused(retired_piece_it);
+  }
+  m_pagination = *std::move(sync_result);
+  co_return std::expected<void, confdata_sync_error>{};
 }
 
 auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
@@ -288,7 +319,7 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
     if (!m_pagination.m_has_synced) {
       const auto sync_result{co_await perform_sync(confdata_proxy_actor)};
       if (!sync_result) [[unlikely]] {
-        kphp::log::warning("failed to create a confdata shared-memory piece: {}; retrying", sync_result.error());
+        kphp::log::warning("failed to prepare a synchronized confdata shared-memory piece: {}; retrying", sync_result.error());
         co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
         continue;
       }
@@ -308,16 +339,26 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       break;
     case kphp::confdata::subscribe_error::transport:
     case kphp::confdata::subscribe_error::malformed_response:
-    case kphp::confdata::subscribe_error::storage_busy:
       // pagination is still valid; the longpoll resumes from the last applied position
       kphp::log::warning("confdata update failed: error -> {}, retrying", std::to_underlying(update.error()));
+      break;
+    case kphp::confdata::subscribe_error::batch_rejected:
+      // The rejected batch did not advance pagination or alter the active
+      // sample. Reset pagination so the next iteration takes the clean-sync
+      // path while the current piece keeps serving its readers.
+      kphp::log::warning("the current confdata shared-memory piece can't accept an update; resyncing");
+      m_pagination = {};
       break;
     }
     co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
   }
 }
 
-auto InstanceState::try_apply_events(kphp::confdata::storage::editor& editor, std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
+auto InstanceState::try_apply_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
+                                     std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
+  if (report_reached_oom_threshold(storage)) [[unlikely]] {
+    return false;
+  }
   for (const auto& wrapped_event : events) {
     const auto& event{wrapped_event.inner};
     if (event.key.value.size() > kphp::confdata::MAX_KEY_LENGTH) [[unlikely]] {
@@ -329,19 +370,24 @@ auto InstanceState::try_apply_events(kphp::confdata::storage::editor& editor, st
     } else {
       static_cast<void>(editor.upsert(event.key.value, [&event] noexcept { return decode_value(event); }));
     }
+    if (report_reached_oom_threshold(storage)) [[unlikely]] {
+      return false;
+    }
   }
-  // Shared-storage OOM is fatal today. Keeping batch acceptance explicit lets
-  // a future recoverable allocator reject the batch without advancing pagination.
   return true;
 }
 
 auto InstanceState::apply_incremental_events(std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
   kphp::log::assertion(!m_confdata_pieces.empty());
-  auto editor{m_confdata_pieces.back().storage().start_update()};
+  auto& storage{m_confdata_pieces.back().storage()};
+  if (report_reached_oom_threshold(storage)) [[unlikely]] {
+    return false;
+  }
+  auto editor{storage.start_update()};
   if (!editor) [[unlikely]] {
     return false;
   }
-  if (!try_apply_events(*editor, events)) [[unlikely]] {
+  if (!try_apply_events(storage, *editor, events)) [[unlikely]] {
     return false;
   }
   if (editor->changed()) {
