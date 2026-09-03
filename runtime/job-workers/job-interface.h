@@ -49,7 +49,9 @@ struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
   virtual void accept(CommonMemoryEstimateVisitor&) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept = 0;
+  virtual size_t virtual_builtin_alignof() const noexcept = 0;
   virtual SendingInstanceBase* virtual_builtin_clone() const noexcept = 0;
+  virtual SendingInstanceBase* virtual_builtin_construct_at(void* ptr) const noexcept = 0;
 
   virtual ~SendingInstanceBase() = default;
 };
@@ -62,10 +64,12 @@ struct JobSharedMessage;
 
 struct C$KphpJobWorkerSharedMemoryPiece : job_workers::SendingInstanceBase {
   C$KphpJobWorkerSharedMemoryPiece* virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerSharedMemoryPiece* virtual_builtin_construct_at(void* ptr) const noexcept override = 0;
 };
 
 struct C$KphpJobWorkerRequest : job_workers::SendingInstanceBase {
   C$KphpJobWorkerRequest* virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerRequest* virtual_builtin_construct_at(void* ptr) const noexcept override = 0;
 
   virtual class_instance<C$KphpJobWorkerSharedMemoryPiece> get_shared_memory_piece() const noexcept = 0;
   virtual void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece>&) noexcept = 0;
@@ -73,6 +77,7 @@ struct C$KphpJobWorkerRequest : job_workers::SendingInstanceBase {
 
 struct C$KphpJobWorkerResponse : job_workers::SendingInstanceBase {
   C$KphpJobWorkerResponse* virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerResponse* virtual_builtin_construct_at(void* ptr) const noexcept override = 0;
 };
 
 struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
@@ -116,8 +121,16 @@ struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classe
     return sizeof(*this);
   }
 
+  size_t virtual_builtin_alignof() const noexcept override {
+    return alignof(C$KphpJobWorkerResponseError);
+  }
+
   C$KphpJobWorkerResponseError* virtual_builtin_clone() const noexcept override {
     return new C$KphpJobWorkerResponseError{*this};
+  }
+
+  C$KphpJobWorkerResponseError* virtual_builtin_construct_at(void* ptr) const noexcept override {
+    return new (ptr) C$KphpJobWorkerResponseError{*this};
   }
 };
 

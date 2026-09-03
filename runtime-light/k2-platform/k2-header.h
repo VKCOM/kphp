@@ -209,9 +209,12 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  *
  * Reference counting:
  * - Calling `k2_publish_shared_memory` sets the reference count to one
- * - Calling `k2_get_shared_memory` increments the reference count
- * - Reference count is decremented automatically when instance finishes
- * - No explicit release function is needed
+ * - Calling `k2_get_shared_memory` increments the reference count by one if
+ *   this instance does not already hold a reference; repeated calls for the
+ *   same underlying pointer while already held do not increment it further
+ * - Calling `k2_free_shared_memory` clears the held reference, if `pointer`
+ *   is currently held; unpublished memory from `k2_alloc_shared_memory` is
+ *   just freed
  */
 
 /**
@@ -251,8 +254,9 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
  * @return `0` on success. libc-like `errno` on error.
  *
  * Possible `errno`:
- * `EINVAL` => `name` is NULL, `name_len` is 0, `memory` is NULL, or `name` is
- *             not valid UTF-8.
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `memory` is NULL, `name` is
+ *             not valid UTF-8, or `ttl` is too small (non-zero and less than
+ *             100 ms).
  * `ENOENT` => `memory` was not allocated by `k2_alloc_shared_memory`.
  * `EEXIST` => Memory with this name already exists.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
@@ -260,7 +264,9 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
 int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* memory, uint64_t ttl, bool as_mut, bool ignore_if_exist);
 
 /**
- * Retrieves shared memory by name and increments its reference count.
+ * Retrieves shared memory by name and, unless already held by this
+ * instance, acquires a reference to it (see the reference counting notes
+ * above).
  *
  * @param `name` Name of the published memory region to retrieve.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
@@ -276,6 +282,66 @@ int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* 
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
 int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size);
+
+/**
+ * Updates the TTL of published shared memory.
+ *
+ * @param `name` Name of the published memory region.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ * @param `ttl` New time-to-live in milliseconds, counted from this call.
+ *              Zero TTL means infinite life.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `name` is not valid UTF-8, or
+ *             `ttl` is too small (non-zero and less than 100 ms).
+ * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_update_ttl_shared_memory(const char* name, size_t name_len, uint64_t ttl);
+
+/**
+ * Expires published shared memory by name ahead of its TTL.
+ *
+ * The entry is not removed physically; its expiration is fast-forwarded so
+ * subsequent `k2_get_shared_memory` calls with this name fail with `ENOENT` immediately.
+ *
+ * @param `name` Name of the published memory region to expire.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, or `name` is not valid UTF-8.
+ * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOSYS` => Shared memory subsystem is unavailable on this host.
+ */
+int32_t k2_expire_shared_memory(const char* name, size_t name_len);
+
+/**
+ * Frees shared memory allocated via `k2_alloc_shared_memory` that was never
+ * published, or releases the reference to shared memory held by this
+ * instance, acquired via `k2_publish_shared_memory` or
+ * `k2_get_shared_memory` (see the reference counting notes above).
+ *
+ * Releasing a reference does not free the underlying memory immediately: the
+ * memory is only physically reclaimed once its TTL has expired AND the
+ * reference count has reached zero (see the lifecycle notes above).
+ *
+ * @param `pointer` Pointer to shared memory, as returned by
+ *                  `k2_alloc_shared_memory` or `k2_get_shared_memory`, or
+ *                  passed as the `memory` argument to `k2_publish_shared_memory`.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `pointer` is NULL.
+ * `ENOENT` => `pointer` does not correspond to memory allocated by this
+ *             instance via `k2_alloc_shared_memory`, nor to a reference
+ *             currently held by this instance.
+ */
+int32_t k2_free_shared_memory(const void* pointer);
 
 /**
  * Immediately abort component execution.

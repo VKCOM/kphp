@@ -2,7 +2,6 @@ import pytest
 from python.lib.testcase import WebServerAutoTestCase
 
 
-@pytest.mark.skip
 @pytest.mark.k2_skip_suite
 class TestPolymorphic(WebServerAutoTestCase):
 

@@ -44,7 +44,6 @@ void check_class_immutableness(ClassPtr klass) {
 std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
 
 void check_fields_ic_compatibility(ClassPtr klass) {
-  // In case of K2 mode, all checks about serializability have already done
   bool flag = false;
   if (!klass->process_fields_ic_compatibility.compare_exchange_strong(flag, true, std::memory_order_acq_rel)) {
     return;
@@ -69,7 +68,6 @@ void check_fields_ic_compatibility(ClassPtr klass) {
 }
 
 void check_derivatives_ic_compatibility(ClassPtr klass) {
-  // In case of K2 mode, all checks about serializability have already done
   std::vector<ClassPtr> descendants = find_not_ic_compatibility_derivatives(klass);
   for (const auto &element : descendants) {
     kphp_error(false, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, element->name));
@@ -134,13 +132,9 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
 
   kphp_error(klass->is_immutable || klass->is_interface(),
              fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
-  kphp_error(klass->is_serializable,
-             fmt_format("Can not fetch instance of non-serializable class {} with instance_cache_fetch call", klass->name));
 
-  if (G->is_output_mode_k2()) {
-    // To be able to store instances in request cache
-    klass->deeply_require_may_be_mixed_base();
-  } else {
+  if (!G->is_output_mode_k2()) {
+    // in K2 mode fetch just reinterprets the shared memory block, so no visitor codegen is needed
     klass->deeply_require_instance_cache_visitor();
   }
 }
@@ -153,12 +147,6 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
 
   kphp_error_return(klass->is_immutable || klass->is_interface(),
                     fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
-  kphp_error_return(klass->is_serializable, fmt_format("Can not store instance of non-serializable class {} with instance_cache_store call", klass->name));
-
-  if (G->is_output_mode_k2()) {
-    // To be able to store instances in request cache
-    klass->deeply_require_may_be_mixed_base();
-  }
 
   check_fields_ic_compatibility(klass);
   check_derivatives_ic_compatibility(klass);

@@ -57,10 +57,21 @@ string::size_type string::string_inner::new_capacity(size_type requested_capacit
   return requested_capacity;
 }
 
-string::string_inner* string::string_inner::create(size_type requested_capacity, size_type old_capacity) {
+string::string_inner* string::string_inner::create(size_type requested_capacity, size_type old_capacity) noexcept {
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
   string_inner* p = (string_inner*)RuntimeAllocator::get().alloc_script_memory(new_size);
+  p->capacity = capacity;
+  return p;
+}
+
+string::string_inner* string::string_inner::create(vk::span<std::byte> memory, size_type requested_capacity, size_type old_capacity) noexcept {
+  size_type capacity = new_capacity(requested_capacity, old_capacity);
+  size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
+  if (unlikely(memory.size() < new_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) != 0)) {
+    return nullptr;
+  }
+  string_inner* p = (string_inner*)memory.data();
   p->capacity = capacity;
   return p;
 }
@@ -101,8 +112,21 @@ char* string::string_inner::ref_copy() {
   return ref_data();
 }
 
-char* string::string_inner::clone(size_type requested_cap) {
+char* string::string_inner::clone(size_type requested_cap) noexcept {
   string_inner* r = string_inner::create(requested_cap, capacity);
+  if (size) {
+    memcpy(r->ref_data(), ref_data(), size);
+  }
+
+  r->set_length_and_sharable(size);
+  return r->ref_data();
+}
+
+char* string::string_inner::clone(vk::span<std::byte> memory, size_type requested_cap) noexcept {
+  string_inner* r = string_inner::create(memory, requested_cap, capacity);
+  if (unlikely(r == nullptr)) {
+    return nullptr;
+  }
   if (size) {
     memcpy(r->ref_data(), ref_data(), size);
   }
@@ -186,6 +210,14 @@ string::string(const string& str) noexcept
 string::string(string&& str) noexcept
     : p(str.p) {
   str.p = string_cache::empty_string().ref_data();
+}
+
+std::optional<string> string::copy_in(vk::span<std::byte> memory, const string& str) noexcept {
+  string res;
+  if (unlikely(!res.copy_from(memory, str))) {
+    return std::nullopt;
+  }
+  return res;
 }
 
 string::string(const char* s, size_type n)
@@ -323,6 +355,14 @@ string string::copy_and_make_not_shared() const {
   string result = *this;
   result.make_not_shared();
   return result;
+}
+
+bool string::copy_from(vk::span<std::byte> memory, const string& other) noexcept {
+  if (char* new_p{other.inner()->clone(memory, other.size())}; likely(new_p != nullptr)) {
+    p = new_p;
+    return true;
+  }
+  return false;
 }
 
 void string::force_reserve(size_type res) {

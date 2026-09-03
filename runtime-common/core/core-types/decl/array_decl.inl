@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <optional>
+
+#include "common/wrappers/span.h"
 #include "runtime-common/core/core-types/decl/array_iterator.h"
 #include "runtime-common/core/include.h"
 
@@ -132,7 +136,6 @@ private:
     inline static size_t sizeof_vector(uint32_t int_size) noexcept __attribute__((always_inline));
     inline static size_t sizeof_map(uint32_t int_size) noexcept __attribute__((always_inline));
     inline static size_t estimate_size(int64_t& new_int_size, bool is_vector);
-    inline static array_inner* create(int64_t new_int_size, bool is_vector);
 
     inline static array_inner* empty_array() __attribute__((always_inline));
 
@@ -186,6 +189,36 @@ private:
     inline array_inner& operator=(const array_inner& other) = delete;
   };
 
+  class allocation {
+    vk::span<std::byte> mem_;
+    int64_t int_size_{0};
+    bool is_vector_{false};
+
+    inline allocation(vk::span<std::byte> memory, int64_t int_size, bool is_vector) noexcept
+        : mem_{memory},
+          int_size_{int_size},
+          is_vector_{is_vector} {}
+
+  public:
+    // allocates script memory for an array of the given size
+    inline static allocation allocate(int64_t new_int_size, bool is_vector) noexcept;
+    // takes ownership of the beginning of externally provided memory (no allocation):
+    // returns std::nullopt if the memory is smaller than estimate_size(new_int_size, is_vector) or misaligned
+    inline static std::optional<allocation> from_external(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept;
+
+    vk::span<std::byte> memory() const noexcept {
+      return mem_;
+    }
+    int64_t int_size() const noexcept {
+      return int_size_;
+    }
+    bool is_vector() const noexcept {
+      return is_vector_;
+    }
+  };
+
+  inline static array_inner* create_from_allocation(allocation alloc) noexcept;
+
   inline bool mutate_if_vector_shared(uint32_t mul = 1);
   inline bool mutate_to_size_if_vector_shared(int64_t int_size);
   inline void mutate_to_size(int64_t int_size);
@@ -197,7 +230,13 @@ private:
   inline void convert_to_map();
 
   template<class T1>
-  inline void copy_from(const array<T1>& other);
+  inline void copy_from(const array<T1>& other) noexcept;
+
+  template<class T1>
+  inline bool copy_from(vk::span<std::byte> memory, const array<T1>& other) noexcept;
+
+  template<class T1>
+  inline void copy_from_impl(array_inner* new_array, const array<T1>& other) noexcept;
 
   template<class T1>
   inline void move_from(array<T1>&& other) noexcept;
@@ -227,6 +266,12 @@ public:
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array(array<T1>&& other) noexcept __attribute__((always_inline));
+
+  // copies other into externally provided memory (no allocation/ownership).
+  // Memory must be aligned to alignof(array_inner) and have at least other.calculate_memory_for_copying() bytes.
+  // The array never frees this memory, so the caller must protect it with a special ExtraRefCnt (e.g. for_instance_cache).
+  // Returns std::nullopt if the memory is unfit.
+  inline static std::optional<array> copy_in(vk::span<std::byte> memory, const array& other) noexcept;
 
   template<class... Args>
   inline static array create(Args&&... args) __attribute__((always_inline));
@@ -439,6 +484,10 @@ public:
 
   size_t estimate_memory_usage() const noexcept;
   size_t calculate_memory_for_copying() const noexcept;
+
+  static constexpr size_t alignment() noexcept {
+    return alignof(array_inner);
+  }
 
   template<typename U>
   static array<T> convert_from(const array<U>&);

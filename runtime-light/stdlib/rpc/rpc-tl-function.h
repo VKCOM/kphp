@@ -19,6 +19,11 @@ class InstanceReferencesCountingVisitor;
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;
 
+namespace kphp::visitors {
+class instance_deep_copy_visitor;
+class instance_deep_estimate_size_visitor;
+} // namespace kphp::visitors
+
 // The locations of the typed TL related builtin classes that are described in functions.txt
 // are hardcoded to the folder/namespace \VK\TL because after the code generation
 // C$VK$TL$... should match that layout
@@ -39,11 +44,19 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual void accept(InstanceReferencesCountingVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
   }
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
   virtual C$VK$TL$RpcFunction* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+  virtual C$VK$TL$RpcFunction* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 
@@ -67,11 +80,19 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual void accept(InstanceReferencesCountingVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
   }
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
   virtual C$VK$TL$RpcFunctionReturnResult* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+  virtual C$VK$TL$RpcFunctionReturnResult* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 
@@ -94,11 +115,19 @@ struct C$VK$TL$RpcFunctionFetcher : abstract_refcountable_php_interface {
   virtual void accept(InstanceReferencesCountingVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
   }
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
   virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+  virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 
@@ -115,6 +144,8 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   virtual void accept(InstanceReferencesCountingVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor& /*unused*/) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
 
   virtual const char* get_class() const noexcept {
     return "VK\\TL\\RpcResponse";
@@ -127,7 +158,13 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
   }
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
   virtual C$VK$TL$RpcResponse* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+  virtual C$VK$TL$RpcResponse* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 

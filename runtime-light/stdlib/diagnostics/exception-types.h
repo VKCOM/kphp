@@ -16,6 +16,8 @@
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
+#include "runtime-light/stdlib/visitors/instance-deep-copy-visitor.h"
+#include "runtime-light/stdlib/visitors/instance-deep-estimate-size-visitor.h"
 
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;
@@ -58,8 +60,28 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 
   virtual void accept(InstanceReferencesCountingVisitor& /*unused*/) noexcept {}
 
+  virtual void accept(kphp::visitors::instance_deep_copy_visitor& /*unused*/) noexcept {}
+
+  virtual void accept(kphp::visitors::instance_deep_estimate_size_visitor& /*unused*/) noexcept {}
+
   virtual void accept(ToArrayVisitor& visitor) noexcept {
     generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
+  }
+
+  virtual size_t virtual_builtin_sizeof() const noexcept {
+    return 0;
+  }
+
+  virtual size_t virtual_builtin_alignof() const noexcept {
+    return 0;
+  }
+
+  virtual C$Throwable* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+
+  virtual C$Throwable* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
+    return nullptr;
   }
 
   string $message;
@@ -112,12 +134,20 @@ inline void exception_initialize(const Throwable& e, const string& message, int6
 struct C$Exception : public C$Throwable {
   ~C$Exception() override = default;
 
-  C$Exception* virtual_builtin_clone() const noexcept {
+  C$Exception* virtual_builtin_clone() const noexcept override {
     return new C$Exception{*this};
   }
 
-  size_t virtual_builtin_sizeof() const noexcept {
+  C$Exception* virtual_builtin_construct_at(void* ptr) const noexcept override {
+    return new (ptr) C$Exception{*this};
+  }
+
+  size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
+  }
+
+  size_t virtual_builtin_alignof() const noexcept override {
+    return alignof(C$Exception);
   }
 
   const char* get_class() const noexcept override {
@@ -161,12 +191,20 @@ inline string f$Exception$$getTraceAsString(const Exception& e) noexcept {
 struct C$Error : public C$Throwable {
   ~C$Error() override = default;
 
-  C$Error* virtual_builtin_clone() const noexcept {
+  C$Error* virtual_builtin_clone() const noexcept override {
     return new C$Error{*this};
   }
 
-  size_t virtual_builtin_sizeof() const noexcept {
+  C$Error* virtual_builtin_construct_at(void* ptr) const noexcept override {
+    return new (ptr) C$Error{*this};
+  }
+
+  size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
+  }
+
+  size_t virtual_builtin_alignof() const noexcept override {
+    return alignof(C$Error);
   }
 
   const char* get_class() const noexcept override {

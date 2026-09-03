@@ -12,112 +12,16 @@
 
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-common/stdlib/visitors/instance-deep-basic-visitor.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 
-namespace impl_ {
-
-template<typename Child>
-class InstanceDeepBasicVisitor : vk::not_copyable {
+class InstanceReferencesCountingVisitor : kphp::visitors::instance_deep_basic_visitor<InstanceReferencesCountingVisitor> {
 public:
-  template<typename T>
-  void operator()(const char*, T&& value) noexcept {
-    const bool is_ok = child_.process(std::forward<T>(value));
-    is_ok_ = is_ok_ && is_ok;
-  }
+  friend class kphp::visitors::instance_deep_basic_visitor<InstanceReferencesCountingVisitor>;
 
-  template<typename T>
-  bool process(T&) noexcept {
-    return true;
-  }
-
-  template<typename T>
-  bool process(Optional<T>& value) noexcept {
-    return value.has_value() ? child_.process(value.val()) : true;
-  }
-
-  template<typename I>
-  bool process(class_instance<I>& instance) noexcept {
-    if (!instance.is_null()) {
-      instance.get()->accept(child_);
-      return child_.is_ok();
-    }
-    return true;
-  }
-
-  template<typename... Args>
-  bool process(std::tuple<Args...>& value) noexcept {
-    return process_tuple(value);
-  }
-
-  template<size_t... Is, typename... T>
-  bool process(shape<std::index_sequence<Is...>, T...>& value) noexcept {
-    const bool child_res[] = {child_.process(value.template get<Is>())...};
-    return std::all_of(std::begin(child_res), std::end(child_res), [](bool r) { return r; });
-  }
-
-  bool process(mixed& value) noexcept {
-    if (value.is_string()) {
-      return child_.process(value.as_string());
-    } else if (value.is_array()) {
-      return child_.process(value.as_array());
-    }
-    return true;
-  }
-
-  bool is_ok() const noexcept {
-    return is_ok_;
-  }
-
-  ExtraRefCnt get_memory_ref_cnt() const noexcept {
-    return memory_ref_cnt_;
-  }
-
-protected:
-  InstanceDeepBasicVisitor(Child& child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept
-      : memory_ref_cnt_(memory_ref_cnt),
-        child_(child) {}
-
-  template<typename Iterator>
-  bool process_range(Iterator first, Iterator last) noexcept {
-    bool res = true;
-    for (; first != last; ++first) {
-      if (!child_.process(first.get_value())) {
-        res = false;
-      }
-      if (first.is_string_key() && !child_.process(first.get_string_key())) {
-        res = false;
-      }
-    }
-    return res;
-  }
-
-private:
-  template<size_t Index = 0, typename... Args>
-  std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...>& value) noexcept {
-    bool res = child_.process(std::get<Index>(value));
-    return process_tuple<Index + 1>(value) && res;
-  }
-
-  template<size_t Index = 0, typename... Args>
-  std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...>&) noexcept {
-    return true;
-  }
-
-  bool is_ok_{true};
-  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::extra_ref_cnt_value(0)};
-  Child& child_;
-};
-
-constexpr static uint32_t VISITED_INSTANCE_MASK{0x80000000};
-
-} // namespace impl_
-
-class InstanceReferencesCountingVisitor : impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor> {
-public:
-  friend class impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor>;
-
-  using Basic = impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor>;
+  using Basic = kphp::visitors::instance_deep_basic_visitor<InstanceReferencesCountingVisitor>;
   using Basic::operator();
 
   explicit InstanceReferencesCountingVisitor(std::unordered_map<void*, uint32_t>& instances_refcnt_table)
@@ -147,8 +51,8 @@ private:
   bool process(class_instance<I>& instance) noexcept {
     if (!instance.is_null()) {
       uint32_t& refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
-      const bool visited = ++refcnt_info & impl_::VISITED_INSTANCE_MASK;
-      refcnt_info |= impl_::VISITED_INSTANCE_MASK;
+      const bool visited = ++refcnt_info & kphp::visitors::VISITED_INSTANCE_MASK;
+      refcnt_info |= kphp::visitors::VISITED_INSTANCE_MASK;
       if (visited) {
         return true;
       }
@@ -159,17 +63,17 @@ private:
 
 using ResourceCallbackOOM = bool (*)(memory_resource::unsynchronized_pool_resource&, size_t);
 
-class InstanceDeepCopyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor> {
+class InstanceDeepCopyVisitor : kphp::visitors::instance_deep_basic_visitor<InstanceDeepCopyVisitor> {
 public:
-  friend class impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
+  friend class kphp::visitors::instance_deep_basic_visitor<InstanceDeepCopyVisitor>;
 
-  using Basic = impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
+  using Basic = kphp::visitors::instance_deep_basic_visitor<InstanceDeepCopyVisitor>;
   using Basic::process;
   using Basic::operator();
   using Basic::get_memory_ref_cnt;
 
-  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource& memory_pool, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
-                          ResourceCallbackOOM oom_callback = nullptr) noexcept;
+  explicit InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource& memory_pool, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
+                                   ResourceCallbackOOM oom_callback = nullptr) noexcept;
 
   template<class T>
   bool process(array<T>& arr) noexcept {
@@ -177,6 +81,14 @@ public:
   }
 
   bool process(string& str) noexcept;
+
+  bool process(mixed& value) noexcept {
+    if (value.is_object()) {
+      php_warning("cannot deep-copy a mixed value holding an object of class %s: objects inside mixed are not supported", value.as_object()->get_class());
+      return false;
+    }
+    return Basic::process(value);
+  }
 
   bool is_memory_limit_exceeded() const noexcept {
     return memory_limit_exceeded_;
@@ -290,11 +202,11 @@ private:
   std::unordered_map<void*, void*> copied_instances_table;
 };
 
-class InstanceDeepDestroyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor> {
+class InstanceDeepDestroyVisitor : kphp::visitors::instance_deep_basic_visitor<InstanceDeepDestroyVisitor> {
 public:
-  friend class impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor>;
+  friend class kphp::visitors::instance_deep_basic_visitor<InstanceDeepDestroyVisitor>;
 
-  using Basic = impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor>;
+  using Basic = kphp::visitors::instance_deep_basic_visitor<InstanceDeepDestroyVisitor>;
   using Basic::process;
   using Basic::operator();
   using Basic::is_ok;
@@ -333,8 +245,8 @@ private:
     }
 
     uint32_t& refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
-    if (refcnt_info & impl_::VISITED_INSTANCE_MASK) {
-      refcnt_info ^= impl_::VISITED_INSTANCE_MASK;
+    if (refcnt_info & kphp::visitors::VISITED_INSTANCE_MASK) {
+      refcnt_info ^= kphp::visitors::VISITED_INSTANCE_MASK;
       Basic::process(instance);
     }
 
@@ -360,6 +272,11 @@ class InstanceCopyistImpl;
 template<typename I>
 class InstanceCopyistImpl<class_instance<I>> final : public InstanceCopyistBase {
 public:
+  InstanceCopyistImpl(const InstanceCopyistImpl&) = delete;
+  InstanceCopyistImpl(InstanceCopyistImpl&&) = delete;
+  InstanceCopyistImpl& operator=(const InstanceCopyistImpl&) = delete;
+  InstanceCopyistImpl& operator=(InstanceCopyistImpl&&) = delete;
+
   explicit InstanceCopyistImpl(const class_instance<I>& instance) noexcept
       : instance_(instance) {}
 
