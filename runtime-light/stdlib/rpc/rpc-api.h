@@ -380,7 +380,10 @@ kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_r
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto& it : std::as_const(query_ids)) {
     res.set_value(it.get_key(), co_await kphp::coro::on_stack(
-                                    [](int64_t query_id_arg) noexcept { return kphp::forks::id_managed(query_id_arg, error_factory_type{}); }, it.get_value()));
+                                    [](int64_t query_id_arg) noexcept {
+                                      return kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl, query_id_arg, error_factory_type{});
+                                    },
+                                    it.get_value()));
   }
   co_return std::move(res);
 }
