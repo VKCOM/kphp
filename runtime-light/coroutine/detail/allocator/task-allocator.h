@@ -5,6 +5,7 @@
 #pragma once
 
 #include <bit>
+#include <utility>
 
 #include "common/containers/object-pool.h"
 #include "common/mixin/not_copyable.h"
@@ -52,7 +53,8 @@ private:
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
-  bool m_stack_requested{false};
+  bool m_stack_scope{false};
+  bool m_stack_alloc_used{false};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
     size_t extra_mem_size{std::max(m_min_extra_mem_size, requested_size)};
@@ -131,16 +133,21 @@ public:
     return prev;
   }
 
-  auto request_stack_allocation() noexcept -> void {
-    m_stack_requested = true;
+  auto start_stack_scope() noexcept -> void {
+    m_stack_scope = true;
+    m_stack_alloc_used = false;
   }
 
-  auto check_stack_allocation_requested() const noexcept -> bool {
-    return m_stack_requested;
+  auto is_stack_scope() const noexcept -> bool {
+    return m_stack_scope;
   }
 
-  auto consume_stack_allocation_request() noexcept -> void {
-    m_stack_requested = false;
+  auto end_stack_scope() noexcept -> void {
+    m_stack_scope = false;
+  }
+
+  auto mark_stack_allocation_used() noexcept -> void {
+    kphp::log::assertion(!std::exchange(m_stack_alloc_used, true));
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {

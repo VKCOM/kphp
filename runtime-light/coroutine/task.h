@@ -245,8 +245,11 @@ private:
 };
 
 /*
- * This function is used to optimize allocation of task<T>. If this function is called, task<T> is allocated with stack allocator.
- * Result of this function must be immediately co_await-ed (usage: co_await kphp::coro::on_stack(f, 1, 2, 3); ), if you don't follow this rule, it's UB.
+ * This function is used to optimize allocation of task<T>. If this function is called, task<T>, that returns from f, is allocated with stack allocator.
+ * You must follow some rules:
+ * 1) Result of this function must be immediately co_await-ed (usage: co_await kphp::coro::on_stack(f, 1, 2, 3); ), if you don't follow this rule, there is
+ * no guarantees that your program is correct.
+ * 2) If f is not coroutine, but just function, that returns task<T>, in its body its not allowed to create more than one task<T> object (the one it returns).
  * It's strongly recommended to use this function instead of writing co_await f(1, 2, 3), where f returns task<T>.
  */
 template<typename F, typename... Args>
@@ -282,8 +285,8 @@ requires(std::invocable<F, Args...> &&
   };
 
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  task_allocator.request_stack_allocation();
-  auto final_action{vk::finally([&task_allocator]() { task_allocator.consume_stack_allocation_request(); })};
+  task_allocator.start_stack_scope();
+  auto final_action{vk::finally([&task_allocator]() { task_allocator.end_stack_scope(); })};
 
   return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }
