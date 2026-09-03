@@ -477,12 +477,14 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
+  auto task_to_schedule{[](kphp::web::curl::easy_type easy_id_arg) noexcept {
+    return kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id_arg});
+  }};
   auto sched_res{co_await kphp::coro::on_stack(
-      [](kphp::web::curl::easy_type easy_id_arg, duration_type timeout_arg) noexcept {
-        return kphp::coro::io_scheduler::get().schedule(kphp::forks::id_managed(kphp::web::simple::perform(kphp::web::simple::transfer{easy_id_arg})),
-                                                        timeout_arg);
+      [](duration_type timeout_arg, auto task_to_schedule_arg, kphp::web::curl::easy_type easy_id_arg) noexcept {
+        return kphp::coro::io_scheduler::get().schedule(timeout_arg, std::move(task_to_schedule_arg), easy_id_arg);
       },
-      easy_id, timeout)};
+      timeout, std::move(task_to_schedule), easy_id)};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_debug(
         "could not execute curl easy handle concurrently",
