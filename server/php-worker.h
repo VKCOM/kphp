@@ -40,7 +40,7 @@ public:
   php_query_data_t data;
 
   bool paused;
-  int flushed_http_code;
+  bool flushed_http_connection;
   bool terminate_flag;
   script_error_t terminate_reason;
   const char *error_message;

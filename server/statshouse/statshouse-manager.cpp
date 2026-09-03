@@ -17,6 +17,7 @@
 #include "common/resolver.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime/instance-cache.h"
+#include "runtime/interface.h"
 #include "runtime/runtime-builtin-stats.h"
 #include "server/confdata-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
@@ -110,7 +111,7 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
   }
 }
 
-void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_max_running_interval_ns, int flushed_http_code, script_error_t error,
+void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_max_running_interval_ns, script_error_t error,
                                           const memory_resource::MemoryStats &script_memory_stats, const std::optional<runtime_builtins_stats::request_stats_t> &builtin_stats,
                                           uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
@@ -128,7 +129,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   if (process_type == ProcessType::http_worker) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
-    client.metric("kphp_http_connection_process_time").tag("flushed_http_code", std::to_string(flushed_http_code)).tag(status).write_value(http_connection_process_time);
+    client.metric("kphp_http_connection_process_time").tag("return_code", std::to_string(get_http_return_code())).tag(status).write_value(http_connection_process_time);
 #pragma GCC diagnostic pop
   }
 
@@ -140,7 +141,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   if (process_type == ProcessType::http_worker) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
-    client.metric("kphp_by_host_http_connection_process_time", true).tag("flushed_http_code", std::to_string(flushed_http_code)).tag(status).write_value(http_connection_process_time);
+    client.metric("kphp_by_host_http_connection_process_time", true).tag("return_code", std::to_string(get_http_return_code())).tag(status).write_value(http_connection_process_time);
 #pragma GCC diagnostic pop
   }
 
