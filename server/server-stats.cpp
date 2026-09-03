@@ -656,7 +656,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   stats.add_request_stats(queries_stat, error, script_memory_stats, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
-  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), script_max_running_interval.count(), php_worker->flushed_http_code, error, script_memory_stats, builtin_stats, script_queries, long_script_queries,
+  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), script_max_running_interval.count(), error, script_memory_stats, builtin_stats, script_queries, long_script_queries,
                                              script_user_time.count(), script_system_time.count(),
                                              script_init_time.count(), http_connection_process_time.count(),
                                              script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
