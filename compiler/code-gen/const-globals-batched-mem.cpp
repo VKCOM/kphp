@@ -110,18 +110,22 @@ void ConstantsBatchedMem::inc_count_by_type(const TypeData *type) {
   }
 }
 
-int ConstantsBatchedMem::detect_constants_batch_count(int n_constants) {
-  // these values are heuristics (don't use integer division, to avoid changing buckets count frequently)
-  if (n_constants > 1200000) return 2048;
-  if (n_constants > 800000) return 1536;
-  if (n_constants > 500000) return 1024;
-  if (n_constants > 100000) return 512;
-  if (n_constants > 10000) return 256;
-  if (n_constants > 5000) return 128;
-  if (n_constants > 1000) return 32;
-  if (n_constants > 500) return 16;
-  if (n_constants > 100) return 4;
-  return 1;
+int ConstantsBatchedMem::detect_constants_batch_count(unsigned n_constants) {
+  constexpr auto BATCH_SIZE {106};
+  const auto batch_count{1 + n_constants / BATCH_SIZE};
+  if (batch_count <= 2) {
+    return batch_count;
+  }
+
+  // round to avoid changing buckets count frequently
+  const auto msb{sizeof(unsigned) * __CHAR_BIT__ - 1 - __builtin_clz(batch_count)};
+  const auto mask{(1 << msb) | (1 << (msb - 1))};
+  const auto tail_mask{(1 << (msb - 1)) - 1};
+  if (batch_count & tail_mask) {
+    return (batch_count & mask) + (1 << (msb - 1));
+  }
+
+  return batch_count;
 }
 
 const ConstantsBatchedMem &ConstantsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants) {
