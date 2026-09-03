@@ -127,10 +127,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_request_cpu_time").tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
   client.metric("kphp_request_init_time").tag(worker_type).tag(status).write_value(script_init_time);
   if (process_type == ProcessType::http_worker) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
     client.metric("kphp_http_connection_process_time").tag("return_code", std::to_string(get_http_return_code())).tag(status).write_value(http_connection_process_time);
-#pragma GCC diagnostic pop
   }
 
   client.metric("kphp_by_host_request_time", true).tag("script").tag(worker_type).write_value(script_time_ns);
@@ -139,10 +136,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_by_host_request_cpu_time", true).tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
   client.metric("kphp_by_host_request_init_time", true).tag(worker_type).tag(status).write_value(script_init_time);
   if (process_type == ProcessType::http_worker) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
     client.metric("kphp_by_host_http_connection_process_time", true).tag("return_code", std::to_string(get_http_return_code())).tag(status).write_value(http_connection_process_time);
-#pragma GCC diagnostic pop
   }
 
   if (error != script_error_t::no_error) {
