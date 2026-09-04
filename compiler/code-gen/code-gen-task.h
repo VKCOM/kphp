@@ -4,14 +4,13 @@
 
 #pragma once
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
 ProfilerRaw& get_code_gen_profiler();
-
-struct CodeGenRootCmd;
 
 class CodeGenSchedulerTask : public Task {
   CodeGenerator W;
