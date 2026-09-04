@@ -9,4 +9,5 @@
 
 # apply clang-format to common, runtime, runtime-common, and runtime-light directories
 ff72b37bda68cf282c37a92d23bc763de6f47795
-340f945b4bb788c1ad7074e2c81bc15c345f5ccb
+# apply clang-format to complier directory
+43f180959ba095aaefcfe35472b2c91f1c9e71c8
