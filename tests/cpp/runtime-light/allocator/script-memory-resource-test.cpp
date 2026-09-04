@@ -497,6 +497,77 @@ auto test_confdata_storage_decoded_values() noexcept -> void {
   storage.close();
 }
 
+auto test_confdata_sync_size_hints_avoid_wildcard_array_growth() noexcept -> void {
+  constexpr auto entries_per_section{static_cast<size_t>(5'000)};
+  constexpr auto payload_size{static_cast<size_t>(16U * 1024U * 1024U)};
+  constexpr auto header_headroom{static_cast<size_t>(64U * 1024U)};
+  alignas(std::max_align_t) static std::array<std::byte, payload_size + header_headroom> growing_memory{};
+  alignas(std::max_align_t) static std::array<std::byte, payload_size + header_headroom> hinted_memory{};
+
+  const auto required_size{kphp::confdata::storage::memory_size(payload_size)};
+  CHECK(required_size.has_value());
+  CHECK(*required_size <= growing_memory.size());
+
+  const auto make_key = [](char section, size_t index, std::array<char, 64>& buffer) noexcept -> std::string_view {
+    const auto length{std::snprintf(buffer.data(), buffer.size(), "large-section-%c.sub.%06zu", section, index)};
+    CHECK(length > 0);
+    CHECK(static_cast<size_t>(length) < buffer.size());
+    return {buffer.data(), static_cast<size_t>(length)};
+  };
+  const auto for_each_key = [&make_key](auto&& callback) noexcept {
+    for (size_t i{entries_per_section}; i-- > 0;) {
+      std::array<char, 64> descending_buffer{};
+      std::invoke(callback, make_key('a', i, descending_buffer), i);
+
+      const auto ascending_index{entries_per_section - i - 1};
+      std::array<char, 64> ascending_buffer{};
+      std::invoke(callback, make_key('b', ascending_index, ascending_buffer), ascending_index);
+    }
+  };
+  const auto populate = [&for_each_key](kphp::confdata::storage::editor& editor) noexcept {
+    for_each_key([&editor](std::string_view key, size_t index) noexcept {
+      CHECK(upsert_shared(editor, key, [index] noexcept { return mixed{static_cast<int64_t>(index)}; }));
+    });
+  };
+  const auto check_sections = [](kphp::confdata::storage& storage) noexcept {
+    const auto sample{storage.acquire_active_sample()};
+    const auto& values{storage.values(sample)};
+    CHECK(values.size() == 4);
+    for (const auto section : {"large-section-a.", "large-section-a.sub.", "large-section-b.", "large-section-b.sub."}) {
+      const auto section_it{values.find(string{section})};
+      CHECK(section_it != values.end());
+      CHECK(section_it->second.is_array());
+      CHECK(section_it->second.as_array().count() == entries_per_section);
+    }
+    storage.release_sample(sample);
+  };
+
+  kphp::confdata::storage growing_storage{};
+  CHECK(growing_storage.init(std::span{growing_memory}.first(*required_size)).has_value());
+  auto growing_editor{growing_storage.start_sync()};
+  populate(growing_editor);
+  growing_editor.commit();
+  const auto growing_usage{growing_storage.memory_usage().m_used};
+  check_sections(growing_storage);
+  growing_storage.close();
+
+  kphp::confdata::storage::sync_size_hints size_hints{};
+  // Alternate sections while one section descends and the other ascends.
+  for_each_key([&size_hints](std::string_view key, size_t /* index */) noexcept { size_hints.add(key); });
+  size_hints.finish();
+
+  kphp::confdata::storage hinted_storage{};
+  CHECK(hinted_storage.init(std::span{hinted_memory}.first(*required_size)).has_value());
+  auto hinted_editor{hinted_storage.start_sync(size_hints)};
+  populate(hinted_editor);
+  hinted_editor.commit();
+  const auto hinted_usage{hinted_storage.memory_usage().m_used};
+  check_sections(hinted_storage);
+  hinted_storage.close();
+
+  CHECK(hinted_usage * 5 < growing_usage * 4);
+}
+
 auto test_confdata_storage_detects_oom_threshold_with_headroom_left() noexcept -> void {
   constexpr auto payload_size{static_cast<size_t>(64U * 1024U)};
   constexpr auto oom_handling_size{static_cast<size_t>(48U * 1024U)};
@@ -631,6 +702,7 @@ auto main() -> int {
   test_confdata_storage_deletes_all_predefined_representations();
   test_confdata_storage_update_is_atomic();
   test_confdata_storage_decoded_values();
+  test_confdata_sync_size_hints_avoid_wildcard_array_growth();
   test_confdata_storage_detects_oom_threshold_with_headroom_left();
   test_confdata_storage_rejects_invalid_memory();
   RuntimeAllocator::get().free();
