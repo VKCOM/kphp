@@ -1,12 +1,9 @@
-#include <gtest/gtest-message.h>
-#include <gtest/gtest-test-part.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 
 #include "compiler/data/performance-inspections.h"
-#include "gtest/gtest_pred_impl.h"
 
 using PI = PerformanceInspections;
 

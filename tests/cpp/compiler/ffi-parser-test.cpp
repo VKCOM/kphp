@@ -3,8 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <algorithm>
-#include <gtest/gtest-message.h>
-#include <gtest/gtest-test-part.h>
 #include <gtest/gtest.h>
 #include <iterator>
 #include <map>
@@ -19,7 +17,6 @@
 #include "compiler/ffi/c_parser/yy_parser_generated.hpp"
 #include "compiler/ffi/ffi_parser.h"
 #include "compiler/ffi/ffi_types.h"
-#include "gtest/gtest_pred_impl.h"
 
 static std::string ffi_test_join_types(const FFIParseResult &parse_result) {
   std::vector<const FFIType*> types;

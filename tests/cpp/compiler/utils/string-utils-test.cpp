@@ -1,10 +1,7 @@
-#include <gtest/gtest-message.h>
-#include <gtest/gtest-test-part.h>
 #include <gtest/gtest.h>
 #include <memory>
 
 #include "compiler/utils/string-utils.h"
-#include "gtest/gtest_pred_impl.h"
 
 TEST(string_utils, snake_case) {
   ASSERT_EQ(transform_to_snake_case(""), "");

@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <gtest/gtest-message.h>
-#include <gtest/gtest-test-part.h>
 #include <gtest/gtest.h>
 #include <iterator>
 #include <string>
@@ -10,7 +8,6 @@
 #include "compiler/debug.h"
 #include "compiler/lexer.h"
 #include "compiler/token.h"
-#include "gtest/gtest_pred_impl.h"
 
 TEST(lexer_test, test_php_tokens) {
   std::string debugTokenName(TokenType t);  // implemented in debug.cpp

@@ -2,14 +2,14 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/inferring/type-inferer.h"
+#include "compiler/pipes/type-inferer.h"
 
 #include <algorithm>
 #include <vector>
 
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-inferer.h"
 #include "compiler/pipes/function-and-cfg.h"
-#include "compiler/pipes/type-inferer.h"
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/threading/data-stream.h"
 
