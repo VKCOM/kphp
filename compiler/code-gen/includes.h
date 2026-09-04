@@ -4,11 +4,21 @@
 
 #pragma once
 
+#include <map>
+#include <set>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/type-data.h"
 
+class CodeGenerator;
+class TypeData;
 struct ExternInclude {
+
   explicit ExternInclude(vk::string_view file_name);
   void compile(CodeGenerator& W) const;
 

@@ -5,6 +5,12 @@
 #include "compiler/pipes/parse.h"
 
 #include "compiler/gentree.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/token.h"
+
+template<class DataT>
+class DataStream;
 
 void ParseF::execute(std::pair<SrcFilePtr, std::vector<Token>> file_and_tokens, DataStream<FunctionPtr>& os) {
   stage::set_name("Parse file");

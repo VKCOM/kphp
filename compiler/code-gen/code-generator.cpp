@@ -3,8 +3,15 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/code-gen/code-generator.h"
+
+#include <forward_list>
+#include <utility>
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
+#include "compiler/index.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/threading/data-stream.h"
 
 void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string& file_name, const std::string& subdir) {
   std::string full_file_name = G->cpp_dir;

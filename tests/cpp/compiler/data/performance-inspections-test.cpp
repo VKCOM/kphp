@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+#include <memory>
+#include <stdexcept>
+#include <utility>
 
 #include "compiler/data/performance-inspections.h"
 

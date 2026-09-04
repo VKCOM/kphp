@@ -5,6 +5,7 @@
 #include "compiler/inferring/multi-key.h"
 
 #include <functional>
+#include <iterator>
 
 #include "common/algorithms/string-algorithms.h"
 

@@ -10,7 +10,9 @@
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
+class CodeGenerator;
 struct InitScriptsCpp : CodeGenRootCmd {
+
   SrcFilePtr main_file_id;
   explicit InitScriptsCpp(SrcFilePtr main_file_id);
   void compile(CodeGenerator& W) const final;

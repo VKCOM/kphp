@@ -1,9 +1,14 @@
 #include <gtest/gtest.h>
 
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/lexer.h"
+#include "compiler/operation.h"
 
 class CompilerTestsEnvironment final : public testing::Environment {
+
 public:
   ~CompilerTestsEnvironment() final {}
 

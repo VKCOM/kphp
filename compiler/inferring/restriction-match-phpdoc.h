@@ -4,11 +4,15 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/restriction-base.h"
 #include "compiler/inferring/var-node.h"
 
+class TypeData;
 class RestrictionMatchPhpdoc : public tinf::RestrictionBase {
+
   tinf::VarNode* restricted_node;
   tinf::Node* actual_node;
   const TypeData* expected_type;

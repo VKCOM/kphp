@@ -5,11 +5,14 @@
 #pragma once
 
 #include <queue>
+#include <vector>
 
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/threading/tls.h"
+
+class Task;
 
 namespace tinf {
 

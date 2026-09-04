@@ -4,11 +4,29 @@
 
 #pragma once
 
+#include <algorithm>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/ffi/ffi_types.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+
+class TypeHint;
+template<Operation Op>
+class VertexAdaptor;
+template<class DataT>
+class DataStream;
 
 // FFI symbol is an extern variable or function information carrier
 struct FFISymbol {

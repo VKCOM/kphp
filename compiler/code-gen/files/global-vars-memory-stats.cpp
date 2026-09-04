@@ -4,14 +4,28 @@
 
 #include "compiler/code-gen/files/global-vars-memory-stats.h"
 
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <utility>
+
+#include "common/algorithms/find.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
+#include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
 
 GlobalVarsMemoryStats::GlobalVarsMemoryStats(const std::vector<VarPtr>& all_globals) {
   for (VarPtr global_var : all_globals) {

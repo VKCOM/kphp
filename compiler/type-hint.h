@@ -4,13 +4,21 @@
 
 #pragma once
 
+#include <functional>
+#include <map>
+#include <stdint.h>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
 #include "compiler/inferring/primitive-type.h"
+
+struct FFIType;
 
 // do not confuse TypeHint with TypeData!
 // TypeData is a part of _type inferring_; it's mutable and plain, it represents current inferred state of every vertex

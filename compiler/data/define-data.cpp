@@ -4,7 +4,11 @@
 
 #include "compiler/data/define-data.h"
 
+#include <utility>
+
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/src-file.h"
 
 DefineData::DefineData()

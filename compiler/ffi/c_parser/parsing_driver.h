@@ -4,14 +4,21 @@
 
 #pragma once
 
+#include <exception>
+#include <map>
+#include <stdint.h>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include "compiler/ffi/c_parser/lexer.h"
+#include "compiler/ffi/c_parser/location.h"
 #include "compiler/ffi/c_parser/parsing_types.h"
+#include "compiler/ffi/c_parser/string-span.h"
 #include "compiler/ffi/c_parser/types-allocator.h"
 #include "compiler/ffi/c_parser/yy_parser_generated.hpp"
 #include "compiler/ffi/ffi_types.h"
-
-#include <map>
-#include <unordered_map>
 
 namespace ffi {
 

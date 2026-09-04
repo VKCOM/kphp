@@ -5,6 +5,10 @@
 #include "compiler/data/src-dir.h"
 
 #include <sys/stat.h>
+#include <unistd.h>
+#include <utility>
+
+#include "compiler/kphp_assert.h"
 
 SrcDir::SrcDir(std::string full_dir_name)
     : full_dir_name(std::move(full_dir_name)) {

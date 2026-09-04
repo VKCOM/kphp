@@ -2,11 +2,21 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <algorithm>
 #include <gtest/gtest.h>
+#include <iterator>
+#include <map>
+#include <stddef.h>
+#include <stdint.h>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "compiler/ffi/ffi_parser.h"
-#include "compiler/ffi/c_parser/lexer.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/ffi/c_parser/lexer.h"
+#include "compiler/ffi/c_parser/yy_parser_generated.hpp"
+#include "compiler/ffi/ffi_parser.h"
+#include "compiler/ffi/ffi_types.h"
 
 static std::string ffi_test_join_types(const FFIParseResult &parse_result) {
   std::vector<const FFIType*> types;

@@ -4,7 +4,12 @@
 
 #include "compiler/pipes/calc-val-ref.h"
 
+#include <iterator>
+
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
 
 bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first) {
   switch (op) {

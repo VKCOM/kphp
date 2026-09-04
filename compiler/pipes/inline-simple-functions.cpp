@@ -4,10 +4,18 @@
 
 #include "compiler/pipes/inline-simple-functions.h"
 
+#include <string_view>
+
+#include "auto/compiler/vertex/vertex-op_var.h"
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/vertex-meta_op_base.h"
 
 void InlineSimpleFunctions::on_simple_operation() noexcept {
   if (++n_simple_operations_ > 6) {

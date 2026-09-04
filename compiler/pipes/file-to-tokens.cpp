@@ -4,10 +4,15 @@
 
 #include "compiler/pipes/file-to-tokens.h"
 
+#include <string>
+
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lexer.h"
 #include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/threading/profiler.h"
+#include "compiler/token.h"
 
 void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token>>>& os) {
   stage::set_name("Split file to tokens");

@@ -4,13 +4,21 @@
 
 #include "compiler/scheduler/scheduler.h"
 
+#include <algorithm>
+#include <assert.h>
+#include <memory>
+#include <pthread.h>
+#include <unistd.h>
 #include <vector>
 
+#include "compiler/scheduler/node.h"
+#include "compiler/scheduler/task-pull.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/threading/thread-id.h"
 #include "compiler/threading/tls.h"
 
 class ThreadContext {
+
 public:
   pthread_t pthread_id;
   int thread_id;

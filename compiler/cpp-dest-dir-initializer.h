@@ -5,12 +5,14 @@
 #pragma once
 
 #include <memory>
+#include <stdint.h>
 #include <thread>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
 class CppDestDirInitializer : vk::not_copyable {
+
 public:
   friend class vk::singleton<CppDestDirInitializer>;
 

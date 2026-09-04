@@ -4,7 +4,10 @@
 
 #include "compiler/inferring/node.h"
 
+#include <assert.h>
+
 #include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 namespace tinf {
