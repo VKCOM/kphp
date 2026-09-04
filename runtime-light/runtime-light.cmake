@@ -25,6 +25,7 @@ include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
 set(RUNTIME_LIGHT_SRC
     ${RUNTIME_LIGHT_CORE_SRC}
+    ${RUNTIME_LIGHT_COROUTINE_SRC}
     ${RUNTIME_LIGHT_STDLIB_SRC}
     ${RUNTIME_LIGHT_SCHEDULER_SRC}
     ${RUNTIME_LIGHT_SERVER_SRC}
