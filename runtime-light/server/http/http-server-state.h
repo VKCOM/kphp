@@ -16,6 +16,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/zlib/zlib-stream-compressor.h"
 #include "runtime-light/streams/connection.h"
 
 namespace kphp::http {
@@ -64,6 +65,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
 
   bool auto_encoding_enabled{};
   uint32_t encoding{};
+  kphp::zlib::stream_compressor body_compressor;
   uint64_t status_code{kphp::http::status::NO_STATUS};
   kphp::http::method http_method{kphp::http::method::other};
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
