@@ -18,16 +18,16 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, std::unique_ptr<CodeGenRoot
 
   void prepare_generate_function(FunctionPtr func);
   std::string calc_subdir_for_function(FunctionPtr func);
-  std::string shorten_occurence_of_class_in_file_name(ClassPtr occuring_class, const std::string &file_name);
+  std::string shorten_occurence_of_class_in_file_name(ClassPtr occuring_class, const std::string& file_name);
 
 public:
-  void execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os) final;
-  void on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) final;
+  void execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>>& unused_os) final;
+  void on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>>& os) final;
 };
 
 // this pipe re-launches codegen commands that differ from previous kphp launch
 // now they are launches not as "just calc hashes", but as "store all cpp/h contents and php comments"
 class CodeGenForDiffF {
 public:
-  void execute(std::unique_ptr<CodeGenRootCmd> cmd, DataStream<WriterData *> &os);
+  void execute(std::unique_ptr<CodeGenRootCmd> cmd, DataStream<WriterData*>& os);
 };

@@ -8,20 +8,20 @@
 
 volatile int tasks_before_sync_node;
 
-static SchedulerBase *scheduler;
+static SchedulerBase* scheduler;
 
-void set_scheduler(SchedulerBase *new_scheduler) {
-  assert (scheduler == nullptr);
+void set_scheduler(SchedulerBase* new_scheduler) {
+  assert(scheduler == nullptr);
   scheduler = new_scheduler;
 }
 
-void unset_scheduler(SchedulerBase *old_scheduler) {
-  assert (scheduler == old_scheduler);
+void unset_scheduler(SchedulerBase* old_scheduler) {
+  assert(scheduler == old_scheduler);
   scheduler = nullptr;
 }
 
-SchedulerBase *get_scheduler() {
-  assert (scheduler != nullptr);
+SchedulerBase* get_scheduler() {
+  assert(scheduler != nullptr);
   return scheduler;
 }
 

@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "compiler/ffi/ffi_types.h"
 #include "compiler/ffi/c_parser/lexer.h"
 #include "compiler/ffi/c_parser/parsing_types.h"
 #include "compiler/ffi/c_parser/types-allocator.h"
 #include "compiler/ffi/c_parser/yy_parser_generated.hpp"
+#include "compiler/ffi/ffi_types.h"
 
-#include <unordered_map>
 #include <map>
+#include <unordered_map>
 
 namespace ffi {
 
@@ -39,60 +39,61 @@ public:
   class ParseError : public std::exception {
   public:
     ParseError(ffi::Location location, std::string message)
-      : location{location}
-      , message{std::move(message)} {}
+        : location{location},
+          message{std::move(message)} {}
 
     ffi::Location location;
     std::string message;
   };
 
-  explicit ParsingDriver(const std::string &src, FFITypedefs &typedefs, bool expr_mode = false):
-    typedefs(typedefs),
-    expr_mode(expr_mode),
-    lexer(typedefs, src),
-    yy_parser(lexer, *this) {
-  }
+  explicit ParsingDriver(const std::string& src, FFITypedefs& typedefs, bool expr_mode = false)
+      : typedefs(typedefs),
+        expr_mode(expr_mode),
+        lexer(typedefs, src),
+        yy_parser(lexer, *this) {}
 
   Result parse();
 
-  FFIType *get_aliased_type(string_span name) {
+  FFIType* get_aliased_type(string_span name) {
     return typedefs[name.to_string()];
   }
 
-  void add_type(FFIType *type);
-  void add_typedef(FFIType *type, FFIType *declarator);
-  void add_enumerator(FFIType *enum_list, FFIType *enumerator);
+  void add_type(FFIType* type);
+  void add_typedef(FFIType* type, FFIType* declarator);
+  void add_enumerator(FFIType* enum_list, FFIType* enumerator);
 
   int stoi(string_span s);
 
-  FFIType *combine(const TypeSpecifier &type_spec, const SpecifierQualifierList &list);
-  FFIType *combine(const TypeQualifier &type_qualifier, const SpecifierQualifierList &list);
-  FFIType *combine(const TypeSpecifier &type_spec, const DeclarationSpecifiers &decl_specs);
-  FFIType *combine(const TypeQualifier &type_qualifier, const DeclarationSpecifiers &decl_specs);
-  FFIType *combine(const DeclarationSpecifiers &decl_specs, const InitDeclaratorList &init_declarator_list);
-  FFIType *combine(const DeclarationSpecifiers &decl_specs, const Declarator &declarator);
-  FFIType *combine(const DeclarationSpecifiers &decl_specs, const AbstractDeclarator &declarator);
-  FFIType *combine(const Pointer &pointer, const DirectDeclarator &declarator);
-  FFIType *combine(const Pointer &pointer, const DirectAbstractDeclarator &declarator);
+  FFIType* combine(const TypeSpecifier& type_spec, const SpecifierQualifierList& list);
+  FFIType* combine(const TypeQualifier& type_qualifier, const SpecifierQualifierList& list);
+  FFIType* combine(const TypeSpecifier& type_spec, const DeclarationSpecifiers& decl_specs);
+  FFIType* combine(const TypeQualifier& type_qualifier, const DeclarationSpecifiers& decl_specs);
+  FFIType* combine(const DeclarationSpecifiers& decl_specs, const InitDeclaratorList& init_declarator_list);
+  FFIType* combine(const DeclarationSpecifiers& decl_specs, const Declarator& declarator);
+  FFIType* combine(const DeclarationSpecifiers& decl_specs, const AbstractDeclarator& declarator);
+  FFIType* combine(const Pointer& pointer, const DirectDeclarator& declarator);
+  FFIType* combine(const Pointer& pointer, const DirectAbstractDeclarator& declarator);
 
-  FFIType *make_simple_type(FFITypeKind kind) {
+  FFIType* make_simple_type(FFITypeKind kind) {
     return alloc.new_type(kind);
   }
 
-  FFIType *make_simple_type(FFITypeKind kind, FFIType::Flag flags) { return alloc.new_type(kind, flags); }
+  FFIType* make_simple_type(FFITypeKind kind, FFIType::Flag flags) {
+    return alloc.new_type(kind, flags);
+  }
 
-  FFIType *make_enum_member(string_span name, int value);
-  FFIType *make_abstract_array_declarator(string_span size_str);
-  FFIType *make_array_declarator(FFIType *declarator, string_span size_str);
-  FFIType *make_function(FFIType *func_expr, FFIType *params);
-  FFIType *make_pointer();
-  FFIType *make_struct_def(FFIType *fields);
-  FFIType *make_union_def(FFIType *fields);
+  FFIType* make_enum_member(string_span name, int value);
+  FFIType* make_abstract_array_declarator(string_span size_str);
+  FFIType* make_array_declarator(FFIType* declarator, string_span size_str);
+  FFIType* make_function(FFIType* func_expr, FFIType* params);
+  FFIType* make_pointer();
+  FFIType* make_struct_def(FFIType* fields);
+  FFIType* make_union_def(FFIType* fields);
 
   friend class YYParser;
 
 private:
-  FFITypedefs &typedefs;
+  FFITypedefs& typedefs;
   bool expr_mode;
   Lexer lexer;
   YYParser yy_parser;
@@ -101,12 +102,12 @@ private:
   std::unordered_map<std::string, FFITypeKind> may_need_forward_decl;
   std::map<std::string, int> enum_constants;
 
-  FFIType *combine_array_type(FFIType *dst, FFIType *elem_type, FFIType *current);
-  FFIType *make_struct_or_union_def(FFIType *fields, bool is_struct);
+  FFIType* combine_array_type(FFIType* dst, FFIType* elem_type, FFIType* current);
+  FFIType* make_struct_or_union_def(FFIType* fields, bool is_struct);
 
-  FFIType *function_to_var(FFIType *function);
+  FFIType* function_to_var(FFIType* function);
 
-  void raise_error(const std::string &message);
+  void raise_error(const std::string& message);
 
   void add_missing_decls();
 };

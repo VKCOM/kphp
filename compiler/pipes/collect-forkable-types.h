@@ -19,23 +19,23 @@ public:
   void on_finish() final;
 
 private:
-  std::vector<const TypeData *> waitable_types_;
-  std::vector<const TypeData *> forkable_types_;
+  std::vector<const TypeData*> waitable_types_;
+  std::vector<const TypeData*> forkable_types_;
 };
 
 class ForkableTypeStorage : vk::not_copyable {
 public:
   friend class vk::singleton<ForkableTypeStorage>;
 
-  void add_types(const std::vector<const TypeData *> &waitable_types, const std::vector<const TypeData *> &forkable_types) noexcept;
+  void add_types(const std::vector<const TypeData*>& waitable_types, const std::vector<const TypeData*>& forkable_types) noexcept;
 
-  std::vector<const TypeData *> flush_waitable_types() noexcept;
-  std::vector<const TypeData *> flush_forkable_types() noexcept;
+  std::vector<const TypeData*> flush_waitable_types() noexcept;
+  std::vector<const TypeData*> flush_forkable_types() noexcept;
 
 private:
   ForkableTypeStorage() = default;
 
   std::mutex mutex_;
-  std::vector<const TypeData *> waitable_types_;
-  std::vector<const TypeData *> forkable_types_;
+  std::vector<const TypeData*> waitable_types_;
+  std::vector<const TypeData*> forkable_types_;
 };

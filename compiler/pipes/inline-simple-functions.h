@@ -15,7 +15,9 @@ private:
   void on_simple_operation() noexcept;
 
 public:
-  std::string get_description() final { return "Inline simple functions"; }
+  std::string get_description() final {
+    return "Inline simple functions";
+  }
 
   VertexPtr on_enter_vertex(VertexPtr root) final;
   VertexPtr on_exit_vertex(VertexPtr root) final;

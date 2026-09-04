@@ -6,8 +6,8 @@
 
 #include <sys/stat.h>
 
-
-SrcDir::SrcDir(std::string full_dir_name) : full_dir_name(std::move(full_dir_name)) {
+SrcDir::SrcDir(std::string full_dir_name)
+    : full_dir_name(std::move(full_dir_name)) {
   kphp_assert(this->full_dir_name[this->full_dir_name.size() - 1] == '/');
 
   has_modulite_yaml = access(get_modulite_yaml_filename().c_str(), F_OK) == 0;

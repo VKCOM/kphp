@@ -42,18 +42,17 @@ void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_store(const PhpType &tl
 }
 */
 struct TypeStore {
-  const vk::tlo_parsing::type *type;
+  const vk::tlo_parsing::type* type;
   std::string template_str;
   bool typed_mode;
 
-  TypeStore(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false) :
-    type(type),
-    template_str(std::move(template_str)),
-    typed_mode(typed_mode) {}
+  TypeStore(const vk::tlo_parsing::type* type, std::string template_str, bool typed_mode = false)
+      : type(type),
+        template_str(std::move(template_str)),
+        typed_mode(typed_mode) {}
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
-
 
 // Generated code example:
 /*
@@ -107,18 +106,17 @@ void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_fetch_to(PhpType &tl_ob
 }
 */
 struct TypeFetch {
-  const vk::tlo_parsing::type *type;
+  const vk::tlo_parsing::type* type;
   std::string template_str;
   bool typed_mode;
 
-  inline TypeFetch(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false) :
-    type(type),
-    template_str(std::move(template_str)),
-    typed_mode(typed_mode) {}
+  inline TypeFetch(const vk::tlo_parsing::type* type, std::string template_str, bool typed_mode = false)
+      : type(type),
+        template_str(std::move(template_str)),
+        typed_mode(typed_mode) {}
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
-
 
 /*
  * Typed TL example:
@@ -146,12 +144,12 @@ struct t_Either {
 };
 */
 struct TlTypeDeclaration {
-  const vk::tlo_parsing::type *t;
+  const vk::tlo_parsing::type* t;
 
   // 'messages.ChatInfoUser' TL type can be either:
   // * A VK\TL\Types\messages\chatInfoUser PHP class
   // * A VK\TL\Types\messages\ChatInfoUser PHP interface if the type is polymorphic
-  static bool does_tl_type_need_typed_fetch_store(const vk::tlo_parsing::type *t) {
+  static bool does_tl_type_need_typed_fetch_store(const vk::tlo_parsing::type* t) {
     if (t->name == "ReqResult") {
       // the site won't compile without it unless the typed rpc is included as t_ReqResult is not a compilation target
       bool typed_php_code_exists = !!G->get_class(vk::tl::PhpClasses::rpc_response_ok_with_tl_full_namespace());
@@ -160,18 +158,18 @@ struct TlTypeDeclaration {
     return !get_all_php_classes_of_tl_type(t).empty();
   }
 
-  explicit TlTypeDeclaration(const vk::tlo_parsing::type *t) :
-    t(t) {}
+  explicit TlTypeDeclaration(const vk::tlo_parsing::type* t)
+      : t(t) {}
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 struct TlTypeDefinition {
-  const vk::tlo_parsing::type *t;
+  const vk::tlo_parsing::type* t;
 
-  explicit TlTypeDefinition(const vk::tlo_parsing::type *t) :
-    t(t) {}
+  explicit TlTypeDefinition(const vk::tlo_parsing::type* t)
+      : t(t) {}
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
-}
+} // namespace tl2cpp

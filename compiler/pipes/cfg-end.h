@@ -10,5 +10,5 @@
 
 class CFGEndF {
 public:
-  void execute(FunctionAndCFG data, DataStream<FunctionPtr> &os);
+  void execute(FunctionAndCFG data, DataStream<FunctionPtr>& os);
 };

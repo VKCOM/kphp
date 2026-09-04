@@ -13,16 +13,16 @@ OneThreadScheduler::OneThreadScheduler() {
   task_pull = new TaskPull();
 }
 
-void OneThreadScheduler::add_node(Node *node) {
+void OneThreadScheduler::add_node(Node* node) {
   nodes.push_back(node);
 }
 
-void OneThreadScheduler::add_sync_node(Node *node) {
+void OneThreadScheduler::add_sync_node(Node* node) {
   sync_nodes.push(node);
 }
 
-void OneThreadScheduler::add_task(Task *task) {
-  assert (task_pull != nullptr);
+void OneThreadScheduler::add_task(Task* task) {
+  assert(task_pull != nullptr);
   task_pull->add_task(task);
 }
 
@@ -35,8 +35,8 @@ void OneThreadScheduler::execute() {
   bool run_flag = true;
   while (run_flag) {
     run_flag = false;
-    for (auto *node : nodes) {
-      Task *task;
+    for (auto* node : nodes) {
+      Task* task;
       while ((task = node->get_task()) != nullptr) {
         run_flag = true;
         task->execute();
@@ -49,7 +49,7 @@ void OneThreadScheduler::execute() {
       run_flag = true;
     }
   }
-  for (auto *node : nodes) {
+  for (auto* node : nodes) {
     delete node;
   }
 }

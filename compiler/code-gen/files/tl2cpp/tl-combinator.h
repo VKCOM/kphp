@@ -7,32 +7,29 @@
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 
 namespace tl2cpp {
-enum class CombinatorPart {
-  LEFT,
-  RIGHT
-};
+enum class CombinatorPart { LEFT, RIGHT };
 
-std::vector<std::string> get_not_optional_fields_masks(const vk::tlo_parsing::combinator *constructor);
+std::vector<std::string> get_not_optional_fields_masks(const vk::tlo_parsing::combinator* constructor);
 
 struct CombinatorGen {
-  const vk::tlo_parsing::combinator *combinator;
+  const vk::tlo_parsing::combinator* combinator;
   CombinatorPart part;
   bool typed_mode;
   std::string var_num_access;
 
-  explicit CombinatorGen(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode);
+  explicit CombinatorGen(const vk::tlo_parsing::combinator* combinator, CombinatorPart part, bool typed_mode);
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 
-  void compile_left(CodeGenerator &W) const;
+  void compile_left(CodeGenerator& W) const;
 
-  void compile_right(CodeGenerator &W) const;
+  void compile_right(CodeGenerator& W) const;
 
-  virtual void gen_before_args_processing(CodeGenerator &W __attribute__ ((unused))) const {};
-  virtual void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const = 0;
-  virtual void gen_after_args_processing(CodeGenerator &W __attribute__ ((unused))) const {};
+  virtual void gen_before_args_processing(CodeGenerator& W __attribute__((unused))) const {};
+  virtual void gen_arg_processing(CodeGenerator& W, const std::unique_ptr<vk::tlo_parsing::arg>& arg) const = 0;
+  virtual void gen_after_args_processing(CodeGenerator& W __attribute__((unused))) const {};
 
-  virtual void gen_result_expr_processing(CodeGenerator &W) const = 0;
+  virtual void gen_result_expr_processing(CodeGenerator& W) const = 0;
 };
 
 /* The code that is common for combinators (func/constructor) store method generation.
@@ -69,17 +66,17 @@ struct CombinatorGen {
  * 3) Handling of the main part of the type expression in TypeExprStore/Fetch
 */
 struct CombinatorStore : CombinatorGen {
-  CombinatorStore(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode) :
-    CombinatorGen(combinator, part, typed_mode) {};
+  CombinatorStore(const vk::tlo_parsing::combinator* combinator, CombinatorPart part, bool typed_mode)
+      : CombinatorGen(combinator, part, typed_mode) {};
 
-  void gen_before_args_processing(CodeGenerator &W) const final;
+  void gen_before_args_processing(CodeGenerator& W) const final;
 
-  void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const final;
+  void gen_arg_processing(CodeGenerator& W, const std::unique_ptr<vk::tlo_parsing::arg>& arg) const final;
 
-  void gen_result_expr_processing(CodeGenerator &W) const final;
+  void gen_result_expr_processing(CodeGenerator& W) const final;
 
 private:
-  static std::string get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tlo_parsing::arg> &arg);
+  static std::string get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tlo_parsing::arg>& arg);
 };
 
 /* The code that is common for combinators (func/constructor) fetch method generation.
@@ -104,15 +101,15 @@ private:
  * 3) Handling of the main part of the type expression in TypeExprStore/Fetch
 */
 struct CombinatorFetch : CombinatorGen {
-  CombinatorFetch(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode) :
-    CombinatorGen(combinator, part, typed_mode) {};
+  CombinatorFetch(const vk::tlo_parsing::combinator* combinator, CombinatorPart part, bool typed_mode)
+      : CombinatorGen(combinator, part, typed_mode) {};
 
-  void gen_before_args_processing(CodeGenerator &W) const final;
+  void gen_before_args_processing(CodeGenerator& W) const final;
 
-  void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const final;
+  void gen_arg_processing(CodeGenerator& W, const std::unique_ptr<vk::tlo_parsing::arg>& arg) const final;
 
-  void gen_after_args_processing(CodeGenerator &W) const final;
+  void gen_after_args_processing(CodeGenerator& W) const final;
 
-  void gen_result_expr_processing(CodeGenerator &W) const final;
+  void gen_result_expr_processing(CodeGenerator& W) const final;
 };
-}
+} // namespace tl2cpp

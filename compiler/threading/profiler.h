@@ -75,7 +75,7 @@ public:
     return calls_;
   }
 
-  ProfilerRaw &operator+=(const ProfilerRaw &other) noexcept {
+  ProfilerRaw& operator+=(const ProfilerRaw& other) noexcept {
     calls_ += other.calls_;
     working_time_ += other.working_time_;
     min_time_ = std::min(min_time_, other.min_time_);
@@ -87,30 +87,28 @@ public:
   }
 };
 
-ProfilerRaw &get_profiler(const std::string &name);
+ProfilerRaw& get_profiler(const std::string& name);
 
 std::unordered_map<std::string, ProfilerRaw> collect_profiler_stats();
 
-void profiler_print_all(const std::unordered_map<std::string, ProfilerRaw> &collected);
+void profiler_print_all(const std::unordered_map<std::string, ProfilerRaw>& collected);
 
-std::string demangle(const char *name);
-
+std::string demangle(const char* name);
 
 class CachedProfiler : vk::not_copyable {
-  TLS<ProfilerRaw *> raws_;
+  TLS<ProfilerRaw*> raws_;
   std::string name_;
 
 public:
-  explicit CachedProfiler(std::string name) :
-    name_(std::move(name)) {
-  }
+  explicit CachedProfiler(std::string name)
+      : name_(std::move(name)) {}
 
-  ProfilerRaw &operator*() {
+  ProfilerRaw& operator*() {
     return *operator->();
   }
 
-  ProfilerRaw *operator->() {
-    auto *raw = *raws_;
+  ProfilerRaw* operator->() {
+    auto* raw = *raws_;
     if (raw == nullptr) {
       raw = &get_profiler(name_);
       *raws_ = raw;
@@ -121,11 +119,11 @@ public:
 
 class AutoProfiler : vk::not_copyable {
 private:
-  ProfilerRaw &prof_;
+  ProfilerRaw& prof_;
 
 public:
-  explicit AutoProfiler(ProfilerRaw &prof) :
-    prof_(prof) {
+  explicit AutoProfiler(ProfilerRaw& prof)
+      : prof_(prof) {
     prof_.start();
   }
 
@@ -133,4 +131,3 @@ public:
     prof_.finish();
   }
 };
-

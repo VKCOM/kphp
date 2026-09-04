@@ -17,9 +17,10 @@
 
 struct InitConstVar {
   VarPtr var;
-  explicit InitConstVar(VarPtr var) : var(var) {}
+  explicit InitConstVar(VarPtr var)
+      : var(var) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     Location save_location = stage::get_location();
 
     VertexPtr init_val = var->init_val;
@@ -40,8 +41,7 @@ struct InitConstVar {
   }
 };
 
-
-static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
+static void compile_raw_array(CodeGenerator& W, const VarPtr& var, int shift) {
   if (shift == -1) {
     W << InitConstVar(var);
     W << var->name << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL << NL;
@@ -51,10 +51,10 @@ static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << var->name << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
-ConstVarsInit::ConstVarsInit(const ConstantsBatchedMem &all_constants_in_mem)
-  : all_constants_in_mem(all_constants_in_mem) {}
+ConstVarsInit::ConstVarsInit(const ConstantsBatchedMem& all_constants_in_mem)
+    : all_constants_in_mem(all_constants_in_mem) {}
 
-void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsBatchedMem::OneBatchInfo &batch) {
+void ConstVarsInit::compile_const_init_part(CodeGenerator& W, const ConstantsBatchedMem::OneBatchInfo& batch) {
   DepLevelContainer const_raw_array_vars;
   DepLevelContainer other_const_vars;
   DepLevelContainer const_raw_string_vars;
@@ -78,21 +78,20 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsBat
 
   for (VarPtr var : batch.constants) {
     switch (var->init_val->type()) {
-      case op_string:
-        const_raw_string_vars.add(var);
-        break;
-      case op_array:
-        const_raw_array_vars.add(var);
-        break;
-      default:
-        other_const_vars.add(var);
-        break;
+    case op_string:
+      const_raw_string_vars.add(var);
+      break;
+    case op_array:
+      const_raw_array_vars.add(var);
+      break;
+    default:
+      other_const_vars.add(var);
+      break;
     }
   }
 
   std::vector<std::string> str_values(const_raw_string_vars.size());
-  std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(),
-                 str_values.begin(),
+  std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(), str_values.begin(),
                  [](VarPtr var) { return var->init_val.as<op_string>()->str_val; });
 
   const std::vector<int> const_string_shifts = compile_raw_data(W, str_values);
@@ -113,9 +112,9 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsBat
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
-    for (VarPtr var: other_const_vars.vars_by_dep_level(dep_level)) {
+    for (VarPtr var : other_const_vars.vars_by_dep_level(dep_level)) {
       W << InitConstVar(var);
-      const TypeData *type_data = var->tinf_node.get_type();
+      const TypeData* type_data = var->tinf_node.get_type();
       if (vk::any_of_equal(type_data->ptype(), tp_array, tp_mixed, tp_string, tp_Class)) {
         W << var->name;
         if (type_data->use_optional()) {
@@ -131,7 +130,7 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsBat
   W << CloseNamespace();
 }
 
-void ConstVarsInit::compile_const_init(CodeGenerator &W, const ConstantsBatchedMem &all_constants_in_mem) {
+void ConstVarsInit::compile_const_init(CodeGenerator& W, const ConstantsBatchedMem& all_constants_in_mem) {
   W << OpenNamespace();
 
   W << NL;
@@ -140,12 +139,12 @@ void ConstVarsInit::compile_const_init(CodeGenerator &W, const ConstantsBatchedM
   W << ConstantsMemAllocation() << NL;
 
   int very_max_dep_level = 0;
-  for (const auto &batch : all_constants_in_mem.get_batches()) {
+  for (const auto& batch : all_constants_in_mem.get_batches()) {
     very_max_dep_level = std::max(very_max_dep_level, batch.max_dep_level);
   }
 
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
-    for (const auto &batch : all_constants_in_mem.get_batches()) {
+    for (const auto& batch : all_constants_in_mem.get_batches()) {
       if (dep_level <= batch.max_dep_level) {
         const std::string func_name_i = fmt_format("const_init_level{}_file{}", dep_level, batch.batch_idx);
         // function declaration
@@ -159,8 +158,8 @@ void ConstVarsInit::compile_const_init(CodeGenerator &W, const ConstantsBatchedM
   W << CloseNamespace();
 }
 
-void ConstVarsInit::compile(CodeGenerator &W) const {
-  for (const auto &batch : all_constants_in_mem.get_batches()) {
+void ConstVarsInit::compile(CodeGenerator& W) const {
+  for (const auto& batch : all_constants_in_mem.get_batches()) {
     W << OpenFile("c." + std::to_string(batch.batch_idx) + ".cpp", "o_const_init", false);
     W << ExternInclude(G->settings().runtime_headers.get());
     compile_const_init_part(W, batch);

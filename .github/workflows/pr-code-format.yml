@@ -37,7 +37,7 @@ jobs:
       - name: Check "#pragma once" in files
         run: |
           EXIT_CODE=0
-          for file in $(find . -name '*.h' -type f \( -path './common/*' -o -path './runtime/*' -o -path './runtime-common/*'  -o -path './runtime-light/*' \)); do
+          for file in $(find . -name '*.h' -type f \( -path './common/*' -o -path './runtime/*' -o -path './runtime-common/*'  -o -path './runtime-light/*' -o -path './compiler/*' \)); do
             if [[ $( grep -q -E '^#pragma\ once' "$file" )$? -ne 0 ]]; then
               echo "Missing '#pragma once' in file '$file'"
               EXIT_CODE=1
@@ -50,16 +50,16 @@ jobs:
           fi
 
       - name: Install clang-format
-        run: sudo apt-get install -y clang-format-18
+        run: pip install --break-system-packages clang-format==18.1.8
 
       - name: Run clang-format on changed files
         run: |
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD --)
-          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | (grep -E '^(common|runtime|runtime-common|runtime-light)/.*\.(cpp|hpp|h|inl)$' || :; ))
-          
+          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | (grep -E '^(common|runtime|runtime-common|runtime-light|compiler)/.*\.(cpp|hpp|h|inl)$' || :; ))
+
           # Apply clang-format to each changed source file
-          echo "$CHANGED_CPP_FILES" | xargs -r clang-format-18 -i
+          echo "$CHANGED_CPP_FILES" | xargs -r clang-format -i
 
       - name: Check for formatting changes
         run: |

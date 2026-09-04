@@ -27,10 +27,9 @@ namespace ffi {
 // TypesAllocator should not be shared between several C parsers.
 class TypesAllocator {
 public:
-
   template<class... Args>
-  FFIType *new_type(Args&&... args) {
-    auto *type = new FFIType{std::forward<Args>(args)...};
+  FFIType* new_type(Args&&... args) {
+    auto* type = new FFIType{std::forward<Args>(args)...};
     allocated_.push_back(type);
     return type;
   }
@@ -39,10 +38,10 @@ public:
     return allocated_.size();
   }
 
-  void mark_used(FFIType *type, bool recursive = true) const {
+  void mark_used(FFIType* type, bool recursive = true) const {
     type->flags = static_cast<FFIType::Flag>(type->flags | FFIType::Flag::Used);
     if (recursive) {
-      for (FFIType *member : type->members) {
+      for (FFIType* member : type->members) {
         mark_used(member, recursive);
       }
     }
@@ -50,7 +49,7 @@ public:
 
   uint64_t collect_garbage() const {
     uint64_t num_deleted = 0;
-    for (FFIType *type : allocated_) {
+    for (FFIType* type : allocated_) {
       if ((type->flags & FFIType::Flag::Used) == 0) {
         delete type;
         num_deleted++;
