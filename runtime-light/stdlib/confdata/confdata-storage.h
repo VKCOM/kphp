@@ -17,9 +17,11 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/confdata/predefined-wildcards.h"
 
@@ -58,9 +60,12 @@ public:
   /** Opaque sample token exchanged by the confdata component's reader-lease protocol. */
   using sample_id = uint32_t;
 
+  class sync_size_hints;
   class editor;
 
 private:
+  using sync_size_hints_ref = std::optional<std::reference_wrapper<const sync_size_hints>>;
+
   struct retired_allocations final {
     /** Detached arrays and keys whose child allocations remain owned elsewhere. */
     retired_list m_detached_allocations;
@@ -144,6 +149,8 @@ public:
   auto release_sample(sample_id id) noexcept -> void;
   /** Starts the initial empty sample used by a sync on a fresh piece. */
   auto start_sync() noexcept -> editor;
+  /** Starts a sync whose wildcard arrays are created using a completed snapshot sizing pass. */
+  auto start_sync(const sync_size_hints& size_hints) noexcept -> editor;
   /** Starts an incremental update by copying the current immutable map. */
   auto start_update() noexcept -> std::optional<editor>;
 
@@ -158,7 +165,7 @@ private:
   auto with_storage_resource(callback_type&& callback) noexcept -> void;
 
   auto resource() noexcept -> resource_type&;
-  auto begin_update(bool copy_active_sample) noexcept -> std::optional<editor>;
+  auto begin_update(bool copy_active_sample, sync_size_hints_ref size_hints = {}) noexcept -> std::optional<editor>;
   auto commit(editor& update) noexcept -> void;
   auto cancel(editor& update) noexcept -> void;
   auto reclaim_retired_samples() noexcept -> void;
@@ -184,6 +191,44 @@ inline auto storage::memory() const noexcept -> std::span<const std::byte> {
 }
 
 /**
+ * Compact wildcard-section capacity bounds collected during a count-only snapshot pass.
+ *
+ * Snapshot events may arrive in any order, so counts are accumulated in an ordered
+ * map. The map owns one key per wildcard section rather than one key per event, and
+ * its transparent comparator avoids allocating temporary strings during lookups.
+ * Repeated upserts can overestimate a final cardinality, but never cause replay to
+ * outgrow the reserved capacity.
+ */
+class storage::sync_size_hints final : private vk::not_copyable {
+  using hint_string = kphp::stl::string<kphp::memory::script_allocator>;
+
+  struct transparent_comparator final {
+    using is_transparent = void;
+
+    auto operator()(std::string_view lhs, std::string_view rhs) const noexcept -> bool {
+      return lhs < rhs;
+    }
+  };
+
+  using hint_map = kphp::stl::map<hint_string, size_t, kphp::memory::script_allocator, transparent_comparator>;
+
+  hint_map m_hints;
+  bool m_finished{};
+
+  auto add_section(std::string_view section) noexcept -> void;
+  auto section_size(std::string_view section) const noexcept -> size_t;
+
+  friend class storage;
+  friend class editor;
+
+public:
+  /** Accounts one non-deleted snapshot key. */
+  auto add(std::string_view key) noexcept -> void;
+  /** Completes the pass and prepares hints for lookups by a sync editor. */
+  auto finish() noexcept -> void;
+};
+
+/**
  * The unpublished working copy of the next sample.
  *
  * Its map and retirement lists allocate from the owning shared-memory piece,
@@ -197,6 +242,8 @@ class storage::editor final {
   storage* m_owner{};
   /** Ring slot reserved for this unpublished working copy. */
   sample_id m_destination{INVALID_SAMPLE_ID};
+  /** Optional instance-local sizing metadata that outlives this clean-sync editor. */
+  sync_size_hints_ref m_sync_size_hints;
   /** Complete map that will become the destination sample at commit. */
   map_type m_values;
   /** Allocations removed from the current sample while building this map. */
@@ -205,7 +252,7 @@ class storage::editor final {
   mixed m_last_retired_value;
   bool m_changed{};
 
-  editor(storage& owner, sample_id destination, bool copy_active_sample) noexcept;
+  editor(storage& owner, sample_id destination, bool copy_active_sample, sync_size_hints_ref size_hints) noexcept;
 
   auto apply_upsert(std::string_view key, const mixed& value) noexcept -> bool;
   auto apply_erase(std::string_view key) noexcept -> bool;

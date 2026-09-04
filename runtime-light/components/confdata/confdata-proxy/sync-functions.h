@@ -9,6 +9,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -34,6 +36,13 @@ struct pagination {
   bool m_has_synced{};
 };
 
+using encoded_snapshot_page = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
+
+struct snapshot final {
+  pagination m_pagination;
+  kphp::stl::vector<encoded_snapshot_page, kphp::memory::script_allocator> m_pages;
+};
+
 enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected };
 
 namespace details {
@@ -44,8 +53,9 @@ namespace details {
 // The batch is a view into the response buffer and is only valid for the duration of the call; empty batches are not delivered.
 // An empty event value means that the key has been deleted.
 template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
-auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination& to,
-               const event_handler_type& event_handler) noexcept -> kphp::coro::task<std::expected<void, kphp::confdata::subscribe_error>> {
+auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination& to, const event_handler_type& event_handler,
+               std::optional<std::reference_wrapper<encoded_snapshot_page>> retained_response = {}) noexcept
+    -> kphp::coro::task<std::expected<void, kphp::confdata::subscribe_error>> {
   // subscribe is a longpoll method, so the timeout must cover the time confdata-proxy may hold the request open
   static constexpr auto SUBSCRIBE_TIMEOUT{std::chrono::milliseconds{45'000}};
 
@@ -71,7 +81,7 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
   }
 
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_buffer{};
+  encoded_snapshot_page response_buffer{};
   auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
     response_buffer.resize(size);
     return {response_buffer.data(), response_buffer.size()};
@@ -88,44 +98,78 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
     co_return std::unexpected{kphp::confdata::subscribe_error::malformed_response};
   }
 
-  co_return std::visit(
-      overloaded{
-          [&event_handler, &to](const tl::confdata::subscribeResponseOk& response) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
-            if (const auto& events{response.events}; events.size() != 0) {
-              if (!std::invoke(event_handler, std::span<const tl::confdata::KeyValuePair>{events.value})) {
-                return std::unexpected{kphp::confdata::subscribe_error::batch_rejected};
-              }
-            }
+  auto handled{
+      std::visit(overloaded{
+                     [&event_handler, &to](const tl::confdata::subscribeResponseOk& response) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
+                       if (const auto& events{response.events}; events.size() != 0) {
+                         if (!std::invoke(event_handler, std::span<const tl::confdata::KeyValuePair>{events.value})) {
+                           return std::unexpected{kphp::confdata::subscribe_error::batch_rejected};
+                         }
+                       }
 
-            to.m_page = response.new_page.value;
-            to.m_offset = response.new_offset.value;
-            to.m_has_synced = response.new_has_synced.value;
-            return {};
-          },
-          [](const tl::confdata::subscribeResponseOldOffsetError& /* unused */) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
-            return std::unexpected{kphp::confdata::subscribe_error::old_offset};
-          },
-      },
-      response.value);
+                       to.m_page = response.new_page.value;
+                       to.m_offset = response.new_offset.value;
+                       to.m_has_synced = response.new_has_synced.value;
+                       return {};
+                     },
+                     [](const tl::confdata::subscribeResponseOldOffsetError& /* unused */) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
+                       return std::unexpected{kphp::confdata::subscribe_error::old_offset};
+                     },
+                 },
+                 response.value)};
+  if (handled && retained_response.has_value()) {
+    retained_response->get() = std::move(response_buffer);
+  }
+  co_return std::move(handled);
 }
 
 } // namespace details
 
-// Paginates through a consistent snapshot of all subscribed keys until it has been fully synced.
-// Returns the final pagination that should be passed to `update`.
-//
-// `event_handler` is invoked once per round-trip with a batch of events; the batch is only valid
-// for the duration of the call and must be copied if it needs to be retained.
+// Fetches one consistent snapshot while retaining the encoded response pages.
+// The handler can collect metadata from the initial parse; replay()
+// reparses the same bytes later without another network synchronization.
 template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
 auto sync(std::string_view confdata_proxy_actor,
-          event_handler_type event_handler) noexcept -> kphp::coro::task<std::expected<kphp::confdata::pagination, kphp::confdata::subscribe_error>> {
-  kphp::confdata::pagination p{};
-  for (; !p.m_has_synced;) {
-    if (auto expected{co_await details::subscribe(confdata_proxy_actor, p, event_handler)}; !expected) [[unlikely]] {
+          event_handler_type event_handler) noexcept -> kphp::coro::task<std::expected<snapshot, kphp::confdata::subscribe_error>> {
+  snapshot snapshot{};
+  for (; !snapshot.m_pagination.m_has_synced;) {
+    snapshot.m_pages.emplace_back();
+    if (auto expected{co_await details::subscribe(confdata_proxy_actor, snapshot.m_pagination, event_handler, snapshot.m_pages.back())}; !expected)
+        [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
   }
-  co_return std::move(p);
+  co_return std::move(snapshot);
+}
+
+// Applies a previously fetched snapshot and releases encoded pages as soon as
+// their parsed event descriptors have been consumed. Processed pages stay
+// consumed if a later page fails, so the snapshot must be discarded after any call.
+template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
+auto replay(snapshot& snapshot, const event_handler_type& event_handler) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
+  for (auto& encoded_page : snapshot.m_pages) {
+    {
+      tl::fetcher tlf{std::span<const std::byte>{encoded_page.data(), encoded_page.size()}};
+      tl::confdata::SubscribeResponse response{};
+      if (!response.fetch(tlf)) [[unlikely]] {
+        return std::unexpected{kphp::confdata::subscribe_error::malformed_response};
+      }
+
+      if (std::holds_alternative<tl::confdata::subscribeResponseOldOffsetError>(response.value)) {
+        return std::unexpected{kphp::confdata::subscribe_error::old_offset};
+      }
+
+      const auto& response_ok{std::get<tl::confdata::subscribeResponseOk>(response.value)};
+      if (const auto& events{response_ok.events};
+          events.size() != 0 && !std::invoke(event_handler, std::span<const tl::confdata::KeyValuePair>{events.value})) {
+        return std::unexpected{kphp::confdata::subscribe_error::batch_rejected};
+      }
+    }
+    // Make the processed page's memory reusable before parsing the next page.
+    encoded_snapshot_page{}.swap(encoded_page);
+  }
+  snapshot.m_pages.clear();
+  return {};
 }
 
 // Longpoll loop: invokes `event_handler` for each event as it arrives, throttled to at most one batch per second:
