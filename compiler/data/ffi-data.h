@@ -5,7 +5,6 @@
 #pragma once
 
 #include <algorithm>
-#include <compare>
 #include <iterator>
 #include <map>
 #include <memory>
