@@ -598,7 +598,7 @@ struct ssl_connection {
   SSL_CTX* ssl_ctx;
 };
 
-static char ssl_connections_storage[sizeof(array<ssl_connection>)];
+alignas(array<ssl_connection>) static char ssl_connections_storage[sizeof(array<ssl_connection>)];
 static array<ssl_connection>* ssl_connections = reinterpret_cast<array<ssl_connection>*>(ssl_connections_storage);
 static long long ssl_connections_last_query_num = -1;
 

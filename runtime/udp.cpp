@@ -19,7 +19,7 @@
 
 int DEFAULT_SOCKET_TIMEOUT = 60;
 
-static char opened_udp_sockets_storage[sizeof(array<int>)];
+alignas(array<int>) static char opened_udp_sockets_storage[sizeof(array<int>)];
 static array<int>* opened_udp_sockets = reinterpret_cast<array<int>*>(opened_udp_sockets_storage);
 static long long opened_udp_sockets_last_query_num = -1;
 
