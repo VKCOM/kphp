@@ -268,6 +268,26 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
 }
 
 auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_sync_error>> {
+  // kPHP scans the encoded snapshot before materializing it so wildcard arrays
+  // can reserve sufficient capacity before insertion. Retain the paginated
+  // proxy responses and replay those same bytes after collecting size hints.
+  kphp::confdata::storage::sync_size_hints size_hints{};
+  auto expected_snapshot{co_await kphp::confdata::sync(confdata_proxy_actor, [&size_hints](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+    for (const auto& wrapped_event : events) {
+      const auto& event{wrapped_event.inner};
+      if (!event.value.value.empty()) {
+        size_hints.add(event.key.value);
+      }
+    }
+    return true;
+  })};
+  if (!expected_snapshot) [[unlikely]] {
+    co_return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization,
+                                                  .m_code = static_cast<int32_t>(std::to_underlying(expected_snapshot.error()))}};
+  }
+
+  size_hints.finish();
+  auto snapshot{*std::move(expected_snapshot)};
   // A separate one-node list owns the unpublished piece and later permits a
   // zero-allocation transfer into the registry.
   confdata_piece_list pending_piece{};
@@ -278,15 +298,15 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   }
   auto& piece{**created_piece};
 
-  auto sync_editor{piece.storage().start_sync()};
-  auto sync_result{co_await kphp::confdata::sync(confdata_proxy_actor,
-                                                 [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
-                                                   return try_apply_events(storage, sync_editor, events);
-                                                 })};
-  if (!sync_result) [[unlikely]] {
+  auto sync_editor{piece.storage().start_sync(size_hints)};
+  const auto replay_result{
+      kphp::confdata::replay(snapshot, [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+        return try_apply_events(storage, sync_editor, events);
+      })};
+  if (!replay_result) [[unlikely]] {
     sync_editor.cancel();
     co_return std::unexpected{
-        confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(sync_result.error()))}};
+        confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(replay_result.error()))}};
   }
   if (report_reached_oom_threshold(piece.storage())) [[unlikely]] {
     sync_editor.cancel();
@@ -308,7 +328,7 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   if (retired_piece_it != m_confdata_pieces.end()) {
     erase_if_retired_and_unused(retired_piece_it);
   }
-  m_pagination = *std::move(sync_result);
+  m_pagination = std::move(snapshot.m_pagination);
   co_return std::expected<void, confdata_sync_error>{};
 }
 

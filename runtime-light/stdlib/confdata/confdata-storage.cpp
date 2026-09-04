@@ -174,9 +174,59 @@ storage::sample::sample(resource_type& resource) noexcept
     : m_values{map_type::allocator_type{resource}},
       m_retired_allocations{resource} {}
 
-storage::editor::editor(storage& owner, sample_id destination, bool copy_active_sample) noexcept
+auto storage::sync_size_hints::add_section(std::string_view section) noexcept -> void {
+  if (auto hint_it{m_hints.find(section)}; hint_it != m_hints.end()) {
+    ++hint_it->second;
+    return;
+  }
+  m_hints.emplace(hint_string{section.data(), section.size()}, 1);
+}
+
+auto storage::sync_size_hints::add(std::string_view key) noexcept -> void {
+  kphp::log::assertion(!m_finished);
+
+  const auto views{split_key(key)};
+  if (!views) [[unlikely]] {
+    return;
+  }
+
+  switch (views->kind()) {
+  case section_kind::simple_key:
+  case section_kind::predefined_wildcard:
+    return;
+  case section_kind::one_dot_wildcard:
+    return add_section(views->section());
+  case section_kind::two_dots_wildcard: {
+    const auto one_dot_views{views->reinterpret_two_dots_as_one_dot()};
+    kphp::log::assertion(one_dot_views.has_value());
+    add_section(one_dot_views->section());
+    return add_section(views->section());
+  }
+  }
+}
+
+auto storage::sync_size_hints::finish() noexcept -> void {
+  kphp::log::assertion(!m_finished);
+  for (auto hint_it{m_hints.begin()}; hint_it != m_hints.end();) {
+    if (hint_it->second <= 1) {
+      hint_it = m_hints.erase(hint_it);
+    } else {
+      ++hint_it;
+    }
+  }
+  m_finished = true;
+}
+
+auto storage::sync_size_hints::section_size(std::string_view section) const noexcept -> size_t {
+  kphp::log::assertion(m_finished);
+  const auto hint_it{m_hints.find(section)};
+  return hint_it != m_hints.end() ? hint_it->second : 0;
+}
+
+storage::editor::editor(storage& owner, sample_id destination, bool copy_active_sample, sync_size_hints_ref size_hints) noexcept
     : m_owner{std::addressof(owner)},
       m_destination{destination},
+      m_sync_size_hints{size_hints},
       m_values{map_type::allocator_type{owner.resource()}},
       m_retired_allocations{owner.resource()} {
   if (copy_active_sample) {
@@ -187,6 +237,7 @@ storage::editor::editor(storage& owner, sample_id destination, bool copy_active_
 storage::editor::editor(editor&& other) noexcept
     : m_owner{std::exchange(other.m_owner, nullptr)},
       m_destination{std::exchange(other.m_destination, INVALID_SAMPLE_ID)},
+      m_sync_size_hints{std::exchange(other.m_sync_size_hints, std::nullopt)},
       m_values{std::move(other.m_values)},
       m_retired_allocations{std::move(other.m_retired_allocations)},
       m_last_retired_value{std::move(other.m_last_retired_value)},
@@ -280,6 +331,13 @@ auto storage::editor::upsert_one(const key_views& views, const mixed& value) noe
       m_values.emplace(handles.make_section_copy(), value);
     } else {
       array<mixed> entries{};
+      if (m_sync_size_hints.has_value()) {
+        const auto size_hint{m_sync_size_hints->get().section_size(views.section())};
+        if (size_hint != 0) {
+          kphp::log::assertion(size_hint <= static_cast<size_t>(std::numeric_limits<int64_t>::max()));
+          entries = array<mixed>{array_size{static_cast<int64_t>(size_hint), false}};
+        }
+      }
       entries.set_value(handles.make_remainder_copy(), value);
       m_values.emplace(handles.make_section_copy(), mixed{std::move(entries)});
     }
@@ -519,6 +577,16 @@ auto storage::start_sync() noexcept -> editor {
   return std::move(*update);
 }
 
+auto storage::start_sync(const sync_size_hints& size_hints) noexcept -> editor {
+  kphp::log::assertion(size_hints.m_finished);
+  kphp::log::assertion(is_initialized());
+  kphp::log::assertion(is_valid_sample_id(m_active_sample));
+  kphp::log::assertion(!m_has_committed_sample);
+  auto update{begin_update(false, std::cref(size_hints))};
+  kphp::log::assertion(update.has_value());
+  return std::move(*update);
+}
+
 auto storage::start_update() noexcept -> std::optional<editor> {
   kphp::log::assertion(is_initialized());
   kphp::log::assertion(is_valid_sample_id(m_active_sample));
@@ -531,7 +599,7 @@ auto storage::resource() noexcept -> resource_type& {
   return m_state->m_resource;
 }
 
-auto storage::begin_update(bool copy_active_sample) noexcept -> std::optional<editor> {
+auto storage::begin_update(bool copy_active_sample, sync_size_hints_ref size_hints) noexcept -> std::optional<editor> {
   kphp::log::assertion(!m_update_in_progress);
   kphp::log::assertion(is_valid_sample_id(m_active_sample));
   reclaim_retired_samples();
@@ -559,7 +627,7 @@ auto storage::begin_update(bool copy_active_sample) noexcept -> std::optional<ed
   kphp::log::assertion(sample.m_values.empty());
   kphp::log::assertion(sample.m_retired_allocations.empty());
   m_update_in_progress = true;
-  return editor{*this, destination, copy_active_sample};
+  return editor{*this, destination, copy_active_sample, size_hints};
 }
 
 auto storage::commit(editor& update) noexcept -> void {
