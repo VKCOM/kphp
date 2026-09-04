@@ -207,7 +207,7 @@ int64_t f$ob_get_level() {
 
 static int http_return_code;
 static string http_status_line;
-static char headers_storage[sizeof(array<string>)];
+alignas(array<string>) static char headers_storage[sizeof(array<string>)];
 static array<string>* headers = reinterpret_cast<array<string>*>(headers_storage);
 static long long header_last_query_num = -1;
 static bool headers_custom_handler_invoked = false;
@@ -1329,7 +1329,7 @@ static bool parse_multipart(const char* post, int post_len, const string& bounda
   return true;
 }
 
-static char arg_vars_storage[sizeof(array<string>)];
+alignas(array<string>) static char arg_vars_storage[sizeof(array<string>)];
 static array<string>* arg_vars = nullptr;
 
 Optional<int64_t>& get_dummy_rest_index() noexcept {
@@ -1897,7 +1897,7 @@ std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
   return {stats.running_workers, stats.waiting_workers, stats.ready_for_accept_workers, stats.total_workers};
 }
 
-static char ini_vars_storage[sizeof(array<string>)];
+alignas(array<string>) static char ini_vars_storage[sizeof(array<string>)];
 static array<string>* ini_vars = nullptr;
 
 void ini_set(vk::string_view key, vk::string_view value) {
