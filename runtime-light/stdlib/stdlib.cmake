@@ -32,4 +32,5 @@ prepend(
   time/time-functions.cpp
   time/timelib-functions.cpp
   zlib/zlib-functions.cpp
+  zlib/zlib-stream-compressor.cpp
   zstd/zstd-functions.cpp)

@@ -1048,38 +1048,89 @@ struct httpConnection final {
   }
 };
 
-struct httpResponse final {
+// HTTP responses are sent as a sequence of chunks (one per flush(), plus a final one from finalize_server()).
+// A chunk always carries a body, but only the very first chunk also carries a header, since the status code
+// and headers may only be sent once, at the very start of the response.
+struct httpResponseHeader final {
   tl::HttpVersion version{};
   tl::i32 status_code{};
   tl::vector<tl::httpHeaderEntry> headers{};
-  std::span<const std::byte> body;
 
   void store(tl::storer& tls) const noexcept {
     tl::mask{}.store(tls);
     version.store(tls);
     status_code.store(tls);
     headers.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::mask{}.footprint() + version.footprint() + status_code.footprint() + headers.footprint();
+  }
+};
+
+class HttpResponseHeader final {
+  static constexpr uint32_t MAGIC = 0x1c9d'7a44;
+
+public:
+  tl::httpResponseHeader inner{};
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MAGIC}.store(tls);
+    tl::u32{.value = static_cast<uint32_t>(inner.footprint())}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MAGIC}.footprint() + tl::u32{}.footprint() + inner.footprint();
+  }
+};
+
+struct httpResponseBody final {
+  std::span<const std::byte> body;
+
+  void store(tl::storer& tls) const noexcept {
     tls.store_bytes(body);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::mask{}.footprint() + version.footprint() + status_code.footprint() + headers.footprint() + body.size();
+    return body.size();
   }
 };
 
-class HttpResponse final {
-  static constexpr uint32_t MAGIC = 0x8466'24dc;
+class HttpResponseBody final {
+  static constexpr uint32_t MAGIC = 0x6f2b'9e17;
 
 public:
-  tl::httpResponse http_response{};
+  tl::httpResponseBody inner{};
 
   void store(tl::storer& tls) const noexcept {
     tl::magic{.value = MAGIC}.store(tls);
-    http_response.store(tls);
+    tl::u32{.value = static_cast<uint32_t>(inner.footprint())}.store(tls);
+    inner.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MAGIC}.footprint() + http_response.footprint();
+    return tl::magic{.value = MAGIC}.footprint() + tl::u32{}.footprint() + inner.footprint();
+  }
+};
+
+class HttpResponseChunk final {
+  static constexpr uint32_t BLOCK_FINISH_MAGIC = 0xa3e5'0d92;
+
+public:
+  std::optional<tl::HttpResponseHeader> opt_header;
+  tl::HttpResponseBody body{};
+
+  void store(tl::storer& tls) const noexcept {
+    if (opt_header.has_value()) {
+      opt_header->store(tls);
+    }
+    body.store(tls);
+    tl::magic{.value = BLOCK_FINISH_MAGIC}.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return (opt_header.has_value() ? opt_header->footprint() : 0) + body.footprint() + tl::magic{.value = BLOCK_FINISH_MAGIC}.footprint();
   }
 };
 
