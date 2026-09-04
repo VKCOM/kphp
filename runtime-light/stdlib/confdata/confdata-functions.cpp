@@ -4,130 +4,163 @@
 
 #include "runtime-light/stdlib/confdata/confdata-functions.h"
 
-#include <algorithm>
 #include <cstddef>
-#include <span>
 #include <string_view>
-#include <utility>
 
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
-#include "runtime-common/stdlib/serialization/json-functions.h"
-#include "runtime-common/stdlib/serialization/serialize-functions.h"
-#include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/component/component-api.h"
-#include "runtime-light/stdlib/confdata/confdata-constants.h"
+#include "runtime-light/stdlib/confdata/confdata-keys.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/fork/fork-functions.h"
-#include "runtime-light/streams/read-ext.h"
-#include "runtime-light/streams/stream.h"
-#include "runtime-light/tl/tl-core.h"
-#include "runtime-light/tl/tl-functions.h"
-#include "runtime-light/tl/tl-types.h"
 
 namespace {
 
-mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
-  if (confdata_value.is_php_serialized.value && confdata_value.is_json_serialized.value) [[unlikely]] { // check that we don't have both flags set
-    kphp::log::warning("confdata value has both php_serialized and json_serialized flags set");
-    return {};
+auto verify_confdata_parameter(std::string_view parameter) noexcept -> bool {
+  if (!ConfdataInstanceState::get().is_initialized()) [[unlikely]] {
+    kphp::log::warning("confdata is not initialized");
+    return false;
   }
-  if (confdata_value.is_php_serialized.value) {
-    return unserialize_raw(confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size()));
-  } else if (confdata_value.is_json_serialized.value) {
-    return json_decode(confdata_value.value.value).value_or(mixed{});
-  } else {
-    return string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())};
+  if (parameter.size() > kphp::confdata::MAX_KEY_LENGTH) [[unlikely]] {
+    kphp::log::warning("confdata key is too long {}", parameter);
+    return false;
   }
+  if (parameter.empty()) [[unlikely]] {
+    kphp::log::warning("confdata does not support empty keys");
+    return false;
+  }
+  return true;
 }
 
 } // namespace
 
-kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
-  if (key.empty()) [[unlikely]] {
-    kphp::log::warning("empty key is not supported");
-    co_return mixed{};
+auto f$confdata_get_value(const string& key) noexcept -> mixed {
+  const std::string_view key_view{key.c_str(), key.size()};
+  if (!verify_confdata_parameter(key_view)) [[unlikely]] {
+    return {};
   }
 
-  auto& confdata_key_cache{ConfdataInstanceState::get().key_cache()};
-  if (auto it{confdata_key_cache.find(key)}; it != confdata_key_cache.end()) {
-    co_return it->second;
+  const auto& confdata_st{ConfdataInstanceState::get()};
+  const auto views{kphp::confdata::split_key(key_view, confdata_st.wildcards())};
+  kphp::log::assertion(views.has_value());
+  const kphp::confdata::key_handles handles{*views};
+
+  const auto& values{confdata_st.values()};
+  const auto section_it{values.find(handles.section())};
+  if (section_it == values.end()) {
+    return {};
+  }
+  if (views->kind() == kphp::confdata::section_kind::simple_key) {
+    return section_it->second;
   }
 
-  tl::ConfdataGet confdata_get{.key = {.value = {key.c_str(), key.size()}}};
-  tl::storer tls{confdata_get.footprint()};
-  confdata_get.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return mixed{};
+  kphp::log::assertion(section_it->second.is_array());
+  if (const auto* value{section_it->second.as_array().find_value(handles.remainder())}; value != nullptr) {
+    return *value;
   }
-
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
-    co_return mixed{};
-  }
-
-  tl::fetcher tlf{response};
-  tl::Maybe<tl::confdataValue> maybe_confdata_value{};
-  kphp::log::assertion(maybe_confdata_value.fetch(tlf));
-
-  if (!maybe_confdata_value.opt_value) { // no such key
-    co_return mixed{};
-  }
-
-  auto value{extract_confdata_value(*maybe_confdata_value.opt_value)}; // the key exists
-  confdata_key_cache.emplace(std::move(key), value);
-  co_return std::move(value);
+  return {};
 }
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
-  static constexpr size_t CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY = 1 << 20;
-
-  if (wildcard.empty()) [[unlikely]] {
-    kphp::log::warning("empty wildcard is not supported");
-    co_return array<mixed>{};
-  }
-
-  auto& confdata_wildcard_cache{ConfdataInstanceState::get().wildcard_cache()};
-  if (auto it{confdata_wildcard_cache.find(wildcard)}; it != confdata_wildcard_cache.end()) {
-    co_return it->second;
-  }
-
+auto f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept -> array<mixed> {
   const std::string_view wildcard_view{wildcard.c_str(), wildcard.size()};
-
-  const tl::ConfdataGetWildcard confdata_get_wildcard{.wildcard = {.value = wildcard_view}};
-  tl::storer tls{confdata_get_wildcard.footprint()};
-  confdata_get_wildcard.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return array<mixed>{};
+  if (!verify_confdata_parameter(wildcard_view)) [[unlikely]] {
+    return {};
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  response.reserve(CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY);
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
-    co_return array<mixed>{};
+  const auto& confdata_st{ConfdataInstanceState::get()};
+  const auto& predefined_wildcards{confdata_st.wildcards()};
+  const auto views{kphp::confdata::split_key(wildcard_view, predefined_wildcards)};
+  kphp::log::assertion(views.has_value());
+  const kphp::confdata::key_handles handles{*views};
+  const auto& values{confdata_st.values()};
+
+  if (views->kind() != kphp::confdata::section_kind::simple_key) {
+    const auto section_it{values.find(handles.section())};
+    if (section_it == values.end()) {
+      return {};
+    }
+
+    kphp::log::assertion(section_it->second.is_array());
+    const auto& entries{section_it->second.as_array()};
+    if (handles.remainder().is_string() && handles.remainder().as_string().empty()) {
+      return entries;
+    }
+
+    array<mixed> result{};
+    const string remainder_prefix{handles.remainder().to_string()};
+    const std::string_view remainder_prefix_view{remainder_prefix.c_str(), remainder_prefix.size()};
+    for (const auto& entry : entries) {
+      const string entry_key{entry.get_key().to_string()};
+      const std::string_view entry_key_view{entry_key.c_str(), entry_key.size()};
+      if (entry_key_view.starts_with(remainder_prefix_view)) {
+        const auto suffix{entry_key_view.substr(remainder_prefix_view.size())};
+        result.set_value(string{suffix.data(), static_cast<string::size_type>(suffix.size())}, entry.get_value());
+      }
+    }
+    return result;
   }
 
-  tl::fetcher tlf{response};
-  tl::Dictionary<tl::confdataValue> dict_confdata_value{};
-  kphp::log::assertion(dict_confdata_value.fetch(tlf));
+  array<mixed> result{};
+  const auto merge_entries{[&result, wildcard_view](kphp::confdata::storage::map_type::const_iterator section_it) noexcept {
+    const std::string_view section_view{section_it->first.c_str(), section_it->first.size()};
+    const auto suffix_view{section_view.substr(wildcard_view.size())};
+    const string section_suffix{suffix_view.data(), static_cast<string::size_type>(suffix_view.size())};
+    kphp::log::assertion(section_it->second.is_array());
+    const auto& entries{section_it->second.as_array()};
+    const auto inserting_size{entries.size() + result.size()};
+    result.reserve(inserting_size.size, inserting_size.is_vector);
+    for (const auto& entry : entries) {
+      result.set_value(string{section_suffix}.append(entry.get_key()), entry.get_value());
+    }
+  }};
 
-  array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
-  std::ranges::for_each(dict_confdata_value, [&result, wildcard_size = wildcard_view.size()](const auto& dict_field) noexcept {
-    kphp::log::assertion(dict_field.key.value.size() >= wildcard_size);
+  auto section_it{values.lower_bound(handles.section())};
+  for (std::string_view section_view{section_it->first.c_str(), section_it->first.size()};
+       section_it != values.end() && section_view.starts_with(wildcard_view);) {
+    section_view = {section_it->first.c_str(), section_it->first.size()};
+    switch (kphp::confdata::classify_section(section_view, predefined_wildcards)) {
+    case kphp::confdata::section_kind::simple_key: {
+      const auto suffix{section_view.substr(wildcard_view.size())};
+      result.set_value(string{suffix.data(), static_cast<string::size_type>(suffix.size())}, section_it->second);
+      break;
+    }
+    case kphp::confdata::section_kind::predefined_wildcard:
+      if (!section_view.contains('.') && predefined_wildcards.is_top_level_wildcard(section_view)) {
+        merge_entries(section_it);
+      }
+      break;
+    case kphp::confdata::section_kind::one_dot_wildcard:
+      if (!predefined_wildcards.has_matching_wildcard(section_view)) {
+        merge_entries(section_it);
+      }
+      break;
+    case kphp::confdata::section_kind::two_dots_wildcard:
+      break;
+    }
+    ++section_it;
+  }
+  return result;
+}
 
-    const std::string_view key_without_wildcard_prefix{dict_field.key.value.substr(wildcard_size)};
-    result.set_value(string{key_without_wildcard_prefix.data(), static_cast<string::size_type>(key_without_wildcard_prefix.size())},
-                     extract_confdata_value(dict_field.value));
-  });
-  confdata_wildcard_cache.emplace(std::move(wildcard), result);
-  co_return std::move(result);
+auto f$confdata_get_values_by_predefined_wildcard(const string& wildcard) noexcept -> array<mixed> {
+  const std::string_view wildcard_view{wildcard.c_str(), wildcard.size()};
+  if (!verify_confdata_parameter(wildcard_view)) [[unlikely]] {
+    return {};
+  }
+
+  const auto& confdata_st{ConfdataInstanceState::get()};
+  if (kphp::confdata::classify_section(wildcard_view, confdata_st.wildcards()) == kphp::confdata::section_kind::simple_key) [[unlikely]] {
+    kphp::log::warning("trying to get elements by non-predefined wildcard '{}'", wildcard_view);
+    return {};
+  }
+
+  const auto views{kphp::confdata::split_key_with_predefined_wildcard(wildcard_view, wildcard_view.size())};
+  kphp::log::assertion(views.has_value());
+  const kphp::confdata::key_handles handles{*views};
+  const auto& values{confdata_st.values()};
+  const auto elements_it{values.find(handles.section())};
+  if (elements_it == values.end()) {
+    return {};
+  }
+
+  kphp::log::assertion(elements_it->second.is_array());
+  return elements_it->second.as_array();
 }

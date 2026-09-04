@@ -28,7 +28,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 16
+#define K2_PLATFORM_HEADER_H_VERSION 17
 
 // Always check that enum value is a valid value!
 
@@ -200,7 +200,7 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
 /**
  * Shared memory provides a mechanism for instances to share data.
  * To use it, first allocate memory with `k2_alloc_shared_memory`, then publish
- * it with a unique name using `k2_publish_shared_memory`. Other instances can
+ * it with a name using `k2_publish_shared_memory`. Other instances can
  * then retrieve the memory by name with `k2_get_shared_memory`.
  *
  * Lifecycle:
@@ -211,7 +211,8 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  * - Calling `k2_publish_shared_memory` sets the reference count to one
  * - Calling `k2_get_shared_memory` increments the reference count
  * - Reference count is decremented automatically when instance finishes
- * - No explicit release function is needed
+ * - The publishing instance releases an allocation explicitly with
+ *   `k2_free_shared_memory` once it no longer needs to keep it published
  */
 
 /**
@@ -237,8 +238,9 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
 /**
  * Publishes shared memory with a name and TTL, making it discoverable by other instances.
  *
- * @param `name` Name to associate with the memory region. Must be unique.
- *               Should be valid UTF-8 and not contain null bytes.
+ * @param `name` Name to associate with the memory region. Should be valid
+ *               UTF-8 and not contain null bytes. A live name can be reused
+ *               only when `ignore_if_exist` is true.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
  * @param `memory` Pointer to memory previously allocated via `k2_alloc_shared_memory`.
  * @param `ttl` Time-to-live in milliseconds. Memory becomes eligible for

@@ -4,21 +4,15 @@
 
 #pragma once
 
-#include <utility>
-
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/confdata/confdata-constants.h"
+#include "runtime-light/stdlib/confdata/confdata-state.h"
 
 inline bool f$is_confdata_loaded() noexcept {
-  return k2::component_access(kphp::confdata::COMPONENT_NAME) == k2::errno_ok;
+  return ConfdataInstanceState::get().is_initialized();
 }
 
-kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept;
+auto f$confdata_get_value(const string& key) noexcept -> mixed;
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept;
+auto f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept -> array<mixed>;
 
-inline kphp::coro::task<array<mixed>> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
-  co_return co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard));
-}
+auto f$confdata_get_values_by_predefined_wildcard(const string& wildcard) noexcept -> array<mixed>;

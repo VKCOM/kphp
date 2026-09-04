@@ -88,7 +88,9 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
-  AllocatorState instance_allocator_state{ComponentState::get().initial_instance_memory_size, ComponentState::get().min_instance_extra_memory_size, 0};
+  const ComponentState& component_state{ComponentState::get()};
+
+  AllocatorState instance_allocator_state{component_state.initial_instance_memory_size, component_state.min_instance_extra_memory_size, 0};
 
   kphp::log::contextual_tags instance_tags;
 

@@ -5,6 +5,8 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
@@ -28,12 +30,18 @@ struct RuntimeAllocator final : vk::not_copyable {
   void* realloc_global_memory(void* mem, size_t new_size, size_t old_size) noexcept;
   void free_global_memory(void* mem, size_t size) noexcept;
 
-private:
-  void request_extra_memory(size_t requested_size) noexcept;
+  [[nodiscard]] std::reference_wrapper<memory_resource::unsynchronized_pool_resource>
+  replace_script_memory_resource(memory_resource::unsynchronized_pool_resource& replacement) noexcept {
+    return std::exchange(m_script_memory_resource, std::ref(replacement));
+  }
+  memory_resource::unsynchronized_pool_resource& current_script_memory_resource() const noexcept {
+    return m_script_memory_resource.get();
+  }
 
 public:
   memory_resource::unsynchronized_pool_resource memory_resource;
 
 private:
+  std::reference_wrapper<memory_resource::unsynchronized_pool_resource> m_script_memory_resource{memory_resource};
   size_t m_min_extra_mem_size{0};
 };

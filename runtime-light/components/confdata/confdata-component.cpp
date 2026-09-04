@@ -86,7 +86,7 @@ VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
 
 VISIBILITY_DEFAULT const ImageInfo* k2_describe() {
   static constexpr std::array extra_info{ImageInfo::KeyValuePair{.key = "compiler_version", .value = K2_CONFDATA_COMPILER_VERSION}};
-  static constexpr ImageInfo image_info{.image_name = kphp::confdata::COMPONENT_NAME.data(),
+  static constexpr ImageInfo image_info{.image_name = kphp::confdata::IMAGE_NAME.data(),
                                         .is_oneshot = 0,
                                         .build_timestamp = K2_CONFDATA_BUILD_TIMESTAMP,
                                         .header_h_version = K2_PLATFORM_HEADER_H_VERSION,
