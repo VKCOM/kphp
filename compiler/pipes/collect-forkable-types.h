@@ -4,11 +4,18 @@
 
 #pragma once
 
+#include <mutex>
+#include <string>
+#include <vector>
+
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
+class TypeData;
 class CollectForkableTypesPass final : public FunctionPassBase {
+
 public:
   std::string get_description() final {
     return "Collect forkable types";

@@ -5,13 +5,15 @@
 #pragma once
 
 #include <map>
+#include <stdint.h>
 #include <string>
+#include <utility>
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
 
 class CodeGenerator;
-
 struct ShapeKeys : CodeGenRootCmd {
+
   explicit ShapeKeys(std::map<std::int64_t, std::string> shape_keys_storage) noexcept
       : shape_keys_storage_(std::move(shape_keys_storage)) {}
 

@@ -4,7 +4,12 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+
+class CodeGenerator;
 
 namespace tl2cpp {
 struct TlConstructorDecl {

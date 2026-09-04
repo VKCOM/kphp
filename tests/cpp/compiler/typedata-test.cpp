@@ -1,6 +1,13 @@
+#include <gtest/gtest-message.h>
+#include <gtest/gtest-test-part.h>
 #include <gtest/gtest.h>
+#include <memory>
 
+#include "compiler/inferring/key.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/type-data.h"
+#include "gtest/gtest_pred_impl.h"
 
 TEST(typedata_test, typedata_human_readable) {
   auto *td_int = TypeData::get_type(tp_int);

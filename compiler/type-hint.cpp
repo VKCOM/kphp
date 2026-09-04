@@ -4,15 +4,26 @@
 
 #include "compiler/type-hint.h"
 
+#include <cstdint>
+#include <iterator>
 #include <mutex>
 
+#include "common/algorithms/string-algorithms.h"
 #include "common/php-functions.h"
-
+#include "common/wrappers/iterator_range.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
+#include "compiler/threading/hash-table.h"
+#include "compiler/threading/locks.h"
+#include "compiler/utils/string-utils.h"
 
 /**
  * This class stores a big hashtable [hash => TypeHint]

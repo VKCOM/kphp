@@ -4,10 +4,15 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/data/define-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/vertex-meta_op_base.h"
 
 class RegisterDefinesPass final : public FunctionPassBase {
+
 public:
   std::string get_description() override {
     return "Register defines";

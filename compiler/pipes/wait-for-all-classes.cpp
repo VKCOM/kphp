@@ -3,13 +3,21 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/wait-for-all-classes.h"
-#include "compiler/pipes/sort-and-inherit-classes.h"
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/composer-json-data.h"
 #include "compiler/data/modulite-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/pipes/sort-and-inherit-classes.h"
+#include "compiler/stage.h"
+
+template<class DataT>
+class DataStream;
 
 /*
  * This is a sync point. When `on_finish()` is called (once, in a single thread), then

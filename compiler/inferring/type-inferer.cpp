@@ -4,12 +4,23 @@
 
 #include "compiler/inferring/type-inferer.h"
 
+#include <string>
+#include <unistd.h>
+#include <utility>
+
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/edge.h"
+#include "compiler/inferring/node.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/restriction-base.h"
 #include "compiler/inferring/restriction-match-phpdoc.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/scheduler/task.h"
+#include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
 namespace tinf {

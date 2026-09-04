@@ -4,12 +4,28 @@
 
 #include "compiler/code-gen/includes.h"
 
+#include <cstddef>
+#include <iterator>
+#include <utility>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-op_func_call.h"
+#include "auto/compiler/vertex/vertex-op_var.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/vertex-meta_op_base.h"
 
 ExternInclude::ExternInclude(vk::string_view file_name)
     : file_name(file_name) {

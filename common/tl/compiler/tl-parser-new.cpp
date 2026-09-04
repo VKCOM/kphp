@@ -5,6 +5,7 @@
 #include "common/tl/compiler/tl-parser-new.h"
 
 #include <cassert>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -13,10 +14,11 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <type_traits>
 #include <unistd.h>
+#include <utility>
 
 #include "common/c-tree.h"
-
 #include "common/crc32.h"
 #include "common/kprintf.h"
 #include "common/tl/compiler/tl-tl.h"

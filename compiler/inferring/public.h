@@ -10,6 +10,8 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/inferring/type-inferer.h"
 
+class TypeData;
+
 namespace tinf {
 
 tinf::Node* get_tinf_node(VertexPtr vertex);

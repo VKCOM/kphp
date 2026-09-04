@@ -4,9 +4,18 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 
+#include <algorithm>
+
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl-constructor.h"
 #include "compiler/code-gen/files/tl2cpp/tl-function.h"
 #include "compiler/code-gen/files/tl2cpp/tl-type.h"
+#include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/kphp_assert.h"
 
 namespace tl2cpp {
 std::unordered_map<std::string, Module> modules;

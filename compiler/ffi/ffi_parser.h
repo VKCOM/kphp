@@ -5,13 +5,17 @@
 #pragma once
 
 #include <map>
+#include <stddef.h>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "compiler/ffi/ffi_types.h"
 
 struct FFIParseError {
+
   std::string message;
   int line;
 };

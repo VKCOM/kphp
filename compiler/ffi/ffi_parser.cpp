@@ -4,11 +4,15 @@
 
 #include "compiler/ffi/ffi_parser.h"
 
+#include <algorithm>
+#include <cstring>
+#include <stdio.h>
+
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/ffi/c_parser/location.h"
 #include "compiler/ffi/c_parser/parsing_driver.h"
 #include "compiler/kphp_assert.h"
-
-#include <cstring>
 
 static void log_ffi_parser_stats(const ffi::ParsingDriver::Result& result) {
   if (G->settings().verbosity.get() >= 1) {

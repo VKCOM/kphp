@@ -4,6 +4,12 @@
 
 #include "compiler/code-gen/files/function-source.h"
 
+#include <map>
+#include <set>
+#include <stddef.h>
+#include <string>
+
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
@@ -11,6 +17,9 @@
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/vertex-compiler.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/function-data.h"
 #include "compiler/stage.h"
 
 FunctionCpp::FunctionCpp(FunctionPtr function)

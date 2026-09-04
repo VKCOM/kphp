@@ -4,8 +4,12 @@
 
 #include "compiler/data/lib-data.h"
 
+#include <cstddef>
+#include <string_view>
+
 #include "common/wrappers/string_view.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 namespace {

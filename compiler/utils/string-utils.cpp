@@ -4,6 +4,9 @@
 
 #include "compiler/utils/string-utils.h"
 
+#include <cctype>
+#include <cstddef>
+
 // perform "blahBlah" to "blah_blah" translation
 std::string transform_to_snake_case(vk::string_view origin) noexcept {
   std::string name;

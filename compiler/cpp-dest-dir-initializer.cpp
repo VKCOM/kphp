@@ -4,7 +4,15 @@
 
 #include "compiler/cpp-dest-dir-initializer.h"
 
+#include <string>
+
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/threading/profiler.h"
+#include "compiler/threading/thread-id.h"
 
 void CppDestDirInitializer::initialize_sync() noexcept {
   const char* description = "Init cpp dest dir";

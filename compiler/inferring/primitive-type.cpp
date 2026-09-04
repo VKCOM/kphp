@@ -4,12 +4,14 @@
 
 #include "compiler/inferring/primitive-type.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
+#include <utility>
 
 #include "common/algorithms/find.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 const char* ptype_name(PrimitiveType id) {

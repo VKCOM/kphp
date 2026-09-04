@@ -4,9 +4,13 @@
 
 #include "compiler/stats.h"
 
-#include "common/dl-utils-lite.h"
+#include <algorithm>
+#include <cctype>
+#include <utility>
 
+#include "common/dl-utils-lite.h"
 #include "compiler/data/function-data.h"
+#include "compiler/threading/profiler.h"
 
 void Stats::on_var_inserting(VarData::Type type) {
   switch (type) {

@@ -6,12 +6,18 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_set>
 
 #include "compiler/data/class-members.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
 #include "compiler/inferring/var-node.h"
 
+struct ClassMemberInstanceField;
+struct ClassMemberStaticField;
 class VarData {
+
   DEBUG_STRING_METHOD {
     return as_human_readable();
   }

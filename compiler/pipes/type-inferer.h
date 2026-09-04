@@ -4,10 +4,16 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "compiler/pipes/function-and-cfg.h"
 #include "compiler/threading/data-stream.h"
 
+struct FunctionAndCFG;
+template<class DataT>
+class DataStream;
 class TypeInfererF {
+
 public:
   // don't show on_finish() in profiler, as it does nothing and is just a zero line
   using need_on_finish_profiler = std::false_type;

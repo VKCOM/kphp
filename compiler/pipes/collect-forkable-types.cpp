@@ -4,8 +4,18 @@
 
 #include "compiler/pipes/collect-forkable-types.h"
 
+#include <algorithm>
+#include <functional>
+#include <utility>
+
+#include "auto/compiler/vertex/vertex-op_func_call.h"
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/sorting.h"
+#include "common/smart_ptrs/singleton.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
 
 VertexPtr CollectForkableTypesPass::on_enter_vertex(VertexPtr root) {
   if (auto call = root.try_as<op_func_call>()) {

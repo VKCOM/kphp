@@ -4,9 +4,19 @@
 
 #include "compiler/inferring/public.h"
 
+#include <vector>
+
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/expr-node.h"
+#include "compiler/inferring/node.h"
+#include "compiler/inferring/type-inferer.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
+
+class TypeData;
 
 namespace tinf {
 

@@ -4,10 +4,13 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 
 class RestrictionNonVoid : public tinf::RestrictionBase {
+
   tinf::Node* node;
 
 public:

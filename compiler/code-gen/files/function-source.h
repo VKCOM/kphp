@@ -8,7 +8,9 @@
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
+class CodeGenerator;
 struct FunctionCpp : CodeGenRootCmd {
+
   FunctionPtr function;
   explicit FunctionCpp(FunctionPtr function);
   void compile(CodeGenerator& W) const final;

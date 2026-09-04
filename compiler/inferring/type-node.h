@@ -4,8 +4,13 @@
 
 #pragma once
 
+#include <string>
+#include <utility>
+
 #include "compiler/inferring/node.h"
 #include "compiler/location.h"
+
+class TypeData;
 
 namespace tinf {
 

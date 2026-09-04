@@ -6,7 +6,12 @@
 
 #include <algorithm>
 #include <climits>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "common/algorithms/string-algorithms.h"

@@ -10,9 +10,12 @@
 #include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task-pull.h"
 
+class Node;
+class Task;
+class TaskPull;
 class ThreadContext;
-
 class Scheduler : public SchedulerBase {
+
 private:
   std::vector<Node*> nodes;
   std::vector<Node*> one_thread_nodes;
