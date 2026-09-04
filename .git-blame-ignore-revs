@@ -7,6 +7,7 @@
 #
 # For more information you can look at git-blame(1) man page.
 
-# apply clang-format to common, runtime, runtime-common, runtime-light, and compiler directories
+# apply clang-format to common, runtime, runtime-common, and runtime-light directories
 ff72b37bda68cf282c37a92d23bc763de6f47795
+# apply clang-format to complier directory
 43f180959ba095aaefcfe35472b2c91f1c9e71c8
