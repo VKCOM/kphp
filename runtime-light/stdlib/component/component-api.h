@@ -122,7 +122,6 @@ inline auto f$component_client_send_request(string name, string request) noexcep
 
   auto stream{std::move(*expected_stream)};
   auto request_span{std::span<const char>{request.c_str(), request.size()}};
-  auto task{kphp::component::send_request(stream, std::as_bytes(request_span))};
   if (auto expected{co_await kphp::coro::on_stack(
           [](kphp::component::stream& stream_arg, std::span<const std::byte> request_arg) noexcept {
             return kphp::forks::id_managed(kphp::component::send_request, std::reference_wrapper{stream_arg}, request_arg);
@@ -157,8 +156,8 @@ inline auto f$component_client_fetch_response(class_instance<C$ComponentQuery> q
 // === component query server interface ===========================================================
 
 inline auto f$component_server_accept_query() noexcept -> kphp::coro::task<class_instance<C$ComponentQuery>> {
-  auto task{kphp::component::stream::accept()};
-  auto opt_stream{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
+  auto opt_stream{
+      co_await kphp::coro::on_stack([]() noexcept { return kphp::forks::id_managed([]() noexcept { return kphp::component::stream::accept(); }); })};
   if (!opt_stream) [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
@@ -193,7 +192,6 @@ inline auto f$component_server_send_response(class_instance<C$ComponentQuery> qu
 
   auto& stream{query.get()->stream()};
   auto response_span{std::span<const char>{response.c_str(), response.size()}};
-  auto task{kphp::component::send_response(stream, std::as_bytes(response_span))};
   co_await kphp::coro::on_stack(
       [](kphp::component::stream& stream_arg, std::span<const std::byte> response_arg) noexcept {
         return kphp::forks::id_managed(kphp::component::send_response, std::reference_wrapper{stream_arg}, response_arg);

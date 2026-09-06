@@ -25,7 +25,7 @@ requires(kphp::coro::is_async_function_v<FallbackType>)
 kphp::coro::task<ReturnType> perform_fallback_impl(FallbackType&& lambda_fallback,
                                                    std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))>*) noexcept {
   if constexpr (kphp::coro::is_task_function_v<FallbackType>) {
-    co_return ReturnType(co_await kphp::coro::on_stack(lambda_fallback));
+    co_return ReturnType(co_await kphp::coro::on_stack(std::forward<FallbackType>(lambda_fallback)));
   } else {
     co_return ReturnType(co_await lambda_fallback());
   }

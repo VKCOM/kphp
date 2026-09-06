@@ -501,11 +501,11 @@ template<typename F, typename... Args>
 requires(kphp::coro::is_task_function_v<F, Args...>)
 auto io_scheduler::spawn(F&& f, Args&&... args) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::forward<F>(f), std::forward<Args>(args)...)};
-  auto handle{owned_task.get_handle()};
-  if (!handle || handle.done()) [[unlikely]] {
+  auto& coroutine_node{owned_task.get_coroutine_node()};
+  if (!coroutine_node.value() || coroutine_node.value().done()) [[unlikely]] {
     return false;
   }
-  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
+  m_scheduled_coroutines.push_back(coroutine_node);
   return true;
 }
 

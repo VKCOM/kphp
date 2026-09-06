@@ -230,7 +230,6 @@ auto InstanceState::erase_if_retired_and_unused(confdata_piece_list::iterator pi
 }
 
 auto InstanceState::init() noexcept -> void {
-  auto main_task{run()};
   // spawn main task onto the scheduler
   kphp::log::assertion(m_io_scheduler.spawn(&InstanceState::run, this));
 }

@@ -95,8 +95,8 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   } else {
     exit_code = 1;
   }
-  auto task{kphp::system::exit(static_cast<int32_t>(exit_code))};
-  co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task));
+  co_await kphp::coro::on_stack([](int32_t exit_code_arg) noexcept { return kphp::forks::id_managed(kphp::system::exit, exit_code_arg); },
+                                static_cast<int32_t>(exit_code));
 }
 
 inline kphp::coro::task<> f$die(mixed v = 0) noexcept {

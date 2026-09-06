@@ -57,10 +57,10 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
   auto wait_result{co_await kphp::coro::on_stack(
-      [](auto timeout_arg, auto await_set_awaitable_arg) noexcept {
-        return kphp::coro::io_scheduler::get().schedule(timeout_arg, wait_queue_next_task, std::move(await_set_awaitable_arg));
+      [](duration_type timeout_arg, auto& await_set_arg) noexcept {
+        return kphp::coro::io_scheduler::get().schedule(timeout_arg, wait_queue_next_task, await_set_arg.next());
       },
-      timeout, await_set.next())};
+      timeout, await_set)};
   if (!wait_result) {
     co_return std::nullopt;
   }
