@@ -82,11 +82,11 @@ public:
       ForkInstanceState::get().current_id = fork_id;
 
       kphp::forks::details::storage s{};
-      if constexpr (std::same_as<std::invoke_result_t<F, Args...>, void>) {
+      if constexpr (std::same_as<kphp::coro::async_function_return_type_t<F, Args...>, void>) {
         co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
         s.store();
       } else {
-        s.store<std::invoke_result_t<F, Args...>>(co_await kphp::coro::on_stack(std::move(f), std::move(args)...));
+        s.store<kphp::coro::async_function_return_type_t<F, Args...>>(co_await kphp::coro::on_stack(std::move(f), std::move(args)...));
       }
       co_return s;
     }};

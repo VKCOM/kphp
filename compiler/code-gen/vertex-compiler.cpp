@@ -8,7 +8,6 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "auto/compiler/vertex/vertex-types.h"
 #include "common/containers/final_action.h"
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
@@ -35,7 +34,6 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 
@@ -872,38 +870,6 @@ VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, Ver
   W << JsonEncoderTags::get_cppStructTag_name(v_encoder->get_string()) << "{}, ";
   return new_call;
 }
-void compile_interruptible_call_args(CodeGenerator& W, FunctionPtr func, VertexRange args) {
-  VertexRange params = func->get_params();
-  auto param_it = params.begin();
-  size_t i = 0;
-  bool first = true;
-  for (auto arg : args) {
-    if (!first) {
-      W << ", ";
-    } else {
-      first = false;
-    }
-
-    if (param_it == params.end()) {
-      W << arg;
-      continue;
-    }
-
-    auto var = param_it->as<op_func_param>()->var();
-    auto var_ptr = var->var_id;
-    const TypeData* param_type = tinf::get_type(func, i);
-    bool needs_forced_const_ref = !var->ref_flag && !func->is_k2_fork && (var_ptr->marked_as_const || (!func->has_variadic_param && var_ptr->is_read_only)) &&
-                                  !param_type->is_primitive_type();
-    if (needs_forced_const_ref) {
-      W << "static_cast<" << TypeName(param_type) << " const &>(" << arg << ")";
-    } else {
-      W << arg;
-    }
-
-    ++param_it;
-    ++i;
-  }
-}
 
 void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
   if (root->func_id->is_extern()) {
@@ -972,7 +938,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "(co_await kphp::coro::on_stack([](auto&&... args) noexcept { return ";
+        W << "ON_STACK(";
       }
       W << FunctionName(func);
     }
@@ -982,9 +948,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     W << "< " << TypeName(tp) << " >";
   }
 
-  if (func->is_interruptible && mode != func_call_mode::fork_call) {
-    W << "(std::forward<decltype(args)>(args)...); }";
-  } else {
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
     W << "(";
   }
 
@@ -1001,20 +965,18 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     }
   }
 
-  if (func->is_interruptible && mode != func_call_mode::fork_call && !args.empty()) {
+  if (func->is_interruptible && mode == func_call_mode::fork_call && !args.empty()) {
     W << ", ";
   }
 
-  if (func->is_interruptible && mode != func_call_mode::fork_call && !func->is_extern()) {
-    compile_interruptible_call_args(W, func, args);
-  } else {
-    W << JoinValues(args, ", ");
-  }
+  W << JoinValues(args, ", ");
   
   if (is_function_call_should_be_tracked(func)) {
     W << "))";
   }
-  W << ")";
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
+    W << ")";
+  }
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
       W << "))";
