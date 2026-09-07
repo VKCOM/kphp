@@ -284,11 +284,15 @@ requires(std::invocable<F, Args...> &&
     }
   };
 
-  auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  task_allocator.start_stack_scope();
-  auto final_action{vk::finally([&task_allocator]() { task_allocator.end_stack_scope(); })};
+  kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();
 
   return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }
 
 } // namespace kphp::coro
+
+#define ON_STACK(call)                                                                                                                                         \
+  ({                                                                                                                                                           \
+    kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();                                                                                   \
+    co_await (call);                                                                                                                                           \
+  })

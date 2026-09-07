@@ -60,7 +60,6 @@
 #include "compiler/operation.h"
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 
@@ -938,7 +937,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "(co_await kphp::coro::on_stack([](auto&&... args) noexcept { return ";
+        W << "ON_STACK(";
       }
       W << FunctionName(func);
     }
@@ -948,9 +947,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     W << "< " << TypeName(tp) << " >";
   }
 
-  if (func->is_interruptible && mode != func_call_mode::fork_call) {
-    W << "(std::forward<decltype(args)>(args)...); }";
-  } else {
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
     W << "(";
   }
 
@@ -967,7 +964,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     }
   }
 
-  if (func->is_interruptible && mode != func_call_mode::fork_call && !args.empty()) {
+  if (func->is_interruptible && mode == func_call_mode::fork_call && !args.empty()) {
     W << ", ";
   }
 
@@ -980,7 +977,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
   if (is_function_call_should_be_tracked(func)) {
     W << "))";
   }
-  W << ")";
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
+    W << ")";
+  }
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
       W << "))";
