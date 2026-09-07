@@ -28,7 +28,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 17
+#define K2_PLATFORM_HEADER_H_VERSION 16
 
 // Always check that enum value is a valid value!
 
