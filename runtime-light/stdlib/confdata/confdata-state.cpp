@@ -19,6 +19,7 @@ auto ConfdataInstanceState::init() noexcept -> kphp::coro::task<> {
 
   auto lease_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_LINK_ALIAS, k2::stream_kind::component)};
   if (!lease_stream) {
+    kphp::log::warning("confdata: failed to open reader lease stream: error -> {}", lease_stream.error());
     co_return;
   }
 
@@ -38,4 +39,6 @@ auto ConfdataInstanceState::init() noexcept -> kphp::coro::task<> {
 
   m_sample_id = lease.sample_id();
   m_reader_lease.emplace(std::move(*lease_stream));
+  kphp::log::info("confdata: reader attached: name -> {}, sample -> {}, sections -> {}, mapped bytes -> {}", lease.shared_memory_name(), m_sample_id,
+                  m_storage.values(m_sample_id).size(), shared_memory->size());
 }

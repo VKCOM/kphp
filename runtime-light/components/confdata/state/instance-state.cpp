@@ -253,6 +253,8 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
 
   auto connection{*std::move(expected_connection)};
   reader_session session{*this, std::prev(m_confdata_pieces.end())};
+  kphp::log::info("confdata: issuing reader lease: sample -> {}, sections -> {}", session.sample_id(),
+                  m_confdata_pieces.back().storage().values(session.sample_id()).size());
   const auto lease{kphp::confdata::reader_lease::create(kphp::confdata::SHARED_MEMORY_NAME, session.sample_id())};
   kphp::log::assertion(lease.has_value());
   if (const auto written{co_await connection.get_stream().write_all(std::as_bytes(std::span{std::addressof(*lease), 1}))}; !written) [[unlikely]] {
@@ -268,6 +270,7 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
 }
 
 auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_sync_error>> {
+  kphp::log::info("confdata: starting clean sync: actor -> {}", confdata_proxy_actor);
   // kPHP scans the encoded snapshot before materializing it so wildcard arrays
   // can reserve sufficient capacity before insertion. Retain the paginated
   // proxy responses and replay those same bytes after collecting size hints.
@@ -288,6 +291,12 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
 
   size_hints.finish();
   auto snapshot{*std::move(expected_snapshot)};
+  size_t encoded_bytes{};
+  for (const auto& page : snapshot.m_pages) {
+    encoded_bytes += page.size();
+  }
+  kphp::log::info("confdata: snapshot fetched: pages -> {}, encoded bytes -> {}, offset -> {}", snapshot.m_pages.size(), encoded_bytes,
+                  snapshot.m_pagination.m_offset);
   // A separate one-node list owns the unpublished piece and later permits a
   // zero-allocation transfer into the registry.
   confdata_piece_list pending_piece{};
@@ -314,6 +323,11 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   }
 
   sync_editor.commit();
+  const auto diagnostic_sample{piece.storage().acquire_active_sample()};
+  const auto diagnostic_sections{piece.storage().values(diagnostic_sample).size()};
+  piece.storage().release_sample(diagnostic_sample);
+  kphp::log::info("confdata: snapshot committed: sample -> {}, sections -> {}, used bytes -> {}", diagnostic_sample, diagnostic_sections,
+                  piece.storage().memory_usage().m_used);
   // Existing readers keep their mapped allocation; future lookups of the
   // stable name resolve to this newly published piece.
   if (const auto published{k2::publish_shared_memory(kphp::confdata::SHARED_MEMORY_NAME, piece.storage().memory().data(), 0, true, true)}; !published)
@@ -329,6 +343,8 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
     erase_if_retired_and_unused(retired_piece_it);
   }
   m_pagination = std::move(snapshot.m_pagination);
+  kphp::log::info("confdata: shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", kphp::confdata::SHARED_MEMORY_NAME,
+                  diagnostic_sample, diagnostic_sections, m_pagination.m_offset);
   co_return std::expected<void, confdata_sync_error>{};
 }
 

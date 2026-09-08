@@ -151,6 +151,8 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
 
   if (component_state.confdata_link_available) {
     co_await confdata_instance_state.init();
+  } else {
+    kphp::log::warning("confdata: initialization skipped: component link is unavailable");
   }
 
   if constexpr (kind == image_kind::cli || kind == image_kind::server) {
