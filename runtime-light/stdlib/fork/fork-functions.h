@@ -86,8 +86,9 @@ auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
 }
 
 template<typename F, typename... Args>
-requires(kphp::coro::is_task_function_v<F, Args...>)
-auto start(F&& f, Args&&... args) noexcept -> int64_t {
+auto start(F&& f, Args&&... args) noexcept -> int64_t
+requires(kphp::coro::is_task_v<decltype(std::invoke(std::forward<F>(f), std::forward<Args>(args)...))>)
+{
   auto& fork_instance_st{ForkInstanceState::get()};
   auto [fork_id, fork_task]{fork_instance_st.create_fork(std::forward<F>(f), std::forward<Args>(args)...)};
   auto saved_fork_id{fork_instance_st.current_id};

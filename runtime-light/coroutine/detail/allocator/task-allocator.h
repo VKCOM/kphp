@@ -53,7 +53,7 @@ private:
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
-  bool m_stack_scope{false};
+  size_t m_stack_requests{0};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
     size_t extra_mem_size{std::max(m_min_extra_mem_size, requested_size)};
@@ -133,11 +133,16 @@ public:
   }
 
   auto request_stack_alloc() noexcept -> void {
-    m_stack_scope = true;
+    ++m_stack_requests;
   }
 
   auto consume_stack_request() noexcept -> bool {
-    return std::exchange(m_stack_scope, false);
+    if (m_stack_requests > 0) {
+      --m_stack_requests;
+      return true;
+    }
+
+    return false;
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {

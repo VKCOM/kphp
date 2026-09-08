@@ -76,8 +76,9 @@ public:
   }
 
   template<typename F, typename... Args>
-  requires(kphp::coro::is_task_function_v<F, Args...>)
-  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(F&& f, Args&&... args) noexcept {
+  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(F&& f, Args&&... args) noexcept
+  requires(kphp::coro::is_task_v<decltype(std::invoke(std::forward<F>(f), std::forward<Args>(args)...))>)
+  {
     static constexpr auto fork_coroutine{[](F f, Args... args, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
       ForkInstanceState::get().current_id = fork_id;
 
