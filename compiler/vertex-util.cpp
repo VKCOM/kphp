@@ -65,6 +65,7 @@ VertexAdaptor<op_func_call> VertexUtil::add_call_arg(VertexPtr to_add, VertexAda
   auto new_call = VertexAdaptor<op_func_call>::create(new_args).set_location(call->location);
   new_call->str_val = call->str_val;
   new_call->func_id = call->func_id;
+  new_call->extra_type = call->extra_type;
   return new_call;
 }
 
