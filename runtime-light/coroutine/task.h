@@ -289,11 +289,6 @@ requires(std::invocable<F, Args...> &&
   return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }
 
-#define ON_STACK(call)                                                                                                                                         \
-  ({                                                                                                                                                           \
-    static_assert(kphp::coro::is_task_v<decltype((call))>);                                                                                                    \
-    kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();                                                                                   \
-    co_await (call);                                                                                                                                           \
-  })
+#define ON_STACK(call) (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), (call)))
 
 } // namespace kphp::coro
