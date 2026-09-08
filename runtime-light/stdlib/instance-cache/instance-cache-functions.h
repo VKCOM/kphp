@@ -64,8 +64,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   // All copies are pinned with ExtraRefCnt::for_instance_cache and are never freed individually -- the platform owns the block.
   kphp::visitors::instance_deep_copy_visitor copy_visitor{std::span{mem + hash_size + instance_size, estimated_size}, ExtraRefCnt::for_instance_cache};
   if (!copy_visitor.process_instance(instance)) [[unlikely]] {
-    // estimate_size_visitor and copy_visitor must stay in sync, so this should never actually happen.
-    // If this warning ever fires, it's a bug in one of the two visitors -- the allocated block above is leaked.
+    std::ignore = k2::try_free_shared_memory(mem);
     kphp::log::warning("instance_cache_store. failed to deep-copy instance into shared memory: estimated size -> {}, key -> {}", estimated_size, key.c_str());
     return false;
   }
@@ -77,7 +76,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
     return true;
   } else {
     // publish is expected to always succeed here (ignore_if_exist=true, valid key/memory), so this should never actually happen.
-    // If this warning ever fires, the allocated block above is leaked, since it's never published and thus never reclaimed.
+    std::ignore = k2::try_free_shared_memory(mem);
     kphp::log::warning("instance_cache_store. failed to publish shared memory: error -> {}, key -> {}", publish_result.error(), key.c_str());
     return false;
   }
