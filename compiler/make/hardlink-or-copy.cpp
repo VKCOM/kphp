@@ -9,7 +9,6 @@
 #include <cstring>
 #include <fcntl.h>
 #include <fmt/format.h>
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
