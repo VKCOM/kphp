@@ -251,7 +251,7 @@ template<class T>
 typename array<T>::allocation array<T>::allocation::allocate(int64_t new_int_size, bool is_vector) noexcept {
   const size_t mem_size = array_inner::estimate_size(new_int_size, is_vector);
   auto* raw_mem =
-      static_cast<std::byte*>(is_vector ? RuntimeAllocator::get().alloc_script_memory(mem_size) : RuntimeAllocator::get().alloc0_script_memory(mem_size));
+      static_cast<std::byte*>(is_vector ? RuntimeAllocator::get().alloc_script_memory(mem_size) : RuntimeAllocator::get().calloc_script_memory(mem_size));
   return allocation{vk::span<std::byte>{raw_mem, mem_size}, new_int_size, is_vector};
 }
 
