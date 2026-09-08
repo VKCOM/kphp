@@ -140,14 +140,18 @@ inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noex
     ttl = 0;
   }
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds
-  return k2::update_ttl_shared_memory(std::string_view{key.c_str(), key.size()}, ttl * 1000).has_value();
+  return k2::republish_shared_memory(std::string_view{key.c_str(), key.size()}, ttl * 1000).has_value();
 }
 
 inline bool f$instance_cache_delete(const string& key) noexcept {
+  constexpr double EARLY_EXPIRATION_ELEMENT_RATIO{0.8};
+  constexpr uint64_t EXPIRED_ELEMENT_LIFETIME_LIMIT_MS{1000};
+
   if (key.empty()) [[unlikely]] {
     kphp::log::warning("instance_cache_delete. empty key is not supported");
     return false;
   }
   InstanceCacheInstanceState::get().request_cache.erase(key);
-  return k2::expire_shared_memory(std::string_view{key.c_str(), key.size()}).has_value();
+  return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_RATIO, EXPIRED_ELEMENT_LIFETIME_LIMIT_MS)
+      .has_value();
 }
