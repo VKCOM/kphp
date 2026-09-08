@@ -1963,7 +1963,8 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator& W) {
       has_double_arrow = true;
     }
   }
-  if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
+  if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version &&
+      std::none_of(root->args().begin(), root->args().end(), is_interruptible_expr)) {
     W << TypeName(type) << "::create(" << JoinValues(*root, ", ") << ")";
     return;
   }
