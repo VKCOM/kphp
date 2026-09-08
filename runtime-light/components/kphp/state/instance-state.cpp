@@ -25,6 +25,7 @@
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/confdata/confdata-constants.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
@@ -149,7 +150,7 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
   }
 
-  if (component_state.confdata_link_available) {
+  if (k2::component_access(kphp::confdata::COMPONENT_LINK_ALIAS) == k2::errno_ok) { // FIXME: we want to do it once
     co_await confdata_instance_state.init();
   } else {
     kphp::log::warning("confdata: initialization skipped: component link is unavailable");
