@@ -5,9 +5,9 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <forward_list>
 #include <map>
-#include <stdint.h>
 #include <string>
 #include <utility>
 #include <vector>

@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <forward_list>
 #include <string>
+#include <utility>
 
 #include "common/wrappers/string_view.h"
 #include "compiler/data/data_ptr.h"

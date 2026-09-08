@@ -4,10 +4,16 @@
 
 #include "compiler/data/kphp-tracing-tags.h"
 
+#include <cctype>
+#include <fmt/format.h>
+
 #include "common/algorithms/string-algorithms.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
 
 int KphpTracingDeclarationMixin::parse_level_attr(vk::string_view beg, size_t& pos_end) {
   int level = 0;

@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+
+class CodeGenerator;
 
 namespace tl2cpp {
 

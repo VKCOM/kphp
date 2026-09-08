@@ -4,10 +4,22 @@
 
 #include "compiler/pipes/extract-resumable-calls.h"
 
+#include <iterator>
+#include <new>
+
+#include "common/algorithms/find.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 VertexPtr* ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr* replace) noexcept {
   if (auto set_modify = replace->try_as<op_set_modify>()) {

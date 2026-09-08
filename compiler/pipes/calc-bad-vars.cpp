@@ -5,17 +5,39 @@
 #include "compiler/pipes/calc-bad-vars.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
+#include <memory>
 #include <queue>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "auto/compiler/vertex/vertex-op_function.h"
+#include "common/algorithms/compare.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/likely.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/function-colors.h"
 #include "compiler/function-pass.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/pipes/calc-func-dep.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/utils/idmap.h"
 
 /*** Common algorithm ***/

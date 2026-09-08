@@ -4,21 +4,35 @@
 
 #include "compiler/data/class-data.h"
 
+#include <cstddef>
+#include <fmt/format.h>
+#include <iterator>
+#include <new>
 #include <queue>
 #include <string>
 
 #include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/string_view.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/phpdoc.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 const char* ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char* ClassData::NAME_OF_CLONE = "__clone";

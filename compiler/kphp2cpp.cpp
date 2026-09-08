@@ -2,18 +2,30 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <iterator>
 #include <memory>
+#include <string>
+#include <type_traits>
+#include <unistd.h>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
+#include "common/mixin/not_copyable.h"
 #include "common/options.h"
 #include "common/sanitizer.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
 #include "common/version-string.h"
 #include "common/wrappers/string_view.h"
-
 #include "compiler/compiler-settings.h"
 #include "compiler/compiler.h"
 #include "compiler/threading/tls.h"

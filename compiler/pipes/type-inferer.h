@@ -9,9 +9,6 @@
 #include "compiler/pipes/function-and-cfg.h"
 #include "compiler/threading/data-stream.h"
 
-struct FunctionAndCFG;
-template<class DataT>
-class DataStream;
 class TypeInfererF {
 
 public:

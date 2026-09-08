@@ -4,8 +4,17 @@
 
 #pragma once
 
+#include <forward_list>
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 #include "compiler/threading/data-stream.h"
+#include "compiler/vertex.h"
+
+class TypeHint;
 
 // see detailed comments is a .cpp file about what this pass does
 

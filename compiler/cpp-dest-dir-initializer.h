@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
-#include <stdint.h>
 #include <thread>
 
 #include "common/mixin/not_copyable.h"

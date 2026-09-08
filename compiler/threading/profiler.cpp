@@ -5,7 +5,11 @@
 #include "compiler/threading/profiler.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <cxxabi.h>
+#include <fmt/format.h>
+#include <ratio>
 #include <vector>
 
 #include "common/termformat/termformat.h"

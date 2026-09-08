@@ -4,11 +4,20 @@
 
 #include "compiler/make/make-runner.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cerrno>
+#include <csignal>
+#include <cstdlib>
+#include <fmt/format.h>
+#include <memory>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <utility>
 
 #include "common/dl-utils-lite.h"
 #include "common/server/signals.h"
-
+#include "common/wrappers/fmt_format.h"
 #include "compiler/compiler-core.h"
 #include "compiler/utils/string-utils.h"
 

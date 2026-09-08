@@ -4,9 +4,20 @@
 
 #include "compiler/data/function-data.h"
 
-#include "common/termformat/termformat.h"
+#include <algorithm>
+#include <atomic>
+#include <fmt/format.h>
+#include <functional>
+#include <iterator>
+#include <new>
+#include <unordered_map>
 
 #include "common/algorithms/contains.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/generics-mixins.h"
@@ -14,7 +25,13 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/profiler.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {

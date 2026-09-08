@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/vertex.h"
 
 class GenericsDeclarationMixin;
+class GenericsInstantiationPhpComment;
 
 void apply_instantiationTs_from_php_comment(FunctionPtr generic_function, VertexAdaptor<op_func_call> call, const GenericsInstantiationPhpComment* commentTs);
 void reify_function_genericTs_on_generic_func_call(FunctionPtr current_function, FunctionPtr generic_function, VertexAdaptor<op_func_call> call,

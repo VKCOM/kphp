@@ -8,6 +8,7 @@
 
 #include "auto/compiler/vertex/vertex-op_var.h"
 #include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/function-modifiers.h"

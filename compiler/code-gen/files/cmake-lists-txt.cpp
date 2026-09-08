@@ -5,11 +5,15 @@
 #include "compiler/code-gen/files/cmake-lists-txt.h"
 
 #include <filesystem>
+#include <fmt/format.h>
 #include <fstream>
+#include <string>
 
 #include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 
 void CmakeListsTxt::compile_include_cmake() const noexcept {
   // 1) creating of file outside of CompilerSettings::dest_cpp_dir directory is unable with CodeGenerator,

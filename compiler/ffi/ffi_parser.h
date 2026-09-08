@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
-#include <stddef.h>
-#include <stdint.h>
 #include <string>
 #include <unordered_map>
 #include <utility>

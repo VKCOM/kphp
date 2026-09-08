@@ -4,10 +4,20 @@
 
 #include "compiler/pipes/calc-func-dep.h"
 
+#include <algorithm>
+#include <set>
+
 #include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {

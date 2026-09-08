@@ -4,12 +4,26 @@
 
 #include "compiler/data/generics-mixins.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/function-data.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
+#include "compiler/token.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 /*
  * Generic functions are functions marked with @kphp-generic, which expresses `f<T>` with phpdoc at declaration.

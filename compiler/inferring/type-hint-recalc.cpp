@@ -2,11 +2,38 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/type-hint.h"
+#include <algorithm>
+#include <fmt/format.h>
+#include <functional>
+#include <mutex>
+#include <new>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/inferring/expr-node.h"
+#include "compiler/inferring/key.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 // recalc_type_data_in_context_of_call() from type-hint.h for all ancestors
 // they are implemented in a separate .cpp file to leave type-hint.cpp more clear, as recalculation is a separate inferring part

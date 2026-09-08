@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/public.h"
 

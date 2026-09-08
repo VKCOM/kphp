@@ -4,24 +4,46 @@
 
 #include "compiler/make/make.h"
 
+#include <algorithm>
+#include <atomic>
+#include <cassert>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <dirent.h>
+#include <fmt/format.h>
 #include <forward_list>
 #include <ftw.h>
+#include <initializer_list>
+#include <iosfwd>
+#include <iterator>
+#include <map>
 #include <queue>
+#include <string>
+#include <string_view>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
+#include "common/algorithms/contains.h"
+#include "common/algorithms/find.h"
 #include "common/algorithms/hashes.h"
+#include "common/exit-codes.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/likely.h"
 #include "common/wrappers/mkdir_recursive.h"
 #include "common/wrappers/pathname.h"
-
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/index.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/make/cpp-to-obj-target.h"
 #include "compiler/make/file-target.h"
 #include "compiler/make/h-to-pch-target.h"
@@ -32,8 +54,10 @@
 #include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
 #include "compiler/make/runtime-src-to-obj-target.h"
+#include "compiler/make/target.h"
 #include "compiler/runtime_build_info.h"
 #include "compiler/stage.h"
+#include "compiler/stats.h"
 #include "compiler/threading/profiler.h"
 
 class MakeSetup {

@@ -4,7 +4,11 @@
 
 #pragma once
 
+#include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
+
+template<class DataT>
+class DataStream;
 
 // RegisterFFIScopesF pass handles FFI class static method calls like FFI::cdef()
 // and FFI::load() - it parses FFI strings and creates scope classes.

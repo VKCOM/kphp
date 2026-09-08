@@ -14,8 +14,6 @@
 #include "compiler/debug.h"
 #include "compiler/inferring/var-node.h"
 
-struct ClassMemberInstanceField;
-struct ClassMemberStaticField;
 class VarData {
 
   DEBUG_STRING_METHOD {

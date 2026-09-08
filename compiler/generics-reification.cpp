@@ -4,12 +4,37 @@
 
 #include "compiler/generics-reification.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <new>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/class-assumptions.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * The word "reification" means deducing generic T to instantiate generic functions/classes.

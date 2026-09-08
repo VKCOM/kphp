@@ -4,11 +4,29 @@
 
 #include "compiler/pipes/early-optimization.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <new>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <vector>
+
 #include "auto/compiler/rewrite-rules/early_opt.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 // EarlyOptimizationPass applies optimizations by rewriting the AST.
 // It's called "early" because it happens before the type inference.

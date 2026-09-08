@@ -4,12 +4,15 @@
 
 #pragma once
 
+#include <cstddef>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/string_view.h"
-
 #include "compiler/helper.h"
 #include "compiler/token.h"
 #include "compiler/utils/string-utils.h"

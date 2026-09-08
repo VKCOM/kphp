@@ -4,12 +4,30 @@
 
 #include "compiler/pipes/calc-real-defines-values.h"
 
-#include "common/version-string.h"
-#include "common/wrappers/likely.h"
+#include <cstddef>
+#include <fmt/format.h>
+#include <iterator>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/version-string.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/likely.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/define-data.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/modulite-check-rules.h"
+#include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 /*
  * This is a sync point needed for two things.

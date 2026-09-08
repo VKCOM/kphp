@@ -4,11 +4,14 @@
 
 #include "compiler/inferring/key.h"
 
+#include <fmt/format.h>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/fmt_format.h"
-
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
+#include "compiler/threading/locks.h"
 
 static TSHashTable<Key*> int_keys_ht;
 static TSHashTable<Key*> string_keys_ht;

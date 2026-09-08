@@ -4,6 +4,8 @@
 
 #include "compiler/vertex.h"
 
+#include <new>
+
 VertexPtr clone_vertex(VertexPtr from) {
   switch (from->type()) {
 #define FOREACH_OP(x)                                                                                                                                          \

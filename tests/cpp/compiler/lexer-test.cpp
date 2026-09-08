@@ -5,6 +5,7 @@
 #include <string_view>
 #include <vector>
 
+#include "common/wrappers/string_view.h"
 #include "compiler/debug.h"
 #include "compiler/lexer.h"
 #include "compiler/token.h"

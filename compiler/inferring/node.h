@@ -13,8 +13,6 @@
 #include "compiler/location.h"
 #include "compiler/threading/locks.h"
 
-class Location;
-
 namespace tinf {
 
 class Edge;

@@ -4,16 +4,23 @@
 
 #include "compiler/data/src-file.h"
 
+#include <algorithm>
+#include <cerrno>
+#include <cstring>
 #include <fcntl.h>
+#include <fmt/format.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "auto/compiler/vertex/vertex-all.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/likely.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/data/lib-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include "compiler/stage.h"
 
 bool SrcFile::load() {

@@ -5,9 +5,11 @@
 #pragma once
 
 #include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "common/wrappers/string_view.h"
-
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"

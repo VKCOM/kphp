@@ -4,6 +4,14 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/vertex.h"
 
 // This class contains helper methods that operate on various vertices.

@@ -11,6 +11,10 @@
 #include "compiler/inferring/var-node.h"
 
 class TypeData;
+namespace tinf {
+class Node;
+} // namespace tinf
+
 class RestrictionMatchPhpdoc : public tinf::RestrictionBase {
 
   tinf::VarNode* restricted_node;

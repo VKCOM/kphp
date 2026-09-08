@@ -4,14 +4,36 @@
 
 #include "compiler/pipes/generate-virtual-methods.h"
 
-#include "common/algorithms/contains.h"
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <new>
+#include <string>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/class-modifiers.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 // a "virtual method" is an instance method overridden in child classes (all methods of interfaces are virtual also)
 // $obj->virtual_method() call actually dynamically handles the runtime type of $obj, proxying a call to a concrete class

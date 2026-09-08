@@ -4,14 +4,33 @@
 
 #include "compiler/pipes/analyzer.h"
 
-#include "common/algorithms/string-algorithms.h"
+#include <algorithm>
+#include <atomic>
+#include <fmt/format.h>
+#include <iterator>
+#include <set>
+#include <utility>
+#include <vector>
 
+#include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/stats.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 namespace {
 

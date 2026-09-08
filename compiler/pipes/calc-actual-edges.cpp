@@ -4,10 +4,19 @@
 
 #include "compiler/pipes/calc-actual-edges.h"
 
+#include <algorithm>
+#include <iterator>
+#include <set>
+
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/inferring/public.h"
+#include "compiler/location.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 // handle_exception reports whether a thrown_class will be caught by any of the given try blocks;
 // try_stack should contain the innermost try block in its end.

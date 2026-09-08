@@ -4,10 +4,20 @@
 
 #include "compiler/pipes/write-files.h"
 
-#include "common/crc32.h"
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <fmt/format.h>
+#include <string>
+#include <unistd.h>
 
+#include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/writer-data.h"
 #include "compiler/compiler-core.h"
+#include "compiler/index.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 
 void WriteFilesF::execute(WriterData* data, EmptyStream&) {
   stage::set_name("Write files");

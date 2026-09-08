@@ -4,10 +4,32 @@
 
 #include "compiler/pipes/instantiate-ffi-operations.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <map>
+#include <utility>
+#include <vector>
+
+#include "common/algorithms/find.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/class-assumptions.h"
+#include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/ffi/ffi_parser.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * This pass creates op_ffi_* vertices.

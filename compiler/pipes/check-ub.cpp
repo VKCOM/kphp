@@ -4,8 +4,27 @@
 
 #include "compiler/pipes/check-ub.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <unordered_set>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/tls.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 /*
  * C++ undefined behaviour fixes.

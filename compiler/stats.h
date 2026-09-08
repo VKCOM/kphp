@@ -5,8 +5,8 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 #include <ostream>
-#include <stdint.h>
 #include <string>
 #include <unordered_map>
 
@@ -14,7 +14,6 @@
 #include "compiler/data/var-data.h"
 #include "compiler/threading/profiler.h"
 
-class ProfilerRaw;
 class Stats {
 
 public:

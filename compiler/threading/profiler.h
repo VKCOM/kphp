@@ -4,13 +4,16 @@
 
 #pragma once
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
-
 #include "compiler/threading/tls.h"
 
 size_t get_thread_memory_usage();

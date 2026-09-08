@@ -4,8 +4,23 @@
 
 #include "compiler/pipes/calc-rl.h"
 
+#include <cassert>
+#include <fmt/format.h>
+#include <iterator>
+#include <memory>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 void rl_calc(VertexPtr root, RLValueType expected_rl_type);

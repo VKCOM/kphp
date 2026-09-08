@@ -13,6 +13,7 @@
 class TypeData;
 
 namespace tinf {
+class TypeInferer;
 
 class TypeNode : public Node {
   Location location_;

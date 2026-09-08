@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/ffi/ffi_types.h"

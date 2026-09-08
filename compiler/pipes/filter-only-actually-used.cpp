@@ -4,13 +4,37 @@
 
 #include "compiler/pipes/filter-only-actually-used.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <forward_list>
+#include <memory>
+#include <new>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/performance-inspections.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/function-pass.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/threading/profiler.h"
+#include "compiler/utils/idmap.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 // having a typed callable __invoke(), which is a virtual function with switch-case dispatching,
 // replace body of `case {lambda_class_to_remove.hash()}:` (which is a lambda invoke call)

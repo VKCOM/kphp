@@ -4,11 +4,18 @@
 
 #include "compiler/data/composer-json-data.h"
 
-#include "yaml-cpp/yaml.h"
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <utility>
 
+#include "common/wrappers/fmt_format.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "yaml-cpp/yaml.h"
 
 [[gnu::cold]] static void fire_json_error(ComposerJsonPtr inside_j, const std::string& reason, int line) {
   inside_j->json_file->load(); // load a file from disk, so that error message in console outputs a line

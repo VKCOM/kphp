@@ -3,15 +3,38 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 #include "compiler/pipes/analyze-performance.h"
 
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <fmt/format.h>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <tuple>
+#include <utility>
+
+#include "common/algorithms/compare.h"
+#include "common/algorithms/find.h"
 #include "common/algorithms/sorting.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/smart_ptrs/singleton.h"
 #include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "common/wrappers/to_array.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 namespace {
 

@@ -12,7 +12,6 @@
 
 class Node;
 class Task;
-class TaskPull;
 class ThreadContext;
 class Scheduler : public SchedulerBase {
 

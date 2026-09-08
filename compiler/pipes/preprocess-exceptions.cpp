@@ -4,9 +4,22 @@
 
 #include "compiler/pipes/preprocess-exceptions.h"
 
+#include <fmt/format.h>
+#include <new>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   static const ClassPtr throwable_class = G->get_class("Throwable");

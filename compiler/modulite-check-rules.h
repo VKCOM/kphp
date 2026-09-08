@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/modulite-data.h"
 

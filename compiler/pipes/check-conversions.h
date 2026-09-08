@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include <map>
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/primitive-type.h"
 
 // This pipe forbids suspicious conversions (op_conv*) after the type inference.
 class CheckConversionsPass final : public FunctionPassBase {

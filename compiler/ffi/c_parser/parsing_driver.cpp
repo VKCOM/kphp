@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <charconv>
-#include <stddef.h>
+#include <cstddef>
 #include <string_view>
 #include <unordered_set>
 

@@ -5,7 +5,7 @@
 #include "compiler/scheduler/scheduler.h"
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <memory>
 #include <pthread.h>
 #include <unistd.h>

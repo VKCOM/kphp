@@ -11,9 +11,6 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/token.h"
 
-class Token;
-template<class DataT>
-class DataStream;
 class ParseF {
 
 public:

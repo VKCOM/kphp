@@ -4,16 +4,28 @@
 
 #include "compiler/pipes/resolve-self-static-parent.h"
 
-#include "common/wrappers/likely.h"
+#include <algorithm>
+#include <fmt/format.h>
+#include <new>
+#include <vector>
 
+#include "common/wrappers/fmt_format.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 void ResolveSelfStaticParentPass::on_start() {
   // replace self::, parent:: and accesses to other classes like Classes\A::CONST

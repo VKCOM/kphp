@@ -4,17 +4,25 @@
 
 #include "compiler/data/class-members.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <map>
+
 #include "common/algorithms/contains.h"
 #include "common/algorithms/hashes.h"
-
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"

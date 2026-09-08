@@ -7,9 +7,17 @@
 // This file is intended to be used inside auto-generated rewrite rules.
 // Do not include it from somewhere else.
 
-#include "compiler/compiler-core.h"
-#include "compiler/vertex.h"
 #include <string>
+#include <utility>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-op_func_call.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 namespace rewrite_rules {
 

@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <map>
-#include <stdint.h>
 #include <string>
 #include <utility>
 

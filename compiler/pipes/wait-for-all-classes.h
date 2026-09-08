@@ -13,8 +13,6 @@
 #include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 
-template<class DataT>
-class DataStream;
 class WaitForAllClassesF final : public SyncPipeF<FunctionPtr, FunctionPtr> {
 
   using Base = SyncPipeF<FunctionPtr, FunctionPtr>;

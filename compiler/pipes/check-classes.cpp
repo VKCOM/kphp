@@ -4,16 +4,37 @@
 
 #include "compiler/pipes/check-classes.h"
 
-#include "common/termformat/termformat.h"
+#include <algorithm>
+#include <cstdio>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
+#include <stdexcept>
+#include <unordered_set>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-op_var.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/expr-node.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/phpdoc.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 
 VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root) {
   const auto* type_data = root->tinf_node.get_type();

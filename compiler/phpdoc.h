@@ -8,8 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "common/wrappers/string_view.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/token.h"
+
+class GenericsInstantiationMixin;
+class TypeHint;
 
 enum class PhpDocType {
   unknown,

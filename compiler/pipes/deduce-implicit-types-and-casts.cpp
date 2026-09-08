@@ -3,17 +3,47 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
-#include "compiler/pipes/transform-to-smart-instanceof.h"
 
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <fmt/format.h>
+#include <iterator>
+#include <new>
+#include <set>
+#include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "common/algorithms/find.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/copyable-atomic.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/class-assumptions.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/class-modifiers.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
 #include "compiler/data/src-file.h"
 #include "compiler/generics-reification.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
+#include "compiler/pipes/transform-to-smart-instanceof.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * Deducing implicit types is a very important step of the compilation pipeline.

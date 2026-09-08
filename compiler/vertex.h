@@ -4,11 +4,19 @@
 
 #pragma once
 
-#include "auto/compiler/vertex/vertex-all.h"
+#include <cstdlib>
+#include <string>
+#include <string_view>
+#include <utility>
 
+#include "auto/compiler/vertex/vertex-all.h"
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
+#include "compiler/vertex-meta_op_base.h"
 
 namespace std {
 template<Operation Op>

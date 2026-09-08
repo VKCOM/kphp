@@ -5,9 +5,9 @@
 #include "compiler/code-gen/files/init-scripts.h"
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <stddef.h>
 #include <string>
 #include <vector>
 

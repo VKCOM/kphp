@@ -4,11 +4,23 @@
 
 #include "compiler/modulite-check-rules.h"
 
-#include "common/algorithms/contains.h"
+#include <fmt/format.h>
+#include <utility>
+#include <vector>
 
+#include "common/algorithms/compare.h"
+#include "common/algorithms/contains.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/modulite-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
 
 /*
  * Modulite is a conception of isolating parts of code. Read `modulite-data.cpp` for a brief description.

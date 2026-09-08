@@ -4,9 +4,9 @@
 
 #include "compiler/code-gen/files/function-header.h"
 
+#include <cstddef>
 #include <map>
 #include <set>
-#include <stddef.h>
 #include <string>
 
 #include "compiler/code-gen/code-generator.h"

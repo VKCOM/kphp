@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/vertex-adaptor.h"
 

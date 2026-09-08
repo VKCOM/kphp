@@ -4,21 +4,46 @@
 
 #include "compiler/pipes/collect-main-edges.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <set>
+#include <vector>
+
+#include "common/algorithms/find.h"
 #include "common/php-functions.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
+#include "compiler/inferring/key.h"
+#include "compiler/inferring/lvalue.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/node.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/restriction-isset.h"
 #include "compiler/inferring/restriction-match-phpdoc.h"
 #include "compiler/inferring/restriction-non-void.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/type-inferer.h"
 #include "compiler/inferring/type-node.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 namespace {
 

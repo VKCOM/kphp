@@ -4,14 +4,23 @@
 
 #pragma once
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <forward_list>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/compare.h"
 #include "common/algorithms/hashes.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/class-modifiers.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
 #include "compiler/ffi/ffi_types.h"
 #include "compiler/location.h"
@@ -22,9 +31,13 @@
 
 struct FFIClassDataMixin;
 struct FFIScopeDataMixin;
+class PhpDocComment;
+class TypeData;
+class TypeHint;
+
 namespace kphp_json {
 class KphpJsonTagList;
-}
+} // namespace kphp_json
 
 enum class SubtreeImmutableType { immutable, not_immutable, not_visited };
 

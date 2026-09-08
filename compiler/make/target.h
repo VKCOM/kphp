@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
-
 #include "compiler/index.h"
 
 class CompilerSettings;

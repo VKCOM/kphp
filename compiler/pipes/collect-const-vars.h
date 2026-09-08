@@ -4,7 +4,12 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+
+class Location;
 
 /*** Replace constant expressions with const variables ***/
 class CollectConstVarsPass final : public FunctionPassBase {

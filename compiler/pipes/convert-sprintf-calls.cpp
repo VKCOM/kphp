@@ -4,8 +4,21 @@
 
 #include "compiler/pipes/convert-sprintf-calls.h"
 
-#include "compiler/vertex-util.h"
+#include <algorithm>
+#include <new>
 #include <utility>
+#include <vector>
+
+#include "common/algorithms/find.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/location.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 struct FormatCallInfo {
   FormatCallInfo()

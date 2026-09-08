@@ -4,15 +4,33 @@
 
 #include "compiler/pipes/instantiate-generics-and-lambdas.h"
 
+#include <algorithm>
+#include <forward_list>
+#include <iterator>
+#include <string>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/function-pass.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lambda-utils.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
 #include "compiler/pipes/clone-nested-lambdas.h"
+#include "compiler/stage.h"
+#include "compiler/threading/locks.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * This pass creates new functions and passes them backwards to be handled again:

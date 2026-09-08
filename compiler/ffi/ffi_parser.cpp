@@ -5,8 +5,8 @@
 #include "compiler/ffi/ffi_parser.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
-#include <stdio.h>
 
 #include "compiler/compiler-core.h"
 #include "compiler/compiler-settings.h"

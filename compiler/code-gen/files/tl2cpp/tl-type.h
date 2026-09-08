@@ -5,8 +5,16 @@
 #pragma once
 
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "common/tl2php/php-classes.h"
+#include "common/tlo-parsing/tl-objects.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/data_ptr.h"
+
+class CodeGenerator;
 
 namespace tl2cpp {
 // Generated code example:

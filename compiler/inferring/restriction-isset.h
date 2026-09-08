@@ -4,8 +4,13 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
+
+class TypeData;
 
 class RestrictionIsset : public tinf::RestrictionBase {
   tinf::Node* a_;

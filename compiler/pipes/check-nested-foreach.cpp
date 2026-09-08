@@ -4,10 +4,16 @@
 
 #include "compiler/pipes/check-nested-foreach.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
 #include "common/termformat/termformat.h"
-
+#include "common/wrappers/fmt_format.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/vertex.h"
 
 VarPtr get_non_local_scope_visible_var(VertexAdaptor<op_foreach_param> params) noexcept {
   if (auto iterable_instance = params->xs().try_as<op_instance_prop>()) {

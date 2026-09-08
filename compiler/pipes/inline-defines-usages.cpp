@@ -4,10 +4,28 @@
 
 #include "compiler/pipes/inline-defines-usages.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/field-modifiers.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
 #include "compiler/pipes/check-access-modifiers.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // defined('NAME') is replaced by true or false

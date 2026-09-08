@@ -4,25 +4,33 @@
 
 #include "compiler/compiler-settings.h"
 
+#include <algorithm>
+#include <cerrno>
 #include <chrono>
+#include <cstdlib>
+#include <cstring>
+#include <fmt/format.h>
 #include <fstream>
+#include <iterator>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
-#include <unistd.h>
-
-#include "openssl/sha.h"
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
 #include "common/wrappers/mkdir_recursive.h"
+#include "common/wrappers/string_view.h"
 #include "common/wrappers/to_array.h"
-
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
+#include "openssl/sha.h"
 
 void KphpRawOption::init(const char* env, std::string default_value, std::vector<std::string> choices) noexcept {
   if (char* val = getenv(env)) {

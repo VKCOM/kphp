@@ -4,27 +4,46 @@
 
 #include "compiler/compiler.h"
 
+#include <atomic>
+#include <cassert>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <fcntl.h>
+#include <forward_list>
 #include <fstream>
 #include <ftw.h>
 #include <functional>
 #include <iostream>
 #include <mutex>
 #include <sstream>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <type_traits>
 #include <unistd.h>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "common/algorithms/hashes.h"
 #include "common/crc32.h"
 #include "common/dl-utils-lite.h"
+#include "common/smart_ptrs/singleton.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/cpp-dest-dir-initializer.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/function-pass.h"
+#include "compiler/index.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
+#include "compiler/operation.h"
 #include "compiler/pipes/analyze-performance.h"
 #include "compiler/pipes/analyzer.h"
 #include "compiler/pipes/array-access-transform.h"
@@ -32,6 +51,7 @@
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
 #include "compiler/pipes/calc-empty-functions.h"
+#include "compiler/pipes/calc-func-dep.h"
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
@@ -94,9 +114,14 @@
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
 #include "compiler/scheduler/one-thread-scheduler.h"
+#include "compiler/scheduler/pipe.h"
 #include "compiler/scheduler/pipe_with_progress.h"
+#include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
+#include "compiler/stats.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/profiler.h"
 
 class lockf_wrapper {
   std::string locked_filename_;

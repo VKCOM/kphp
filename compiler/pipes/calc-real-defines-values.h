@@ -4,11 +4,20 @@
 
 #pragma once
 
+#include <forward_list>
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "compiler/const-manipulations.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/pipes/sync.h"
 #include "compiler/vertex.h"
+
+template<class DataT>
+class DataStream;
 
 class CalcRealDefinesAndAssignModulitesF final : public SyncPipeF<FunctionPtr> {
 private:

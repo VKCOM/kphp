@@ -4,8 +4,17 @@
 
 #pragma once
 
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/node.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/rvalue.h"
+
+class MultiKey;
+class TypeData;
+namespace tinf {
+class TypeInferer;
+} // namespace tinf
 
 class NodeRecalc {
 protected:

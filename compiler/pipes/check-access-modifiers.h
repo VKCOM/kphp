@@ -4,9 +4,17 @@
 
 #pragma once
 
+#include <fmt/format.h>
+#include <string>
+
+#include "common/wrappers/fmt_format.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/class-member-modifiers.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/kphp_assert.h"
 
 class CheckAccessModifiersPass final : public FunctionPassBase {
 private:

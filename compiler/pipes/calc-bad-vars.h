@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/pipes/calc-func-dep.h"
 #include "compiler/pipes/sync.h"

@@ -14,7 +14,6 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
-class ProfilerRaw;
 template<class DataT>
 class DataStream;
 

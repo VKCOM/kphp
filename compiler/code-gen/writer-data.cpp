@@ -4,8 +4,16 @@
 
 #include "compiler/code-gen/writer-data.h"
 
+#include <algorithm>
+#include <cassert>
+#include <fmt/format.h>
+#include <iterator>
+#include <memory>
+
 #include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 WriterData::WriterData(File* file, bool compile_with_crc)

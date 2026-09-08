@@ -4,24 +4,44 @@
 
 #include "compiler/gentree.h"
 
+#include <algorithm>
 #include <atomic>
+#include <cstdint>
+#include <cstdio>
+#include <fmt/format.h>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <new>
+#include <set>
+#include <stdexcept>
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
-
 #include "common/php-functions.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/class-modifiers.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/field-modifiers.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/stats.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex-util.h"

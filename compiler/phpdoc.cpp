@@ -4,24 +4,39 @@
 
 #include "compiler/phpdoc.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <fmt/format.h>
+#include <memory>
+#include <stdexcept>
 #include <utility>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
 #include "common/php-functions.h"
 #include "common/termformat/termformat.h"
-
+#include "common/wrappers/fmt_format.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
 #include "compiler/data/src-file.h"
 #include "compiler/ffi/ffi_parser.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lexer.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 static constexpr unsigned int calcHashOfTagName(const char* start, const char* end) {
   unsigned int hash = 5381;

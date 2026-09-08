@@ -5,10 +5,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <climits>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <utility>

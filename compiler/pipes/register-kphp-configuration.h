@@ -4,10 +4,20 @@
 
 #pragma once
 
+#include <forward_list>
+#include <type_traits>
+#include <utility>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-colors.h"
 #include "compiler/pipes/sync.h"
+
+template<class DataT>
+class DataStream;
 
 class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   using need_profiler = std::false_type;

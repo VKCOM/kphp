@@ -4,14 +4,21 @@
 
 #pragma once
 
+#include <cstddef>
 #include <map>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "common/wrappers/string_view.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
+#include "compiler/location.h"
+
+class PhpDocComment;
+class TypeHint;
 
 // see the .cpp file for detailed comments of how do generics work
 

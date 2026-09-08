@@ -4,15 +4,23 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <forward_list>
 #include <map>
 #include <set>
 #include <string>
 #include <thread>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-op_func_param_list.h"
 #include "auto/compiler/vertex/vertex-op_function.h"
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/copyable-atomic.h"
-
+#include "common/wrappers/string_view.h"
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
@@ -22,11 +30,15 @@
 #include "compiler/debug.h"
 #include "compiler/function-colors.h"
 #include "compiler/inferring/var-node.h"
+#include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
 class GenericsDeclarationMixin;
 class KphpTracingDeclarationMixin;
+class GenericsInstantiationMixin;
+class PhpDocComment;
+class TypeHint;
 
 class FunctionData {
   DEBUG_STRING_METHOD {

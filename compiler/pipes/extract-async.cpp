@@ -5,6 +5,14 @@
 #include "compiler/pipes/extract-async.h"
 
 #include <atomic>
+#include <cstdint>
+#include <fmt/format.h>
+
+#include "common/wrappers/fmt_format.h"
+#include "compiler/data/function-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/vertex.h"
 
 bool ExtractAsyncPass::check_function(FunctionPtr function) const {
   return !function->is_extern() && function->is_resumable;

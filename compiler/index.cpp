@@ -4,17 +4,27 @@
 
 #include "compiler/index.h"
 
+#include <cerrno>
 #include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
+#include <fmt/format.h>
 #include <ftw.h>
+#include <memory>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <unordered_set>
 
 #include "common/containers/final_action.h"
 #include "common/macos-ports.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/mkdir_recursive.h"
-#include "compiler/kphp_assert.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
 

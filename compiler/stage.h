@@ -5,10 +5,11 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
+#include <string>
 #include <unistd.h>
 
 #include "common/exit-codes.h"
-
 #include "compiler/data/data_ptr.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/location.h"

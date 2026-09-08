@@ -5,7 +5,12 @@
 #pragma once
 
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 #include "compiler/threading/data-stream.h"
 

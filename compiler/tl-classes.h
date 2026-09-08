@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+
 #include "common/tl2php/php-classes.h"
 #include "common/tlo-parsing/tl-objects.h"
-
 #include "compiler/data/data_ptr.h"
 
 class TlClasses {

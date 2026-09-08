@@ -6,8 +6,8 @@
 #include <gtest/gtest.h>
 #include <iterator>
 #include <map>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>

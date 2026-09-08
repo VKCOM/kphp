@@ -14,6 +14,7 @@
 #include "compiler/function-pass.h"
 
 class TypeData;
+
 class CollectForkableTypesPass final : public FunctionPassBase {
 
 public:

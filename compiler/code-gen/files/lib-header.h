@@ -10,7 +10,6 @@
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
-class CodeGenerator;
 struct StaticLibraryRunGlobalHeaderH : CodeGenRootCmd {
 
   void compile(CodeGenerator& W) const final;

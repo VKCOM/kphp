@@ -4,9 +4,19 @@
 
 #include "compiler/pipes/calc-empty-functions.h"
 
+#include <iterator>
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 namespace {
 

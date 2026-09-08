@@ -12,9 +12,8 @@
 #include "compiler/scheduler/task.h"
 #include "compiler/threading/tls.h"
 
-class Task;
-
 namespace tinf {
+class Edge;
 
 using NodeQueue = std::queue<Node*>;
 

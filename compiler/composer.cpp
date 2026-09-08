@@ -4,11 +4,17 @@
 
 #include "compiler/composer.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <unistd.h>
+#include <utility>
+
 #include "common/algorithms/contains.h"
 #include "common/wrappers/fmt_format.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/data/composer-json-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/kphp_assert.h"
 
 static bool file_exists(const std::string& filename) {

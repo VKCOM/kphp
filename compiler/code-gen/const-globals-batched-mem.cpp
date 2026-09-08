@@ -4,16 +4,34 @@
 
 #include "compiler/code-gen/const-globals-batched-mem.h"
 
-#include <common/algorithms/string-algorithms.h>
-#include <compiler/data/function-data.h>
+#include <algorithm>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <utility>
 
+#include "auto/compiler/vertex/vertex-op_var.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/algorithms/hashes.h"
+#include "common/algorithms/string-algorithms.h"
 #include "common/php-functions.h"
-
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/vertex-meta_op_base.h"
 
 // see const-globals-batched-mem.h for detailed comments of what's going on
 

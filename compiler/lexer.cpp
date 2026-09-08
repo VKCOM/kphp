@@ -4,18 +4,24 @@
 
 #include "compiler/lexer.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cstring>
+#include <fmt/format.h>
+#include <iterator>
 #include <map>
 #include <utility>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wregister"
 #include "auto/compiler/keywords_set.hpp"
+#include "compiler/kphp_assert.h"
+#include "compiler/utils/string-utils.h"
 #pragma GCC diagnostic pop
 
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/fmt_format.h"
-
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
 

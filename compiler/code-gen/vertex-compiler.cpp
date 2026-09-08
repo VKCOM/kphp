@@ -4,12 +4,31 @@
 
 #include "compiler/code-gen/vertex-compiler.h"
 
+#include <algorithm>
+#include <atomic>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <fmt/format.h>
+#include <functional>
 #include <iterator>
+#include <map>
+#include <memory>
+#include <new>
+#include <set>
+#include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
+#include "common/algorithms/find.h"
 #include "common/containers/final_action.h"
+#include "common/php-functions.h"
 #include "common/wrappers/field_getter.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "common/wrappers/likely.h"
 #include "common/wrappers/string_view.h"
 #include "common/wrappers/to_underlying.h"
@@ -22,6 +41,7 @@
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
@@ -29,11 +49,18 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 

@@ -4,7 +4,14 @@
 
 #include "compiler/pipes/convert-list-assignments.h"
 
+#include <iterator>
+#include <new>
+
+#include "common/wrappers/iterator_range.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VertexPtr ConvertListAssignmentsPass::process_list_assignment(VertexAdaptor<op_list> list) {
   // save right part to temporary variable in cases:

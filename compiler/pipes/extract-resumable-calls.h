@@ -4,6 +4,12 @@
 
 #pragma once
 
+#include <string>
+#include <utility>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class ExtractResumableCallsPass final : public FunctionPassBase {

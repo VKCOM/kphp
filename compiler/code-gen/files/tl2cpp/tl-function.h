@@ -3,7 +3,17 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+#include <fmt/format.h>
+#include <memory>
+#include <vector>
+
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/kphp_assert.h"
+
+class CodeGenerator;
 
 namespace tl2cpp {
 struct TlFunctionDecl {

@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
+
+class TypeHint;
 
 class Assumption {
   DEBUG_STRING_METHOD {

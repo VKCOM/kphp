@@ -4,16 +4,31 @@
 
 #include "compiler/name-gen.h"
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/likely.h"
+#include <cstddef>
+#include <fmt/format.h>
+#include <map>
+#include <utility>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/likely.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/class-assumptions.h"
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 std::string gen_anonymous_scope_name(FunctionPtr function) {
   return gen_unique_name("cdef", function);

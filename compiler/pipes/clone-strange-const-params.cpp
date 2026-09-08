@@ -4,8 +4,24 @@
 
 #include "compiler/pipes/clone-strange-const-params.h"
 
+#include <atomic>
+#include <cstddef>
+#include <fmt/format.h>
+#include <new>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stats.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VertexPtr CloneStrangeConstParams::on_enter_vertex(VertexPtr root) {
   auto func_call = root.try_as<op_func_call>();

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -17,9 +17,6 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/threading/data-stream.h"
 
-class TypeData;
-template<class DataT>
-class DataStream;
 struct CGContext {
 
   std::vector<std::string> catch_labels;

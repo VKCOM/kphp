@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/vertex.h"
 
 // maybe, replace f(...) with f'(...); see comments in cpp file
