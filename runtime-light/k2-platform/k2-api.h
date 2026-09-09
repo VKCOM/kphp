@@ -170,7 +170,7 @@ inline std::expected<void, int32_t> seek_ttl_to_shared_memory(std::string_view n
 }
 
 inline std::expected<void, int32_t> release_shared_memory(const void* ptr) noexcept {
-  if (auto error_code{k2_release_shared_memory(ptr)}; error_code != k2::errno_ok) [[likely]] {
+  if (auto error_code{k2_release_shared_memory(ptr)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};

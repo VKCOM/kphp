@@ -144,13 +144,14 @@ inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noex
 
 inline bool f$instance_cache_delete(const string& key) noexcept {
   constexpr uint8_t EARLY_EXPIRATION_ELEMENT_PERCENTILE{80};
-  constexpr uint64_t EXPIRED_ELEMENT_LIFETIME_LIMIT_MS{1000};
+  constexpr uint64_t EXPIRED_ELEMENT_REMAINING_LIFETIME_LIMIT_MS{1000};
 
   if (key.empty()) [[unlikely]] {
     kphp::log::warning("instance_cache_delete. empty key is not supported");
     return false;
   }
   InstanceCacheInstanceState::get().request_cache.erase(key);
-  return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_PERCENTILE, EXPIRED_ELEMENT_LIFETIME_LIMIT_MS)
+  return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_PERCENTILE,
+                                       EXPIRED_ELEMENT_REMAINING_LIFETIME_LIMIT_MS)
       .has_value();
 }
