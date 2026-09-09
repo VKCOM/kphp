@@ -26,6 +26,7 @@
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
+#include "runtime-light/stdlib/diagnostics/regex-time-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
@@ -117,6 +118,7 @@ struct InstanceState final : vk::not_copyable {
   MathInstanceState math_instance_state;
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;
+  RegexTimeInstanceState regex_time_instance_state;
   CurlInstanceState curl_instance_state;
   WebInstanceState web_instance_state;
   StringInstanceState string_instance_state;

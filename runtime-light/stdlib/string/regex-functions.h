@@ -17,10 +17,12 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-common/stdlib/diagnostics/regex-time-stats.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/regex-time-state.h"
 // correctly include PCRE2 lib
 #include "runtime-light/stdlib/string/regex-state.h"
 
@@ -755,6 +757,9 @@ inline bool preg_match_check_args(const string& subject, int64_t flags, int64_t&
 inline Optional<int64_t> preg_match_impl(const kphp::regex::regexp& regex, const string& subject,
                                          Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags,
                                          int64_t offset) noexcept {
+  auto& regex_time_stats{RegexTimeInstanceState::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
+
   const auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
     return false;
@@ -805,6 +810,9 @@ inline bool preg_match_all_check_args(const string& subject, int64_t flags, int6
 inline Optional<int64_t> preg_match_all_impl(const kphp::regex::regexp& regex, const string& subject,
                                              Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags,
                                              int64_t offset) noexcept {
+  auto& regex_time_stats{RegexTimeInstanceState::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
+
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
     return false;
@@ -889,6 +897,8 @@ inline std::optional<string> preg_replace_preparing(const string& replacement, i
 
 inline Optional<string> preg_replace_impl(const kphp::regex::regexp& regex, const string& subject, const string& replacement, int64_t limit,
                                           int64_t& count) noexcept {
+  auto& regex_time_stats{RegexTimeInstanceState::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_replace)};
 
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -924,6 +934,9 @@ template<std::invocable<array<string>> F>
 kphp::coro::task<Optional<string>> preg_replace_callback_impl(kphp::regex::regexp regex, F callback, string subject, int64_t& count,
                                                               int64_t limit = kphp::regex::PREG_NOLIMIT) noexcept {
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
+
+  auto& regex_time_stats{RegexTimeInstanceState::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_replace_callback)};
 
   const auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -998,6 +1011,8 @@ inline bool preg_split_check_args(int64_t flags) noexcept {
 }
 
 inline Optional<array<mixed>> preg_split_impl(const kphp::regex::regexp& regex, const string& subject, int64_t limit, int64_t flags) noexcept {
+  auto& regex_time_stats{RegexTimeInstanceState::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_split)};
 
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
