@@ -64,7 +64,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   // All copies are pinned with ExtraRefCnt::for_instance_cache and are never freed individually -- the platform owns the block.
   kphp::visitors::instance_deep_copy_visitor copy_visitor{std::span{mem + hash_size + instance_size, estimated_size}, ExtraRefCnt::for_instance_cache};
   if (!copy_visitor.process_instance(instance)) [[unlikely]] {
-    std::ignore = k2::try_free_shared_memory(mem);
+    kphp::log::assertion(k2::release_shared_memory(mem).has_value());
     kphp::log::warning("instance_cache_store. failed to deep-copy instance into shared memory: estimated size -> {}, key -> {}", estimated_size, key.c_str());
     return false;
   }
@@ -76,7 +76,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
     return true;
   } else {
     // publish is expected to always succeed here (ignore_if_exist=true, valid key/memory), so this should never actually happen.
-    std::ignore = k2::try_free_shared_memory(mem);
+    kphp::log::assertion(k2::release_shared_memory(mem).has_value());
     kphp::log::warning("instance_cache_store. failed to publish shared memory: error -> {}, key -> {}", publish_result.error(), key.c_str());
     return false;
   }
@@ -143,7 +143,7 @@ inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noex
 }
 
 inline bool f$instance_cache_delete(const string& key) noexcept {
-  constexpr double EARLY_EXPIRATION_ELEMENT_RATIO{0.8};
+  constexpr uint8_t EARLY_EXPIRATION_ELEMENT_PERCENTILE{80};
   constexpr uint64_t EXPIRED_ELEMENT_LIFETIME_LIMIT_MS{1000};
 
   if (key.empty()) [[unlikely]] {
@@ -151,6 +151,6 @@ inline bool f$instance_cache_delete(const string& key) noexcept {
     return false;
   }
   InstanceCacheInstanceState::get().request_cache.erase(key);
-  return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_RATIO, EXPIRED_ELEMENT_LIFETIME_LIMIT_MS)
+  return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_PERCENTILE, EXPIRED_ELEMENT_LIFETIME_LIMIT_MS)
       .has_value();
 }

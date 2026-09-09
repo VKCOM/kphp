@@ -161,15 +161,16 @@ inline std::expected<void, int32_t> republish_shared_memory(std::string_view nam
   return {};
 }
 
-inline std::expected<void, int32_t> seek_ttl_to_shared_memory(std::string_view name, double ttl_ratio, uint64_t lifetime_limit) noexcept {
-  if (auto error_code{k2_seek_ttl_to_shared_memory(name.data(), name.length(), ttl_ratio, lifetime_limit)}; error_code != k2::errno_ok) [[unlikely]] {
+inline std::expected<void, int32_t> seek_ttl_to_shared_memory(std::string_view name, uint8_t percentile, uint64_t remaining_lifetime_limit) noexcept {
+  if (auto error_code{k2_seek_ttl_to_shared_memory(name.data(), name.length(), percentile, remaining_lifetime_limit)}; error_code != k2::errno_ok)
+      [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};
 }
 
-inline std::expected<void, int32_t> try_free_shared_memory(const void* ptr) noexcept {
-  if (auto error_code{k2_try_free_shared_memory(ptr)}; error_code != k2::errno_ok) [[likely]] {
+inline std::expected<void, int32_t> release_shared_memory(const void* ptr) noexcept {
+  if (auto error_code{k2_release_shared_memory(ptr)}; error_code != k2::errno_ok) [[likely]] {
     return std::unexpected{error_code};
   }
   return {};

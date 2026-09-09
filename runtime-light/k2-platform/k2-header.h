@@ -212,7 +212,7 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  * - Calling `k2_get_shared_memory` increments the reference count by one if
  *   this instance does not already hold a reference; repeated calls for the
  *   same underlying pointer while already held do not increment it further
- * - Calling `k2_try_free_shared_memory` clears the held reference, if `pointer`
+ * - Calling `k2_release_shared_memory` clears the held reference, if `pointer`
  *   is currently held; unpublished memory from `k2_alloc_shared_memory` is
  *   just freed
  */
@@ -304,7 +304,7 @@ int32_t k2_republish_shared_memory(const char* name, size_t name_len, uint64_t t
 /**
  * Fast-forwards the expiration of published shared memory ahead of its TTL, by name.
  * Its expiration is recomputed so that, at the moment of this call, the entry's age
- * already amounts to `ttl_ratio` of its (recomputed) TTL.
+ * already amounts to `percentile` of its (recomputed) TTL.
  *
  * Timeline right after the call, where `S` = `stored_at`, `C` = the current instant and `E` = the recomputed `expires_at`:
  *
@@ -313,28 +313,28 @@ int32_t k2_republish_shared_memory(const char* name, size_t name_len, uint64_t t
  *   |<---------- age = C - S ---------->|
  *   |<-------------- ttl = E - S --------------->|
  *
- * i.e. `age / ttl == ttl_ratio`. The higher `ttl_ratio` is, the shorter the
- * remaining slice `E - C` is (closer to `1.0` puts `E` right next to `C`, expiring almost immediately);
+ * i.e. `age / ttl == percentile / 100`. The higher `percentile` is, the shorter the
+ * remaining slice `E - C` is (closer to `100` puts `E` right next to `C`, expiring almost immediately);
  * the lower it is, the further away `E` ends up.
- * `lifetime_limit` additionally clamps `E` to no later than `C + lifetime_limit`, regardless of `ttl_ratio`, when non-zero.
+ * `remaining_lifetime_limit` additionally clamps `E` to no later than `C + remaining_lifetime_limit`, regardless of `percentile`, when non-zero.
  *
  * @param `name` Name of the published memory region to seek.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
- * @param `ttl_ratio` Target freshness ratio (entry age / TTL) to seek the entry to,
- *              in `[0.0, 1.0]`. E.g. `0.8` makes the entry appear 80% of the way through
+ * @param `percentile` Target percentile (entry age / TTL * 100) to seek the entry to,
+ *              in `[0, 100]`. E.g. `80` makes the entry appear 80% of the way through
  *              its lifetime as of this call.
- * @param `lifetime_limit` Upper bound, in milliseconds, on how much longer the entry may
- *              live from this call, regardless of `ttl_ratio`. Zero means no limit.
+ * @param `remaining_lifetime_limit` Upper bound, in milliseconds, on how much longer the entry may
+ *              live from this call, regardless of `percentile`. Zero means no limit.
  *
  * @return `0` on success. libc-like `errno` on error.
  *
  * Possible `errno`:
  * `EINVAL` => `name` is NULL, `name_len` is 0, `name` is not valid UTF-8, or
- *             `ttl_ratio` is outside of `[0.0, 1.0]`.
+ *             `percentile` is outside of `[0, 100]`.
  * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, double ttl_ratio, uint64_t lifetime_limit);
+int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, uint8_t percentile, uint64_t remaining_lifetime_limit);
 
 /**
  * Frees shared memory allocated via `k2_alloc_shared_memory` that was never
@@ -350,18 +350,17 @@ int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, double t
  *                  `k2_alloc_shared_memory` or `k2_get_shared_memory`, or
  *                  passed as the `memory` argument to `k2_publish_shared_memory`.
  *
- * @return `0` if unpublished memory was freed immediately. libc-like `errno` otherwise.
+ * @return `0` on success: either the unpublished allocation was freed, or the
+ *         reference held by this instance was released. libc-like `errno`
+ *         on error.
  *
  * Possible `errno`:
  * `EINVAL` => `pointer` is NULL.
- * `EAGAIN` => The held reference was released successfully,
- *             but the memory itself was not necessarily freed yet
- *             (still subject to TTL expiration and/or other references still being held).
  * `ENOENT` => `pointer` does not correspond to memory allocated by this
  *             instance via `k2_alloc_shared_memory`, nor to a reference
  *             currently held by this instance.
  */
-int32_t k2_try_free_shared_memory(const void* pointer);
+int32_t k2_release_shared_memory(const void* pointer);
 
 /**
  * Immediately abort component execution.
