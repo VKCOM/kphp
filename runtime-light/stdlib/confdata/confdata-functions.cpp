@@ -112,10 +112,11 @@ auto f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept -> a
     }
   }};
 
-  auto section_it{values.lower_bound(handles.section())};
-  for (std::string_view section_view{section_it->first.c_str(), section_it->first.size()};
-       section_it != values.end() && section_view.starts_with(wildcard_view);) {
-    section_view = {section_it->first.c_str(), section_it->first.size()};
+  for (auto section_it{values.lower_bound(handles.section())}; section_it != values.end(); ++section_it) {
+    const std::string_view section_view{section_it->first.c_str(), section_it->first.size()};
+    if (!section_view.starts_with(wildcard_view)) {
+      break;
+    }
     switch (kphp::confdata::classify_section(section_view, predefined_wildcards)) {
     case kphp::confdata::section_kind::simple_key: {
       const auto suffix{section_view.substr(wildcard_view.size())};
@@ -135,7 +136,6 @@ auto f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept -> a
     case kphp::confdata::section_kind::two_dots_wildcard:
       break;
     }
-    ++section_it;
   }
   return result;
 }
