@@ -905,7 +905,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(kphp::forks::start(" << FunctionName(func);
+        W << "(kphp::forks::start(" << "[]<typename... Args>(Args&&... args) noexcept { return " << FunctionName(func) << "(std::forward<Args>(args)...); }";
       } else {
         W << FunctionForkName(func);
       }

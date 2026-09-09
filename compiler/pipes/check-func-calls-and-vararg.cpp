@@ -316,24 +316,5 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
 VertexPtr CheckFuncCallsAndVarargPass::on_fork(VertexAdaptor<op_fork> v_fork) {
   kphp_error(v_fork->size() == 1 && (*v_fork->begin())->type() == op_func_call,
              "Invalid fork() usage: it must be called with exactly one func call inside, e.g. fork(f(...))");
-  auto call = v_fork->func_call();
-  FunctionPtr f = call->func_id;
-  if (!f) {
-    return v_fork;
-  }
-
-  // kphp::forks::start() passes f by name into a template (F&&) and invokes it via std::invoke(),
-  // not via a direct call-syntax expression - so C++ default argument values, which only apply
-  // at a direct call site, are not available there; missing trailing arguments must be
-  // materialized here from the PHP defaults before codegen
-  VertexRange func_params = f->get_params();
-  VertexRange call_params = call->args();
-  for (size_t i = call_params.size(); i < func_params.size(); ++i) {
-    auto func_param = func_params[i].as<op_func_param>();
-    kphp_error(func_param->has_default_value(), fmt_format("Too few arguments in call to {}() inside fork()", f->as_human_readable()));
-    call = VertexUtil::add_call_arg(func_param->default_value(), call, false);
-  }
-  v_fork->func_call_ref() = call;
-
   return v_fork;
 }
