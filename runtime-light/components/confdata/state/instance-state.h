@@ -119,8 +119,8 @@ private:
 
   auto service_loop() noexcept -> kphp::coro::task<>;
   auto perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_sync_error>>;
-  auto try_apply_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
-                        std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool;
+  auto apply_batched_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
+                            std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool;
   auto apply_incremental_events(std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool;
 };
 

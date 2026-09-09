@@ -150,10 +150,10 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
   }
 
-  if (k2::component_access(kphp::confdata::COMPONENT_LINK_ALIAS) == k2::errno_ok) { // FIXME: we want to do it once
+  if (k2::component_access(kphp::confdata::COMPONENT_LINK_ALIAS) == k2::errno_ok) { // TODO: we want to do it during either component state init or warmup
     co_await confdata_instance_state.init();
   } else {
-    kphp::log::warning("confdata: initialization skipped: component link is unavailable");
+    kphp::log::info("confdata initialization skipped: component link '{}' is unavailable", kphp::confdata::COMPONENT_LINK_ALIAS);
   }
 
   if constexpr (kind == image_kind::cli || kind == image_kind::server) {

@@ -77,7 +77,7 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   // client-side timeout must outlive the server-side longpoll (SUBSCRIBE_TIMEOUT); 10x is a safe margin
   auto expected_query{kphp::rpc::query::send(confdata_proxy_actor, SUBSCRIBE_TIMEOUT * 10, tls.view(), k2::RpcKind::TL_RPC)};
   if (!expected_query) [[unlikely]] {
-    kphp::log::warning("confdata: failed to send subscribe request: {}", expected_query.error());
+    kphp::log::warning("failed to send subscribe request: {}", expected_query.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
   }
 
@@ -87,14 +87,14 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
     return {response_buffer.data(), response_buffer.size()};
   })};
   if (!expected_response) [[unlikely]] {
-    kphp::log::warning("confdata: failed to fetch subscribe response: {}", expected_response.error());
+    kphp::log::warning("failed to fetch subscribe response: {}", expected_response.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
   }
 
   tl::fetcher tlf{*expected_response};
   tl::confdata::SubscribeResponse response{};
   if (!response.fetch(tlf)) [[unlikely]] {
-    kphp::log::warning("confdata: failed to parse subscribe response");
+    kphp::log::warning("failed to parse subscribe response");
     co_return std::unexpected{kphp::confdata::subscribe_error::malformed_response};
   }
 

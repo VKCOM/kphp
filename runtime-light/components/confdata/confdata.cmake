@@ -39,17 +39,17 @@ set(K2_CONFDATA_SRC
     # __wrap_* definitions are always present regardless of link order
     $<TARGET_OBJECTS:libc-alloc-wrapper-pic>)
 
-vk_add_library_pic(k2-confdata-pic SHARED ${K2_CONFDATA_SRC})
-set_target_properties(k2-confdata-pic PROPERTIES PREFIX "" OUTPUT_NAME "k2-confdata" LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR})
-target_compile_options(k2-confdata-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
+vk_add_library_pic(kphp-confdata-pic SHARED ${K2_CONFDATA_SRC})
+set_target_properties(kphp-confdata-pic PROPERTIES PREFIX "" OUTPUT_NAME "kphp-confdata" LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR})
+target_compile_options(kphp-confdata-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
 # reuse the common link flags; cmake drives the link through the compiler,
 # so bare ld options need the -Wl, prefix
 set(K2_CONFDATA_LINK_FLAGS ${RUNTIME_LIGHT_LINK_FLAGS})
 if(NOT APPLE)
   list(TRANSFORM K2_CONFDATA_LINK_FLAGS REPLACE "^--" "-Wl,--")
 endif()
-target_link_options(k2-confdata-pic PUBLIC ${K2_CONFDATA_LINK_FLAGS})
+target_link_options(kphp-confdata-pic PUBLIC ${K2_CONFDATA_LINK_FLAGS})
 
-string(TIMESTAMP K2_CONFDATA_BUILD_TIMESTAMP "%s" UTC)
-target_compile_definitions(k2-confdata-pic PRIVATE K2_CONFDATA_BUILD_TIMESTAMP=${K2_CONFDATA_BUILD_TIMESTAMP}ULL
-                                                   K2_CONFDATA_COMPILER_VERSION="${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
+string(TIMESTAMP KPHP_CONFDATA_BUILD_TIMESTAMP "%s" UTC)
+target_compile_definitions(kphp-confdata-pic PRIVATE KPHP_CONFDATA_BUILD_TIMESTAMP=${KPHP_CONFDATA_BUILD_TIMESTAMP}ULL
+                                                   KPHP_CONFDATA_COMPILER_VERSION="${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")

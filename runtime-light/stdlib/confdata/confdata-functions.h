@@ -8,7 +8,7 @@
 #include "runtime-light/stdlib/confdata/confdata-state.h"
 
 inline bool f$is_confdata_loaded() noexcept {
-  return ConfdataInstanceState::get().is_initialized();
+  return kphp::confdata::instance_state::get().is_initialized();
 }
 
 auto f$confdata_get_value(const string& key) noexcept -> mixed;

@@ -15,7 +15,7 @@
 namespace {
 
 auto verify_confdata_parameter(std::string_view parameter) noexcept -> bool {
-  if (!ConfdataInstanceState::get().is_initialized()) [[unlikely]] {
+  if (!kphp::confdata::instance_state::get().is_initialized()) [[unlikely]] {
     kphp::log::warning("confdata is not initialized");
     return false;
   }
@@ -38,7 +38,7 @@ auto f$confdata_get_value(const string& key) noexcept -> mixed {
     return {};
   }
 
-  const auto& confdata_st{ConfdataInstanceState::get()};
+  const auto& confdata_st{kphp::confdata::instance_state::get()};
   const auto views{kphp::confdata::split_key(key_view, confdata_st.wildcards())};
   kphp::log::assertion(views.has_value());
   const kphp::confdata::key_handles handles{*views};
@@ -65,7 +65,7 @@ auto f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept -> a
     return {};
   }
 
-  const auto& confdata_st{ConfdataInstanceState::get()};
+  const auto& confdata_st{kphp::confdata::instance_state::get()};
   const auto& predefined_wildcards{confdata_st.wildcards()};
   const auto views{kphp::confdata::split_key(wildcard_view, predefined_wildcards)};
   kphp::log::assertion(views.has_value());
@@ -146,7 +146,7 @@ auto f$confdata_get_values_by_predefined_wildcard(const string& wildcard) noexce
     return {};
   }
 
-  const auto& confdata_st{ConfdataInstanceState::get()};
+  const auto& confdata_st{kphp::confdata::instance_state::get()};
   if (kphp::confdata::classify_section(wildcard_view, confdata_st.wildcards()) == kphp::confdata::section_kind::simple_key) [[unlikely]] {
     kphp::log::warning("trying to get elements by non-predefined wildcard '{}'", wildcard_view);
     return {};

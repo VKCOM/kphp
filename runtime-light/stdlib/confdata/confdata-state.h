@@ -14,13 +14,15 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/streams/stream.h"
 
-class ConfdataInstanceState final : private vk::not_copyable {
-  kphp::confdata::storage m_storage;
+namespace kphp::confdata {
+
+class instance_state final : private vk::not_copyable {
+  kphp::confdata::storage m_storage{};
   std::optional<kphp::component::stream> m_reader_lease;
   kphp::confdata::storage::sample_id m_sample_id{kphp::confdata::storage::INVALID_SAMPLE_ID};
 
 public:
-  ConfdataInstanceState() noexcept = default;
+  instance_state() noexcept = default;
 
   auto init() noexcept -> kphp::coro::task<>;
   auto release() noexcept -> void;
@@ -28,10 +30,10 @@ public:
   auto values() const noexcept -> const kphp::confdata::storage::map_type&;
   auto wildcards() const noexcept -> const kphp::confdata::predefined_wildcards&;
 
-  static auto get() noexcept -> ConfdataInstanceState&;
+  static auto get() noexcept -> instance_state&;
 };
 
-inline auto ConfdataInstanceState::release() noexcept -> void {
+inline auto instance_state::release() noexcept -> void {
   if (!is_initialized()) {
     return;
   }
@@ -42,16 +44,18 @@ inline auto ConfdataInstanceState::release() noexcept -> void {
   m_reader_lease.reset();
 }
 
-inline auto ConfdataInstanceState::is_initialized() const noexcept -> bool {
+inline auto instance_state::is_initialized() const noexcept -> bool {
   return m_sample_id != kphp::confdata::storage::INVALID_SAMPLE_ID;
 }
 
-inline auto ConfdataInstanceState::values() const noexcept -> const kphp::confdata::storage::map_type& {
+inline auto instance_state::values() const noexcept -> const kphp::confdata::storage::map_type& {
   kphp::log::assertion(is_initialized());
   return m_storage.values(m_sample_id);
 }
 
-inline auto ConfdataInstanceState::wildcards() const noexcept -> const kphp::confdata::predefined_wildcards& {
+inline auto instance_state::wildcards() const noexcept -> const kphp::confdata::predefined_wildcards& {
   kphp::log::assertion(is_initialized());
   return m_storage.wildcards();
 }
+
+} // namespace kphp::confdata
