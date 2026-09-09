@@ -35,3 +35,9 @@ target_compile_options(unittests-runtime-light-allocator PRIVATE ${RUNTIME_LIGHT
 target_link_options(unittests-runtime-light-allocator PRIVATE -stdlib=libc++)
 add_test(NAME unittests-runtime-light-allocator COMMAND unittests-runtime-light-allocator)
 set_target_properties(unittests-runtime-light-allocator PROPERTIES FOLDER tests)
+
+# This file is included only when KPHP_TESTS is enabled. The allocator suite
+# also covers confdata storage, sample lifetimes, and clean-sync size hints.
+add_dependencies(kphp-confdata-pic
+    unittests-runtime-light-confdata
+    unittests-runtime-light-allocator)

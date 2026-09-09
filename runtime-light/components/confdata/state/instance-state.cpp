@@ -228,75 +228,72 @@ auto InstanceState::run() noexcept -> kphp::coro::task<> {
 
 auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
   for (;;) {
-    auto opt_stream{co_await kphp::component::stream::accept()};
-    if (!opt_stream.has_value()) [[unlikely]] {
+    auto stream{co_await kphp::component::stream::accept()};
+    if (!stream.has_value()) [[unlikely]] {
       continue;
     }
 
-    auto stream{std::move(*opt_stream)};
-    kphp::log::debug("accepted a stream: descriptor -> {}", stream.descriptor());
-    if (!m_io_scheduler.spawn(serve_reader_lease(std::move(stream)))) [[unlikely]] {
+    kphp::log::debug("accepted a stream: descriptor -> {}", stream->descriptor());
+    if (!m_io_scheduler.start(serve_reader_lease(std::move(*stream)))) [[unlikely]] {
       kphp::log::warning("failed to serve a confdata reader lease");
     }
   }
 }
 
 auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<> {
-  auto expected_connection{kphp::component::connection::from_stream(std::move(reader_stream))};
-  if (!expected_connection) [[unlikely]] {
-    co_return kphp::log::warning("failed to create a confdata reader connection: error -> {}", expected_connection.error());
+  auto connection{kphp::component::connection::from_stream(std::move(reader_stream))};
+  if (!connection) [[unlikely]] {
+    co_return kphp::log::warning("failed to create a confdata reader connection: error -> {}", connection.error());
   }
 
   if (m_confdata_pieces.empty()) [[unlikely]] {
     co_return kphp::log::warning("can't serve a confdata reader lease: can't find confdata piece");
   }
 
-  auto connection{*std::move(expected_connection)};
   reader_session session{*this, std::prev(m_confdata_pieces.end())};
-  kphp::log::info("confdata: issuing reader lease: sample -> {}, sections -> {}", session.sample_id(),
-                  m_confdata_pieces.back().storage().values(session.sample_id()).size());
+  kphp::log::debug("issuing reader lease: sample -> {}, sections -> {}", session.sample_id(),
+                   m_confdata_pieces.back().storage().values(session.sample_id()).size());
   const auto lease{kphp::confdata::reader_lease::create(kphp::confdata::SHARED_MEMORY_NAME, session.sample_id())};
+  // The fixed shared-memory name and internally acquired sample ID must be valid.
+  // Failure here is an internal invariant violation, not a recoverable client error.
   kphp::log::assertion(lease.has_value());
-  if (const auto written{co_await connection.get_stream().write_all(std::as_bytes(std::span{std::addressof(*lease), 1}))}; !written) [[unlikely]] {
-    kphp::log::warning("failed to write a confdata reader lease: error -> {}", written.error());
-    co_return;
+  if (const auto written{co_await connection->get_stream().write_all(std::as_bytes(std::span{std::addressof(*lease), 1}))}; !written) [[unlikely]] {
+    co_return kphp::log::warning("failed to write a confdata reader lease: error -> {}", written.error());
   }
 
   kphp::coro::event reader_disconnected{};
-  if (const auto registered{connection.register_abort_handler([&reader_disconnected] noexcept { reader_disconnected.set(); })}; !registered) [[unlikely]] {
+  if (const auto registered{connection->register_abort_handler([&reader_disconnected] noexcept { reader_disconnected.set(); })}; !registered) [[unlikely]] {
     co_return kphp::log::warning("failed to watch a confdata reader connection: error -> {}", registered.error());
   }
   co_await reader_disconnected;
 }
 
 auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept -> kphp::coro::task<std::expected<void, confdata_sync_error>> {
-  kphp::log::info("confdata: starting clean sync: actor -> {}", confdata_proxy_actor);
+  kphp::log::debug("starting sync: actor -> {}", confdata_proxy_actor);
   // kPHP scans the encoded snapshot before materializing it so wildcard arrays
   // can reserve sufficient capacity before insertion. Retain the paginated
   // proxy responses and replay those same bytes after collecting size hints.
   kphp::confdata::storage::sync_size_hints size_hints{};
-  auto expected_snapshot{co_await kphp::confdata::sync(confdata_proxy_actor, [&size_hints](std::span<const tl::confdata::KeyValuePair> events) noexcept {
-    for (const auto& wrapped_event : events) {
-      const auto& event{wrapped_event.inner};
-      if (!event.value.value.empty()) {
-        size_hints.add(event.key.value);
+  auto snapshot{co_await kphp::confdata::sync(confdata_proxy_actor, [&size_hints](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+    for (const auto& event : events) {
+      if (!event.inner.value.value.empty()) {
+        size_hints.add(event.inner.key.value);
       }
     }
     return true;
   })};
-  if (!expected_snapshot) [[unlikely]] {
-    co_return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization,
-                                                  .m_code = static_cast<int32_t>(std::to_underlying(expected_snapshot.error()))}};
+  if (!snapshot) [[unlikely]] {
+    co_return std::unexpected{
+        confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(snapshot.error()))}};
   }
 
   size_hints.finish();
-  auto snapshot{*std::move(expected_snapshot)};
   size_t encoded_bytes{};
-  for (const auto& page : snapshot.m_pages) {
+  for (const auto& page : snapshot->m_pages) {
     encoded_bytes += page.size();
   }
-  kphp::log::info("confdata: snapshot fetched: pages -> {}, encoded bytes -> {}, offset -> {}", snapshot.m_pages.size(), encoded_bytes,
-                  snapshot.m_pagination.m_offset);
+  kphp::log::debug("snapshot fetched: pages -> {}, encoded bytes -> {}, offset -> {}", snapshot->m_pages.size(), encoded_bytes,
+                   snapshot->m_pagination.m_offset);
   // A separate one-node list owns the unpublished piece and later permits a
   // zero-allocation transfer into the registry.
   confdata_piece_list pending_piece{};
@@ -309,8 +306,8 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
 
   auto sync_editor{piece.storage().start_sync(size_hints)};
   const auto replay_result{
-      kphp::confdata::replay(snapshot, [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
-        return try_apply_events(storage, sync_editor, events);
+      kphp::confdata::replay(*snapshot, [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+        return apply_batched_events(storage, sync_editor, events);
       })};
   if (!replay_result) [[unlikely]] {
     sync_editor.cancel();
@@ -326,8 +323,8 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   const auto diagnostic_sample{piece.storage().acquire_active_sample()};
   const auto diagnostic_sections{piece.storage().values(diagnostic_sample).size()};
   piece.storage().release_sample(diagnostic_sample);
-  kphp::log::info("confdata: snapshot committed: sample -> {}, sections -> {}, used bytes -> {}", diagnostic_sample, diagnostic_sections,
-                  piece.storage().memory_usage().m_used);
+  kphp::log::debug("snapshot committed: sample -> {}, sections -> {}, used bytes -> {}", diagnostic_sample, diagnostic_sections,
+                   piece.storage().memory_usage().m_used);
   // Existing readers keep their mapped allocation; future lookups of the
   // stable name resolve to this newly published piece.
   if (const auto published{k2::publish_shared_memory(kphp::confdata::SHARED_MEMORY_NAME, piece.storage().memory().data(), 0, true, true)}; !published)
@@ -342,9 +339,9 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   if (retired_piece_it != m_confdata_pieces.end()) {
     erase_if_retired_and_unused(retired_piece_it);
   }
-  m_pagination = std::move(snapshot.m_pagination);
-  kphp::log::info("confdata: shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", kphp::confdata::SHARED_MEMORY_NAME,
-                  diagnostic_sample, diagnostic_sections, m_pagination.m_offset);
+  m_pagination = std::move(snapshot->m_pagination);
+  kphp::log::info("shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", kphp::confdata::SHARED_MEMORY_NAME, diagnostic_sample,
+                  diagnostic_sections, m_pagination.m_offset);
   co_return std::expected<void, confdata_sync_error>{};
 }
 
@@ -390,21 +387,20 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
   }
 }
 
-auto InstanceState::try_apply_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
-                                     std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
+auto InstanceState::apply_batched_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
+                                         std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
   if (report_reached_oom_threshold(storage)) [[unlikely]] {
     return false;
   }
-  for (const auto& wrapped_event : events) {
-    const auto& event{wrapped_event.inner};
-    if (event.key.value.size() > kphp::confdata::MAX_KEY_LENGTH) [[unlikely]] {
-      kphp::log::warning("confdata event key is too long and was ignored: size -> {}", event.key.value.size());
+  for (const auto& event : events) {
+    if (event.inner.key.value.size() > kphp::confdata::MAX_KEY_LENGTH) [[unlikely]] {
+      kphp::log::warning("confdata event key is too long and was ignored: size -> {}", event.inner.key.value.size());
       continue;
     }
-    if (event.value.value.empty()) {
-      static_cast<void>(editor.erase(event.key.value));
+    if (event.inner.value.value.empty()) {
+      static_cast<void>(editor.erase(event.inner.key.value));
     } else {
-      static_cast<void>(editor.upsert(event.key.value, [&event] noexcept { return decode_value(event); }));
+      static_cast<void>(editor.upsert(event.inner.key.value, [&event] noexcept { return decode_value(event.inner); }));
     }
     if (report_reached_oom_threshold(storage)) [[unlikely]] {
       return false;
@@ -423,7 +419,7 @@ auto InstanceState::apply_incremental_events(std::span<const tl::confdata::KeyVa
   if (!editor) [[unlikely]] {
     return false;
   }
-  if (!try_apply_events(storage, *editor, events)) [[unlikely]] {
+  if (!apply_batched_events(storage, *editor, events)) [[unlikely]] {
     return false;
   }
   if (editor->changed()) {
