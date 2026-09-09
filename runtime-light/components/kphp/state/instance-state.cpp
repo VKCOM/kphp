@@ -26,6 +26,8 @@
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/metrics.h"
+#include "runtime-light/stdlib/diagnostics/regex-time-state.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
@@ -202,6 +204,20 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   // to prevent performing the finalization twice
   if (shutdown_state_ == shutdown_state::finished) [[unlikely]] {
     co_return;
+  }
+
+  {
+    const auto& regex_time_stats{RegexTimeInstanceState::get()};
+    static constexpr std::string_view metric_name{"kphp_regex_builtin_time"};
+    auto send_metric{[](std::string_view method, uint64_t value) noexcept {
+      kphp::diagnostics::metric_builder::metric(metric_name).tag("is_K2", "yes").tag("method", method).send_value(static_cast<double>(value));
+    }};
+    send_metric("total", regex_time_stats.total);
+    send_metric("preg_match", regex_time_stats.preg_match);
+    send_metric("preg_match_all", regex_time_stats.preg_match_all);
+    send_metric("preg_replace", regex_time_stats.preg_replace);
+    send_metric("preg_replace_callback", regex_time_stats.preg_replace_callback);
+    send_metric("preg_split", regex_time_stats.preg_split);
   }
 
   switch (image_kind()) {

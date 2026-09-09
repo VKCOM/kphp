@@ -22,6 +22,7 @@
 #include "common/wrappers/memory-utils.h"
 #include "common/wrappers/overloaded.h"
 #include "common/ucontext/ucontext-portable.h"
+#include "runtime-common/stdlib/diagnostics/regex-time-stats.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
@@ -384,6 +385,8 @@ void PhpScript::finish() noexcept {
 
   vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_max_running_interval, script_init_time_sec, connection_process_time_sec,
                                                       queries_cnt, long_queries_cnt, script_mem_stats, runtime_builtins_stats::request_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
+  StatsHouseManager::get().add_regex_time_stats(RegexTimeStats::get());
+  RegexTimeStats::get().reset();
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);

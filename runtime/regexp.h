@@ -9,6 +9,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/regex-time-stats.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
 #include "runtime-common/stdlib/string/regex-functions.h"
 #include "runtime-common/stdlib/tracing/tracing.h"
@@ -363,6 +364,8 @@ void preg_add_match(array<string>& v, const string& match, const string& name) {
 }
 
 Optional<int64_t> f$preg_match(const regexp& regex, const string& subject) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -371,6 +374,8 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject) {
 }
 
 Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -379,6 +384,8 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject) {
 }
 
 Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -387,6 +394,8 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed
 }
 
 Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -395,6 +404,8 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, m
 }
 
 Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -403,6 +414,8 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed
 }
 
 Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -464,6 +477,8 @@ inline auto f$preg_replace(const T1& regex, const T2& replace_val, const T3& sub
 }
 
 Optional<string> f$preg_replace(const regexp& regex, const string& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_replace)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -587,6 +602,8 @@ auto f$preg_replace_callback(const T1& regex, const T2& replace_val, const T3& s
 
 template<class T>
 Optional<string> f$preg_replace_callback(const regexp& regex, const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_replace_callback)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace_callback, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -663,6 +680,8 @@ mixed f$preg_replace_callback(const mixed& regex, const T& replace_val, const mi
 }
 
 Optional<array<mixed>> f$preg_split(const regexp& regex, const string& subject, int64_t limit, int64_t flags) {
+  auto& regex_time_stats{RegexTimeStats::get()};
+  auto timer{regex_time_stats.write(regex_time_stats.preg_split)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_split, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);

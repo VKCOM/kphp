@@ -11,6 +11,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/binlog/binlog-stats.h"
 #include "runtime-common/core/memory-resource/memory_resource.h"
+#include "runtime-common/stdlib/diagnostics/regex-time-stats.h"
 #include "runtime/runtime-builtin-stats.h"
 #include "server/job-workers/job-stats.h"
 #include "server/php-queries.h"
@@ -95,6 +96,8 @@ public:
   void add_confdata_binlog_reader_stats(const binlog_reader_stats& confdata_stats) noexcept;
 
   void add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept;
+
+  void add_regex_time_stats(const RegexTimeStats &stats) noexcept;
 
 private:
   StatsHouseClient client;
