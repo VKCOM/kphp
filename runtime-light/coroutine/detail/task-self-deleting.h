@@ -118,7 +118,7 @@ auto make_task_self_deleting(awaitable_type awaitable) noexcept -> task_self_del
 template<typename F, typename... Args>
 requires(kphp::coro::is_task_function_v<F, Args...>)
 auto make_task_self_deleting(F f, Args... args) noexcept -> task_self_deleting::task_self_deleting {
-  co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+  CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
   co_return;
 }
 

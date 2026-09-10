@@ -227,7 +227,7 @@ inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_inf
 }
 
 inline auto io_scheduler::make_timeout_task(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<timeout_status> {
-  co_await kphp::coro::on_stack([this](std::chrono::milliseconds timeout_arg) noexcept { return schedule(timeout_arg); }, timeout);
+  CO_AWAIT_TASK_ON_STACK(schedule(timeout));
   co_return timeout_status::timeout;
 }
 
@@ -616,7 +616,7 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 [[nodiscard]] auto
 io_scheduler::schedule(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type> {
   co_await schedule();
-  co_return co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+  co_return CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
 }
 
 template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
@@ -626,11 +626,10 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
 
   if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
-      co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<coroutine_type>, this, std::move(coroutine));
+      CO_AWAIT_TASK_ON_STACK(schedule(std::move(coroutine)));
       co_return std::expected<expected_return_type, timeout_status>{};
     } else {
-      co_return std::expected<expected_return_type, timeout_status>{
-          co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<coroutine_type>, this, std::move(coroutine))};
+      co_return std::expected<expected_return_type, timeout_status>{CO_AWAIT_TASK_ON_STACK(schedule(std::move(coroutine)))};
     }
   }
 
@@ -655,11 +654,10 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 
   if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
-      co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<decltype(f), decltype(args)...>, this, std::move(f), std::move(args)...);
+      CO_AWAIT_TASK_ON_STACK(schedule(std::move(f), std::move(args)...));
       co_return std::expected<expected_return_type, timeout_status>{};
     } else {
-      co_return std::expected<expected_return_type, timeout_status>{
-          co_await kphp::coro::on_stack(&kphp::coro::io_scheduler::schedule<decltype(f), decltype(args)...>, this, std::move(f), std::move(args)...)};
+      co_return std::expected<expected_return_type, timeout_status>{CO_AWAIT_TASK_ON_STACK(schedule(std::move(f), std::move(args)...))};
     }
   }
 

@@ -110,8 +110,7 @@ inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(stream, {})}; !sync_resource.is_null()) {
     co_return sync_resource.get()->close();
   } else if (auto async_resource{from_mixed<class_instance<kphp::fs::async_resource>>(stream, {})}; !async_resource.is_null()) {
-    co_return co_await kphp::coro::on_stack(
-        [](auto* async_resource_arg) { return kphp::forks::id_managed(&kphp::fs::async_resource::close, async_resource_arg); }, async_resource.get());
+    co_return CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(&kphp::fs::async_resource::close, async_resource.get()));
   }
 
   kphp::log::warning("unexpected resource in fclose -> {}", stream.to_string().c_str());
@@ -134,11 +133,7 @@ inline kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string data
     auto expected{sync_resource.get()->write(std::as_bytes(data_span))};
     co_return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   } else if (auto async_resource{from_mixed<class_instance<kphp::fs::async_resource>>(stream, {})}; !async_resource.is_null()) {
-    auto expected{co_await kphp::coro::on_stack(
-        [](auto* async_resource_arg, std::span<const std::byte> data_arg) noexcept {
-          return kphp::forks::id_managed(&kphp::fs::async_resource::write, async_resource_arg, data_arg);
-        },
-        async_resource.get(), std::as_bytes(data_span))};
+    auto expected{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(&kphp::fs::async_resource::write, async_resource.get(), std::as_bytes(data_span)))};
     co_return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   }
 
@@ -157,11 +152,7 @@ inline kphp::coro::task<Optional<string>> f$fread(resource stream, int64_t lengt
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(stream, {})}; !sync_resource.is_null()) {
     expected = sync_resource.get()->read(std::as_writable_bytes(buf));
   } else if (auto async_resource{from_mixed<class_instance<kphp::fs::async_resource>>(stream, {})}; !async_resource.is_null()) {
-    expected = co_await kphp::coro::on_stack(
-        [](auto* async_resource_arg, std::span<std::byte> data) noexcept {
-          return kphp::forks::id_managed(&kphp::fs::async_resource::read, async_resource_arg, data);
-        },
-        async_resource.get(), std::as_writable_bytes(buf));
+    expected = CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(&kphp::fs::async_resource::read, async_resource.get(), std::as_writable_bytes(buf)));
   } else {
     kphp::log::warning("unexpected resource in fread -> {}", stream.to_string().c_str());
     co_return false;
@@ -177,8 +168,7 @@ inline kphp::coro::task<bool> f$fflush(resource stream) noexcept {
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(stream, {})}; !sync_resource.is_null()) {
     co_return sync_resource.get()->flush();
   } else if (auto async_resource{from_mixed<class_instance<kphp::fs::async_resource>>(stream, {})}; !async_resource.is_null()) {
-    co_return co_await kphp::coro::on_stack(
-        [](auto* async_resource_arg) noexcept { return kphp::forks::id_managed(&kphp::fs::async_resource::flush, async_resource_arg); }, async_resource.get());
+    co_return CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(&kphp::fs::async_resource::flush, async_resource.get()));
   }
 
   kphp::log::warning("unexpected resource in fflush -> {}", stream.to_string().c_str());

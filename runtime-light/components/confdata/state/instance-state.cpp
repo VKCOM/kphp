@@ -15,7 +15,6 @@
 #include "runtime-light/components/confdata/confdata-proxy/sync-functions.h"
 #include "runtime-light/components/confdata/confdata-proxy/tl.h"
 #include "runtime-light/components/confdata/state/component-state.h"
-#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/when-all.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -45,7 +44,7 @@ auto InstanceState::run() noexcept -> kphp::coro::task<> {
 
 auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
   for (;;) {
-    auto opt_stream{co_await kphp::coro::on_stack([]() noexcept { return kphp::component::stream::accept(); })};
+    auto opt_stream{CO_AWAIT_TASK_ON_STACK(kphp::component::stream::accept())};
     if (!opt_stream.has_value()) [[unlikely]] {
       kphp::log::warning("failed to accept a stream");
       continue;
@@ -54,9 +53,7 @@ auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
     kphp::log::info("accepted a stream: descriptor -> {}", request_stream.descriptor());
 
     // dummy implementation: drain the request and close
-    auto noop_callback{[](std::span<const std::byte>) noexcept {}};
-    if (auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::read_all<decltype(noop_callback)>, request_stream, std::move(noop_callback))};
-        !expected) [[unlikely]] {
+    if (auto expected{CO_AWAIT_TASK_ON_STACK(request_stream.read_all([](std::span<const std::byte>) noexcept {}))}; !expected) [[unlikely]] {
       kphp::log::warning("failed to read a request: error -> {}", expected.error());
     }
   }
@@ -68,17 +65,17 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
 
   for (;;) {
     if (!m_pagination.m_has_synced) {
-      auto sync{co_await kphp::coro::on_stack(kphp::confdata::sync<decltype(sync_handler)>, confdata_proxy_actor, sync_handler)};
+      auto sync{CO_AWAIT_TASK_ON_STACK(kphp::confdata::sync(confdata_proxy_actor, sync_handler))};
       if (!sync) [[unlikely]] {
         kphp::log::warning("confdata sync failed: error -> {}, retrying", std::to_underlying(std::move(sync).error()));
-        co_await kphp::coro::on_stack([](kphp::coro::io_scheduler& scheduler) noexcept { return scheduler.schedule(CONFDATA_RETRY_INTERVAL); }, m_io_scheduler);
+        CO_AWAIT_TASK_ON_STACK(m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL));
         continue;
       }
       m_pagination = *std::move(sync);
       m_warmup_status = InstanceState::warmup_status::done;
     }
 
-    auto update{co_await kphp::coro::on_stack(kphp::confdata::update<decltype(update_handler)>, confdata_proxy_actor, m_pagination, update_handler)};
+    auto update{CO_AWAIT_TASK_ON_STACK(kphp::confdata::update(confdata_proxy_actor, m_pagination, update_handler))};
     // update returns only on error; m_pagination was advanced in place up to the last applied batch
     kphp::log::assertion(!update.has_value());
     switch (update.error()) {
@@ -94,6 +91,6 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       kphp::log::warning("confdata update failed: error -> {}, retrying", std::to_underlying(std::move(update).error()));
       break;
     }
-    co_await kphp::coro::on_stack([](kphp::coro::io_scheduler& scheduler) noexcept { return scheduler.schedule(CONFDATA_RETRY_INTERVAL); }, m_io_scheduler);
+    CO_AWAIT_TASK_ON_STACK(m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL));
   }
 }

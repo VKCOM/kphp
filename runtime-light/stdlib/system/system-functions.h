@@ -54,7 +54,7 @@ inline constexpr std::string_view SHELL_PWUID_KEY = "shell";
 namespace kphp::system {
 
 inline auto exit(int32_t exit_code) noexcept -> kphp::coro::task<> {
-  co_await kphp::coro::on_stack(&InstanceState::run_instance_epilogue, InstanceState::get());
+  CO_AWAIT_TASK_ON_STACK(InstanceState::get().run_instance_epilogue());
   k2::exit(exit_code);
 }
 
@@ -95,12 +95,11 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   } else {
     exit_code = 1;
   }
-  co_await kphp::coro::on_stack([](int32_t exit_code_arg) noexcept { return kphp::forks::id_managed(kphp::system::exit, exit_code_arg); },
-                                static_cast<int32_t>(exit_code));
+  CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::system::exit, static_cast<int32_t>(exit_code)));
 }
 
 inline kphp::coro::task<> f$die(mixed v = 0) noexcept {
-  co_await kphp::coro::on_stack(f$exit, std::move(v));
+  CO_AWAIT_TASK_ON_STACK(f$exit(std::move(v)));
 }
 
 template<typename F>
@@ -222,13 +221,9 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
     kphp::log::warning("value of microseconds ({}) must be positive", microseconds);
     co_return;
   }
-
-  co_await kphp::coro::on_stack(
-      [](std::chrono::microseconds microseconds_arg) noexcept {
-        return kphp::forks::id_managed(&kphp::coro::io_scheduler::schedule<std::chrono::microseconds>, std::reference_wrapper{kphp::coro::io_scheduler::get()},
-                                       microseconds_arg);
-      },
-      std::chrono::microseconds{microseconds});
+  CO_AWAIT_TASK_ON_STACK(
+      kphp::forks::id_managed([](std::chrono::microseconds microseconds) noexcept { return kphp::coro::io_scheduler::get().schedule(microseconds); },
+                              std::chrono::microseconds{microseconds}));
 }
 
 inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
@@ -237,12 +232,9 @@ inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
     co_return;
   }
 
-  co_await kphp::coro::on_stack(
-      [](std::chrono::seconds seconds_arg) noexcept {
-        return kphp::forks::id_managed(&kphp::coro::io_scheduler::schedule<std::chrono::seconds>, std::reference_wrapper{kphp::coro::io_scheduler::get()},
-                                       seconds_arg);
-      },
-      std::chrono::seconds{seconds});
+  CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed([](std::chrono::seconds seconds) noexcept { return kphp::coro::io_scheduler::get().schedule(seconds); },
+                                                 std::chrono::seconds{seconds}));
+  co_return;
 }
 
 inline Optional<string> f$exec(const string& cmd, mixed& output, std::optional<std::reference_wrapper<int64_t>> exit_code = {}) noexcept {

@@ -325,10 +325,10 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 auto make_when_all_task(F f,
                         Args... args) noexcept -> when_all_task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
-    co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+    CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
     co_return;
   } else {
-    co_yield co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
+    co_yield CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
   }
 }
 

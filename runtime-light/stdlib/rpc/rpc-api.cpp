@@ -203,8 +203,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
-  auto task{*std::exchange(opt_awaiter_task, std::nullopt)};
-  auto response_expected{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
+  auto response_expected{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt)))};
   if (!response_expected) [[unlikely]] {
     co_return TlRpcError::make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
@@ -261,8 +260,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
-  auto task{*std::exchange(opt_awaiter_task, std::nullopt)};
-  auto response_expected{co_await kphp::coro::on_stack(kphp::forks::id_managed<decltype(task)>, std::move(task))};
+  auto response_expected{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt)))};
   if (!response_expected) [[unlikely]] {
     co_return error_factory.make_error(response_expected.error(), string{"can't fetch rpc response"});
   }
@@ -360,12 +358,8 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
           return {reinterpret_cast<std::byte*>(response_exp->buffer()), size};
         }};
 
-        auto fetch_result{co_await kphp::coro::on_stack(
-            [](kphp::rpc::query q_arg, auto response_buffer_provider_arg) noexcept {
-              return kphp::coro::io_scheduler::get().schedule(kphp::rpc::query::response<decltype(response_buffer_provider_arg)>, std::move(q_arg),
-                                                              std::move(response_buffer_provider_arg));
-            },
-            std::move(q), response_buffer_provider)};
+        auto fetch_result{CO_AWAIT_TASK_ON_STACK(
+            kphp::coro::io_scheduler::get().schedule(kphp::rpc::query::response<decltype(response_buffer_provider)>, std::move(q), response_buffer_provider))};
         if (!fetch_result) [[unlikely]] {
           response_exp = std::unexpected{fetch_result.error()};
         }
