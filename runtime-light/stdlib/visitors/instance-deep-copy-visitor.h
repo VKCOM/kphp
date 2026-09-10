@@ -122,11 +122,12 @@ private:
       return true;
     }
 
-    // the original is known to be non-null here, so a null result means the carved buffer was too small
-    instance = instance.virtual_builtin_clone_in(carve(instance.estimate_memory_usage(), instance.alignment()));
-    if (instance.is_null()) [[unlikely]] {
+    // the original is known to be non-null here, so a failed result means the carved buffer was too small
+    auto cloned{instance.virtual_builtin_clone_in(carve(instance.estimate_memory_usage(), instance.alignment()))};
+    if (!cloned.has_value()) [[unlikely]] {
       return false;
     }
+    instance = std::move(*cloned);
     copied_instance_ptr = instance.get_base_raw_ptr();
 
     if (const auto extra_ref_cnt{get_memory_ref_cnt()}; extra_ref_cnt != 0) {

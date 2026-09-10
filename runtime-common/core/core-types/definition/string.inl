@@ -68,7 +68,7 @@ string::string_inner* string::string_inner::create(size_type requested_capacity,
 string::string_inner* string::string_inner::create(vk::span<std::byte> memory, size_type requested_capacity, size_type old_capacity) noexcept {
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
-  if (unlikely(memory.size() < new_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) != 0)) {
+  if (unlikely(memory.data() == nullptr || memory.size() < new_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(string_inner) != 0)) {
     return nullptr;
   }
   string_inner* p = (string_inner*)memory.data();

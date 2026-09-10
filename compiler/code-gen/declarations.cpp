@@ -764,7 +764,8 @@ void ClassDeclaration::compile_get_hash(CodeGenerator& W, ClassPtr klass) {
 void ClassDeclaration::compile_class_name_hash(CodeGenerator& W, ClassPtr klass) {
   // hash of the class name, computed once at compile time -- same for every instance,
   // unlike the virtual get_hash() it can be read without an instance at hand.
-  W << "constexpr static uint64_t CLASS_NAME_HASH{" << vk::murmur_hash<uint64_t>(klass->name.data(), klass->name.size()) << "ULL};" << NL << NL;
+  FunctionSignatureGenerator(W) << "static uint64_t get_class_name_hash()" << BEGIN;
+  W << "return " << vk::murmur_hash<uint64_t>(klass->name.data(), klass->name.size()) << "ULL;" << NL << END << NL << NL;
 }
 
 void ClassDeclaration::compile_accept_visitor(CodeGenerator& W, ClassPtr klass, const char* visitor_type) {

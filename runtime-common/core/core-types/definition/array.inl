@@ -258,7 +258,7 @@ typename array<T>::allocation array<T>::allocation::allocate(int64_t new_int_siz
 template<class T>
 std::optional<typename array<T>::allocation> array<T>::allocation::from_external(vk::span<std::byte> memory, int64_t new_int_size, bool is_vector) noexcept {
   const size_t mem_size = array_inner::estimate_size(new_int_size, is_vector);
-  if (unlikely(memory.size() < mem_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) != 0)) {
+  if (unlikely(memory.data() == nullptr || memory.size() < mem_size || reinterpret_cast<std::uintptr_t>(memory.data()) % alignof(array_inner) != 0)) {
     return std::nullopt;
   }
   if (!is_vector) {

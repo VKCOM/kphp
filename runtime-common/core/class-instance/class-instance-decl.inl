@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 
 #include "common/smart_ptrs/intrusive_ptr.h"
 #include "common/wrappers/span.h"
@@ -77,14 +78,14 @@ public:
   // copies the instance into externally provided memory (no allocation/ownership)
   // memory must be aligned to alignof(T) and >= estimate_memory_usage() bytes
   // caller must pin it with a special ExtraRefCnt (e.g. for_instance_cache), since the instance never frees it.
-  // Returns a null instance if memory is unfit.
-  inline class_instance clone_in(vk::span<std::byte> memory) const noexcept;
+  // Returns nullopt if memory is unfit.
+  inline std::optional<class_instance> clone_in(vk::span<std::byte> memory) const noexcept;
   template<class... Args>
   inline class_instance<T> alloc(Args&&... args) __attribute__((always_inline));
   // constructs an instance in externally provided memory (no allocation/ownership)
-  // leaves it null if memory is smaller than sizeof(T) or misaligned
+  // returns nullopt if memory is smaller than sizeof(T) or misaligned
   template<class... Args>
-  inline class_instance<T> alloc(vk::span<std::byte> memory, Args&&... args) noexcept __attribute__((always_inline));
+  inline std::optional<class_instance<T>> alloc_in(vk::span<std::byte> memory, Args&&... args) noexcept __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
   inline void destroy() {
     o.reset();
@@ -125,7 +126,7 @@ public:
   }
 
   template<class S = T>
-  std::enable_if_t<!std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
+  std::enable_if_t<!std::is_polymorphic<S>{}, std::optional<class_instance>> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
     return clone_in(memory);
   }
 
@@ -141,11 +142,12 @@ public:
   }
 
   template<class S = T>
-  std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
+  std::enable_if_t<std::is_polymorphic<S>{}, std::optional<class_instance>> virtual_builtin_clone_in(vk::span<std::byte> memory) const noexcept {
     class_instance res;
     if (o) {
-      if (unlikely(memory.size() < o->virtual_builtin_sizeof() || reinterpret_cast<std::uintptr_t>(memory.data()) % o->virtual_builtin_alignof() != 0)) {
-        return res;
+      if (unlikely(memory.data() == nullptr || memory.size() < o->virtual_builtin_sizeof() ||
+                   reinterpret_cast<std::uintptr_t>(memory.data()) % o->virtual_builtin_alignof() != 0)) {
+        return std::nullopt;
       }
       res.o = vk::intrusive_ptr<T>{o->virtual_builtin_construct_at(memory.data())};
       res.o->set_refcnt(1);
@@ -238,8 +240,8 @@ public:
 private:
   class_instance<T> clone_impl(std::true_type /*is empty*/) const;
   class_instance<T> clone_impl(std::false_type /*is empty*/) const;
-  class_instance<T> clone_in_impl(vk::span<std::byte> memory, std::true_type /*is empty*/) const noexcept;
-  class_instance<T> clone_in_impl(vk::span<std::byte> memory, std::false_type /*is empty*/) const noexcept;
+  std::optional<class_instance<T>> clone_in_impl(vk::span<std::byte> memory, std::true_type /*is empty*/) const noexcept;
+  std::optional<class_instance<T>> clone_in_impl(vk::span<std::byte> memory, std::false_type /*is empty*/) const noexcept;
 };
 
 template<class T, class... Args>
