@@ -2,6 +2,8 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <array>
+#include <string_view>
 #include <utility>
 
 #include "runtime-light/components/kphp/state/component-state.h"
@@ -11,7 +13,9 @@
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/k2-platform/k2-header.h"
+#include "runtime-light/stdlib/cpu-info/cpu-info-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/metrics.h"
 
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))
 
@@ -56,7 +60,12 @@ VISIBILITY_DEFAULT void k2_init_instance() {
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = k2_instance_state();
   new (k2::instance_state()) InstanceState{};
-  k2::instance_state()->init_script_execution();
+
+  {
+    auto& ciis{CpuInfoInstanceState::get()};
+    auto guard{ciis.write_cycles(ciis.processing_cycles)};
+    k2::instance_state()->init_script_execution();
+  }
 }
 
 VISIBILITY_DEFAULT k2::PollStatus k2_warmup() {
@@ -68,7 +77,15 @@ VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
   k2::details::component_state_ptr = k2_component_state();
   k2::details::instance_state_ptr = k2_instance_state();
   kphp::log::trace("k2_poll started");
-  const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
+
+  auto& cpu_info_instance_state{CpuInfoInstanceState::get()};
+  k2::PollStatus poll_status{};
+  {
+    cpu_info_instance_state.write_k2_poll_start();
+    auto guard{cpu_info_instance_state.write_cycles(cpu_info_instance_state.processing_cycles, cpu_info_instance_state.k2_poll_start.value())};
+    poll_status = kphp::coro::io_scheduler::get().process_events();
+    cpu_info_instance_state.write_k2_poll_finish();
+  }
   kphp::log::trace("k2_poll finished: {}", std::to_underlying(poll_status));
   return poll_status;
 }
