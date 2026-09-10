@@ -134,7 +134,7 @@ struct storage::shared_state final {
   /** Byte offset at which allocator-managed payload memory begins. */
   size_t m_pool_offset{};
   /** Allocator shared by wildcard indexes, sample maps, and PHP values. */
-  resource_type m_resource{};
+  kphp::memory::pool_allocator m_allocator;
   /** Immutable wildcard index shared by every sample in this piece. */
   predefined_wildcards m_wildcards;
   /** Thirty immutable generations, matching legacy KPHP's backpressure bound. */
@@ -152,9 +152,10 @@ private:
   }
 
 public:
-  shared_state() noexcept
-      : m_wildcards{m_resource},
-        m_samples{make_samples(m_resource)} {}
+  explicit shared_state(std::span<std::byte> pool_memory) noexcept
+      : m_allocator{kphp::memory::pool_allocator::external_memory{}, pool_memory.data(), pool_memory.size(), 0},
+        m_wildcards{m_allocator.get_memory_resource()},
+        m_samples{make_samples(m_allocator.get_memory_resource())} {}
 };
 
 storage::retired_allocations::retired_allocations(resource_type& resource) noexcept
@@ -230,7 +231,7 @@ storage::editor::editor(storage& owner, sample_id destination, bool copy_active_
       m_values{map_type::allocator_type{owner.resource()}},
       m_retired_allocations{owner.resource()} {
   if (copy_active_sample) {
-    owner.with_storage_resource([this, &owner] noexcept { m_values = owner.m_state->m_samples[owner.m_active_sample].m_values; });
+    owner.with_storage_allocator([this, &owner] noexcept { m_values = owner.m_state->m_samples[owner.m_active_sample].m_values; });
   }
 }
 
@@ -250,7 +251,7 @@ storage::editor::~editor() {
 auto storage::editor::erase(std::string_view key) noexcept -> bool {
   kphp::log::assertion(m_owner != nullptr);
   bool erased{};
-  m_owner->with_storage_resource([this, key, &erased] noexcept {
+  m_owner->with_storage_allocator([this, key, &erased] noexcept {
     erased = apply_erase(key);
     m_last_retired_value.clear();
   });
@@ -476,12 +477,11 @@ auto storage::init(std::span<std::byte> memory, size_t oom_handling_size) noexce
   }
 
   m_memory = memory;
-  m_state = std::construct_at(reinterpret_cast<shared_state*>(m_memory.data()));
+  m_state = std::construct_at(reinterpret_cast<shared_state*>(m_memory.data()), pool_memory);
   m_active_sample = 0;
   m_state->m_total_size = memory.size();
   m_state->m_pool_offset = layout->m_pool_offset;
   m_oom_threshold = pool_memory.size() - oom_handling_size;
-  m_state->m_resource.init(pool_memory.data(), pool_memory.size());
   return {};
 }
 
@@ -525,14 +525,14 @@ auto storage::initialize_wildcards(std::span<const std::string_view> wildcards) 
   kphp::log::assertion(is_initialized());
   kphp::log::assertion(!m_has_committed_sample);
   std::expected<void, predefined_wildcards_error> result{};
-  with_storage_resource([this, wildcards, &result] noexcept { result = m_state->m_wildcards.initialize(wildcards); });
+  with_storage_allocator([this, wildcards, &result] noexcept { result = m_state->m_wildcards.initialize(wildcards); });
   return result;
 }
 
 auto storage::memory_usage() const noexcept -> storage_memory_usage {
   kphp::log::assertion(is_initialized());
   kphp::log::assertion(m_oom_threshold != 0);
-  const auto& memory_stats{m_state->m_resource.get_memory_stats()};
+  const auto& memory_stats{m_state->m_allocator.get_memory_resource().get_memory_stats()};
   return {.m_used = memory_stats.real_memory_used, .m_oom_threshold = m_oom_threshold, .m_capacity = memory_stats.memory_limit};
 }
 
@@ -594,9 +594,13 @@ auto storage::start_update() noexcept -> std::optional<editor> {
   return begin_update(true);
 }
 
-auto storage::resource() noexcept -> resource_type& {
+auto storage::allocator() noexcept -> kphp::memory::pool_allocator& {
   kphp::log::assertion(is_initialized());
-  return m_state->m_resource;
+  return m_state->m_allocator;
+}
+
+auto storage::resource() noexcept -> resource_type& {
+  return allocator().get_memory_resource();
 }
 
 auto storage::begin_update(bool copy_active_sample, sync_size_hints_ref size_hints) noexcept -> std::optional<editor> {
@@ -636,7 +640,7 @@ auto storage::commit(editor& update) noexcept -> void {
   kphp::log::assertion(is_valid_sample_id(update.m_destination));
   kphp::log::assertion(update.m_last_retired_value.is_null());
 
-  with_storage_resource([this, &update] noexcept {
+  with_storage_allocator([this, &update] noexcept {
     for (auto& [section, value] : update.m_values) {
       // The map key is const, but a copied handle updates the shared string header.
       string mutable_section{section};
@@ -667,7 +671,7 @@ auto storage::commit(editor& update) noexcept -> void {
 auto storage::cancel(editor& update) noexcept -> void {
   kphp::log::assertion(m_update_in_progress);
   kphp::log::assertion(update.m_owner == this);
-  with_storage_resource([&update] noexcept {
+  with_storage_allocator([&update] noexcept {
     update.m_last_retired_value.clear();
     update.m_values.clear();
     update.m_retired_allocations.m_detached_allocations.clear();
@@ -680,7 +684,7 @@ auto storage::cancel(editor& update) noexcept -> void {
 
 auto storage::reclaim_retired_samples() noexcept -> void {
   kphp::log::assertion(is_valid_sample_id(m_active_sample));
-  with_storage_resource([this] noexcept {
+  with_storage_allocator([this] noexcept {
     const auto active{m_active_sample};
     for (auto id{static_cast<sample_id>((active + 1) % SAMPLE_COUNT)}; id != active; id = static_cast<sample_id>((id + 1) % SAMPLE_COUNT)) {
       const auto& sample{m_state->m_samples[id]};

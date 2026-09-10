@@ -17,13 +17,15 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/pool-allocator.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/confdata/predefined-wildcards.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::confdata {
 
@@ -162,8 +164,9 @@ public:
 private:
   template<std::invocable callback_type>
   requires std::same_as<std::invoke_result_t<callback_type>, void> && std::is_nothrow_invocable_v<callback_type>
-  auto with_storage_resource(callback_type&& callback) noexcept -> void;
+  auto with_storage_allocator(callback_type&& callback) noexcept -> void;
 
+  auto allocator() noexcept -> kphp::memory::pool_allocator&;
   auto resource() noexcept -> resource_type&;
   auto begin_update(bool copy_active_sample, sync_size_hints_ref size_hints = {}) noexcept -> std::optional<editor>;
   auto commit(editor& update) noexcept -> void;
@@ -178,8 +181,8 @@ inline constexpr auto storage::memory_alignment() noexcept -> size_t {
 
 template<std::invocable callback_type>
 requires std::same_as<std::invoke_result_t<callback_type>, void> && std::is_nothrow_invocable_v<callback_type>
-auto storage::with_storage_resource(callback_type&& callback) noexcept -> void {
-  kphp::memory::with_script_memory_resource(resource(), std::forward<callback_type>(callback));
+auto storage::with_storage_allocator(callback_type&& callback) noexcept -> void {
+  RuntimeAllocator::get().with_allocator(allocator(), std::forward<callback_type>(callback));
 }
 
 inline auto storage::is_initialized() const noexcept -> bool {
@@ -290,7 +293,7 @@ requires std::same_as<std::invoke_result_t<value_factory_type>, mixed> && std::i
 auto storage::editor::upsert(std::string_view key, value_factory_type&& value_factory) noexcept -> bool {
   kphp::log::assertion(m_owner != nullptr);
   bool changed{};
-  m_owner->with_storage_resource([this, key, &value_factory, &changed] noexcept {
+  m_owner->with_storage_allocator([this, key, &value_factory, &changed] noexcept {
     const mixed value{std::invoke(std::forward<value_factory_type>(value_factory))};
     changed = apply_upsert(key, value);
     m_last_retired_value.clear();
