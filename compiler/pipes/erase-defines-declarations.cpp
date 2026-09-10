@@ -4,8 +4,14 @@
 
 #include "compiler/pipes/erase-defines-declarations.h"
 
+#include "auto/compiler/vertex/vertex-op_define.h"
+#include "auto/compiler/vertex/vertex-op_var.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
+#include "compiler/operation.h"
 
 VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root) {
   // when inside a function:

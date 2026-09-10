@@ -4,9 +4,18 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-combinator.h"
 
-#include "common/tl/constants/common.h"
+#include <cstdint>
+#include <fmt/format.h>
+#include <unordered_set>
 
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
+#include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/compiler-core.h"
+#include "compiler/kphp_assert.h"
 
 namespace tl2cpp {
 inline std::vector<std::string> get_not_optional_fields_masks(const vk::tlo_parsing::combinator* constructor) {

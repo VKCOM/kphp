@@ -4,10 +4,18 @@
 
 #pragma once
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 #include "compiler/inferring/lvalue.h"
 #include "compiler/inferring/rvalue.h"
 #include "compiler/pipes/function-and-cfg.h"
+
+class TypeData;
+class TypeHint;
 
 class CollectMainEdgesPass final : public FunctionPassBase {
 private:

@@ -4,8 +4,14 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-function.h"
 
+#include <string>
+
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl-combinator.h"
 #include "compiler/code-gen/naming.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 
 namespace tl2cpp {
 void TlFunctionDecl::compile(CodeGenerator& W) const {

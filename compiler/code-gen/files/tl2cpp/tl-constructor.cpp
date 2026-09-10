@@ -4,9 +4,18 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-constructor.h"
 
+#include <iterator>
+#include <memory>
+
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
+#include "common/tlo-parsing/tl-objects.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl-combinator.h"
 #include "compiler/code-gen/files/tl2cpp/tl-template-php-type-helpers.h"
 #include "compiler/code-gen/naming.h"
+#include "compiler/compiler-core.h"
 
 namespace tl2cpp {
 const vk::tlo_parsing::combinator* constructor;

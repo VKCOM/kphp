@@ -5,7 +5,9 @@
 #include "compiler/scheduler/one-thread-scheduler.h"
 
 #include <cassert>
+#include <cstdio>
 
+#include "compiler/scheduler/node.h"
 #include "compiler/scheduler/task-pull.h"
 #include "compiler/scheduler/task.h"
 

@@ -4,8 +4,13 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
 #include <forward_list>
 #include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "common/termformat/termformat.h"
 #include "compiler/stage.h"

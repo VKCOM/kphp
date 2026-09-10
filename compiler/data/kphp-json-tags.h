@@ -11,6 +11,7 @@
 #include "compiler/data/data_ptr.h"
 
 struct ClassMemberInstanceField;
+class PhpDocComment;
 
 namespace kphp_json {
 

@@ -3,11 +3,25 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/check-type-hint-variance.h"
-#include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
-#include "compiler/type-hint.h"
 
+#include <fmt/format.h>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/containers/final_action.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/type-hint.h"
+#include "compiler/vertex.h"
 
 namespace {
 

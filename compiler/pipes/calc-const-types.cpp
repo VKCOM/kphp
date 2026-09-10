@@ -4,10 +4,22 @@
 
 #include "compiler/pipes/calc-const-types.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/compare.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/to_underlying.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 void CalcConstTypePass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {

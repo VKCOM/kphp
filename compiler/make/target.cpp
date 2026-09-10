@@ -5,9 +5,11 @@
 #include "compiler/make/target.h"
 
 #include <cassert>
+#include <fmt/format.h>
 #include <string>
 
 #include "common/wrappers/fmt_format.h"
+#include "compiler/index.h"
 
 void Target::set_mtime(long long new_mtime) {
   assert(mtime == 0);

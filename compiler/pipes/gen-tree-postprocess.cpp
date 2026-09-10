@@ -4,11 +4,35 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
+#include <iterator>
+#include <limits>
+#include <new>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 namespace {
 template<typename F>

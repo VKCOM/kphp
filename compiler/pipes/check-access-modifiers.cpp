@@ -4,8 +4,15 @@
 
 #include "compiler/pipes/check-access-modifiers.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/var-data.h"
+#include "compiler/stage.h"
+#include "compiler/vertex.h"
 
 void CheckAccessModifiersPass::on_start() {
   lambda_class_id = current_function->get_this_or_topmost_if_lambda()->class_id;

@@ -4,11 +4,16 @@
 
 #pragma once
 
+#include <forward_list>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "common/mixin/movable_only.h"
-
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 struct DepData : private vk::movable_only {

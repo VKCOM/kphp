@@ -4,7 +4,21 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
 
+#include <fmt/format.h>
+#include <iterator>
+#include <unordered_map>
+#include <vector>
+
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
 #include "common/tl/constants/common.h"
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
+#include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/kphp_assert.h"
 
 namespace tl2cpp {
 // Recursively traverse the type expression tree and return <type, value> pair

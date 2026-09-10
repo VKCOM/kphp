@@ -8,6 +8,7 @@
 #include <string>
 
 #include "compiler/debug.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/location.h"
 #include "compiler/threading/locks.h"

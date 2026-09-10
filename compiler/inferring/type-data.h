@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <forward_list>
 #include <map>
 #include <string>
+#include <unordered_set>
+#include <utility>
 
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/data_ptr.h"
@@ -14,6 +18,7 @@
 #include "compiler/inferring/key.h"
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 #include "compiler/threading/tls.h"
 

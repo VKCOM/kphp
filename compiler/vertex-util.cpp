@@ -4,12 +4,21 @@
 
 #include "compiler/vertex-util.h"
 
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <new>
 #include <set>
+#include <utility>
 
 #include "common/algorithms/contains.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
   if (auto var = v.try_as<op_var>()) {

@@ -4,11 +4,34 @@
 
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
+#include <functional>
+#include <iterator>
+#include <new>
+#include <vector>
+
+#include "common/algorithms/compare.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/src-file.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
 #include "compiler/modulite-check-rules.h"
+#include "compiler/operation.h"
 #include "compiler/rewrite-rules/replace-extern-func-calls.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * This pass checks that func calls are correct, i.e. provided necessary amount of arguments, etc.

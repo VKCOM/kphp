@@ -4,18 +4,48 @@
 
 #include "compiler/pipes/final-check.h"
 
+#include <algorithm>
+#include <atomic>
+#include <cstddef>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
+#include <set>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
 #include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/class-modifiers.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/var-data.h"
+#include "compiler/ffi/ffi_types.h"
 #include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/var-node.h"
 #include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/threading/locks.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {

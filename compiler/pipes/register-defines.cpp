@@ -4,9 +4,15 @@
 
 #include "compiler/pipes/register-defines.h"
 
+#include "auto/compiler/vertex/vertex-op_define.h"
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
 
 VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {
   // 1. an explicit define('name', value)

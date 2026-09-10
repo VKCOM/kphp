@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 #include "compiler/inferring/public.h"
 

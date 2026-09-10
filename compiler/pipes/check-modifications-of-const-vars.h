@@ -4,7 +4,11 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/stage.h"
 
 class CheckModificationsOfConstVars final : public FunctionPassBase {
 public:

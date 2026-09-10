@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include <array>
+#include <cstdint>
+#include <limits>
+#include <string>
+
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 #include "compiler/threading/data-stream.h"
 

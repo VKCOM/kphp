@@ -4,11 +4,17 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/node.h"
 #include "compiler/stage.h"
 
+class Location;
+class TypeData;
+
 namespace tinf {
+class TypeInferer;
 
 class ExprNode : public Node {
 private:

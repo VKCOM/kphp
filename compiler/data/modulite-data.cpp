@@ -4,18 +4,28 @@
 
 #include "compiler/data/modulite-data.h"
 
-#include "yaml-cpp/yaml.h"
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
 
+#include "common/algorithms/compare.h"
 #include "common/algorithms/contains.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/likely.h"
-
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/composer-json-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/utils/string-utils.h"
+#include "yaml-cpp/yaml.h"
 
 /*
  * Modulite is a conception of isolating parts of code.

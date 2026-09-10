@@ -5,8 +5,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <climits>
+#include <cstdlib>
+#include <cstring>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "common/algorithms/string-algorithms.h"

@@ -4,14 +4,26 @@
 
 #include "compiler/inferring/restriction-isset.h"
 
+#include <forward_list>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/node.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/inferring/var-node.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 RestrictionIsset::RestrictionIsset(tinf::Node* a)

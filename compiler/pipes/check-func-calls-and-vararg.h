@@ -4,8 +4,15 @@
 
 #pragma once
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+
+class Location;
 
 class CheckFuncCallsAndVarargPass final : public FunctionPassBase {
   VertexAdaptor<op_func_call> process_varargs(VertexAdaptor<op_func_call> call, FunctionPtr f_called);

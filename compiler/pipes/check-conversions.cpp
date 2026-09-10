@@ -4,7 +4,18 @@
 
 #include "compiler/pipes/check-conversions.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <utility>
+
+#include "auto/compiler/vertex/vertex-meta_op_unary.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
 
 const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_conversions = {
     {op_conv_int, tp_Class},

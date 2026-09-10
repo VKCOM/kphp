@@ -4,10 +4,25 @@
 
 #include "compiler/pipes/check-tl-classes.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
+#include <functional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "common/tl2php/php-classes.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/phpdoc.h"
+#include "compiler/tl-classes.h"
 
 namespace {
 

@@ -4,11 +4,15 @@
 
 #pragma once
 
+#include <cstddef>
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/tlo-parsing/tl-objects.h"
-
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/gen-out-style.h"

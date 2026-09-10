@@ -4,13 +4,28 @@
 
 #include "compiler/pipes/register-kphp-configuration.h"
 
-#include "re2/re2.h"
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <string>
+#include <vector>
 
 #include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
+#include "re2/re2.h"
+#include "re2/stringpiece.h"
 
 // We use a lot of VertexUtil::get_actual_value here because
 // on CalcRealDefinesAndAssignModulitesF and InlineDefinesUsagesPass

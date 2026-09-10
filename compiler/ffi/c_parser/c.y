@@ -21,10 +21,10 @@
 
 %code requires
 {
+  #include <cstdint>
   #include <iostream>
   #include <string>
   #include <vector>
-  #include <stdint.h>
 
   #include "compiler/ffi/ffi_types.h"
   #include "compiler/ffi/c_parser/location.h"

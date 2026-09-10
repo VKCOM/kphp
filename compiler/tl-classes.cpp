@@ -4,9 +4,13 @@
 
 #include "compiler/tl-classes.h"
 
+#include <exception>
+#include <fmt/format.h>
+#include <utility>
+
 #include "common/tlo-parsing/tlo-parsing.h"
 #include "common/wrappers/fmt_format.h"
-
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 void TlClasses::load_from(const std::string& tlo_schema, bool generate_tl_internals) {

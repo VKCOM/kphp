@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class PreprocessExceptions final : public FunctionPassBase {

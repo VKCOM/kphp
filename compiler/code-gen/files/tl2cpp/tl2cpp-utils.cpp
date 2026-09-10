@@ -4,9 +4,29 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 
-#include "common/tl/constants/common.h"
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
+#include <functional>
+#include <iterator>
+#include <unordered_map>
+#include <utility>
 
+#include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
 #include "common/php-functions.h"
+#include "common/tl/constants/common.h"
+#include "common/tl2php/php-classes.h"
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/class-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/tl-classes.h"
+#include "compiler/utils/string-utils.h"
 
 namespace tl2cpp {
 const std::string T_TYPE = "Type";

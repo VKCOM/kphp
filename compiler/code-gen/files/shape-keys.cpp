@@ -5,12 +5,14 @@
 #include "compiler/code-gen/files/shape-keys.h"
 
 #include <string_view>
+#include <type_traits>
 
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 
 std::string ShapeKeys::get_function_name() noexcept {
   return "init_shape_demangler";

@@ -4,13 +4,24 @@
 
 #include "compiler/stage.h"
 
-#include "common/termformat/termformat.h"
-#include "common/wrappers/pathname.h"
+#include <cassert>
+#include <cstdlib>
+#include <fmt/format.h>
+#include <utility>
 
+#include "auto/compiler/vertex/vertex-op_function.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/pathname.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/name-gen.h"
+#include "compiler/threading/locks.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 

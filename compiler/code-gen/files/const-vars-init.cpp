@@ -4,16 +4,41 @@
 
 #include "compiler/code-gen/files/const-vars-init.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
+#include <string>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-op_string.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
 #include "common/algorithms/hashes.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
+#include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
+#include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 
 struct InitConstVar {
   VarPtr var;

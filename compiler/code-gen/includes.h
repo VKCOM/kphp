@@ -4,7 +4,15 @@
 
 #pragma once
 
+#include <map>
+#include <set>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/type-data.h"
 

@@ -4,15 +4,18 @@
 
 #pragma once
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/find.h"
 #include "common/mixin/not_copyable.h"
-
 #include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
 
 class DefineData : private vk::not_copyable {
+
   DEBUG_STRING_METHOD {
     return name;
   }

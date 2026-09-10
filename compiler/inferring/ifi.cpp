@@ -4,8 +4,14 @@
 
 #include "compiler/inferring/ifi.h"
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 

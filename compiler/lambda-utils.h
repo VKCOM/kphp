@@ -4,10 +4,15 @@
 
 #pragma once
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex.h"
+
+class TypeHint;
 
 // see the .cpp file for detailed comments of how do lambdas work
 

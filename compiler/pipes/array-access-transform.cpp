@@ -4,14 +4,27 @@
 
 #include "compiler/pipes/array-access-transform.h"
 
+#include <fmt/format.h>
+#include <iterator>
+#include <utility>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 namespace {
 

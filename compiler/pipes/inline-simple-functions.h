@@ -4,9 +4,14 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class InlineSimpleFunctions final : public FunctionPassBase {
+
 private:
   bool inline_is_possible_{true};
   int n_simple_operations_{0};

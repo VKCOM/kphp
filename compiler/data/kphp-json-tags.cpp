@@ -4,18 +4,34 @@
 
 #include "compiler/data/kphp-json-tags.h"
 
+#include <algorithm>
 #include <charconv>
+#include <cstring>
+#include <fmt/format.h>
+#include <forward_list>
+#include <system_error>
+#include <unordered_set>
+#include <utility>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/compare.h"
+#include "common/algorithms/find.h"
+#include "common/algorithms/hashes.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/wrappers/fmt_format.h"
-
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/field-modifiers.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 
 /*
  * JsonEncoder::encode($obj) and JsonEncode::decode($json_str, Obj::class) are controlled by @kphp-json tags.

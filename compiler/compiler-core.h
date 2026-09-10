@@ -7,20 +7,29 @@
 /*** Core ***/
 //Consists mostly of functions that require synchronization
 
+#include <cstddef>
+#include <functional>
 #include <string>
+#include <string_view>
+#include <type_traits>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "common/algorithms/hashes.h"
-
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-settings.h"
 #include "compiler/composer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-colors.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
+#include "compiler/threading/locks.h"
 #include "compiler/tl-classes.h"
 
 enum class OutputMode {

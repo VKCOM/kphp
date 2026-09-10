@@ -4,16 +4,36 @@
 
 #include "compiler/inferring/expr-node.h"
 
-#include "common/php-functions.h"
+#include <cstdint>
+#include <iterator>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/php-functions.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/edge.h"
+#include "compiler/inferring/key.h"
+#include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/node-recalc.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/public.h"
+#include "compiler/inferring/rvalue.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/type-inferer.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 class ExprNodeRecalc : public NodeRecalc {
 private:

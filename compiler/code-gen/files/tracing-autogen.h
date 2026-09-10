@@ -7,7 +7,9 @@
 #include <mutex>
 #include <vector>
 
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/code-gen-root-cmd.h"
+#include "compiler/data/data_ptr.h"
 
 class CodeGenerator;
 class KphpTracingDeclarationMixin;

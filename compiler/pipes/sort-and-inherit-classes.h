@@ -5,9 +5,12 @@
 #pragma once
 
 #include <forward_list>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 

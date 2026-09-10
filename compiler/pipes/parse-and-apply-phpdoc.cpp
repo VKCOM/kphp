@@ -4,20 +4,48 @@
 
 #include "compiler/pipes/parse-and-apply-phpdoc.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <exception>
+#include <fmt/format.h>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <set>
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
-
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/class-assumptions.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/generics-mixins.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/kphp-tracing-tags.h"
+#include "compiler/data/performance-inspections.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/function-colors.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 

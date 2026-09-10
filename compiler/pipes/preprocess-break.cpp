@@ -4,6 +4,15 @@
 
 #include "compiler/pipes/preprocess-break.h"
 
+#include <algorithm>
+#include <cstdlib>
+
+#include "common/algorithms/find.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
+
 int PreprocessBreakPass::get_label_id(VertexAdaptor<meta_op_cycle> cycle, Operation op) {
   int& label_id = op == op_break ? cycle->break_label_id : cycle->continue_label_id;
   if (label_id == 0) {

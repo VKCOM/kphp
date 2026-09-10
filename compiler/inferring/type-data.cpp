@@ -4,18 +4,27 @@
 
 #include "compiler/inferring/type-data.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <functional>
+#include <iterator>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "common/algorithms/compare.h"
 #include "common/algorithms/contains.h"
+#include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
 #include "common/php-functions.h"
 #include "common/termformat/termformat.h"
-
+#include "common/wrappers/fmt_format.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/pipes/collect-main-edges.h"

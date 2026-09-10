@@ -4,8 +4,14 @@
 
 #pragma once
 
-#include "common/tlo-parsing/tl-objects.h"
+#include <cstdint>
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
+#include "common/tlo-parsing/tl-objects.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"

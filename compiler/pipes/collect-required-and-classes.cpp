@@ -4,14 +4,47 @@
 
 #include "compiler/pipes/collect-required-and-classes.h"
 
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
+#include <new>
+#include <string>
+#include <thread>
+#include <unistd.h>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/composer.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/modulite-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/name-gen.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 class CollectRequiredPass final : public FunctionPassBase {
 private:

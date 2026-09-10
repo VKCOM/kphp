@@ -4,15 +4,22 @@
 
 #include "compiler/code-gen/files/type-tagger.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
 #include <set>
 #include <string>
+#include <utility>
 
 #include "common/algorithms/hashes.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/gen-out-style.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/kphp_assert.h"
 

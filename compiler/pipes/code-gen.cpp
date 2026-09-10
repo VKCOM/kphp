@@ -4,6 +4,20 @@
 
 #include "compiler/pipes/code-gen.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <fmt/format.h>
+#include <forward_list>
+#include <set>
+#include <vector>
+
+#include "common/algorithms/hashes.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/smart_ptrs/singleton.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-gen-task.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
@@ -23,16 +37,26 @@
 #include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/files/type-tagger.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/code-gen/writer-data.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/generics-mixins.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/pipes/collect-forkable-types.h"
+#include "compiler/stage.h"
+#include "compiler/stats.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
 
 void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>>& unused_os __attribute__((unused))) {
   if (function->does_need_codegen() || function->is_imported_from_static_lib()) {

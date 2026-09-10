@@ -4,17 +4,32 @@
 
 #pragma once
 
+#include <forward_list>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/type_traits/function_traits.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/class-member-modifiers.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/field-modifiers.h"
 #include "compiler/data/function-modifiers.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/location.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
+
+class GenericsInstantiationPhpComment;
+class PhpDocComment;
+class TypeHint;
+template<class DataT>
+class DataStream;
 
 class GenTree {
 

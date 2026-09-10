@@ -4,6 +4,11 @@
 
 #include "compiler/operation.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cstring>
+
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/vertex.h"
 
 inline void OpInfo::add_binary_op(int priority, TokenType tok, Operation op) {

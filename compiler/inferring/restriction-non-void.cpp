@@ -4,7 +4,10 @@
 
 #include "compiler/inferring/restriction-non-void.h"
 
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
+#include "compiler/inferring/node.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/inferring/var-node.h"
 

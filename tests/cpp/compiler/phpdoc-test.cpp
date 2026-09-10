@@ -1,5 +1,9 @@
+#include <forward_list>
 #include <gtest/gtest.h>
+#include <string>
+#include <string_view>
 
+#include "common/wrappers/string_view.h"
 #include "compiler/phpdoc.h"
 
 TEST(phpdoc_test, parse_php_doc) {

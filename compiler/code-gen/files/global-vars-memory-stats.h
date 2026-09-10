@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include <vector>
+
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
 struct GlobalVarsMemoryStats : CodeGenRootCmd {
+
   explicit GlobalVarsMemoryStats(const std::vector<VarPtr>& all_globals);
 
   void compile(CodeGenerator& W) const final;

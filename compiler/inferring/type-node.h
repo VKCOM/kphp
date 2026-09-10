@@ -4,10 +4,16 @@
 
 #pragma once
 
+#include <string>
+#include <utility>
+
 #include "compiler/inferring/node.h"
 #include "compiler/location.h"
 
+class TypeData;
+
 namespace tinf {
+class TypeInferer;
 
 class TypeNode : public Node {
   Location location_;

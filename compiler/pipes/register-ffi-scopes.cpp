@@ -4,15 +4,43 @@
 
 #include "compiler/pipes/register-ffi-scopes.h"
 
-#include "compiler/const-manipulations.h"
-#include "compiler/data/ffi-data.h"
-#include "compiler/data/src-file.h"
-#include "compiler/ffi/ffi_parser.h"
-#include "compiler/name-gen.h"
-#include "compiler/type-hint.h"
-#include "compiler/vertex-util.h"
-
+#include <algorithm>
+#include <fmt/format.h>
 #include <fstream>
+#include <iterator>
+#include <map>
+#include <new>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/compiler-core.h"
+#include "compiler/const-manipulations.h"
+#include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/field-modifiers.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/ffi/ffi_parser.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/function-pass.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 class RegisterFFIScopes final : public FunctionPassBase {
 private:

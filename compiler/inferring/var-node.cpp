@@ -4,11 +4,28 @@
 
 #include "compiler/inferring/var-node.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <forward_list>
+#include <mutex>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-op_function.h"
+#include "common/wrappers/fmt_format.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/node-recalc.h"
+#include "compiler/inferring/public.h"
 #include "compiler/inferring/restriction-match-phpdoc.h"
+#include "compiler/inferring/rvalue.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/type-inferer.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 class VarNodeRecalc : public NodeRecalc {

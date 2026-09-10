@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <cstdio>
 #include <map>
 #include <queue>
+#include <string>
+#include <vector>
 
 #include "common/mixin/not_copyable.h"
-
 #include "compiler/make/target.h"
 
 class MakeRunner : private vk::not_copyable {

@@ -4,10 +4,21 @@
 
 #include "compiler/pipes/transform-to-smart-instanceof.h"
 
-#include "common/algorithms/compare.h"
+#include <algorithm>
+#include <forward_list>
+#include <iterator>
+#include <new>
+#include <utility>
+#include <vector>
 
+#include "common/algorithms/compare.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
   if (v->type() == op_if) {

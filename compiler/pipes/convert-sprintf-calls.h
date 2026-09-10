@@ -4,11 +4,17 @@
 
 #pragma once
 
+#include <cstddef>
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 struct FormatCallInfo;
 struct FormatPart;
+class Location;
 
 // This pipe rewrites some sprintf calls.
 //

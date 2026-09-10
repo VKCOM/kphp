@@ -4,8 +4,18 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-type.h"
 
+#include <fmt/format.h>
+#include <iterator>
+#include <memory>
+
+#include "common/algorithms/string-algorithms.h"
+#include "common/functional/identity.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl-template-php-type-helpers.h"
 #include "compiler/code-gen/naming.h"
+#include "compiler/kphp_assert.h"
 
 namespace tl2cpp {
 using vk::tlo_parsing::FLAG_DEFAULT_CONSTRUCTOR;

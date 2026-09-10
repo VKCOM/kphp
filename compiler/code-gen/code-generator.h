@@ -3,7 +3,10 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "common/algorithms/simd-int-to-string.h"
@@ -15,6 +18,7 @@
 #include "compiler/threading/data-stream.h"
 
 struct CGContext {
+
   std::vector<std::string> catch_labels;
   std::vector<int> catch_label_used;
   FunctionPtr parent_func;

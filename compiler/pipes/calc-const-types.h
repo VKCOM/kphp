@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 /*** Calculate const_type for all nodes ***/

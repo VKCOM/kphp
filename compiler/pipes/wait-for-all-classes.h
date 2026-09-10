@@ -4,12 +4,17 @@
 
 #pragma once
 
+#include <forward_list>
+#include <utility>
+
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 
 class WaitForAllClassesF final : public SyncPipeF<FunctionPtr, FunctionPtr> {
+
   using Base = SyncPipeF<FunctionPtr, FunctionPtr>;
 
 public:

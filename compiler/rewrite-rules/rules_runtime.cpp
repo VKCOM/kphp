@@ -4,10 +4,18 @@
 
 #include "compiler/rewrite-rules/rules_runtime.h"
 
+#include <algorithm>
+
+#include "common/wrappers/string_view.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 namespace rewrite_rules {
 

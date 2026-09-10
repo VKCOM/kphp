@@ -5,11 +5,15 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
+#include <type_traits>
+#include <utility>
 
 #include "common/wrappers/string_view.h"
 #include "compiler/data/data_ptr.h"
 
 class PerformanceInspections {
+
 public:
   enum Inspections : uint8_t {
     no_inspections = 0,

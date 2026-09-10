@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <forward_list>
 #include <memory>
 #include <mutex>
@@ -11,6 +12,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "common/wrappers/iterator_range.h"

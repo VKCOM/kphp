@@ -9,6 +9,7 @@
 #include "compiler/data/data_ptr.h"
 
 struct FunctionH : CodeGenRootCmd {
+
   FunctionPtr function;
   explicit FunctionH(FunctionPtr function);
   void compile(CodeGenerator& W) const final;

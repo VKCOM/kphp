@@ -4,12 +4,27 @@
 
 #include "compiler/pipes/check-abstract-function-defaults.h"
 
+#include <fmt/format.h>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-op_func_param.h"
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/containers/final_action.h"
 #include "common/termformat/termformat.h"
-
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/pipes/calc-real-defines-values.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex-util.h"
 
 void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, DataStream<FunctionPtr>& os) {
   stage::set_function(interface_function);

@@ -4,9 +4,14 @@
 
 #pragma once
 
+#include <string>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class CalcValRefPass final : public FunctionPassBase {
+
   bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first);
 
 public:

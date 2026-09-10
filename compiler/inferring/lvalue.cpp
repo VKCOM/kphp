@@ -4,8 +4,16 @@
 
 #include "compiler/inferring/lvalue.h"
 
-#include "common/algorithms/find.h"
+#include <fmt/format.h>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/inferring/node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 LValue as_lvalue(VertexPtr v) {

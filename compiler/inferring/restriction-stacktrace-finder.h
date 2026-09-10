@@ -4,9 +4,18 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "compiler/data/data_ptr.h"
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
+
+class TypeData;
+namespace tinf {
+class Edge;
+} // namespace tinf
 
 class RestrictionStacktraceFinder {
   static const unsigned long max_cnt_nodes_in_path = 50;

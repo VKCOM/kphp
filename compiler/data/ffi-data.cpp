@@ -4,8 +4,16 @@
 
 #include "compiler/data/ffi-data.h"
 
+#include "auto/compiler/vertex/vertex-op_func_call.h"
 #include "common/algorithms/contains.h"
+#include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/operation.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/type-hint.h"
 
 static std::vector<FFIBuiltinType> make_builtin_types() {

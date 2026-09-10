@@ -30,15 +30,40 @@
  */
 #include "compiler/class-assumptions.h"
 
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <fmt/format.h>
+#include <forward_list>
+#include <iterator>
 #include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/copyable-atomic.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/ffi/ffi_types.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/phpdoc.h"
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/pipes/instantiate-ffi-operations.h"
+#include "compiler/stage.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 

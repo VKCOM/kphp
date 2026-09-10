@@ -4,14 +4,28 @@
 
 #include "compiler/debug.h"
 
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <map>
 #include <string>
+#include <utility>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/wrappers/to_array.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
+#include "compiler/token.h"
 #include "compiler/type-hint.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 static std::map<Operation, std::string> OPERATION_NAMES;

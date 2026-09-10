@@ -5,12 +5,17 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 #include <ostream>
+#include <string>
+#include <unordered_map>
 
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/var-data.h"
 #include "compiler/threading/profiler.h"
 
 class Stats {
+
 public:
   void on_var_inserting(VarData::Type type);
   void on_function_processed(FunctionPtr function);

@@ -4,13 +4,19 @@
 
 #pragma once
 
+#include <cstring>
 #include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include "common/php-functions.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/vertex.h"
 
 struct DepLevelContainer {

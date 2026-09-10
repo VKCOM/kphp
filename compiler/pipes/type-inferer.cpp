@@ -4,7 +4,16 @@
 
 #include "compiler/pipes/type-inferer.h"
 
+#include <algorithm>
+#include <vector>
+
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-inferer.h"
+#include "compiler/pipes/function-and-cfg.h"
+#include "compiler/scheduler/scheduler-base.h"
+#include "compiler/threading/data-stream.h"
+
+class Task;
 
 void TypeInfererF::execute(FunctionAndCFG input, DataStream<FunctionAndCFG>& os) {
   os << input;

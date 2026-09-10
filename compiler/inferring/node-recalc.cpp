@@ -4,13 +4,26 @@
 
 #include "compiler/inferring/node-recalc.h"
 
-#include "common/termformat/termformat.h"
-#include "common/wrappers/likely.h"
+#include <fmt/format.h>
+#include <forward_list>
+#include <string>
+#include <vector>
 
+#include "common/algorithms/find.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/likely.h"
 #include "compiler/data/class-data.h"
 #include "compiler/inferring/edge.h"
+#include "compiler/inferring/key.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/node.h"
+#include "compiler/inferring/rvalue.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/inferring/type-inferer.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
+#include "compiler/threading/locks.h"
 
 // this callback is invoked immediately when new_type_ has become tp_Error during recalculation
 // by default, we try to detect the reason and print it out

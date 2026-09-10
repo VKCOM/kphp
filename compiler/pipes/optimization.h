@@ -4,7 +4,14 @@
 
 #pragma once
 
+#include <cstddef>
+#include <string>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class OptimizationPass final : public FunctionPassBase {

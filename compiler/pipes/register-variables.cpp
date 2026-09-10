@@ -4,12 +4,30 @@
 
 #include "compiler/pipes/register-variables.h"
 
+#include <cstddef>
+#include <fmt/format.h>
+#include <iterator>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "common/algorithms/find.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/field-modifiers.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
+#include "compiler/operation.h"
+#include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VarPtr RegisterVariablesPass::create_global_var(const std::string& name) {
   VarPtr var = G->get_global_var(name, VertexPtr());

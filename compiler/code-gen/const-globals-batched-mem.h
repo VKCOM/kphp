@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <cstdint>
 #include <set>
+#include <vector>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"

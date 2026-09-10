@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
 
 class CheckTlClasses final : public FunctionPassBase {

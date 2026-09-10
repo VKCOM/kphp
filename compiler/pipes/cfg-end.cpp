@@ -4,10 +4,30 @@
 
 #include "compiler/pipes/cfg-end.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <fmt/format.h>
+#include <forward_list>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-op_var.h"
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/gen-out-style.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/pipes/function-and-cfg.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
 #include "compiler/vertex.h"
 
 struct MergeData {

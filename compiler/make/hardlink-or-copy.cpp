@@ -4,15 +4,18 @@
 
 #include "compiler/make/hardlink-or-copy.h"
 
+#include <cerrno>
+#include <cstdlib>
 #include <cstring>
-#include <errno.h>
 #include <fcntl.h>
+#include <fmt/format.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "common/algorithms/find.h"
 #include "common/macos-ports.h"
-
 #include "common/wrappers/fmt_format.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 static void hard_link_or_copy_impl(const std::string& from, const std::string& to, bool replace, bool allow_copy) noexcept {

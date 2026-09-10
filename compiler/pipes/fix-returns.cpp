@@ -4,8 +4,26 @@
 
 #include "compiler/pipes/fix-returns.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <new>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
   auto is_void_fun = [](FunctionPtr f) { return tinf::get_type(f, -1)->ptype() == tp_void; };

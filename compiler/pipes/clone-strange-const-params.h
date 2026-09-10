@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <string>
+
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 #include "compiler/pipes/function-and-cfg.h"
 

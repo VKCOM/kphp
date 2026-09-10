@@ -4,14 +4,18 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "compiler/ffi/ffi_types.h"
 
 struct FFIParseError {
+
   std::string message;
   int line;
 };

@@ -6,9 +6,11 @@
 
 #include <string>
 
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class CalcLocationsPass final : public FunctionPassBase {
+
 public:
   std::string get_description() override {
     return "Calc locations";

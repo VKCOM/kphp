@@ -4,8 +4,24 @@
 
 #include "compiler/code-gen/raw-data.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <memory>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/expr-node.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 void RawString::compile(CodeGenerator& W) const {
   W << "\"";

@@ -4,11 +4,24 @@
 
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 
-#include "common/termformat/termformat.h"
+#include <cstring>
+#include <fmt/format.h>
+#include <iterator>
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/termformat/termformat.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include "compiler/phpdoc.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 VertexPtr CheckModificationsOfConstVars::on_enter_vertex(VertexPtr v) {
   check_modifications(v);

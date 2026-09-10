@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "compiler/debug.h"
@@ -13,6 +14,7 @@
 #include "compiler/kphp_assert.h"
 
 class MultiKey {
+
   DEBUG_STRING_METHOD {
     return to_string();
   }

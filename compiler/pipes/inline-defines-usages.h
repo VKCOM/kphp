@@ -4,7 +4,11 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/compiler-core.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class InlineDefinesUsagesPass final : public FunctionPassBase {

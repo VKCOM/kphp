@@ -3,9 +3,14 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/preprocess-eq3.h"
-#include "compiler/vertex-util.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
+#include "common/algorithms/find.h"
+#include "compiler/operation.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_eq3) {

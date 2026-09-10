@@ -4,7 +4,10 @@
 
 #include "compiler/function-colors.h"
 
+#include <iterator>
+
 #include "common/algorithms/string-algorithms.h"
+#include "compiler/kphp_assert.h"
 
 using namespace function_palette;
 

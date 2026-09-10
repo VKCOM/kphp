@@ -20,20 +20,28 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <list>
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/type_traits/function_traits.h"
-
+#include "common/wrappers/string_view.h"
+#include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/field-modifiers.h"
 #include "compiler/data/function-modifiers.h"
 #include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
+class ClassData;
+class PhpDocComment;
+class TypeHint;
+
 class ClassMembersContainer;
 namespace kphp_json {
 class KphpJsonTagList;

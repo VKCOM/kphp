@@ -3,7 +3,15 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/code-gen/code-gen-task.h"
+
+#include <string>
+
 #include "compiler/code-gen/code-gen-root-cmd.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/profiler.h"
+
+class WriterData;
 
 // this os exists to be passed to CodeGenerator constructor,
 // but it won't be used actually, as CodeGenerator is not created in "just calc hashes" mode

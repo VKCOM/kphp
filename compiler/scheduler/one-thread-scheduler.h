@@ -9,9 +9,11 @@
 
 #include "compiler/scheduler/scheduler-base.h"
 
+class Node;
+class Task;
 class TaskPull;
-
 class OneThreadScheduler : public SchedulerBase {
+
 private:
   std::vector<Node*> nodes;
   std::queue<Node*> sync_nodes;

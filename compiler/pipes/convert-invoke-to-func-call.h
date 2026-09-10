@@ -4,8 +4,18 @@
 
 #pragma once
 
+#include <forward_list>
+#include <string>
+#include <utility>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
+
+template<class DataT>
+class DataStream;
 
 class ConvertInvokeToFuncCallPass final : public FunctionPassBase {
   std::forward_list<FunctionPtr> nested_lambdas;

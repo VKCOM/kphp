@@ -4,8 +4,17 @@
 
 #include "compiler/pipes/calc-locations.h"
 
+#include <algorithm>
+
+#include "auto/compiler/vertex/vertex-op_var.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include "compiler/location.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 
 void CalcLocationsPass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {

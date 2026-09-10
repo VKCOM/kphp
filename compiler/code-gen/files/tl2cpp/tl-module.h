@@ -4,10 +4,18 @@
 
 #pragma once
 
+#include <memory>
+#include <set>
 #include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
+#include "common/tlo-parsing/tl-objects.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
+
+class CodeGenerator;
 
 namespace tl2cpp {
 class Module;

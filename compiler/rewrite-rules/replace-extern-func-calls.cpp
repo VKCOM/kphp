@@ -3,17 +3,34 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/rewrite-rules/replace-extern-func-calls.h"
-#include "compiler/pipes/check-access-modifiers.h"
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <iterator>
+#include <new>
+#include <string>
 #include <vector>
 
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/field-modifiers.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/kphp-tracing-tags.h"
+#include "compiler/data/var-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
+#include "compiler/pipes/check-access-modifiers.h"
+#include "compiler/stage.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * Sometimes, we want to replace f(...) with f'(...)

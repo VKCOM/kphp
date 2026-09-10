@@ -4,15 +4,26 @@
 
 #include "compiler/compiler-core.h"
 
+#include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cctype>
+#include <cerrno>
+#include <cstring>
 #include <dirent.h>
+#include <fmt/format.h>
+#include <memory>
+#include <sys/stat.h>
+#include <unistd.h>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "common/wrappers/fmt_format.h"
 #include "common/wrappers/mkdir_recursive.h"
-
+#include "compiler/compiler-settings.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/composer-json-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/ffi-data.h"
@@ -22,8 +33,17 @@
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/index.h"
+#include "compiler/inferring/var-node.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/location.h"
 #include "compiler/name-gen.h"
 #include "compiler/runtime_build_info.h"
+#include "compiler/stage.h"
+#include "compiler/threading/data-stream.h"
+#include "compiler/threading/profiler.h"
+#include "compiler/utils/string-utils.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
 
 namespace {
 

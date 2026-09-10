@@ -4,6 +4,12 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/function-pass.h"
 
 class CheckNestedForeachPass final : public FunctionPassBase {

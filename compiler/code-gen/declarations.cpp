@@ -4,8 +4,23 @@
 
 #include "compiler/code-gen/declarations.h"
 
-#include "common/algorithms/compare.h"
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <fmt/format.h>
+#include <forward_list>
+#include <initializer_list>
+#include <iterator>
+#include <type_traits>
+#include <unordered_set>
+#include <utility>
 
+#include "common/algorithms/compare.h"
+#include "common/algorithms/find.h"
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/iterator_range.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
@@ -14,17 +29,27 @@
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/vertex-compiler.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/ffi/ffi_types.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/stage.h"
 #include "compiler/tl-classes.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 VarDeclaration VarPlainDeclaration(VarPtr var) {
   return {var, false, false};

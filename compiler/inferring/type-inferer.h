@@ -5,6 +5,7 @@
 #pragma once
 
 #include <queue>
+#include <vector>
 
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
@@ -12,6 +13,7 @@
 #include "compiler/threading/tls.h"
 
 namespace tinf {
+class Edge;
 
 using NodeQueue = std::queue<Node*>;
 

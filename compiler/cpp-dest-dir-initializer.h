@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <thread>
 
@@ -11,6 +12,7 @@
 #include "common/smart_ptrs/singleton.h"
 
 class CppDestDirInitializer : vk::not_copyable {
+
 public:
   friend class vk::singleton<CppDestDirInitializer>;
 

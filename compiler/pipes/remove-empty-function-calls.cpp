@@ -4,8 +4,17 @@
 
 #include "compiler/pipes/remove-empty-function-calls.h"
 
+#include <algorithm>
+#include <iterator>
+#include <new>
+#include <vector>
+
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex.h"
 
 static bool is_empty_func_call(VertexPtr v) {

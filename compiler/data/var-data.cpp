@@ -4,7 +4,10 @@
 
 #include "compiler/data/var-data.h"
 
+#include "common/wrappers/string_view.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
 VarData::VarData(VarData::Type type_)

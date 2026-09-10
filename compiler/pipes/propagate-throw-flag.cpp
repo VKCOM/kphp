@@ -4,6 +4,14 @@
 
 #include "compiler/pipes/propagate-throw-flag.h"
 
+#include <iterator>
+
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/function-data.h"
+#include "compiler/vertex-meta_op_base.h"
+#include "compiler/vertex.h"
+
 // todo this pass bubbles throw_flag up, but throw_flag is used only in one place in codegenerator
 // investigate, maybe it can be totally avoided?
 

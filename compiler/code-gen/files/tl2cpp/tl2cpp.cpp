@@ -4,13 +4,34 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <fmt/format.h>
+#include <memory>
+#include <set>
 #include <sstream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
+#include "common/tlo-parsing/tl-objects.h"
 #include "common/tlo-parsing/tlo-parsing.h"
+#include "common/wrappers/fmt_format.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/kphp_assert.h"
 
 /* There are 3 important kinds of types (each with its own store and fetch methods):
  * 1) Function    - an entry point for every TL query. We start de\serialization of every query from here.

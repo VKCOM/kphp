@@ -5,22 +5,33 @@
 #include "compiler/code-gen/files/init-scripts.h"
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "common/algorithms/string-algorithms.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/shape-keys.h"
+#include "compiler/code-gen/gen-out-style.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/kphp_assert.h"
 
 struct StaticInit {
+
   void compile(CodeGenerator& W) const;
 };
 

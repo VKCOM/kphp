@@ -4,6 +4,12 @@
 
 #include "compiler/data/performance-inspections.h"
 
+#include <array>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "common/wrappers/string_view.h"
 #include "common/wrappers/to_array.h"
 #include "compiler/utils/string-utils.h"
 

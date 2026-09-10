@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include "auto/compiler/vertex/vertex-types.h"
+#include <string>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/token.h"
 
 enum OperationExtra {

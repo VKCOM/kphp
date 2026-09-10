@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
+#include <memory>
 
+#include "compiler/inferring/key.h"
+#include "compiler/inferring/multi-key.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/type-data.h"
 
 TEST(typedata_test, typedata_human_readable) {

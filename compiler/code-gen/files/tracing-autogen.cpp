@@ -5,14 +5,22 @@
 #include "compiler/code-gen/files/tracing-autogen.h"
 
 #include <algorithm>
+#include <fmt/format.h>
+#include <forward_list>
 #include <set>
+#include <string>
 
+#include "common/wrappers/fmt_format.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/compiler-core.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/kphp-tracing-tags.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/utils/string-utils.h"
 
 std::vector<FunctionPtr> TracingAutogen::all_with_aggregate;
 std::vector<vk::string_view> TracingAutogen::all_aggregate_names;
