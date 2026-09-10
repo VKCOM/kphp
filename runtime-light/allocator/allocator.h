@@ -5,7 +5,8 @@
 #pragma once
 
 #include <concepts>
-#include <cstddef>
+#include <memory>
+#include <utility>
 
 #include "runtime-common/core/allocator/script-allocator-managed.h"
 #include "runtime-light/allocator/allocator-state.h"
@@ -17,6 +18,7 @@ auto make_unique_on_script_memory(Args&&... args) noexcept {
 }
 
 namespace kphp::memory {
+
 struct libc_alloc_guard final {
   libc_alloc_guard() noexcept {
     AllocatorState::get_mutable().enable_libc_alloc();
