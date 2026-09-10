@@ -222,7 +222,6 @@ kphp::coro::task<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
 // ================================================================================================
 
 inline kphp::coro::task<> f$sched_yield() noexcept {
-  auto awaiter{kphp::coro::io_scheduler::get().schedule()};
   CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule()));
 }
 
