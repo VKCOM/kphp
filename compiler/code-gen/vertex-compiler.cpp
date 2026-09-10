@@ -911,7 +911,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
       }
     } else {
       if (func->is_interruptible) {
-        W << "ON_STACK(";
+        W << "CO_AWAIT_TASK_ON_STACK(";
       }
       W << FunctionName(func);
     }

@@ -54,6 +54,7 @@ private:
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
   size_t m_stack_requests{0};
+  bool m_stack_alloc_used{false};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
     size_t extra_mem_size{std::max(m_min_extra_mem_size, requested_size)};
@@ -132,17 +133,21 @@ public:
     return prev;
   }
 
-  auto request_stack_alloc() noexcept -> void {
+  auto start_stack_scope() noexcept -> void {
     ++m_stack_requests;
   }
 
-  auto consume_stack_request() noexcept -> bool {
-    if (m_stack_requests > 0) {
-      --m_stack_requests;
-      return true;
-    }
+  auto end_stack_scope() noexcept -> void {
+    --m_stack_requests;
+    m_stack_alloc_used = false;
+  }
 
-    return false;
+  auto is_stack_scope() const noexcept -> bool {
+    return m_stack_requests > 0;
+  }
+
+  auto mark_stack_alloc_used() noexcept -> void {
+    kphp::log::assertion(!std::exchange(m_stack_alloc_used, true));
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {
