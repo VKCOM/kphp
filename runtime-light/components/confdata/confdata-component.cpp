@@ -90,7 +90,7 @@ VISIBILITY_DEFAULT const ImageInfo* k2_describe() {
                                         .is_oneshot = 0,
                                         .build_timestamp = KPHP_CONFDATA_BUILD_TIMESTAMP,
                                         .header_h_version = K2_PLATFORM_HEADER_H_VERSION,
-                                        .version = "0.0.1",
+                                        .version = "1.0.0",
                                         .extra_info_size = extra_info.size(),
                                         .extra_info = extra_info.data()};
   return std::addressof(image_info);
