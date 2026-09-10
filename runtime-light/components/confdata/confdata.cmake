@@ -43,6 +43,7 @@ set(KPHP_CONFDATA_SRC
 vk_add_library_pic(kphp-confdata-pic SHARED ${KPHP_CONFDATA_SRC})
 set_target_properties(kphp-confdata-pic PROPERTIES PREFIX "" OUTPUT_NAME "kphp-confdata" LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR})
 target_compile_options(kphp-confdata-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
+target_link_libraries(kphp-confdata-pic PRIVATE vk::pic::light-common)
 # reuse the common link flags; cmake drives the link through the compiler,
 # so bare ld options need the -Wl, prefix
 set(KPHP_CONFDATA_LINK_FLAGS ${RUNTIME_LIGHT_LINK_FLAGS})
