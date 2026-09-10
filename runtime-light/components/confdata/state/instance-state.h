@@ -108,8 +108,8 @@ public:
   auto init() noexcept -> void;
 
 private:
-  static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);          // 2MiB
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(512U * 1024U); // 0.5MiB
+  static constexpr auto INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);               // 16MiB
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(1U * 1024U * 1024U); // 1MiB
   auto release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void;
   auto erase_if_retired_and_unused(confdata_piece_list::iterator piece_it) noexcept -> void;
 
