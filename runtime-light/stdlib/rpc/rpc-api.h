@@ -50,7 +50,7 @@ inline kphp::coro::task<std::expected<void, int32_t>> send_response(std::span<co
   }
 
   auto& request_stream{*rpc_server_instance_st.request_stream};
-  if (auto expected{co_await kphp::coro::on_stack(kphp::component::send_response, request_stream, response)}; !expected) [[unlikely]] {
+  if (auto expected{CO_AWAIT_TASK_ON_STACK(kphp::component::send_response(request_stream, response))}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
   request_stream.reset(k2::INVALID_PLATFORM_DESCRIPTOR);
@@ -254,9 +254,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
   tl::storer tls{rpc_response.footprint()};
   rpc_response.store(tls);
 
-  if (auto expected{co_await kphp::coro::on_stack(
-          [](std::span<const std::byte> response_arg) noexcept { return kphp::forks::id_managed(kphp::rpc::send_response, response_arg); }, tls.view())};
-      !expected) [[unlikely]] {
+  if (auto expected{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::rpc::send_response, tls.view()))}; !expected) [[unlikely]] {
     kphp::log::warning("can't store RPC error: {}", expected.error());
   }
   kphp::log::error("store_error called. error_code: {}, error_msg: {}", error_code, error_msg.c_str());
@@ -279,9 +277,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
   tl::storer tls{rpc_response.footprint()};
   rpc_response.store(tls);
 
-  if (auto expected{co_await kphp::coro::on_stack(
-          [](std::span<const std::byte> response_arg) noexcept { return kphp::forks::id_managed(kphp::rpc::send_response, response_arg); }, tls.view())};
-      !expected) [[unlikely]] {
+  if (auto expected{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::rpc::send_response, tls.view()))}; !expected) [[unlikely]] {
     kphp::log::warning("can't store RPC response: {}", expected.error());
   }
 }
@@ -321,29 +317,23 @@ inline array<int64_t> f$rpc_send_requests(const string& actor, const array<mixed
 inline kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
   for (const auto& it : std::as_const(query_ids)) {
-    res.set_value(it.get_key(),
-                  co_await kphp::coro::on_stack(
-                      [](int64_t query_id_arg) noexcept { return kphp::forks::id_managed(kphp::rpc::detail::rpc_tl_query_result_one_impl, query_id_arg); },
-                      it.get_value()));
+    res.set_value(it.get_key(), CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::rpc::detail::rpc_tl_query_result_one_impl, it.get_value())));
   }
   co_return std::move(res);
 }
 
 template<class T>
 kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<T> query_ids) noexcept {
-  co_return co_await kphp::coro::on_stack([](array<int64_t> query_ids_arg) noexcept { return f$rpc_fetch_responses(std::move(query_ids_arg)); },
-                                          array<int64_t>::convert_from(query_ids));
+  co_return CO_AWAIT_TASK_ON_STACK(f$rpc_fetch_responses(array<int64_t>::convert_from(query_ids)));
 }
 
 inline kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<int64_t> query_ids) noexcept {
-  co_return co_await kphp::coro::on_stack([](array<int64_t> query_ids_arg) noexcept { return f$rpc_fetch_responses(std::move(query_ids_arg)); },
-                                          std::move(query_ids));
+  co_return CO_AWAIT_TASK_ON_STACK(f$rpc_fetch_responses(std::move(query_ids)));
 }
 
 template<class T>
 kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<T> query_ids) noexcept {
-  co_return co_await kphp::coro::on_stack([](array<int64_t> query_ids_arg) noexcept { return f$rpc_fetch_responses_synchronously(std::move(query_ids_arg)); },
-                                          array<int64_t>::convert_from(query_ids));
+  co_return CO_AWAIT_TASK_ON_STACK(f$rpc_fetch_responses_synchronously(array<int64_t>::convert_from(query_ids)));
 }
 
 // === client typed ===============================================================================
@@ -379,11 +369,8 @@ requires std::default_initializable<error_factory_type>
 kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_responses(array<query_id_type> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto& it : std::as_const(query_ids)) {
-    res.set_value(it.get_key(), co_await kphp::coro::on_stack(
-                                    [](int64_t query_id_arg) noexcept {
-                                      return kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl, query_id_arg, error_factory_type{});
-                                    },
-                                    it.get_value()));
+    res.set_value(it.get_key(),
+                  CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl, it.get_value(), error_factory_type{})));
   }
   co_return std::move(res);
 }
@@ -391,7 +378,7 @@ kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_r
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
 requires std::default_initializable<error_factory_t>
 kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_responses_synchronously(array<query_id_t> query_ids) noexcept {
-  co_return co_await kphp::coro::on_stack(f$rpc_fetch_typed_responses<query_id_t, error_factory_t>, std::move(query_ids));
+  co_return CO_AWAIT_TASK_ON_STACK(f$rpc_fetch_typed_responses(std::move(query_ids)));
 }
 
 // === misc =======================================================================================

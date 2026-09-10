@@ -266,7 +266,7 @@ public:
 
       auto await_ready() noexcept -> bool {
         kphp::coro::detail::memory::task_allocator::get().end_stack_scope();
-        kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_ready();
+        return kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_ready();
       }
 
       auto await_resume() noexcept {
@@ -287,6 +287,6 @@ public:
  * (the one it returns). It's strongly recommended to use this macro instead of writing co_await f(1, 2, 3), where f returns task<T>.
  */
 #define CO_AWAIT_TASK_ON_STACK(...)                                                                                                                            \
-  (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), kphp::coro::task_impl::stack_task_awaitable{__VA_ARGS__}))
+  (co_await (kphp::coro::detail::memory::task_allocator::get().start_stack_scope(), kphp::coro::task_impl::stack_task_awaitable{__VA_ARGS__}))
 
 } // namespace kphp::coro

@@ -24,16 +24,10 @@ void f$set_timer(int64_t timeout_ms, T&& on_timer_callback) noexcept {
   // TODO choose from:
   // 1. someone should pop that fork from ForkInstanceState since it will stay there unless we perform f$wait on fork
   // 2. start timer_task via kphp::coro::io_scheduler::spawn (it won't have distinct fork id)
-  auto timer_task{std::invoke(
-      [](std::chrono::milliseconds duration, T on_timer_callback) noexcept -> kphp::coro::task<> {
-        co_await kphp::coro::on_stack(
-            [](std::chrono::milliseconds duration_arg) noexcept {
-              return kphp::forks::id_managed(&kphp::coro::io_scheduler::schedule<decltype(duration_arg)>, std::addressof(kphp::coro::io_scheduler::get()),
-                                             duration_arg);
-            },
-            duration);
-        std::invoke(std::move(on_timer_callback));
-      },
-      std::chrono::milliseconds{timeout_ms}, std::forward<T>(on_timer_callback))};
-  kphp::forks::start(std::move(timer_task));
+  auto timer_task{[](std::chrono::milliseconds duration, T on_timer_callback) noexcept -> kphp::coro::task<> {
+    CO_AWAIT_TASK_ON_STACK(
+        kphp::forks::id_managed([](std::chrono::milliseconds duration) noexcept { return kphp::coro::io_scheduler::get().schedule(duration); }, duration));
+    std::invoke(std::move(on_timer_callback));
+  }};
+  kphp::forks::start(std::move(timer_task), std::chrono::milliseconds{timeout_ms}, std::forward<T>(on_timer_callback));
 }
