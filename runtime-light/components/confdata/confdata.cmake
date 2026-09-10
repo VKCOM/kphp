@@ -13,8 +13,9 @@ set(KPHP_CONFDATA_TL_SRC
     ${RUNTIME_LIGHT_DIR}/tl/tl-types.cpp
     ${RUNTIME_LIGHT_DIR}/tl/tl-functions.cpp)
 
-set(KPHP_CONFDATA_ALLOCATOR_SRC
-    ${RUNTIME_LIGHT_DIR}/allocator/runtime-light-allocator.cpp
+set(KPHP_CONFDATA_ALLOCATOR_SRC ${RUNTIME_LIGHT_ALLOCATOR_SRC})
+list(TRANSFORM KPHP_CONFDATA_ALLOCATOR_SRC PREPEND "${RUNTIME_LIGHT_DIR}/")
+list(APPEND KPHP_CONFDATA_ALLOCATOR_SRC
     ${RUNTIME_LIGHT_DIR}/memory-resource-impl/monotonic-light-buffer-resource.cpp)
 
 set(KPHP_CONFDATA_DIAGNOSTICS_SRC
