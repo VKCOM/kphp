@@ -244,51 +244,49 @@ private:
   std::coroutine_handle<promise_type> m_coro{};
 };
 
+namespace task_impl {
+
+template<typename Task>
+requires(requires {
+  { static_cast<kphp::coro::task<>>(std::declval<Task>()) };
+})
+struct stack_task_awaitable {
+private:
+  Task m_task;
+
+public:
+  explicit stack_task_awaitable(Task task) noexcept
+      : m_task{std::move(task)} {}
+
+  auto operator co_await() noexcept {
+    struct awaiter : public kphp::coro::task_impl::awaiter_base<typename Task::promise_type> {
+    public:
+      explicit awaiter(std::coroutine_handle<typename Task::promise_type> coro) noexcept
+          : kphp::coro::task_impl::awaiter_base<typename Task::promise_type>{coro} {}
+
+      auto await_ready() noexcept -> bool {
+        kphp::coro::detail::memory::task_allocator::get().end_stack_scope();
+        kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_ready();
+      }
+
+      auto await_resume() noexcept {
+        kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_resume();
+        return kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::m_coro.promise().result();
+      }
+    };
+
+    return awaiter{m_task.get_handle()};
+  }
+};
+
+} // namespace task_impl
+
 /*
- * This function is used to optimize allocation of task<T>. If this function is called, task<T>, that returns from f, is allocated with stack allocator.
- * You must follow some rules:
- * 1) Result of this function must be immediately co_await-ed (usage: co_await kphp::coro::on_stack(f, 1, 2, 3); ), if you don't follow this rule, there is
- * no guarantees that your program is correct.
- * 2) If f is not coroutine, but just function, that returns task<T>, in its body its not allowed to create more than one task<T> object (the one it returns).
- * It's strongly recommended to use this function instead of writing co_await f(1, 2, 3), where f returns task<T>.
+ * This macro is used to optimize allocation of task<T>. If this macro is used, task<T>, that returns from provided call, is allocated with stack allocator.
+ * If this call is not coroutine call, but just function call, that returns task<T>, in its body its not allowed to create more than one task<T> object
+ * (the one it returns). It's strongly recommended to use this macro instead of writing co_await f(1, 2, 3), where f returns task<T>.
  */
-template<typename F, typename... Args>
-requires(std::invocable<F, Args...> &&
-         requires {
-           { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
-         })
-[[nodiscard]] auto on_stack(F&& f, Args&&... args) noexcept {
-  using task_t = std::invoke_result_t<F, Args...>;
-
-  struct awaitable : private vk::not_copyable {
-  private:
-    task_t m_task;
-
-  public:
-    explicit awaitable(task_t task) noexcept
-        : m_task{std::move(task)} {}
-
-    auto operator co_await() && noexcept {
-      struct awaiter : private vk::not_copyable, public kphp::coro::task_impl::awaiter_base<typename task_t::promise_type> {
-      public:
-        explicit awaiter(std::coroutine_handle<typename task_t::promise_type> coro) noexcept
-            : kphp::coro::task_impl::awaiter_base<typename task_t::promise_type>{coro} {}
-
-        auto await_resume() noexcept {
-          kphp::coro::task_impl::awaiter_base<typename task_t::promise_type>::await_resume();
-          return kphp::coro::task_impl::awaiter_base<typename task_t::promise_type>::m_coro.promise().result();
-        }
-      };
-
-      return awaiter{m_task.get_handle()};
-    }
-  };
-
-  kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();
-
-  return awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
-}
-
-#define ON_STACK(...) (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), (__VA_ARGS__)))
+#define CO_AWAIT_TASK_ON_STACK(...)                                                                                                                            \
+  (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), kphp::coro::task_impl::stack_task_awaitable{__VA_ARGS__}))
 
 } // namespace kphp::coro
