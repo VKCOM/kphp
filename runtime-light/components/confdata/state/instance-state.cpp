@@ -4,6 +4,7 @@
 
 #include "runtime-light/components/confdata/state/instance-state.h"
 
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <expected>
@@ -33,6 +34,7 @@
 namespace {
 
 constexpr auto CONFDATA_RETRY_INTERVAL{std::chrono::seconds{1}};
+constexpr auto CONFDATA_METRICS_INTERVAL{std::chrono::seconds{1}};
 
 // Event decoding stays component-local: only the writer sees serialization
 // flags, while readers consume the already-decoded shared `mixed` values.
@@ -230,8 +232,39 @@ auto InstanceState::init() noexcept -> void {
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
-  co_await kphp::coro::when_all(service_loop(), accept_loop()); // both never return
+  co_await kphp::coro::when_all(service_loop(), accept_loop(), metrics_loop()); // all never return
   kphp::log::assertion(false);
+}
+
+auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
+  for (;;) {
+    report_capacity_metrics();
+    co_await m_io_scheduler.schedule(CONFDATA_METRICS_INTERVAL);
+  }
+}
+
+auto InstanceState::report_capacity_metrics() noexcept -> void {
+  bool reported_error{};
+  const auto send{
+      [&reported_error]<size_t count>(const std::array<kphp::diagnostics::metric_builder, count>& builders, const std::array<size_t, count>& values) noexcept {
+        for (size_t i{0}; i < count; ++i) {
+          const auto [buffer, result]{builders[i].send_value(static_cast<double>(values[i]))};
+          if (!result && !reported_error) [[unlikely]] {
+            kphp::log::warning("failed to report confdata capacity metrics: error -> {}", result.error());
+            reported_error = true;
+          }
+        }
+      }};
+
+  if (!m_confdata_pieces.empty()) {
+    auto& current{m_confdata_pieces.back().storage()};
+    const auto usage{current.memory_usage()};
+    send(m_capacity_metrics.m_memory, std::array{usage.m_capacity, usage.m_allocated, usage.m_used, usage.m_oom_threshold});
+  }
+
+  // These are tracked logical extents, including headers, not RSS or proof of K2 allocation release.
+  const size_t current_count{m_confdata_pieces.empty() ? 0U : 1U};
+  send(m_capacity_metrics.m_pieces, std::array{current_count, m_confdata_pieces.size() - current_count});
 }
 
 auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {

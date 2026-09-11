@@ -15,6 +15,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/components/confdata/confdata-proxy/sync-functions.h"
+#include "runtime-light/components/confdata/metrics.h"
 #include "runtime-light/components/confdata/state/component-state.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/io-scheduler.h"
@@ -50,6 +51,8 @@ private:
   /** Owns retired pieces still used by readers followed by the current piece. */
   confdata_piece_list m_confdata_pieces;
 
+  kphp::confdata::metrics::capacity m_capacity_metrics;
+
 public:
   kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
   kphp::coro::io_scheduler m_io_scheduler{m_coroutine_instance_state};
@@ -64,6 +67,9 @@ private:
   auto run() noexcept -> kphp::coro::task<>;
   auto accept_loop() noexcept -> kphp::coro::task<>;
   auto service_loop() noexcept -> kphp::coro::task<>;
+  auto metrics_loop() noexcept -> kphp::coro::task<>;
+
+  auto report_capacity_metrics() noexcept -> void;
 
   auto release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void;
   auto serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<>;

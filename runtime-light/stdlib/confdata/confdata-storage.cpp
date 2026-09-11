@@ -533,7 +533,10 @@ auto storage::memory_usage() const noexcept -> storage_memory_usage {
   kphp::log::assertion(is_initialized());
   kphp::log::assertion(m_oom_threshold != 0);
   const auto& memory_stats{m_state->m_allocator.get_memory_resource().get_memory_stats()};
-  return {.m_used = memory_stats.real_memory_used, .m_oom_threshold = m_oom_threshold, .m_capacity = memory_stats.memory_limit};
+  return {.m_allocated = memory_stats.memory_used,
+          .m_used = memory_stats.real_memory_used,
+          .m_oom_threshold = m_oom_threshold,
+          .m_capacity = memory_stats.memory_limit};
 }
 
 auto storage::is_oom_threshold_reached() const noexcept -> bool {
