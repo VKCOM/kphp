@@ -40,7 +40,7 @@ public:
       return true;
     }
 
-    this->estimated_size += memory_resource::details::align_for_chunk(arr.calculate_memory_for_copying(), array<T>::alignment());
+    this->estimated_size += memory_resource::details::align_for_chunk(arr.calculate_memory_for_copying());
 
     // primitive values are already accounted for wholesale above.
     // Only non-primitive values and string keys need traversal.
@@ -50,7 +50,7 @@ public:
 
   bool process(string& str) noexcept {
     if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-      this->estimated_size += memory_resource::details::align_for_chunk(str.estimate_memory_usage(), string::alignment());
+      this->estimated_size += memory_resource::details::align_for_chunk(str.estimate_memory_usage());
     }
 
     return true;
@@ -84,7 +84,7 @@ private:
       if (this->visited_instances_set.contains(instance_raw_ptr)) {
         return true;
       }
-      this->estimated_size += memory_resource::details::align_for_chunk(instance.estimate_memory_usage(), instance.alignment());
+      this->estimated_size += memory_resource::details::align_for_chunk(instance.estimate_memory_usage());
       this->visited_instances_set.emplace(instance_raw_ptr);
     }
     return Basic::process(instance);

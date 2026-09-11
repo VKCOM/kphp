@@ -72,15 +72,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     return 0;
   }
 
-  virtual size_t virtual_builtin_alignof() const noexcept {
-    return 0;
-  }
-
   virtual C$Throwable* virtual_builtin_clone() const noexcept {
-    return nullptr;
-  }
-
-  virtual C$Throwable* virtual_builtin_construct_at(void* /*unused*/) const noexcept {
     return nullptr;
   }
 
@@ -138,16 +130,8 @@ struct C$Exception : public C$Throwable {
     return new C$Exception{*this};
   }
 
-  C$Exception* virtual_builtin_construct_at(void* ptr) const noexcept override {
-    return new (ptr) C$Exception{*this};
-  }
-
   size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
-  }
-
-  size_t virtual_builtin_alignof() const noexcept override {
-    return alignof(C$Exception);
   }
 
   const char* get_class() const noexcept override {
@@ -195,16 +179,8 @@ struct C$Error : public C$Throwable {
     return new C$Error{*this};
   }
 
-  C$Error* virtual_builtin_construct_at(void* ptr) const noexcept override {
-    return new (ptr) C$Error{*this};
-  }
-
   size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
-  }
-
-  size_t virtual_builtin_alignof() const noexcept override {
-    return alignof(C$Error);
   }
 
   const char* get_class() const noexcept override {

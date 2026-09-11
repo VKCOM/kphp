@@ -1,10 +1,5 @@
 #pragma once
 
-#include <cstddef>
-#include <optional>
-
-#include "common/wrappers/span.h"
-
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
 #endif
@@ -62,8 +57,7 @@ private:
     inline char* ref_data() const;
 
     inline static size_type new_capacity(size_type requested_capacity, size_type old_capacity);
-    inline static string_inner* create(size_type requested_capacity, size_type old_capacity) noexcept;
-    inline static string_inner* create(vk::span<std::byte> memory, size_type requested_capacity, size_type old_capacity) noexcept;
+    inline static string_inner* create(size_type requested_capacity, size_type old_capacity);
 
     inline char* reserve(size_type requested_capacity);
 
@@ -75,8 +69,7 @@ private:
 
     inline char* ref_copy();
 
-    inline char* clone(size_type requested_cap) noexcept;
-    inline char* clone(vk::span<std::byte> memory, size_type requested_cap) noexcept;
+    inline char* clone(size_type requested_cap);
   };
 
   inline string_inner* inner() const;
@@ -91,8 +84,6 @@ private:
   inline static char* create(size_type req, bool b);
 
   friend class string_cache;
-
-  inline bool copy_from(vk::span<std::byte> memory, const string& other) noexcept;
 
 public:
   static constexpr size_type max_size() noexcept {
@@ -110,11 +101,6 @@ public:
   inline string();
   inline string(const string& str) noexcept;
   inline string(string&& str) noexcept;
-  // copies str into externally provided memory (no allocation/ownership).
-  // Memory must be aligned to alignof(string_inner) and >= str.estimate_memory_usage() bytes.
-  // Caller must pin it with a special ExtraRefCnt (e.g. for_instance_cache), since the string never frees it.
-  // Returns nullopt if memory is unfit.
-  inline static std::optional<string> copy_in(vk::span<std::byte> memory, const string& str) noexcept;
   inline string(const char* s, size_type n);
   inline explicit string(const char* s);
   // IMPORTANT: this constructor may return read-only strings for n == 0 and n == 1.
@@ -259,10 +245,6 @@ public:
 
   inline static constexpr size_t inner_sizeof() noexcept {
     return sizeof(string_inner);
-  }
-
-  inline static constexpr size_t alignment() noexcept {
-    return alignof(string_inner);
   }
   inline static string make_const_string_on_memory(const char* str, size_type len, void* memory, size_t memory_size);
 

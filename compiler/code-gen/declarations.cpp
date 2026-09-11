@@ -982,13 +982,8 @@ void ClassDeclaration::compile_virtual_builtin_functions(CodeGenerator& W, Class
 
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "size_t virtual_builtin_sizeof()", "sizeof(*this)");
 
-  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "size_t virtual_builtin_alignof()", "alignof(" + klass->src_name + ")");
-
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, klass->src_name + "* virtual_builtin_clone()",
                        "new " + klass->src_name + "{*this}");
-
-  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, klass->src_name + "* virtual_builtin_construct_at(void* ptr)",
-                       "new (ptr) " + klass->src_name + "{*this}");
 }
 
 void ClassDeclaration::compile_wakeup(CodeGenerator& W, ClassPtr klass) {

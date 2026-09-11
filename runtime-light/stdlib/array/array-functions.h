@@ -78,7 +78,6 @@ template<typename Result, typename U, typename Comparator>
 Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept {
   using array_inner = typename array<U>::array_inner;
   using array_bucket = typename array<U>::array_bucket;
-  using array_allocation = typename array<U>::allocation;
   int64_t n{arr.count()};
 
   if (renumber) {
@@ -87,7 +86,7 @@ Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept 
     }
 
     if (!arr.is_vector()) {
-      array_inner* res{array<U>::create_from_allocation(array_allocation::allocate(n, true))};
+      array_inner* res{array_inner::create(n, true)};
       for (array_bucket* it{arr.p->begin()}; it != arr.p->end(); it = arr.p->next(it)) {
         res->push_back_vector_value(it->value);
       }

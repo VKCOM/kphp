@@ -5,13 +5,10 @@
 #pragma once
 
 #include <cstddef>
-#include <memory>
 #include <span>
 
-#include "common/containers/final_action.h"
-#include "common/wrappers/span.h"
-#include "runtime-common/core/memory-resource/details/memory_chunk_list.h"
-#include "runtime-common/core/memory-resource/monotonic_buffer_resource.h"
+#include "runtime-common/core/allocator/pool-allocator.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/visitors/instance-deep-basic-visitor.h"
@@ -21,8 +18,6 @@ namespace kphp::visitors {
 
 // deep-copies an instance graph into a caller-provided memory block (e.g. shared memory), rewriting the original's fields to point at the copies.
 // Copies are pinned with memory_ref_cnt (e.g. ExtraRefCnt::for_instance_cache) and never freed individually.
-// The block size must match instance_deep_estimate_size_visitor's estimate for the same graph.
-// On pool exhaustion, processing fails (returns false) with the instance left partially rewritten.
 class instance_deep_copy_visitor final : kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<instance_deep_copy_visitor>;
@@ -39,9 +34,8 @@ public:
   ~instance_deep_copy_visitor() = default;
 
   explicit instance_deep_copy_visitor(std::span<std::byte> memory_pool_buffer, ExtraRefCnt memory_ref_cnt) noexcept
-      : Basic{*this, memory_ref_cnt} {
-    this->memory_pool.init(memory_pool_buffer.data(), memory_pool_buffer.size());
-  }
+      : Basic{*this, memory_ref_cnt},
+        allocator{kphp::memory::pool_allocator::external_memory{}, memory_pool_buffer.data(), memory_pool_buffer.size(), /*oom_handling_mem_size=*/0} {}
 
   template<class T>
   bool process(array<T>& arr) noexcept {
@@ -49,25 +43,21 @@ public:
       return true;
     }
 
-    auto copied{array<T>::copy_in(carve(arr.calculate_memory_for_copying(), array<T>::alignment()), arr)};
-    if (!copied.has_value()) [[unlikely]] {
-      return false;
-    }
-    array<T> copied_array{std::move(*copied)};
-    const auto commit_copy{vk::finally([&arr, &copied_array]() noexcept { arr = std::move(copied_array); })};
+    RuntimeAllocator::get().with_allocator(allocator, [&arr]() noexcept { arr.mutate_if_shared(); });
 
     // copying an empty array yields the global empty-array singleton instead of a real copy -- nothing left to deep-copy
-    if (copied_array.is_reference_counter(ExtraRefCnt::for_global_const)) {
+    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
+      kphp::log::assertion(arr.begin_no_mutate() == arr.end_no_mutate());
       return true;
     }
 
-    kphp::log::assertion(copied_array.get_reference_counter() == 1);
+    kphp::log::assertion(arr.get_reference_counter() == 1);
     if (const auto extra_ref_cnt{get_memory_ref_cnt()}; extra_ref_cnt != 0) {
-      copied_array.set_reference_counter_to(extra_ref_cnt);
+      arr.set_reference_counter_to(extra_ref_cnt);
     }
-    // values of a primitive array were already memcpy'd by the array copy constructor, and there are no string keys to copy
-    const bool primitive_array{Basic::template is_primitive<T> && copied_array.has_no_string_keys()};
-    return primitive_array || Basic::process_range(copied_array.begin_no_mutate(), copied_array.end_no_mutate());
+    // values of a primitive array were already memcpy'd by the forced copy above, and there are no string keys to copy
+    const bool primitive_array{Basic::template is_primitive<T> && arr.has_no_string_keys()};
+    return primitive_array || Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
   }
 
   bool process(string& str) noexcept {
@@ -75,16 +65,16 @@ public:
       return true;
     }
 
-    auto copied{string::copy_in(carve(str.estimate_memory_usage(), string::alignment()), str)};
-    if (!copied.has_value()) [[unlikely]] {
-      return false;
-    }
-    string copied_string{std::move(*copied)};
-    const auto commit_copy{vk::finally([&str, &copied_string]() noexcept { str = std::move(copied_string); })};
+    RuntimeAllocator::get().with_allocator(allocator, [&str]() noexcept { str.make_not_shared(); });
 
-    kphp::log::assertion(copied_string.get_reference_counter() == 1);
+    // make_not_shared may turn str back into a constant (e.g. empty or single-char strings are cached globally) -- check again
+    if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
+      return true;
+    }
+
+    kphp::log::assertion(str.get_reference_counter() == 1);
     if (const auto extra_ref_cnt{get_memory_ref_cnt()}; extra_ref_cnt != 0) {
-      copied_string.set_reference_counter_to(extra_ref_cnt);
+      str.set_reference_counter_to(extra_ref_cnt);
     }
     return true;
   }
@@ -122,12 +112,7 @@ private:
       return true;
     }
 
-    // the original is known to be non-null here, so a failed result means the carved buffer was too small
-    auto cloned{instance.virtual_builtin_clone_in(carve(instance.estimate_memory_usage(), instance.alignment()))};
-    if (!cloned.has_value()) [[unlikely]] {
-      return false;
-    }
-    instance = std::move(*cloned);
+    RuntimeAllocator::get().with_allocator(allocator, [&instance]() noexcept { instance = instance.virtual_builtin_clone(); });
     copied_instance_ptr = instance.get_base_raw_ptr();
 
     if (const auto extra_ref_cnt{get_memory_ref_cnt()}; extra_ref_cnt != 0) {
@@ -136,20 +121,7 @@ private:
     return Basic::process(instance);
   }
 
-  // returns an empty span when the pool is exhausted, so the caller can fail gracefully.
-  // the returned memory is aligned to `align`, regardless of what alignment the underlying pool happens to guarantee.
-  vk::span<std::byte> carve(size_t size, size_t align) noexcept {
-    size_t space{memory_resource::details::align_for_chunk(size, align)};
-    void* mem{this->memory_pool.get_from_pool(space, /*safe=*/true)};
-    if (mem == nullptr) [[unlikely]] {
-      return {};
-    }
-
-    kphp::log::assertion(std::align(align, size, mem, space));
-    return {static_cast<std::byte*>(mem), size};
-  }
-
-  memory_resource::monotonic_buffer_resource memory_pool;
+  kphp::memory::pool_allocator allocator;
   kphp::stl::unordered_map<void*, void*, kphp::memory::script_allocator> copied_instances_table;
 };
 
