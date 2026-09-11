@@ -259,7 +259,7 @@ auto InstanceState::report_capacity_metrics() noexcept -> void {
   const auto send{
       [&reported_error]<size_t count>(const std::array<kphp::diagnostics::metric_builder, count>& builders, const std::array<size_t, count>& values) noexcept {
         for (size_t i{0}; i < count; ++i) {
-          const auto [buffer, result]{builders[i].send_value(static_cast<double>(values[i]))};
+          const auto [_, result]{builders[i].send_value(static_cast<double>(values[i]))}; // FIXME: we can eliminate allocations here
           if (!result && !reported_error) [[unlikely]] {
             kphp::log::warning("failed to report confdata capacity metrics: error -> {}", result.error());
             reported_error = true;
