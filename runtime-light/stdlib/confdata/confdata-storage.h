@@ -32,6 +32,8 @@ namespace kphp::confdata {
 enum class storage_error : uint8_t { misaligned_buffer, insufficient_buffer, size_overflow, memory_limit_exceeded, invalid_oom_handling_size, invalid_storage };
 
 struct storage_memory_usage final {
+  /** Outstanding allocator bytes, including objects awaiting reclamation. */
+  size_t m_allocated{};
   /** Allocator frontier, including fragmentation that cannot be reused directly. */
   size_t m_used{};
   /** Usage at which the writer must rotate to a freshly synchronized piece. */
