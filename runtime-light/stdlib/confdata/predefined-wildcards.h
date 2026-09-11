@@ -16,7 +16,6 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-light/stdlib/confdata/wildcard-kind.h"
 
@@ -30,7 +29,7 @@ enum class predefined_wildcards_error : uint8_t {
   reserved_wildcard,
   non_canonical_wildcards,
   already_initialized,
-  internal,
+  not_enough_memory,
 };
 
 inline auto validate_predefined_wildcard(std::string_view wildcard) noexcept -> std::expected<void, predefined_wildcards_error> {
@@ -51,34 +50,13 @@ class storage;
 /**
  * An immutable index of configured predefined wildcards.
  *
- * The owning strings and both lookup indexes retain the storage resource in
- * their allocators, so their allocation domain does not depend on whichever
- * script resource happens to be installed by the caller.
+ * Sorted wildcard views, shortest-prefix groups, and owned string bytes occupy
+ * one allocation in the storage resource. The whole piece owns its lifetime;
+ * lookups never depend on the caller's script resource.
  */
 class predefined_wildcards final : private vk::not_copyable {
   using resource_type = memory_resource::unsynchronized_pool_resource;
-  using wildcard_string = memory_resource::stl::string<resource_type>;
-
-  struct transparent_string_hash final {
-    using is_transparent = void;
-
-    auto operator()(std::string_view value) const noexcept -> size_t {
-      return std::hash<std::string_view>{}(value);
-    }
-  };
-
-  struct transparent_string_equal final {
-    using is_transparent = void;
-
-    auto operator()(std::string_view lhs, std::string_view rhs) const noexcept -> bool {
-      return lhs == rhs;
-    }
-  };
-
-  using wildcard_set = memory_resource::stl::unordered_set<wildcard_string, resource_type, transparent_string_hash, transparent_string_equal>;
-  using wildcard_group = memory_resource::stl::vector<std::string_view, resource_type>;
-  using wildcard_groups =
-      memory_resource::stl::unordered_map<std::string_view, wildcard_group, resource_type, transparent_string_hash, transparent_string_equal>;
+  using wildcard_group = std::span<const std::string_view>;
 
   /** Candidates from one shortest-prefix group and the unmatched part of the queried key. */
   struct matching_candidates final {
@@ -87,11 +65,10 @@ class predefined_wildcards final : private vk::not_copyable {
   };
 
   resource_type& m_resource;
-  // Owns each complete wildcard exactly once. References remain stable across
-  // unordered-set rehashes and the set is never mutated after initialization.
-  wildcard_set m_wildcards;
-  // Maps a shortest-length prefix to sorted views into `m_wildcards`.
-  wildcard_groups m_groups;
+  // Lexicographically sorted views into the string bytes in the same allocation.
+  wildcard_group m_wildcards;
+  // Contiguous wildcard ranges, sorted by their shortest-length prefix.
+  std::span<const wildcard_group> m_groups;
   size_t m_shortest_wildcard_size{};
   size_t m_max_matches_per_key{};
   bool m_initialized{};
@@ -124,8 +101,8 @@ public:
   auto has_matching_wildcard(std::string_view key) const noexcept -> bool;
 
 private:
-  /** Initializes the index from sorted, unique wildcards under the storage resource. */
-  auto initialize(std::span<const std::string_view> wildcards) noexcept -> std::expected<void, predefined_wildcards_error>;
+  /** Builds the index from sorted, unique wildcards using strictly less than `memory_budget` bytes. */
+  auto initialize(std::span<const std::string_view> wildcards, size_t memory_budget) noexcept -> std::expected<void, predefined_wildcards_error>;
 
   auto find_matching_candidates(std::string_view key) const noexcept -> matching_candidates;
 
@@ -133,9 +110,7 @@ private:
 };
 
 inline predefined_wildcards::predefined_wildcards(resource_type& resource) noexcept
-    : m_resource{resource},
-      m_wildcards{wildcard_set::allocator_type{resource}},
-      m_groups{wildcard_groups::allocator_type{resource}} {}
+    : m_resource{resource} {}
 
 template<std::invocable<std::string_view> F>
 auto predefined_wildcards::for_each_matching_wildcard(std::string_view key, const F& f) const noexcept -> bool {
@@ -156,7 +131,7 @@ inline auto predefined_wildcards::max_matches_per_key() const noexcept -> size_t
 }
 
 inline auto predefined_wildcards::contains(std::string_view wildcard) const noexcept -> bool {
-  return m_wildcards.contains(wildcard);
+  return std::ranges::binary_search(m_wildcards, wildcard);
 }
 
 } // namespace kphp::confdata
@@ -183,8 +158,8 @@ struct std::formatter<kphp::confdata::predefined_wildcards_error> {
       return std::format_to(ctx.out(), "wildcards are not sorted and unique");
     case predefined_wildcards_error::already_initialized:
       return std::format_to(ctx.out(), "wildcards are already initialized");
-    case predefined_wildcards_error::internal:
-      return std::format_to(ctx.out(), "unexpected internal error");
+    case predefined_wildcards_error::not_enough_memory:
+      return std::format_to(ctx.out(), "not enough memory to initialize wildcards below the OOM threshold");
     }
     return std::format_to(ctx.out(), "unknown wildcard error");
   }
