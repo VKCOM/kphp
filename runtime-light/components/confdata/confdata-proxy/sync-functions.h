@@ -37,10 +37,11 @@ struct pagination {
 };
 
 using encoded_snapshot_page = kphp::stl::vector<std::byte, kphp::memory::script_allocator>;
+using encoded_snapshot_pages = kphp::stl::vector<encoded_snapshot_page, kphp::memory::script_allocator>;
 
 struct snapshot final {
   pagination m_pagination;
-  kphp::stl::vector<encoded_snapshot_page, kphp::memory::script_allocator> m_pages;
+  encoded_snapshot_pages m_pages;
 };
 
 enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected };
@@ -137,12 +138,11 @@ auto sync(std::string_view confdata_proxy_actor,
   co_return std::move(snapshot);
 }
 
-// Applies a previously fetched snapshot and releases encoded pages as soon as
-// their parsed event descriptors have been consumed. Processed pages stay
-// consumed if a later page fails, so the snapshot must be discarded after any call.
+// Takes ownership of previously fetched snapshot pages and releases each page after
+// its parsed event descriptors have been consumed. On failure, remaining pages are released too.
 template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
-auto replay(snapshot& snapshot, const event_handler_type& event_handler) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
-  for (auto& encoded_page : snapshot.m_pages) {
+auto replay(encoded_snapshot_pages pages, const event_handler_type& event_handler) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
+  for (auto& encoded_page : pages) {
     {
       tl::fetcher tlf{std::span<const std::byte>{encoded_page.data(), encoded_page.size()}};
       tl::confdata::SubscribeResponse response{};
@@ -163,7 +163,6 @@ auto replay(snapshot& snapshot, const event_handler_type& event_handler) noexcep
     // Make the processed page's memory reusable before parsing the next page.
     encoded_snapshot_page{}.swap(encoded_page);
   }
-  snapshot.m_pages.clear();
   return {};
 }
 

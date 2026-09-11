@@ -305,8 +305,8 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   auto& piece{**created_piece};
 
   auto sync_editor{piece.storage().start_sync(size_hints)};
-  const auto replay_result{
-      kphp::confdata::replay(*snapshot, [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+  const auto replay_result{kphp::confdata::replay(
+      std::move(snapshot->m_pages), [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
         return apply_batched_events(storage, sync_editor, events);
       })};
   if (!replay_result) [[unlikely]] {
