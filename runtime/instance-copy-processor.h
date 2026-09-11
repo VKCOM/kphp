@@ -17,6 +17,10 @@
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 
+namespace kphp::visitors {
+inline constexpr uint32_t VISITED_INSTANCE_MASK{1U << 31};
+} // namespace kphp::visitors
+
 class InstanceReferencesCountingVisitor : kphp::visitors::instance_deep_basic_visitor<InstanceReferencesCountingVisitor> {
 public:
   friend class kphp::visitors::instance_deep_basic_visitor<InstanceReferencesCountingVisitor>;

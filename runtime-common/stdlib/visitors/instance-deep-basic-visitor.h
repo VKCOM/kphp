@@ -15,9 +15,6 @@
 #include "runtime-common/core/runtime-core.h"
 
 namespace kphp::visitors {
-// high bit of the per-instance refcnt info word used by the legacy counting/destroy visitors:
-// the lower bits store the real reference count, the top bit marks the instance as visited
-inline constexpr uint32_t VISITED_INSTANCE_MASK{0x80000000};
 
 // CRTP base for visitors that traverse an instance graph via compiler-generated accept() methods.
 // Every field is dispatched to Child::process, and a false result from any field is accumulated into is_ok().
