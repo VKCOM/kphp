@@ -1,4 +1,5 @@
 @kphp_should_fail
+/Can not store polymorphic type SimpleInterface with mutable derived class Simple/
 <?php
 
 require_once 'kphp_tester_include.php';
@@ -27,8 +28,7 @@ class Complex implements ComplexInterface {
   }
 }
 
-/** @kphp-immutable-class
- *  @kphp-serializable */
+/** @kphp-immutable-class */
 class CompletelyComplex implements ComplexInterface {
   public function foo() {
     fwrite(STDERR, "foo\n");

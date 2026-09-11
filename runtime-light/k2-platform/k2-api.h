@@ -129,6 +129,54 @@ inline void free_checked(void* ptr, size_t size, size_t align) noexcept {
   k2_free_checked(ptr, size, align);
 }
 
+inline std::expected<void*, int32_t> alloc_shared_memory(size_t size, size_t align = k2::details::DEFAULT_MEMORY_ALIGN) noexcept {
+  void* pointer{nullptr};
+  if (auto error_code{k2_alloc_shared_memory(size, align, std::addressof(pointer))}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {pointer};
+}
+
+inline std::expected<void, int32_t> publish_shared_memory(std::string_view name, const void* memory, uint64_t ttl_ms, bool as_mut,
+                                                          bool ignore_if_exist) noexcept {
+  if (auto error_code{k2_publish_shared_memory(name.data(), name.length(), memory, ttl_ms, as_mut, ignore_if_exist)}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {};
+}
+
+inline std::expected<std::span<const std::byte>, int32_t> get_shared_memory(std::string_view name) noexcept {
+  const void* pointer{nullptr};
+  size_t size{};
+  if (auto error_code{k2_get_shared_memory(name.data(), name.length(), std::addressof(pointer), std::addressof(size))}; error_code != k2::errno_ok)
+      [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {std::span{static_cast<const std::byte*>(pointer), size}};
+}
+
+inline std::expected<void, int32_t> republish_shared_memory(std::string_view name, uint64_t ttl) noexcept {
+  if (auto error_code{k2_republish_shared_memory(name.data(), name.length(), ttl)}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {};
+}
+
+inline std::expected<void, int32_t> seek_ttl_to_shared_memory(std::string_view name, uint8_t percentile, uint64_t remaining_lifetime_limit) noexcept {
+  if (auto error_code{k2_seek_ttl_to_shared_memory(name.data(), name.length(), percentile, remaining_lifetime_limit)}; error_code != k2::errno_ok)
+      [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {};
+}
+
+inline std::expected<void, int32_t> release_shared_memory(const void* ptr) noexcept {
+  if (auto error_code{k2_release_shared_memory(ptr)}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {};
+}
+
 [[noreturn]] inline void exit(int32_t exit_code) noexcept {
   k2_exit(exit_code);
 }
