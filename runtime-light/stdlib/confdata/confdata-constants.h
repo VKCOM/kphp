@@ -15,6 +15,4 @@ inline constexpr std::string_view IMAGE_NAME{"kphp-confdata"};
 // confdata must therefore expose the confdata component under this alias.
 inline constexpr std::string_view COMPONENT_LINK_ALIAS{"kphp-confdata"};
 
-inline constexpr std::string_view SHARED_MEMORY_NAME{"#kphp-confdata"};
-
 } // namespace kphp::confdata

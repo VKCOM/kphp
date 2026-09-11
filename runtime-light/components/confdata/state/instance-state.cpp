@@ -7,6 +7,7 @@
 #include <array>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <format>
 #include <iterator>
@@ -24,7 +25,6 @@
 #include "runtime-light/coroutine/event.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/when-all.h"
-#include "runtime-light/stdlib/confdata/confdata-constants.h"
 #include "runtime-light/stdlib/confdata/confdata-reader-lease.h"
 #include "runtime-light/stdlib/confdata/confdata-storage.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -130,12 +130,24 @@ public:
   auto sample_id() const noexcept -> kphp::confdata::storage::sample_id {
     return m_sample_id;
   }
+
+  auto shared_memory_name() const noexcept -> std::string_view {
+    return m_piece_it->shared_memory_name();
+  }
 };
 
 // ================================================================================================
 
 InstanceState::confdata_piece::confdata_piece(const creation_token& /* token */, void* memory) noexcept
-    : m_memory{memory} {}
+    : m_memory{memory} {
+  // Each piece appends its own random suffix; reader leases carry the complete allocation name.
+  static constexpr std::string_view SHARED_MEMORY_NAME_PREFIX{"#kphp-confdata/"};
+
+  // A fresh nonce distinguishes pieces across rotations, writer instances, and restarts.
+  std::array<uint64_t, 2> nonce{};
+  k2::os_rnd(sizeof(nonce), nonce.data());
+  std::format_to(std::back_inserter(m_shared_memory_name), "{}{:016x}{:016x}", SHARED_MEMORY_NAME_PREFIX, nonce[0], nonce[1]);
+}
 
 InstanceState::confdata_piece::~confdata_piece() {
   if (m_storage.is_initialized()) {
@@ -188,6 +200,10 @@ auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t me
 
 auto InstanceState::confdata_piece::storage() noexcept -> kphp::confdata::storage& {
   return m_storage;
+}
+
+auto InstanceState::confdata_piece::shared_memory_name() const noexcept -> std::string_view {
+  return m_shared_memory_name;
 }
 
 auto InstanceState::confdata_piece::acquire_active_sample() noexcept -> kphp::confdata::storage::sample_id {
@@ -294,8 +310,8 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
   reader_session session{*this, std::prev(m_confdata_pieces.end())};
   kphp::log::debug("issuing reader lease: sample -> {}, sections -> {}", session.sample_id(),
                    m_confdata_pieces.back().storage().values(session.sample_id()).size());
-  const auto lease{kphp::confdata::reader_lease::create(kphp::confdata::SHARED_MEMORY_NAME, session.sample_id())};
-  // The fixed shared-memory name and internally acquired sample ID must be valid.
+  const auto lease{kphp::confdata::reader_lease::create(session.shared_memory_name(), session.sample_id())};
+  // The generated shared-memory name and internally acquired sample ID must be valid.
   // Failure here is an internal invariant violation, not a recoverable client error.
   kphp::log::assertion(lease.has_value());
   if (const auto written{co_await connection->get_stream().write_all(std::as_bytes(std::span{std::addressof(*lease), 1}))}; !written) [[unlikely]] {
@@ -368,15 +384,12 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   piece.storage().release_sample(diagnostic_sample);
   kphp::log::debug("snapshot committed: sample -> {}, sections -> {}, used bytes -> {}", diagnostic_sample, diagnostic_sections,
                    piece.storage().memory_usage().m_used);
-  // Existing readers keep their mapped allocation; future lookups of the
-  // stable name resolve to this newly published piece.
-  if (const auto published{k2::publish_shared_memory(kphp::confdata::SHARED_MEMORY_NAME, piece.storage().memory().data(), 0, true, true)}; !published)
-      [[unlikely]] {
+  // A lease must keep resolving to its pinned piece even if another sync completes before the reader maps it.
+  // Reject name collisions rather than replacing an allocation that an outstanding lease may still name.
+  if (const auto published{k2::publish_shared_memory(piece.shared_memory_name(), piece.storage().memory().data(), 0, true, false)}; !published) [[unlikely]] {
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::shared_memory_publication, .m_code = static_cast<int32_t>(published.error())}};
   }
-  kphp::log::info("shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", kphp::confdata::SHARED_MEMORY_NAME, diagnostic_sample,
-                  diagnostic_sections, m_pagination.m_offset);
 
   // Only successfully synchronized and published pieces enter the registry,
   // so its last element is always the current piece.
@@ -386,6 +399,8 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
     erase_if_retired_and_unused(retired_piece_it);
   }
   m_pagination = std::move(snapshot->m_pagination);
+  kphp::log::info("shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", piece.shared_memory_name(), diagnostic_sample,
+                  diagnostic_sections, m_pagination.m_offset);
   co_return std::expected<void, confdata_sync_error>{};
 }
 
