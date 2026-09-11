@@ -68,14 +68,6 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
   }
 
-  virtual size_t virtual_builtin_sizeof() const noexcept {
-    return 0;
-  }
-
-  virtual C$Throwable* virtual_builtin_clone() const noexcept {
-    return nullptr;
-  }
-
   string $message;
   int64_t $code{};
   string $file;
@@ -126,11 +118,11 @@ inline void exception_initialize(const Throwable& e, const string& message, int6
 struct C$Exception : public C$Throwable {
   ~C$Exception() override = default;
 
-  C$Exception* virtual_builtin_clone() const noexcept override {
+  C$Exception* virtual_builtin_clone() const noexcept {
     return new C$Exception{*this};
   }
 
-  size_t virtual_builtin_sizeof() const noexcept override {
+  size_t virtual_builtin_sizeof() const noexcept {
     return sizeof(*this);
   }
 
@@ -175,11 +167,11 @@ inline string f$Exception$$getTraceAsString(const Exception& e) noexcept {
 struct C$Error : public C$Throwable {
   ~C$Error() override = default;
 
-  C$Error* virtual_builtin_clone() const noexcept override {
+  C$Error* virtual_builtin_clone() const noexcept {
     return new C$Error{*this};
   }
 
-  size_t virtual_builtin_sizeof() const noexcept override {
+  size_t virtual_builtin_sizeof() const noexcept {
     return sizeof(*this);
   }
 
