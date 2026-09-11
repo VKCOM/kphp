@@ -45,8 +45,6 @@ struct snapshot final {
 
 enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected };
 
-namespace details {
-
 // Performs a single confdata.subscribe round-trip.
 // On success, invokes `event_handler(events)` once with the batch of received events and updates `to` pagination.
 // If the handler returns false, the batch is rejected with `batch_rejected` and `to` is left unchanged so it can be requested again.
@@ -123,8 +121,6 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   co_return std::move(handled);
 }
 
-} // namespace details
-
 // Fetches one consistent snapshot while retaining the encoded response pages.
 // The handler can collect metadata from the initial parse; replay()
 // reparses the same bytes later without another network synchronization.
@@ -134,8 +130,7 @@ auto sync(std::string_view confdata_proxy_actor,
   snapshot snapshot{};
   for (; !snapshot.m_pagination.m_has_synced;) {
     snapshot.m_pages.emplace_back();
-    if (auto expected{co_await details::subscribe(confdata_proxy_actor, snapshot.m_pagination, event_handler, snapshot.m_pages.back())}; !expected)
-        [[unlikely]] {
+    if (auto expected{co_await subscribe(confdata_proxy_actor, snapshot.m_pagination, event_handler, snapshot.m_pages.back())}; !expected) [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
   }
@@ -190,7 +185,7 @@ auto update(std::string_view confdata_proxy_actor, kphp::confdata::pagination& f
   }
 
   for (;;) {
-    if (auto expected{co_await details::subscribe(confdata_proxy_actor, from, event_handler)}; !expected) [[unlikely]] {
+    if (auto expected{co_await subscribe(confdata_proxy_actor, from, event_handler)}; !expected) [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
     co_await kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL);
