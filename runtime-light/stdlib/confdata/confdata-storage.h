@@ -142,7 +142,7 @@ public:
    * discard the unpublished update and rotate to a new piece.
    */
   auto init(std::span<std::byte> memory, size_t oom_handling_size = 0) noexcept -> std::expected<void, storage_error>;
-  /** Builds the immutable wildcard index owned by this shared-memory piece. */
+  /** Builds the immutable wildcard index, rejecting allocations that would reach the OOM threshold. */
   auto initialize_wildcards(std::span<const std::string_view> wildcards) noexcept -> std::expected<void, predefined_wildcards_error>;
   auto memory() const noexcept -> std::span<const std::byte>;
   auto memory_usage() const noexcept -> storage_memory_usage;

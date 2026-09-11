@@ -183,15 +183,10 @@ auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t me
     owner.erase(piece_it);
     return std::unexpected{error};
   }
-  if (const auto initialized{piece_it->m_storage.initialize_wildcards(predefined_wildcards)}; !initialized)
-      [[unlikely]] { // TODO: initialize_wildcards doesn't handle OOM
-    const confdata_sync_error error{.m_stage = confdata_sync_error::stage::wildcard_initialization,
-                                    .m_code = static_cast<int32_t>(std::to_underlying(initialized.error()))};
-    owner.erase(piece_it);
-    return std::unexpected{error};
-  }
-  if (piece_it->m_storage.is_oom_threshold_reached()) [[unlikely]] { // TODO: needs to be check in initialize_wildcards
-    const confdata_sync_error error{.m_stage = confdata_sync_error::stage::oom_threshold, .m_code = k2::errno_enomem};
+  if (const auto initialized{piece_it->m_storage.initialize_wildcards(predefined_wildcards)}; !initialized) [[unlikely]] {
+    const auto oom{initialized.error() == kphp::confdata::predefined_wildcards_error::not_enough_memory};
+    const confdata_sync_error error{.m_stage = oom ? confdata_sync_error::stage::oom_threshold : confdata_sync_error::stage::wildcard_initialization,
+                                    .m_code = oom ? k2::errno_enomem : static_cast<int32_t>(std::to_underlying(initialized.error()))};
     owner.erase(piece_it);
     return std::unexpected{error};
   }
@@ -372,10 +367,6 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
     sync_editor.cancel();
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(replay_result.error()))}};
-  }
-  if (report_reached_oom_threshold(piece.storage())) [[unlikely]] { // TODO: do we need this check?
-    sync_editor.cancel();
-    co_return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::oom_threshold, .m_code = k2::errno_enomem}};
   }
 
   sync_editor.commit();

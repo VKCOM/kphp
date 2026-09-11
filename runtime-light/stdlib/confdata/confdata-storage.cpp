@@ -524,9 +524,9 @@ auto storage::close() noexcept -> void {
 auto storage::initialize_wildcards(std::span<const std::string_view> wildcards) noexcept -> std::expected<void, predefined_wildcards_error> {
   kphp::log::assertion(is_initialized());
   kphp::log::assertion(!m_has_committed_sample);
-  std::expected<void, predefined_wildcards_error> result{};
-  with_storage_allocator([this, wildcards, &result] noexcept { result = m_state->m_wildcards.initialize(wildcards); });
-  return result;
+  const auto usage{memory_usage()};
+  const auto memory_budget{usage.m_used < usage.m_oom_threshold ? usage.m_oom_threshold - usage.m_used : 0};
+  return m_state->m_wildcards.initialize(wildcards, memory_budget);
 }
 
 auto storage::memory_usage() const noexcept -> storage_memory_usage {
