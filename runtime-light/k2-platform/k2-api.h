@@ -129,7 +129,7 @@ inline void free_checked(void* ptr, size_t size, size_t align) noexcept {
   k2_free_checked(ptr, size, align);
 }
 
-inline std::expected<void*, int32_t> alloc_shared_memory(size_t size, size_t align) noexcept {
+inline std::expected<void*, int32_t> alloc_shared_memory(size_t size, size_t align = k2::details::DEFAULT_MEMORY_ALIGN) noexcept {
   void* pointer{nullptr};
   if (auto error_code{k2_alloc_shared_memory(size, align, std::addressof(pointer))}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
@@ -137,8 +137,9 @@ inline std::expected<void*, int32_t> alloc_shared_memory(size_t size, size_t ali
   return {pointer};
 }
 
-inline std::expected<void, int32_t> publish_shared_memory(std::string_view name, const void* memory, uint64_t ttl, bool as_mut, bool ignore_if_exist) noexcept {
-  if (auto error_code{k2_publish_shared_memory(name.data(), name.length(), memory, ttl, as_mut, ignore_if_exist)}; error_code != k2::errno_ok) [[unlikely]] {
+inline std::expected<void, int32_t> publish_shared_memory(std::string_view name, const void* memory, uint64_t ttl_ms, bool as_mut,
+                                                          bool ignore_if_exist) noexcept {
+  if (auto error_code{k2_publish_shared_memory(name.data(), name.length(), memory, ttl_ms, as_mut, ignore_if_exist)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};

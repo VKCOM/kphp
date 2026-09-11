@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <span>
@@ -23,7 +24,7 @@
 
 // shared memory layout: class_name_hash(u64) | class_instance shell | inner data
 template<typename InstanceType>
-bool f$instance_cache_store(const string& key, class_instance<InstanceType> instance, int64_t ttl = 0) noexcept {
+bool f$instance_cache_store(const string& key, class_instance<InstanceType> instance, int64_t ttl_sec = 0) noexcept {
   if (key.empty()) [[unlikely]] {
     kphp::log::warning("instance_cache_store. empty key is not supported");
     return false;
@@ -32,13 +33,14 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
     kphp::log::warning("instance_cache_store. can't store a null instance: key -> {}", key.c_str());
     return false;
   }
-  if (ttl < 0) [[unlikely]] {
-    kphp::log::warning("instance_cache_store. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl, key.c_str());
-    ttl = 0;
+  if (ttl_sec < 0) [[unlikely]] {
+    kphp::log::warning("instance_cache_store. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl_sec, key.c_str());
+    ttl_sec = 0;
   }
-  if (constexpr int64_t max_ttl{std::numeric_limits<int64_t>::max() / 1000}; ttl > max_ttl) [[unlikely]] {
-    kphp::log::warning("instance_cache_store. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl, max_ttl, key.c_str());
-    ttl = 0;
+  if (constexpr int64_t max_ttl_sec{std::numeric_limits<int64_t>::max() / 1000}; ttl_sec > max_ttl_sec) [[unlikely]] {
+    kphp::log::warning("instance_cache_store. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl_sec, max_ttl_sec,
+                       key.c_str());
+    ttl_sec = 0;
   }
 
   kphp::visitors::instance_deep_estimate_size_visitor estimate_size_visitor{};
@@ -50,7 +52,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   constexpr size_t instance_size{sizeof(class_instance<InstanceType>)};
   constexpr size_t hash_size{sizeof(uint64_t)};
 
-  auto alloc_result{k2::alloc_shared_memory(hash_size + instance_size + estimated_size, alignof(std::max_align_t))};
+  auto alloc_result{k2::alloc_shared_memory(hash_size + instance_size + estimated_size)};
   if (!alloc_result.has_value()) [[unlikely]] {
     kphp::log::warning("instance_cache_store. failed to allocate shared memory: error -> {}, key -> {}", alloc_result.error(), key.c_str());
     return false;
@@ -62,16 +64,17 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   // deep-copies the object graph into the inner area and rewrites the instance's fields to point at the copies,
   // so the whole graph ends up inside the shared-memory block.
   // All copies are pinned with ExtraRefCnt::for_instance_cache and are never freed individually -- the platform owns the block.
-  kphp::visitors::instance_deep_copy_visitor copy_visitor{std::span{mem + hash_size + instance_size, estimated_size}, ExtraRefCnt::for_instance_cache};
+  kphp::visitors::instance_deep_copy_visitor copy_visitor{std::span{std::next(mem, hash_size + instance_size), estimated_size},
+                                                          ExtraRefCnt::for_instance_cache};
   if (!copy_visitor.process_instance(instance)) [[unlikely]] {
     kphp::log::assertion(k2::release_shared_memory(mem).has_value());
     kphp::log::warning("instance_cache_store. failed to deep-copy instance into shared memory: estimated size -> {}, key -> {}", estimated_size, key.c_str());
     return false;
   }
-  std::construct_at(reinterpret_cast<class_instance<InstanceType>*>(mem + hash_size), std::move(instance));
+  std::construct_at(reinterpret_cast<class_instance<InstanceType>*>(std::next(mem, hash_size)), std::move(instance));
 
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds
-  if (auto publish_result{k2::publish_shared_memory(std::string_view{key.c_str(), key.size()}, mem, ttl * 1000, false, true)}; publish_result.has_value()) {
+  if (auto publish_result{k2::publish_shared_memory(std::string_view{key.c_str(), key.size()}, mem, ttl_sec * 1000, false, true)}; publish_result.has_value()) {
     InstanceCacheInstanceState::get().request_cache.insert_or_assign(key, std::span{mem, hash_size + instance_size + estimated_size});
     return true;
   } else {
@@ -92,8 +95,8 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
     kphp::log::warning("instance_cache_fetch. empty key is not supported");
     return {};
   }
-  // unwraps and validates a shared memory block: returns a null instance if the block is malformed or belongs to another class
-  const auto unwrap{[&class_name, &key](std::span<const std::byte> mem) noexcept -> ClassInstanceType {
+  // materialize and validates a shared memory block: returns a null instance if the block is malformed or belongs to another class
+  const auto materialize{[&class_name, &key](std::span<const std::byte> mem) noexcept -> ClassInstanceType {
     if (mem.size() < hash_size + instance_size) [[unlikely]] {
       kphp::log::warning("instance_cache_fetch. shared memory is too small: size -> {}, expected at least -> {}, key -> {}", mem.size(),
                          hash_size + instance_size, key.c_str());
@@ -108,12 +111,12 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
       return {};
     }
 
-    return *reinterpret_cast<const ClassInstanceType*>(mem.data() + hash_size);
+    return *reinterpret_cast<const ClassInstanceType*>(std::next(mem.data(), hash_size));
   }};
 
   auto& request_cache{InstanceCacheInstanceState::get().request_cache};
   if (auto it{request_cache.find(key)}; it != request_cache.end()) {
-    return unwrap(it->second);
+    return materialize(it->second);
   }
 
   auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()})};
@@ -121,7 +124,7 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
     return {};
   }
   request_cache.insert_or_assign(key, get_result.value());
-  return unwrap(get_result.value());
+  return materialize(get_result.value());
 }
 
 inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noexcept {
