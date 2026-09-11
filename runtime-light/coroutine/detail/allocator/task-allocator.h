@@ -133,21 +133,19 @@ public:
     return prev;
   }
 
-  auto start_stack_scope() noexcept -> void {
+  auto request_stack_alloc() noexcept -> void {
     ++m_stack_requests;
   }
 
-  auto end_stack_scope() noexcept -> void {
+  auto consume_stack_alloc_request() noexcept -> void {
     --m_stack_requests;
     m_stack_alloc_used = false;
   }
 
-  auto is_stack_scope() const noexcept -> bool {
-    return m_stack_requests > 0;
-  }
-
-  auto mark_stack_alloc_used() noexcept -> void {
-    kphp::log::assertion(!std::exchange(m_stack_alloc_used, true));
+  auto check_stack_alloc_request() noexcept -> bool {
+    bool stack_alloc_requested{m_stack_requests > 0};
+    kphp::log::assertion(!std::exchange(m_stack_alloc_used, stack_alloc_requested));
+    return stack_alloc_requested;
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {
