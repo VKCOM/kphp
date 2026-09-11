@@ -12,6 +12,7 @@
 #include <memory>
 #include <span>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 #include "runtime-common/stdlib/serialization/json-functions.h"
@@ -99,6 +100,8 @@ struct std::formatter<InstanceState::confdata_sync_error> {
   }
 };
 
+// ================================================================================================
+
 class InstanceState::reader_session final {
   /** Owner that removes a retired piece after this reader disconnects. */
   InstanceState& m_instance_state;
@@ -126,6 +129,8 @@ public:
     return m_sample_id;
   }
 };
+
+// ================================================================================================
 
 InstanceState::confdata_piece::confdata_piece(const creation_token& /* token */, void* memory) noexcept
     : m_memory{memory} {}
@@ -164,13 +169,14 @@ auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t me
     owner.erase(piece_it);
     return std::unexpected{error};
   }
-  if (const auto initialized{piece_it->m_storage.initialize_wildcards(predefined_wildcards)}; !initialized) [[unlikely]] {
+  if (const auto initialized{piece_it->m_storage.initialize_wildcards(predefined_wildcards)}; !initialized)
+      [[unlikely]] { // TODO: initialize_wildcards doesn't handle OOM
     const confdata_sync_error error{.m_stage = confdata_sync_error::stage::wildcard_initialization,
                                     .m_code = static_cast<int32_t>(std::to_underlying(initialized.error()))};
     owner.erase(piece_it);
     return std::unexpected{error};
   }
-  if (piece_it->m_storage.is_oom_threshold_reached()) [[unlikely]] {
+  if (piece_it->m_storage.is_oom_threshold_reached()) [[unlikely]] { // TODO: needs to be check in initialize_wildcards
     const confdata_sync_error error{.m_stage = confdata_sync_error::stage::oom_threshold, .m_code = k2::errno_enomem};
     owner.erase(piece_it);
     return std::unexpected{error};
@@ -197,6 +203,8 @@ auto InstanceState::confdata_piece::has_readers() const noexcept -> bool {
   return m_readers != 0;
 }
 
+// ================================================================================================
+
 auto InstanceState::release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void {
   piece_it->release_sample(sample_id);
   erase_if_retired_and_unused(piece_it);
@@ -205,10 +213,10 @@ auto InstanceState::release_reader(confdata_piece_list::iterator piece_it, kphp:
 auto InstanceState::erase_if_retired_and_unused(confdata_piece_list::iterator piece_it) noexcept -> void {
   kphp::log::assertion(!m_confdata_pieces.empty());
   kphp::log::assertion(piece_it != m_confdata_pieces.end());
-  if (piece_it == std::prev(m_confdata_pieces.end()) || piece_it->has_readers()) {
-    return;
+  // The last piece is current; all preceding pieces are retired
+  if (piece_it != std::prev(m_confdata_pieces.end()) && !piece_it->has_readers()) {
+    m_confdata_pieces.erase(piece_it);
   }
-  m_confdata_pieces.erase(piece_it);
 }
 
 auto InstanceState::init() noexcept -> void {
@@ -274,6 +282,7 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   // can reserve sufficient capacity before insertion. Retain the paginated
   // proxy responses and replay those same bytes after collecting size hints.
   kphp::confdata::storage::sync_size_hints size_hints{};
+
   auto snapshot{co_await kphp::confdata::sync(confdata_proxy_actor, [&size_hints](std::span<const tl::confdata::KeyValuePair> events) noexcept {
     for (const auto& event : events) {
       if (!event.inner.value.value.empty()) {
@@ -288,6 +297,7 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   }
 
   size_hints.finish();
+
   size_t encoded_bytes{};
   for (const auto& page : snapshot->m_pages) {
     encoded_bytes += page.size();
@@ -307,14 +317,14 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   auto sync_editor{piece.storage().start_sync(size_hints)};
   const auto replay_result{kphp::confdata::replay(
       std::move(snapshot->m_pages), [this, &storage = piece.storage(), &sync_editor](std::span<const tl::confdata::KeyValuePair> events) noexcept {
-        return apply_batched_events(storage, sync_editor, events);
+        return apply_events(storage, sync_editor, events);
       })};
   if (!replay_result) [[unlikely]] {
     sync_editor.cancel();
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(replay_result.error()))}};
   }
-  if (report_reached_oom_threshold(piece.storage())) [[unlikely]] {
+  if (report_reached_oom_threshold(piece.storage())) [[unlikely]] { // TODO: do we need this check?
     sync_editor.cancel();
     co_return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::oom_threshold, .m_code = k2::errno_enomem}};
   }
@@ -332,6 +342,9 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::shared_memory_publication, .m_code = static_cast<int32_t>(published.error())}};
   }
+  kphp::log::info("shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", kphp::confdata::SHARED_MEMORY_NAME, diagnostic_sample,
+                  diagnostic_sections, m_pagination.m_offset);
+
   // Only successfully synchronized and published pieces enter the registry,
   // so its last element is always the current piece.
   const auto retired_piece_it{m_confdata_pieces.empty() ? m_confdata_pieces.end() : std::prev(m_confdata_pieces.end())};
@@ -340,13 +353,11 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
     erase_if_retired_and_unused(retired_piece_it);
   }
   m_pagination = std::move(snapshot->m_pagination);
-  kphp::log::info("shared memory published: name -> {}, sample -> {}, sections -> {}, offset -> {}", kphp::confdata::SHARED_MEMORY_NAME, diagnostic_sample,
-                  diagnostic_sections, m_pagination.m_offset);
   co_return std::expected<void, confdata_sync_error>{};
 }
 
 auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
-  const std::string_view confdata_proxy_actor{ComponentState::get().m_confdata_proxy_actor_name};
+  const std::string_view confdata_proxy_actor{m_component_state.m_confdata_proxy_actor_name};
 
   for (;;) {
     if (!m_pagination.m_has_synced) {
@@ -359,8 +370,8 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       m_warmup_status = InstanceState::warmup_status::done;
     }
 
-    auto update{co_await kphp::confdata::update(
-        confdata_proxy_actor, m_pagination, [this](std::span<const tl::confdata::KeyValuePair> events) noexcept { return apply_incremental_events(events); })};
+    auto update{co_await kphp::confdata::update(confdata_proxy_actor, m_pagination,
+                                                [this](std::span<const tl::confdata::KeyValuePair> events) noexcept { return perform_update(events); })};
     // update returns only on error; m_pagination was advanced in place up to the last applied batch
     kphp::log::assertion(!update.has_value());
     switch (update.error()) {
@@ -387,39 +398,39 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
   }
 }
 
-auto InstanceState::apply_batched_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
-                                         std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
-  if (report_reached_oom_threshold(storage)) [[unlikely]] {
-    return false;
-  }
+auto InstanceState::apply_events(kphp::confdata::storage& storage, kphp::confdata::storage::editor& editor,
+                                 std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
+
   for (const auto& event : events) {
+    if (report_reached_oom_threshold(storage)) [[unlikely]] {
+      return false;
+    }
+
     if (event.inner.key.value.size() > kphp::confdata::MAX_KEY_LENGTH) [[unlikely]] {
       kphp::log::warning("confdata event key is too long and was ignored: size -> {}", event.inner.key.value.size());
       continue;
     }
     if (event.inner.value.value.empty()) {
-      static_cast<void>(editor.erase(event.inner.key.value));
+      std::ignore = editor.erase(event.inner.key.value);
     } else {
-      static_cast<void>(editor.upsert(event.inner.key.value, [&event] noexcept { return decode_value(event.inner); }));
-    }
-    if (report_reached_oom_threshold(storage)) [[unlikely]] {
-      return false;
+      std::ignore = editor.upsert(event.inner.key.value, [&event] noexcept { return decode_value(event.inner); });
     }
   }
   return true;
 }
 
-auto InstanceState::apply_incremental_events(std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
+auto InstanceState::perform_update(std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
   kphp::log::assertion(!m_confdata_pieces.empty());
   auto& storage{m_confdata_pieces.back().storage()};
   if (report_reached_oom_threshold(storage)) [[unlikely]] {
     return false;
   }
+
   auto editor{storage.start_update()};
   if (!editor) [[unlikely]] {
     return false;
   }
-  if (!apply_batched_events(storage, *editor, events)) [[unlikely]] {
+  if (!apply_events(storage, *editor, events)) [[unlikely]] {
     return false;
   }
   if (editor->changed()) {
