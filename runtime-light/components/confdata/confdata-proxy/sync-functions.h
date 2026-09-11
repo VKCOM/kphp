@@ -83,7 +83,7 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   encoded_snapshot_page response_buffer{};
   auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
     response_buffer.resize(size);
-    return {response_buffer.data(), response_buffer.size()};
+    return response_buffer;
   })};
   if (!expected_response) [[unlikely]] {
     kphp::log::warning("failed to fetch subscribe response: {}", expected_response.error());
