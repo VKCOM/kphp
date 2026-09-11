@@ -107,6 +107,8 @@ class InstanceState::confdata_piece final {
 
   /** K2 allocation owned and eventually released wholesale by this piece. */
   [[maybe_unused]] void* m_memory{}; // TODO: remove maybe_unused
+  /** Immutable allocation identity used by every lease issued for this piece. */
+  kphp::stl::string<kphp::memory::script_allocator> m_shared_memory_name;
   /** Number of reader sessions that still refer to this piece. */
   size_t m_readers{};
   /** Non-owning writer view over the allocation. */
@@ -126,6 +128,7 @@ public:
                      std::span<const std::string_view> predefined_wildcards) noexcept -> std::expected<confdata_piece_list::iterator, confdata_sync_error>;
 
   auto storage() noexcept -> kphp::confdata::storage&;
+  auto shared_memory_name() const noexcept -> std::string_view;
   auto has_readers() const noexcept -> bool;
   auto acquire_active_sample() noexcept -> kphp::confdata::storage::sample_id;
   auto release_sample(kphp::confdata::storage::sample_id sample_id) noexcept -> void;
