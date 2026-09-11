@@ -65,6 +65,14 @@ auto contextual_tags::try_get() noexcept -> std::optional<std::reference_wrapper
 
 } // namespace kphp::log
 
+namespace kphp::confdata {
+
+auto instance_state::get() noexcept -> instance_state& {
+  return InstanceState::get().confdata_instance_state;
+}
+
+} // namespace kphp::confdata
+
 auto AllocatorState::get() noexcept -> const AllocatorState& {
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
     return instance_state_ptr->instance_allocator_state;
@@ -123,10 +131,6 @@ auto JobWorkerServerInstanceState::get() noexcept -> JobWorkerServerInstanceStat
 
 auto RpcServerInstanceState::get() noexcept -> RpcServerInstanceState& {
   return InstanceState::get().rpc_server_instance_state;
-}
-
-auto ConfdataInstanceState::get() noexcept -> ConfdataInstanceState& {
-  return InstanceState::get().confdata_instance_state;
 }
 
 auto CurlInstanceState::get() noexcept -> CurlInstanceState& {

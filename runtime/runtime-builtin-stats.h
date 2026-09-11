@@ -12,6 +12,7 @@
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 
 template<>
 struct std::hash<kphp::stl::string<kphp::memory::script_allocator>> {

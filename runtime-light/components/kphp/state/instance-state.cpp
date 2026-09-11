@@ -25,6 +25,7 @@
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/confdata/confdata-constants.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
@@ -149,6 +150,12 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
     superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
   }
 
+  if (k2::component_access(kphp::confdata::COMPONENT_LINK_ALIAS) == k2::errno_ok) { // TODO: we want to do it during either component state init or warmup
+    co_await confdata_instance_state.init();
+  } else {
+    kphp::log::info("confdata initialization skipped: component link '{}' is unavailable", kphp::confdata::COMPONENT_LINK_ALIAS);
+  }
+
   if constexpr (kind == image_kind::cli || kind == image_kind::server) {
     // TODO set these headers in CLI and HTTP modes only
     static constexpr std::string_view DEFAULT_SERVER_NAME{"nginx/0.3.33"};
@@ -224,4 +231,5 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session_is_finished = true;
     web_state.session.reset();
   }
+  confdata_instance_state.release();
 }
