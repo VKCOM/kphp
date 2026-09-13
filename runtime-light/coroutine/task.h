@@ -250,7 +250,7 @@ template<typename Task>
 requires(requires {
   { static_cast<kphp::coro::task<>>(std::declval<Task>()) };
 })
-struct stack_task_awaitable {
+struct stack_task_awaitable : vk::not_copyable {
 private:
   Task m_task;
 
@@ -258,7 +258,7 @@ public:
   explicit stack_task_awaitable(Task task) noexcept
       : m_task{std::move(task)} {}
 
-  auto operator co_await() noexcept {
+  auto operator co_await() && noexcept {
     struct awaiter : public kphp::coro::task_impl::awaiter_base<typename Task::promise_type> {
     public:
       explicit awaiter(std::coroutine_handle<typename Task::promise_type> coro) noexcept
@@ -282,9 +282,23 @@ public:
 } // namespace task_impl
 
 /*
- * This macro is used to optimize allocation of task<T>. If this macro is used, task<T>, that returns from provided call, is allocated with stack allocator.
- * If this call is not coroutine call, but just function call, that returns task<T>, in its body its not allowed to create more than one task<T> object
- * (the one it returns). It's strongly recommended to use this macro instead of writing co_await f(1, 2, 3), where f returns task<T>.
+ * This function is used to optimize allocation of task<T>. If this function is used, task<T>, that returns from provided function, is allocated with stack
+ * allocator. If this function is not coroutine, but just function, that returns task<T>, in its body its not allowed to create more than one
+ * task<T> object (the one it returns). Using this function you must co_await returned awaitable immediately after call, otherwise there are no guarantees
+ * that program is correct. It's strongly recommended to use this function instead of writing co_await f(...), where f returns task<T>.
+ */
+template<typename F, typename... Args>
+requires(std::invocable<F, Args...> &&
+         requires {
+           { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result<F, Args...>>()) };
+         })
+auto on_stack(F&& f, Args&&... args) noexcept {
+  kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();
+  return kphp::coro::task_impl::stack_task_awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
+}
+
+/*
+ * This macro is used only in code gen. Use kphp::coro::on_stack function in runtime instead.
  */
 #define CO_AWAIT_TASK_ON_STACK(...)                                                                                                                            \
   (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), kphp::coro::task_impl::stack_task_awaitable{__VA_ARGS__}))
