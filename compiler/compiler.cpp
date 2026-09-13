@@ -61,6 +61,7 @@
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
+#include "compiler/pipes/isolate-interruptible-args.h"
 #include "compiler/pipes/file-to-tokens.h"
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
@@ -299,6 +300,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<CheckUBF>{}
     >> PassC<ExtractResumableCallsPass>{}
     >> PassC<ExtractAsyncPass>{}
+    >> PassC<IsolateInterruptibleArgsPass>{}
     >> PassC<CheckNestedForeachPass>{}
     >> PassC<InlineSimpleFunctions>{}
     >> PassC<CommonAnalyzerPass>{}
