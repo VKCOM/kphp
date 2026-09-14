@@ -107,7 +107,7 @@ template<>
 inline typename array<Unknown>::array_inner* array<Unknown>::array_inner::empty_array() {
   // need this hack because gcc10 and newer complains about
   // "array subscript is outside array bounds of array<Unknown>::array_inner"
-  static array_inner_control empty_array[1]{{
+  static constexpr array_inner_control empty_array[1]{{
       true,
       ExtraRefCnt::for_global_const,
       -1,
@@ -115,7 +115,7 @@ inline typename array<Unknown>::array_inner* array<Unknown>::array_inner::empty_
       0,
       2,
   }};
-  return static_cast<array<Unknown>::array_inner*>(&empty_array[0]);
+  return const_cast<array<Unknown>::array_inner*>(static_cast<const array<Unknown>::array_inner*>(&empty_array[0]));
 }
 
 template<class T>
