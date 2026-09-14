@@ -45,13 +45,13 @@ auto ComponentState::parse_predefined_wildcards_arg(std::string_view value_view)
   size_t line_number{1};
   size_t line_begin{};
   while (line_begin < storage_view.size()) {
-    const size_t line_end{storage_view.find('\n', line_begin)};
+    const size_t line_end{storage_view.find_first_of("\n\r", line_begin)};
+    if (line_end != std::string_view::npos && storage_view[line_end] == '\r') [[unlikely]] {
+      kphp::log::error("{} contains a carriage return: line -> {}", PREDEFINED_WILDCARDS_ARG, line_number);
+    }
     const auto wildcard{storage_view.substr(line_begin, line_end - line_begin)};
     if (wildcard.empty()) [[unlikely]] {
       kphp::log::error("{} contains an empty line: line -> {}", PREDEFINED_WILDCARDS_ARG, line_number);
-    }
-    if (wildcard.contains('\r')) [[unlikely]] {
-      kphp::log::error("{} contains a carriage return: line -> {}", PREDEFINED_WILDCARDS_ARG, line_number);
     }
     if (const auto validated{kphp::confdata::validate_predefined_wildcard(wildcard)}; !validated) [[unlikely]] {
       kphp::log::error("{} contains an invalid wildcard: line -> {}, error -> {}", PREDEFINED_WILDCARDS_ARG, line_number, validated.error());
