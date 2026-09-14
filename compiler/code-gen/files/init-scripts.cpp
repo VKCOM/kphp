@@ -132,7 +132,8 @@ struct RunInterruptedFunction {
     : function(function) {}
 
   void compile(CodeGenerator &W) const {
-    std::string await_prefix = function->is_interruptible ? "co_await " : "";
+    std::string await_prefix = function->is_interruptible ? "CO_AWAIT_TASK_ON_STACK(" : "";
+    std::string await_suffix = function->is_interruptible ? ")" : "";
     std::string try_wrapper = "TRY_CALL_VOID_CORO(void, ";
     std::string image_kind = G->is_output_mode_k2_cli()         ? "image_kind::cli"
                              : G->is_output_mode_k2_server()    ? "image_kind::server"
@@ -140,10 +141,10 @@ struct RunInterruptedFunction {
                              : G->is_output_mode_k2_multishot() ? "image_kind::multishot"
                                                                 : "image_kind::invalid";
 
-    std::string script_start = "co_await InstanceState::get().run_instance_prologue<" + image_kind + ">();";
-    std::string script_finish = "co_await InstanceState::get().run_instance_epilogue();";
+    std::string script_start = "CO_AWAIT_TASK_ON_STACK(InstanceState::get().run_instance_prologue<" + image_kind + ">());";
+    std::string script_finish = "CO_AWAIT_TASK_ON_STACK(InstanceState::get().run_instance_epilogue());";
     FunctionSignatureGenerator(W) << "kphp::coro::task<> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << try_wrapper << await_prefix
-                                  << FunctionName(function) << "());" << NL << script_finish << NL;
+                                  << FunctionName(function) << "()" << await_suffix << ");" << NL << script_finish << NL;
     W << "// Do not wait for all coroutines to complete if requested not to" << NL << "if (ComponentState::get().exit_after_response)" << BEGIN
       << "k2::exit(0);" << NL << END << NL << "co_return;" << NL << END;
     W << NL;

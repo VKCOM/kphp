@@ -479,7 +479,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
 
   bool interruptible_call = G->is_output_mode_k2() && is_interruptible_expr(rhs);
   if (interruptible_call) {
-    W << "co_await ";
+    W << "CO_AWAIT_TASK_ON_STACK(";
   }
 
   W << "NullCoalesce< " << TypeName{type} << " >(";
@@ -531,6 +531,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
     context.inside_null_coalesce_fallback--;
+  }
+
+  if (interruptible_call) {
+    W << ")";
   }
 
   W << ")";
@@ -2058,11 +2062,11 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
   }
   W << BEGIN;
 
-  W << (k2_async_callback ? "co_return(co_await " : "return ") << FunctionName(root->func_id) << "(";
+  W << (k2_async_callback ? "co_return(CO_AWAIT_TASK_ON_STACK(" : "return ") << FunctionName(root->func_id) << "(";
   for (int idx = 1; idx <= root->size(); ++idx) {
     W << "captured" << idx << ", ";
   }
-  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? ")" : "") << ";";
+  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? "))" : "") << ";";
 
   W << NL << END;
   W << UnlockComments{};
