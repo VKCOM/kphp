@@ -65,9 +65,14 @@ kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance,
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::Bool{}.footprint()> response{};
-  if (!CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed([](kphp::component::stream& stream, std::span<const std::byte> request,
-                                                         std::span<std::byte> response) noexcept { return kphp::component::query(stream, request, response); },
-                                                      std::reference_wrapper{stream}, tls.view(), std::span<std::byte>{response}))) [[unlikely]] {
+  auto task{[](kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept {
+    return kphp::component::query(stream, request, response);
+  }};
+  if (!co_await kphp::coro::on_stack(
+          [](auto task, kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept {
+            return kphp::forks::id_managed(std::move(task), std::reference_wrapper{stream}, request, response);
+          },
+          std::move(task), stream, tls.view(), std::span<std::byte>{response})) [[unlikely]] {
     co_return false;
   }
 
@@ -98,8 +103,11 @@ kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, str
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
   auto callback{kphp::component::read_ext::append(response)};
-  if (!CO_AWAIT_TASK_ON_STACK(
-          kphp::forks::id_managed(kphp::component::query<decltype(callback)>, std::reference_wrapper{stream}, tls.view(), std::move(callback)))) [[unlikely]] {
+  if (!co_await kphp::coro::on_stack(
+          [](kphp::component::stream& stream, std::span<const std::byte> request, auto callback) noexcept {
+            return kphp::forks::id_managed(kphp::component::query<decltype(callback)>, std::reference_wrapper{stream}, request, std::move(callback));
+          },
+          stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return InstanceType{};
   }
 
@@ -138,9 +146,14 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t tt
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::Bool{}.footprint()> response{};
-  if (!CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed([](kphp::component::stream& stream, std::span<const std::byte> request,
-                                                         std::span<std::byte> response) noexcept { return kphp::component::query(stream, request, response); },
-                                                      std::reference_wrapper{stream}, tls.view(), std::span<std::byte>{response}))) [[unlikely]] {
+  auto task{[](kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept {
+    return kphp::component::query(stream, request, response);
+  }};
+  if (!co_await kphp::coro::on_stack(
+          [](auto task, kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept {
+            return kphp::forks::id_managed(std::move(task), std::reference_wrapper{stream}, request, response);
+          },
+          std::move(task), stream, tls.view(), std::span<std::byte>{response})) [[unlikely]] {
     co_return false;
   }
 
@@ -164,9 +177,14 @@ inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::Bool{}.footprint()> response{};
-  if (!CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed([](kphp::component::stream& stream, std::span<const std::byte> request,
-                                                         std::span<std::byte> response) noexcept { return kphp::component::query(stream, request, response); },
-                                                      std::reference_wrapper{stream}, tls.view(), std::span<std::byte>{response}))) [[unlikely]] {
+  auto task{[](kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept {
+    return kphp::component::query(stream, request, response);
+  }};
+  if (!co_await kphp::coro::on_stack(
+          [](auto task, kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept {
+            return kphp::forks::id_managed(std::move(task), std::reference_wrapper{stream}, request, response);
+          },
+          std::move(task), stream, tls.view(), std::span<std::byte>{response})) [[unlikely]] {
     co_return false;
   }
 

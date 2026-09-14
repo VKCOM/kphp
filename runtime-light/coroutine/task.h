@@ -250,7 +250,7 @@ template<typename Task>
 requires(requires {
   { static_cast<kphp::coro::task<>>(std::declval<Task>()) };
 })
-struct stack_task_awaitable : vk::not_copyable {
+struct stack_task_awaitable : private vk::not_copyable {
 private:
   Task m_task;
 
@@ -283,16 +283,16 @@ public:
 
 /*
  * This function is used to optimize allocation of task<T>. If this function is used, task<T>, that returns from provided function, is allocated with stack
- * allocator. If this function is not coroutine, but just function, that returns task<T>, in its body its not allowed to create more than one
+ * allocator. If this function is not coroutine, but just function, that returns task<T>, during its call is not allowed to create more than one
  * task<T> object (the one it returns). Using this function you must co_await returned awaitable immediately after call, otherwise there are no guarantees
  * that program is correct. It's strongly recommended to use this function instead of writing co_await f(...), where f returns task<T>.
  */
 template<typename F, typename... Args>
 requires(std::invocable<F, Args...> &&
          requires {
-           { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result<F, Args...>>()) };
+           { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
          })
-auto on_stack(F&& f, Args&&... args) noexcept {
+[[nodiscard]] auto on_stack(F&& f, Args&&... args) noexcept {
   kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();
   return kphp::coro::task_impl::stack_task_awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }

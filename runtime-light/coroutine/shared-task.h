@@ -319,11 +319,24 @@ struct shared_task final {
   }
 
   auto when_ready() const noexcept {
-    using awaiter_base = shared_task_impl::awaiter_base<promise_type>;
-    struct awaiter final : public awaiter_base {
-      using awaiter_base::awaiter_base;
+    struct awaitable {
+    private:
+      std::coroutine_handle<promise_type> m_coro;
+
+    public:
+      explicit awaitable(std::coroutine_handle<promise_type> coro) noexcept
+          : m_coro{coro} {}
+
+      auto operator co_await() noexcept {
+        using awaiter_base = shared_task_impl::awaiter_base<promise_type>;
+        struct awaiter final : public awaiter_base {
+          using awaiter_base::awaiter_base;
+        };
+        return awaiter{m_coro};
+      }
     };
-    return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
+
+    return awaitable{std::coroutine_handle<promise_type>::from_address(m_haddress)};
   }
 
   auto get_handle() const noexcept -> std::coroutine_handle<promise_type> {

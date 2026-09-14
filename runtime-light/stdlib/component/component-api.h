@@ -26,7 +26,7 @@
 namespace kphp::component {
 
 inline auto send_request(kphp::component::stream& stream, std::span<const std::byte> request) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(stream.write_all(request))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::write_all, stream, request)}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
   stream.shutdown_write();
@@ -34,25 +34,25 @@ inline auto send_request(kphp::component::stream& stream, std::span<const std::b
 }
 
 inline auto fetch_response(const kphp::component::stream& stream, std::span<std::byte> response) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
-  co_return CO_AWAIT_TASK_ON_STACK(stream.read(response));
+  co_return co_await kphp::coro::on_stack(&kphp::component::stream::read, stream, response);
 }
 
 template<std::invocable<std::span<const std::byte>> F>
 auto fetch_response(const kphp::component::stream& stream, F f) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  co_return CO_AWAIT_TASK_ON_STACK(stream.read_all(std::move(f)));
+  co_return co_await kphp::coro::on_stack(&kphp::component::stream::read_all<F>, stream, std::move(f));
 }
 
 inline auto fetch_request(const kphp::component::stream& stream, std::span<std::byte> request) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
-  co_return CO_AWAIT_TASK_ON_STACK(stream.read(request));
+  co_return co_await kphp::coro::on_stack(&kphp::component::stream::read, stream, request);
 }
 
 template<std::invocable<std::span<const std::byte>> F>
 auto fetch_request(const kphp::component::stream& stream, F f) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  co_return CO_AWAIT_TASK_ON_STACK(stream.read_all(std::move(f)));
+  co_return co_await kphp::coro::on_stack(&kphp::component::stream::read_all<F>, stream, std::move(f));
 }
 
 inline auto send_response(kphp::component::stream& stream, std::span<const std::byte> response) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(stream.write_all(response))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(&kphp::component::stream::write_all, stream, response)}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
   stream.shutdown_write();
@@ -61,18 +61,19 @@ inline auto send_response(kphp::component::stream& stream, std::span<const std::
 
 inline auto query(kphp::component::stream& stream, std::span<const std::byte> request,
                   std::span<std::byte> response) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(send_request(stream, request))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(send_request, stream, request)}; !expected) [[unlikely]] {
     co_return std::unexpected{expected.error()};
   }
-  co_return CO_AWAIT_TASK_ON_STACK(fetch_response(stream, response));
+  co_return co_await kphp::coro::on_stack(
+      [](kphp::component::stream& stream, std::span<std::byte> response) noexcept { return fetch_response(stream, response); }, stream, response);
 }
 
 template<std::invocable<std::span<const std::byte>> F>
 auto query(kphp::component::stream& stream, std::span<const std::byte> request, F f) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(send_request(stream, request))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(send_request, stream, request)}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(fetch_response(stream, std::move(f)))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::coro::on_stack(fetch_response<F>, stream, std::move(f))}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
   co_return std::expected<void, int32_t>{};
@@ -120,8 +121,11 @@ inline auto f$component_client_send_request(string name, string request) noexcep
 
   auto stream{std::move(*expected_stream)};
   auto request_span{std::span<const char>{request.c_str(), request.size()}};
-  if (auto expected{
-          CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::component::send_request, std::reference_wrapper{stream}, std::as_bytes(request_span)))};
+  if (auto expected{co_await kphp::coro::on_stack(
+          [](kphp::component::stream& stream, std::span<const std::byte> request) noexcept {
+            return kphp::forks::id_managed(kphp::component::send_request, std::reference_wrapper{stream}, request);
+          },
+          stream, std::as_bytes(request_span))};
       !expected) [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
@@ -136,8 +140,11 @@ inline auto f$component_client_fetch_response(class_instance<C$ComponentQuery> q
 
   string response{};
   auto callback{kphp::component::read_ext::append(response)};
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(
-          kphp::forks::id_managed(kphp::component::fetch_response<decltype(callback)>, std::reference_wrapper{query.get()->stream()}, std::move(callback)))};
+  if (auto expected{co_await kphp::coro::on_stack(
+          [](kphp::component::stream& stream, auto callback) noexcept {
+            return kphp::forks::id_managed(kphp::component::fetch_response<decltype(callback)>, std::reference_wrapper{stream}, std::move(callback));
+          },
+          query.get()->stream(), std::move(callback))};
       !expected) [[unlikely]] {
     co_return string{};
   }
@@ -147,7 +154,8 @@ inline auto f$component_client_fetch_response(class_instance<C$ComponentQuery> q
 // === component query server interface ===========================================================
 
 inline auto f$component_server_accept_query() noexcept -> kphp::coro::task<class_instance<C$ComponentQuery>> {
-  auto opt_stream{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed([]() noexcept { return kphp::component::stream::accept(); }))};
+  auto opt_stream{
+      co_await kphp::coro::on_stack([]() noexcept { return kphp::forks::id_managed([]() noexcept { return kphp::component::stream::accept(); }); })};
   if (!opt_stream) [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
@@ -162,8 +170,11 @@ inline auto f$component_server_fetch_request(class_instance<C$ComponentQuery> qu
 
   string request{};
   auto callback{kphp::component::read_ext::append(request)};
-  if (auto expected{CO_AWAIT_TASK_ON_STACK(
-          kphp::forks::id_managed(kphp::component::fetch_request<decltype(callback)>, std::reference_wrapper{query.get()->stream()}, std::move(callback)))};
+  if (auto expected{co_await kphp::coro::on_stack(
+          [](kphp::component::stream& stream, auto callback) noexcept {
+            return kphp::forks::id_managed(kphp::component::fetch_request<decltype(callback)>, std::reference_wrapper{stream}, std::move(callback));
+          },
+          query.get()->stream(), std::move(callback))};
       !expected) [[unlikely]] {
     co_return string{};
   }
@@ -178,5 +189,9 @@ inline auto f$component_server_send_response(class_instance<C$ComponentQuery> qu
 
   auto& stream{query.get()->stream()};
   auto response_span{std::span<const char>{response.c_str(), response.size()}};
-  CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::component::send_response, std::reference_wrapper{stream}, std::as_bytes(response_span)));
+  co_await kphp::coro::on_stack(
+      [](kphp::component::stream& stream, std::span<const std::byte> response) noexcept {
+        return kphp::forks::id_managed(kphp::component::send_response, std::reference_wrapper{stream}, response);
+      },
+      stream, std::as_bytes(response_span));
 }

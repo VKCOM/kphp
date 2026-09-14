@@ -69,8 +69,11 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
   auto callback{kphp::component::read_ext::append(response)};
-  if (!CO_AWAIT_TASK_ON_STACK(
-          kphp::forks::id_managed(kphp::component::query<decltype(callback)>, std::reference_wrapper{stream}, tls.view(), std::move(callback)))) [[unlikely]] {
+  if (!co_await kphp::coro::on_stack(
+          [](kphp::component::stream& stream, std::span<const std::byte> request, auto callback) noexcept {
+            return kphp::forks::id_managed(kphp::component::query<decltype(callback)>, std::reference_wrapper{stream}, request, std::move(callback));
+          },
+          stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return mixed{};
   }
 
@@ -115,8 +118,11 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
   response.reserve(CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY);
   auto callback{kphp::component::read_ext::append(response)};
-  if (!CO_AWAIT_TASK_ON_STACK(
-          kphp::forks::id_managed(kphp::component::query<decltype(callback)>, std::reference_wrapper{stream}, tls.view(), std::move(callback)))) [[unlikely]] {
+  if (!co_await kphp::coro::on_stack(
+          [](kphp::component::stream& stream, std::span<const std::byte> request, auto callback) noexcept {
+            return kphp::forks::id_managed(kphp::component::query<decltype(callback)>, std::reference_wrapper{stream}, request, std::move(callback));
+          },
+          stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return array<mixed>{};
   }
 
