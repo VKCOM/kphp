@@ -483,7 +483,8 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       m_pagination = {};
       break;
     }
-    CO_AWAIT_TASK_ON_STACK(m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL));
+    co_await kphp::coro::on_stack([](kphp::coro::io_scheduler& io_scheduler) noexcept { return io_scheduler.schedule(CONFDATA_RETRY_INTERVAL); },
+                                  m_io_scheduler);
   }
 }
 

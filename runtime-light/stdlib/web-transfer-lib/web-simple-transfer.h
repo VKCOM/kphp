@@ -44,7 +44,9 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
     return {resp_buf.data(), size};
   }};
 
-  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
+  auto resp{co_await kphp::coro::on_stack([](kphp::component::inter_component_session::client& client, std::span<const std::byte> request,
+                                             auto callback) noexcept { return client.query(request, std::move(callback)); },
+                                          (*session).get()->client, tls.view(), std::move(response_buffer_provider))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of Simple descriptor creation");
   }
@@ -92,7 +94,7 @@ inline auto perform(simple::transfer st) noexcept -> kphp::coro::task<std::expec
   tl::storer tls{tl_perform.footprint()};
   tl_perform.store(tls);
 
-  co_return CO_AWAIT_TASK_ON_STACK(details::process_simple_response(tls.view()));
+  co_return co_await kphp::coro::on_stack(details::process_simple_response, tls.view());
 }
 
 inline auto get_response(simple::transfer st) noexcept -> kphp::coro::task<std::expected<response, error>> {
@@ -106,7 +108,7 @@ inline auto get_response(simple::transfer st) noexcept -> kphp::coro::task<std::
   tl::storer tls{web_transfer_get_resp.footprint()};
   web_transfer_get_resp.store(tls);
 
-  co_return CO_AWAIT_TASK_ON_STACK(details::process_simple_response(tls.view()));
+  co_return co_await kphp::coro::on_stack(details::process_simple_response, tls.view());
 }
 
 inline auto reset(simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
@@ -135,7 +137,9 @@ inline auto reset(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
     return {resp_buf.data(), size};
   }};
 
-  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
+  auto resp{co_await kphp::coro::on_stack([](kphp::component::inter_component_session::client& client, std::span<const std::byte> request,
+                                             auto callback) noexcept { return client.query(request, std::move(callback)); },
+                                          (*session).get()->client, tls.view(), std::move(response_buffer_provider))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of Simple descriptor resetting");
   }
@@ -177,8 +181,8 @@ inline auto close(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
   // Checking that Simple transfer is still held by some Composite transfer
   auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
   if (composite_holder.has_value()) {
-    if (auto remove_res{CO_AWAIT_TASK_ON_STACK(
-            kphp::web::composite::remove(kphp::web::composite::transfer{*composite_holder}, kphp::web::simple::transfer{st.descriptor}))};
+    if (auto remove_res{co_await kphp::coro::on_stack(kphp::web::composite::remove, kphp::web::composite::transfer{*composite_holder},
+                                                      kphp::web::simple::transfer{st.descriptor})};
         !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
@@ -194,7 +198,9 @@ inline auto close(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
     return {resp_buf.data(), size};
   }};
 
-  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
+  auto resp{co_await kphp::coro::on_stack([](kphp::component::inter_component_session::client& client, std::span<const std::byte> request,
+                                             auto callback) noexcept { return client.query(request, std::move(callback)); },
+                                          (*session).get()->client, tls.view(), std::move(response_buffer_provider))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of Simple descriptor closing");
   }

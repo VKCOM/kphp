@@ -21,6 +21,7 @@
 
 #include "common/containers/final_action.h"
 #include "common/containers/intrusive-list.h"
+#include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
@@ -28,6 +29,7 @@
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/detail/poll-info.h"
 #include "runtime-light/coroutine/detail/task-self-deleting.h"
 #include "runtime-light/coroutine/detail/timer-handle.h"
@@ -227,7 +229,7 @@ inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_inf
 }
 
 inline auto io_scheduler::make_timeout_task(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<timeout_status> {
-  CO_AWAIT_TASK_ON_STACK(schedule(timeout));
+  co_await kphp::coro::on_stack([this](std::chrono::milliseconds timeout) noexcept { return schedule(timeout); }, timeout);
   co_return timeout_status::timeout;
 }
 
@@ -533,7 +535,7 @@ auto io_scheduler::start(F&& f, Args&&... args) noexcept -> bool {
 }
 
 inline auto io_scheduler::schedule() noexcept {
-  class schedule_operation : private kphp::coro::task_allocator_guard {
+  class schedule_operation {
     friend class io_scheduler;
     io_scheduler& m_scheduler;
     kphp::coro::async_stack_frame* m_async_stack_frame{};
@@ -541,8 +543,7 @@ inline auto io_scheduler::schedule() noexcept {
     kphp::coro::detail::poll_info::schedule_position m_schedule_pos{std::monostate{}};
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
-        : kphp::coro::task_allocator_guard(scheduler.m_coro_instance_state.task_allocator),
-          m_scheduler(scheduler),
+        : m_scheduler(scheduler),
           m_async_stack_frame(m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame) {}
 
   public:
@@ -551,8 +552,7 @@ inline auto io_scheduler::schedule() noexcept {
     schedule_operation& operator=(schedule_operation&&) = delete;
 
     schedule_operation(schedule_operation&& other) noexcept
-        : kphp::coro::task_allocator_guard(std::move(other)),
-          m_scheduler(other.m_scheduler),
+        : m_scheduler(other.m_scheduler),
           m_async_stack_frame(std::exchange(other.m_async_stack_frame, nullptr)),
           m_awaiting_coroutine_node(std::move(other.m_awaiting_coroutine_node)),
           m_schedule_pos(std::exchange(other.m_schedule_pos, std::monostate{})) {
@@ -574,21 +574,36 @@ inline auto io_scheduler::schedule() noexcept {
                  m_schedule_pos);
     }
 
-    constexpr auto await_ready() const noexcept -> bool {
-      return false;
-    }
+    auto operator co_await() noexcept {
+      struct awaiter : private kphp::coro::task_allocator_guard {
+      private:
+        schedule_operation& m_schedule_operation;
 
-    auto await_suspend(std::coroutine_handle<> coroutine) noexcept -> void {
-      m_awaiting_coroutine_node.value() = coroutine;
-      m_scheduler.m_scheduled_coroutines.push_back(m_awaiting_coroutine_node);
-      m_schedule_pos = std::prev(m_scheduler.m_scheduled_coroutines.end());
-    }
+      public:
+        explicit awaiter(schedule_operation& schedule_operation, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
+            : kphp::coro::task_allocator_guard{task_allocator},
+              m_schedule_operation{schedule_operation} {}
 
-    auto await_resume() noexcept -> void {
-      m_schedule_pos = std::monostate{};
-      m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
+        constexpr auto await_ready() const noexcept -> bool {
+          return false;
+        }
+
+        auto await_suspend(std::coroutine_handle<> coroutine) noexcept -> void {
+          m_schedule_operation.m_awaiting_coroutine_node.value() = coroutine;
+          m_schedule_operation.m_scheduler.m_scheduled_coroutines.push_back(m_schedule_operation.m_awaiting_coroutine_node);
+          m_schedule_operation.m_schedule_pos = std::prev(m_schedule_operation.m_scheduler.m_scheduled_coroutines.end());
+        }
+
+        auto await_resume() noexcept -> void {
+          m_schedule_operation.m_schedule_pos = std::monostate{};
+          m_schedule_operation.m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame = m_schedule_operation.m_async_stack_frame;
+        }
+      };
+
+      return awaiter{*this, m_scheduler.m_coro_instance_state.task_allocator};
     }
   };
+
   return schedule_operation{*this};
 }
 
@@ -616,7 +631,7 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 [[nodiscard]] auto
 io_scheduler::schedule(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type> {
   co_await schedule();
-  co_return CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
+  co_return co_await kphp::coro::on_stack(std::move(f), std::move(args)...);
 }
 
 template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
@@ -626,10 +641,11 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
 
   if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
-      CO_AWAIT_TASK_ON_STACK(schedule(std::move(coroutine)));
+      co_await kphp::coro::on_stack([this](coroutine_type coroutine) noexcept { return schedule(std::move(coroutine)); }, std::move(coroutine));
       co_return std::expected<expected_return_type, timeout_status>{};
     } else {
-      co_return std::expected<expected_return_type, timeout_status>{CO_AWAIT_TASK_ON_STACK(schedule(std::move(coroutine)))};
+      co_return std::expected<expected_return_type, timeout_status>{
+          co_await kphp::coro::on_stack([this](coroutine_type coroutine) noexcept { return schedule(std::move(coroutine)); }, std::move(coroutine))};
     }
   }
 
@@ -654,10 +670,12 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 
   if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
-      CO_AWAIT_TASK_ON_STACK(schedule(std::move(f), std::move(args)...));
+      co_await kphp::coro::on_stack([this](F f, Args... args) noexcept { return schedule(std::move(f), std::move(args)...); }, std::move(f),
+                                    std::move(args)...);
       co_return std::expected<expected_return_type, timeout_status>{};
     } else {
-      co_return std::expected<expected_return_type, timeout_status>{CO_AWAIT_TASK_ON_STACK(schedule(std::move(f), std::move(args)...))};
+      co_return std::expected<expected_return_type, timeout_status>{co_await kphp::coro::on_stack(
+          [this](F f, Args... args) noexcept { return schedule(std::move(f), std::move(args)...); }, std::move(f), std::move(args)...)};
     }
   }
 

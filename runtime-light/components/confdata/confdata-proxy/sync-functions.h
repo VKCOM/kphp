@@ -88,12 +88,20 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   })};
 =======
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_buffer{};
+<<<<<<< HEAD
   auto expected_response{
       CO_AWAIT_TASK_ON_STACK(kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
         response_buffer.resize(size);
         return {response_buffer.data(), response_buffer.size()};
       }))};
 >>>>>>> fa1183dc1 (replace on_stack function with macro)
+=======
+  auto callback{[&response_buffer](size_t size) noexcept -> std::span<std::byte> {
+    response_buffer.resize(size);
+    return {response_buffer.data(), response_buffer.size()};
+  }};
+  auto expected_response{co_await kphp::coro::on_stack(kphp::rpc::query::response<decltype(callback)>, std::move(*expected_query), std::move(callback))};
+>>>>>>> 26ce82ae1 (fix bug with allocator switching in shared task awaiter)
   if (!expected_response) [[unlikely]] {
     kphp::log::warning("failed to fetch subscribe response: {}", expected_response.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
@@ -146,8 +154,13 @@ auto sync(std::string_view confdata_proxy_actor,
           event_handler_type event_handler) noexcept -> kphp::coro::task<std::expected<kphp::confdata::pagination, kphp::confdata::subscribe_error>> {
   kphp::confdata::pagination p{};
   for (; !p.m_has_synced;) {
+<<<<<<< HEAD
     if (auto expected{CO_AWAIT_TASK_ON_STACK(details::subscribe(confdata_proxy_actor, p, event_handler))}; !expected) [[unlikely]] {
 >>>>>>> fa1183dc1 (replace on_stack function with macro)
+=======
+    if (auto expected{co_await kphp::coro::on_stack(details::subscribe<decltype(event_handler)>, confdata_proxy_actor, p, event_handler)}; !expected)
+        [[unlikely]] {
+>>>>>>> 26ce82ae1 (fix bug with allocator switching in shared task awaiter)
       co_return std::unexpected{expected.error()};
     }
   }
@@ -200,10 +213,15 @@ auto update(std::string_view confdata_proxy_actor, kphp::confdata::pagination& f
   }
 
   for (;;) {
+<<<<<<< HEAD
     if (auto expected{co_await subscribe(confdata_proxy_actor, from, event_handler)}; !expected) [[unlikely]] {
+=======
+    if (auto expected{co_await kphp::coro::on_stack(details::subscribe<decltype(event_handler)>, confdata_proxy_actor, from, event_handler)}; !expected)
+        [[unlikely]] {
+>>>>>>> 26ce82ae1 (fix bug with allocator switching in shared task awaiter)
       co_return std::unexpected{expected.error()};
     }
-    CO_AWAIT_TASK_ON_STACK(kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL));
+    co_await kphp::coro::on_stack([]() noexcept { return kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL); });
   }
 }
 
