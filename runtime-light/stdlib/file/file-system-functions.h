@@ -237,6 +237,15 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
   return result;
 }
 
+inline bool f$is_dir(const string& name) noexcept {
+  struct stat stat_buf {};
+  // TODO: the semantics in PHP are different: PHP expects stat
+  if (!k2::lstat(name.c_str(), std::addressof(stat_buf)).has_value()) {
+    return false;
+  }
+  return S_ISDIR(stat_buf.st_mode);
+}
+
 inline bool f$is_file(const string& name) noexcept {
   struct stat stat_buf {};
   // TODO: the semantics in PHP are different: PHP expects stat
