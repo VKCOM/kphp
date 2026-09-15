@@ -24,7 +24,8 @@ set(KPHP_CONFDATA_DIAGNOSTICS_SRC
 
 set(KPHP_CONFDATA_SERIALIZATION_SRC
     ${RUNTIME_COMMON_DIR}/stdlib/serialization/json-functions.cpp
-    ${RUNTIME_COMMON_DIR}/stdlib/serialization/serialize-functions.cpp)
+    ${RUNTIME_COMMON_DIR}/stdlib/serialization/serialize-functions.cpp
+    ${RUNTIME_COMMON_DIR}/stdlib/string/string-functions.cpp)
 
 set(KPHP_CONFDATA_RUNTIME_CORE_SRC ${CORE_SRC})
 list(TRANSFORM KPHP_CONFDATA_RUNTIME_CORE_SRC PREPEND "${RUNTIME_COMMON_DIR}/")
