@@ -51,6 +51,9 @@ private:
   /** Owns retired pieces still used by readers followed by the current piece. */
   confdata_piece_list m_confdata_pieces;
 
+  uint64_t m_update_events_count{};
+  uint64_t m_delete_events_count{};
+  kphp::confdata::metrics::events m_events_metrics;
   kphp::confdata::metrics::capacity m_capacity_metrics;
 
 public:
@@ -69,7 +72,8 @@ private:
   auto service_loop() noexcept -> kphp::coro::task<>;
   auto metrics_loop() noexcept -> kphp::coro::task<>;
 
-  auto report_capacity_metrics() noexcept -> void;
+  auto report_events_metrics(uint64_t timestamp) noexcept -> void;
+  auto report_capacity_metrics(uint64_t timestamp) noexcept -> void;
 
   auto release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void;
   auto serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<>;
