@@ -111,7 +111,7 @@ class InstanceState::confdata_piece final {
   };
 
   /** K2 allocation owned and eventually released wholesale by this piece. */
-  [[maybe_unused]] void* m_memory{}; // TODO: remove maybe_unused
+  void* m_memory{};
   /** Immutable allocation identity used by every lease issued for this piece. */
   kphp::stl::string<kphp::memory::script_allocator> m_shared_memory_name;
   /** Number of reader sessions that still refer to this piece. */

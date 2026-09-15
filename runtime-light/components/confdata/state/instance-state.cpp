@@ -27,6 +27,7 @@
 #include "runtime-light/coroutine/event.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/when-all.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/confdata/confdata-reader-lease.h"
 #include "runtime-light/stdlib/confdata/confdata-storage.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -150,10 +151,9 @@ InstanceState::confdata_piece::~confdata_piece() {
   if (m_storage.is_initialized()) {
     m_storage.close();
   }
-  // TODO:
-  // if (const auto released{k2::free_shared_memory(m_memory)}; !released) [[unlikely]] {
-  //   kphp::log::warning("failed to free confdata shared memory: error -> {}", released.error());
-  // }
+  if (const auto released{k2::release_shared_memory(m_memory)}; !released) [[unlikely]] {
+    kphp::log::warning("failed to free confdata shared memory: error -> {}", released.error());
+  }
 }
 
 auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t memory_limit, size_t oom_handling_size,
