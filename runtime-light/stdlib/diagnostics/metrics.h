@@ -212,22 +212,25 @@ public:
 
 // ---------------------------------------------------------------------------------------------------------
 
-struct metric_builder final {
+// If metric_sender is used as a non-const object, send_* calls reuse an internal buffer across calls, avoiding a new allocation each time.
+// If it's const, each send_* call allocates a fresh buffer.
+struct metric_sender final {
 private:
   kphp::stl::string<kphp::memory::script_allocator> metric_name;
   kphp::stl::vector<std::pair<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>>,
                     kphp::memory::script_allocator>
       tags;
+  tl::storer buffer;
 
-  explicit metric_builder(std::string_view metric_name) noexcept
+  explicit metric_sender(std::string_view metric_name) noexcept
       : metric_name{metric_name} {}
 
 public:
-  static metric_builder metric(std::string_view metric_name) noexcept {
-    return metric_builder{metric_name};
+  static metric_sender metric(std::string_view metric_name) noexcept {
+    return metric_sender{metric_name};
   }
 
-  metric_builder& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
+  metric_sender& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
     this->tags.emplace_back(tag_name, tag_value);
     return *this;
   }
@@ -246,6 +249,30 @@ public:
 
   auto send_increment(std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
     return metric::empty().send_increment(this->metric_name, this->tags, timestamp);
+  }
+
+  auto send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    auto [buffer, result]{metric::with_buffer(std::move(this->buffer)).send_value(this->metric_name, this->tags, value, timestamp)};
+    this->buffer = std::move(buffer);
+    return result;
+  }
+
+  auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    auto [buffer, result]{metric::with_buffer(std::move(this->buffer)).send_values_array(this->metric_name, this->tags, values, timestamp)};
+    this->buffer = std::move(buffer);
+    return result;
+  }
+
+  auto send_count(uint32_t count, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    auto [buffer, result]{metric::with_buffer(std::move(this->buffer)).send_count(this->metric_name, this->tags, count, timestamp)};
+    this->buffer = std::move(buffer);
+    return result;
+  }
+
+  auto send_increment(std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    auto [buffer, result]{metric::with_buffer(std::move(this->buffer)).send_increment(this->metric_name, this->tags, timestamp)};
+    this->buffer = std::move(buffer);
+    return result;
   }
 };
 } // namespace kphp::diagnostics
