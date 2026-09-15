@@ -16,25 +16,22 @@ namespace kphp::memory {
 
 pool_allocator::pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_min_extra_mem_size(min_extra_mem_size) {
-  // kphp::log::debug("create pool allocator -> {:p}: script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), script_mem_size,
-  //                 oom_handling_mem_size);
   void* buffer{kphp::memory::platform::alloc(script_mem_size)};
-
   kphp::log::assertion(buffer != nullptr);
-
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-auto pool_allocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void {
+pool_allocator::pool_allocator(external_memory /*unused*/, void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept
+    : m_memory_mode{memory_mode::external_fixed} {
   kphp::log::assertion(buffer != nullptr);
-
-  // kphp::log::debug("init pool allocator -> {:p}: buffer -> {:p}, script memory -> {}, oom handling size -> {}", reinterpret_cast<void*>(this), buffer,
-  //                  script_mem_size, oom_handling_mem_size);
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
 auto pool_allocator::free() noexcept -> void {
-  // kphp::log::debug("free pool allocator -> {:p}", reinterpret_cast<void*>(this));
+  if (m_memory_mode == memory_mode::external_fixed) {
+    return;
+  }
+
   auto* extra_memory{memory_resource.get_extra_memory_head()};
   while (extra_memory->get_pool_payload_size() != 0) {
     auto* extra_memory_to_release{extra_memory};
@@ -94,6 +91,9 @@ auto pool_allocator::free_script_memory(void* mem, size_t size) noexcept -> void
 }
 
 auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> void {
+  // Fixed pools must fail on exhaustion instead of allocating outside their buffer.
+  kphp::log::assertion(m_memory_mode == memory_mode::owned_growable);
+
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
 
@@ -103,12 +103,8 @@ auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> voi
   // The smallest power of two that is not smaller than `extra_mem_size`
   extra_mem_size = std::bit_ceil(extra_mem_size);
 
-  // kphp::log::debug("requested extra memory pool with size {} bytes, will be allocated {} bytes", requested_size, extra_mem_size);
-
   auto* extra_mem{kphp::memory::platform::alloc(extra_mem_size)};
-
   kphp::log::assertion(extra_mem != nullptr);
-
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
 

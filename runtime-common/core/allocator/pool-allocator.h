@@ -12,17 +12,25 @@
 namespace kphp::memory {
 
 struct pool_allocator : private vk::not_copyable {
+  struct external_memory {};
+
 private:
+  enum class memory_mode {
+    owned_growable,
+    external_fixed, // Never grows or releases the externally owned backing buffer.
+  };
+
   memory_resource::unsynchronized_pool_resource memory_resource;
+  memory_mode m_memory_mode{memory_mode::owned_growable};
   size_t m_min_extra_mem_size{0};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void;
 
 public:
-  pool_allocator() = default;
   pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
+  // Borrows the buffer without growing it or releasing it in free().
+  pool_allocator(external_memory, void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
 
-  auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;
   auto free() noexcept -> void;
 
   auto alloc_script_memory(size_t size) noexcept -> void*;

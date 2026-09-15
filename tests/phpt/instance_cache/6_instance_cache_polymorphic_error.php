@@ -4,10 +4,8 @@
 
 require_once 'kphp_tester_include.php';
 
-/** @kphp-immutable-class
- *  @kphp-serializable */
+/** @kphp-immutable-class */
 class A {
-  /** @kphp-serialized-field 0 */
     public $a_id = 1;
 }
 

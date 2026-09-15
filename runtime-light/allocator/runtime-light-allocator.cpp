@@ -3,7 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
-
 #include "runtime-light/allocator/allocator-state.h"
 
 auto RuntimeAllocator::get() noexcept -> RuntimeAllocator& {
@@ -13,26 +12,22 @@ auto RuntimeAllocator::get() noexcept -> RuntimeAllocator& {
 RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_allocator{script_mem_size, min_extra_mem_size, oom_handling_mem_size} {}
 
-auto RuntimeAllocator::init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void {
-  m_allocator.init(buffer, script_mem_size, oom_handling_mem_size);
-}
-
 auto RuntimeAllocator::free() noexcept -> void {
   m_allocator.free();
 }
 
 auto RuntimeAllocator::alloc_script_memory(size_t size) noexcept -> void* {
-  return m_allocator.alloc_script_memory(size);
+  return m_allocator_ref.get().alloc_script_memory(size);
 }
 
 auto RuntimeAllocator::calloc_script_memory(size_t size) noexcept -> void* {
-  return m_allocator.calloc_script_memory(size);
+  return m_allocator_ref.get().calloc_script_memory(size);
 }
 
 auto RuntimeAllocator::realloc_script_memory(void* mem, size_t new_size, size_t old_size) noexcept -> void* {
-  return m_allocator.realloc_script_memory(mem, new_size, old_size);
+  return m_allocator_ref.get().realloc_script_memory(mem, new_size, old_size);
 }
 
 auto RuntimeAllocator::free_script_memory(void* mem, size_t size) noexcept -> void {
-  m_allocator.free_script_memory(mem, size);
+  m_allocator_ref.get().free_script_memory(mem, size);
 }

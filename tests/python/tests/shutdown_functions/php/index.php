@@ -160,10 +160,8 @@ function send_rpc(int $master_port, float $duration, bool $expect_resume = true)
   return $resp["result"];
 }
 
-/** @kphp-immutable-class
- *  @kphp-serializable */
+/** @kphp-immutable-class */
 class InstanceCacheElement {
-  /** @kphp-serialized-field 0 */
   public string $payload;
   function __construct() {
     $this->payload = "i'm in shared memory";

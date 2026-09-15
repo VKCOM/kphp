@@ -340,6 +340,8 @@ void CompilerSettings::init() {
 
   ss << " -I" << kphp_src_path.get() + "objs/include ";
   if (is_k2_mode) {
+    // Generated code and its precompiled header must use the light runtime declarations.
+    ss << " -DRUNTIME_LIGHT";
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
     if (!dynamic_incremental_linkage.get()) {

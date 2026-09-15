@@ -4,12 +4,10 @@ namespace SharedMemoryPieceCopying;
 
 /**
  * @kphp-immutable-class
- *  @kphp-serializable
  */
 class SomeContext {
   /**
    * @var int[]
-   * @kphp-serialized-field 0
    */
   public $some_data = [];
 
