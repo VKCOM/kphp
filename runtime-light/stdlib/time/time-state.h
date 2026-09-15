@@ -5,8 +5,10 @@
 #pragma once
 
 #include <optional>
+#include <string_view>
 
 #include "common/mixin/not_copyable.h"
+#include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime-light/core/reference-counter/reference-counter-functions.h"
@@ -21,6 +23,15 @@ struct TimeImageState final : private vk::not_copyable {
   string WARNINGS_STR{WARNINGS_.data(), static_cast<string::size_type>(WARNINGS_.size())};
   string ERROR_COUNT_STR{ERROR_COUNT_.data(), static_cast<string::size_type>(ERROR_COUNT_.size())};
   string ERRORS_STR{ERRORS_.data(), static_cast<string::size_type>(ERRORS_.size())};
+  string TM_SEC_STR{TM_SEC_.data(), static_cast<string::size_type>(TM_SEC_.size())};
+  string TM_MIN_STR{TM_MIN_.data(), static_cast<string::size_type>(TM_MIN_.size())};
+  string TM_HOUR_STR{TM_HOUR_.data(), static_cast<string::size_type>(TM_HOUR_.size())};
+  string TM_MDAY_STR{TM_MDAY_.data(), static_cast<string::size_type>(TM_MDAY_.size())};
+  string TM_MON_STR{TM_MON_.data(), static_cast<string::size_type>(TM_MON_.size())};
+  string TM_YEAR_STR{TM_YEAR_.data(), static_cast<string::size_type>(TM_YEAR_.size())};
+  string TM_WDAY_STR{TM_WDAY_.data(), static_cast<string::size_type>(TM_WDAY_.size())};
+  string TM_YDAY_STR{TM_YDAY_.data(), static_cast<string::size_type>(TM_YDAY_.size())};
+  string TM_ISDST_STR{TM_ISDST_.data(), static_cast<string::size_type>(TM_ISDST_.size())};
 
   kphp::timelib::timezone_cache timelib_zone_cache{kphp::timelib::timezones::MOSCOW, kphp::timelib::timezones::GMT3};
 
@@ -35,6 +46,24 @@ struct TimeImageState final : private vk::not_copyable {
                           kphp::core::is_reference_counter_recursive(ERROR_COUNT_STR, ExtraRefCnt::for_global_const)));
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(ERRORS_STR, ExtraRefCnt::for_global_const),
                           kphp::core::is_reference_counter_recursive(ERRORS_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_SEC_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_SEC_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_MIN_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_MIN_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_HOUR_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_HOUR_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_MDAY_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_MDAY_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_MON_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_MON_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_YEAR_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_YEAR_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_WDAY_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_WDAY_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_YDAY_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_YDAY_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(TM_ISDST_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(TM_ISDST_STR, ExtraRefCnt::for_global_const)));
   }
 
   static const TimeImageState& get() noexcept;
@@ -46,6 +75,15 @@ private:
   static constexpr std::string_view WARNINGS_ = "warnings";
   static constexpr std::string_view ERROR_COUNT_ = "error_count";
   static constexpr std::string_view ERRORS_ = "errors";
+  static constexpr std::string_view TM_SEC_ = "tm_sec";
+  static constexpr std::string_view TM_MIN_ = "tm_min";
+  static constexpr std::string_view TM_HOUR_ = "tm_hour";
+  static constexpr std::string_view TM_MDAY_ = "tm_mday";
+  static constexpr std::string_view TM_MON_ = "tm_mon";
+  static constexpr std::string_view TM_YEAR_ = "tm_year";
+  static constexpr std::string_view TM_WDAY_ = "tm_wday";
+  static constexpr std::string_view TM_YDAY_ = "tm_yday";
+  static constexpr std::string_view TM_ISDST_ = "tm_isdst";
 };
 
 struct TimeInstanceState final : private vk::not_copyable {

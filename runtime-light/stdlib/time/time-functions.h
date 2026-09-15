@@ -193,15 +193,15 @@ inline array<mixed> f$localtime(int64_t timestamp = std::numeric_limits<int64_t>
 
   array<mixed> result{array_size{9, false}};
 
-  result.set_value(string{"tm_sec", 6}, t.tm_sec);
-  result.set_value(string{"tm_min", 6}, t.tm_min);
-  result.set_value(string{"tm_hour", 7}, t.tm_hour);
-  result.set_value(string{"tm_mday", 7}, t.tm_mday);
-  result.set_value(string{"tm_mon", 6}, t.tm_mon);
-  result.set_value(string{"tm_year", 7}, t.tm_year);
-  result.set_value(string{"tm_wday", 7}, t.tm_wday);
-  result.set_value(string{"tm_yday", 7}, t.tm_yday);
-  result.set_value(string{"tm_isdst", 8}, t.tm_isdst);
+  result.set_value(TimeImageState::get().TM_SEC_STR, t.tm_sec);
+  result.set_value(TimeImageState::get().TM_MIN_STR, t.tm_min);
+  result.set_value(TimeImageState::get().TM_HOUR_STR, t.tm_hour);
+  result.set_value(TimeImageState::get().TM_MDAY_STR, t.tm_mday);
+  result.set_value(TimeImageState::get().TM_MON_STR, t.tm_mon);
+  result.set_value(TimeImageState::get().TM_YEAR_STR, t.tm_year);
+  result.set_value(TimeImageState::get().TM_WDAY_STR, t.tm_wday);
+  result.set_value(TimeImageState::get().TM_YDAY_STR, t.tm_yday);
+  result.set_value(TimeImageState::get().TM_ISDST_STR, t.tm_isdst);
 
   return result;
 }
