@@ -490,6 +490,7 @@ void http_return(connection *c, const char *str, int len) {
   if (len < 0) {
     len = (int)strlen(str);
   }
+  get_http_return_code() = 500;
   write_basic_http_header(c, 500, 0, len, no_cache_headers, "text/plain; charset=UTF-8");
   write_out(&c->Out, str, len);
 }
