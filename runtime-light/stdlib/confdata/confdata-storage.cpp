@@ -242,20 +242,27 @@ storage::editor::editor(editor&& other) noexcept
       m_values{std::move(other.m_values)},
       m_retired_allocations{std::move(other.m_retired_allocations)},
       m_last_retired_value{std::move(other.m_last_retired_value)},
-      m_changed{other.m_changed} {}
+      m_changed{other.m_changed},
+      m_memory_exhausted{other.m_memory_exhausted} {}
 
 storage::editor::~editor() {
   cancel();
 }
 
-auto storage::editor::erase(std::string_view key) noexcept -> bool {
+auto storage::editor::erase(std::string_view key) noexcept -> std::expected<bool, mutation_error> {
   kphp::log::assertion(m_owner != nullptr);
+  if (m_memory_exhausted) [[unlikely]] {
+    return std::unexpected{mutation_error::not_enough_memory};
+  }
   bool erased{};
   m_owner->with_storage_allocator([this, key, &erased] noexcept {
     erased = apply_erase(key);
     m_last_retired_value.clear();
   });
   m_changed = erased || m_changed;
+  if (m_memory_exhausted) [[unlikely]] {
+    return std::unexpected{mutation_error::not_enough_memory};
+  }
   return erased;
 }
 
@@ -274,6 +281,11 @@ auto storage::editor::cancel() noexcept -> void {
   }
 }
 
+auto storage::editor::check_has_enough_memory(std::initializer_list<size_t> allocations) noexcept -> bool {
+  m_memory_exhausted = m_memory_exhausted || !m_owner->has_enough_memory(allocations);
+  return !m_memory_exhausted;
+}
+
 auto storage::editor::apply_upsert(std::string_view key, const mixed& value) noexcept -> bool {
   const auto implicit_views{split_key(key)};
   if (!implicit_views) [[unlikely]] {
@@ -283,14 +295,17 @@ auto storage::editor::apply_upsert(std::string_view key, const mixed& value) noe
   bool changed{};
   const bool has_predefined_wildcard{
       m_owner->m_state->m_wildcards.for_each_matching_wildcard(key, [this, key, &value, &changed](std::string_view wildcard) noexcept {
+        if (m_memory_exhausted) [[unlikely]] {
+          return;
+        }
         const auto views{split_key_with_predefined_wildcard(key, wildcard.size())};
         kphp::log::assertion(views.has_value());
         changed = upsert_one(*views, value) || changed;
       })};
 
-  if (!has_predefined_wildcard || implicit_views->kind() != section_kind::simple_key) {
+  if (!m_memory_exhausted && (!has_predefined_wildcard || implicit_views->kind() != section_kind::simple_key)) {
     changed = upsert_one(*implicit_views, value) || changed;
-    if (implicit_views->kind() == section_kind::two_dots_wildcard) {
+    if (!m_memory_exhausted && implicit_views->kind() == section_kind::two_dots_wildcard) {
       const auto one_dot_views{implicit_views->reinterpret_two_dots_as_one_dot()};
       kphp::log::assertion(one_dot_views.has_value());
       changed = upsert_one(*one_dot_views, value) || changed;
@@ -307,14 +322,17 @@ auto storage::editor::apply_erase(std::string_view key) noexcept -> bool {
 
   bool erased{};
   const bool has_predefined_wildcard{m_owner->m_state->m_wildcards.for_each_matching_wildcard(key, [this, key, &erased](std::string_view wildcard) noexcept {
+    if (m_memory_exhausted) [[unlikely]] {
+      return;
+    }
     const auto views{split_key_with_predefined_wildcard(key, wildcard.size())};
     kphp::log::assertion(views.has_value());
     erased = erase_one(*views) || erased;
   })};
 
-  if (!has_predefined_wildcard || implicit_views->kind() != section_kind::simple_key) {
+  if (!m_memory_exhausted && (!has_predefined_wildcard || implicit_views->kind() != section_kind::simple_key)) {
     erased = erase_one(*implicit_views) || erased;
-    if (implicit_views->kind() == section_kind::two_dots_wildcard) {
+    if (!m_memory_exhausted && implicit_views->kind() == section_kind::two_dots_wildcard) {
       const auto one_dot_views{implicit_views->reinterpret_two_dots_as_one_dot()};
       kphp::log::assertion(one_dot_views.has_value());
       erased = erase_one(*one_dot_views) || erased;
@@ -328,18 +346,28 @@ auto storage::editor::upsert_one(const key_views& views, const mixed& value) noe
   auto section_it{m_values.find(handles.section())};
 
   if (section_it == m_values.end()) {
+    const auto section_bytes{handles.section().estimate_memory_usage()};
+    constexpr auto node_bytes{map_type::allocator_type::max_value_type_size()};
     if (views.kind() == section_kind::simple_key) {
+      if (!check_has_enough_memory({section_bytes, node_bytes})) [[unlikely]] {
+        return false;
+      }
       m_values.emplace(handles.make_section_copy(), value);
     } else {
+      const auto size_hint{m_sync_size_hints.has_value() ? m_sync_size_hints->get().section_size(views.section()) : 0};
+      kphp::log::assertion(size_hint <= static_cast<size_t>(std::numeric_limits<int64_t>::max()));
+      // An empty vector becomes a map with capacity for size + 4 on string-key insertion.
+      const auto array_bytes{array<mixed>::estimate_size(static_cast<int64_t>(size_hint != 0 ? size_hint : 4), false)};
+      const auto remainder_bytes{handles.remainder().is_string() ? handles.remainder().as_string().estimate_memory_usage() : 0};
+      if (!check_has_enough_memory({section_bytes, node_bytes, remainder_bytes, array_bytes})) [[unlikely]] {
+        return false;
+      }
       array<mixed> entries{};
-      if (m_sync_size_hints.has_value()) {
-        const auto size_hint{m_sync_size_hints->get().section_size(views.section())};
-        if (size_hint != 0) {
-          kphp::log::assertion(size_hint <= static_cast<size_t>(std::numeric_limits<int64_t>::max()));
-          entries = array<mixed>{array_size{static_cast<int64_t>(size_hint), false}};
-        }
+      if (size_hint != 0) {
+        entries = array<mixed>{array_size{static_cast<int64_t>(size_hint), false}};
       }
       entries.set_value(handles.make_remainder_copy(), value);
+      kphp::log::assertion(entries.get_reference_counter() == 1);
       m_values.emplace(handles.make_section_copy(), mixed{std::move(entries)});
     }
     return true;
@@ -347,6 +375,9 @@ auto storage::editor::upsert_one(const key_views& views, const mixed& value) noe
 
   if (views.kind() == section_kind::simple_key) {
     if (equals(section_it->second, value)) {
+      return false;
+    }
+    if (!check_has_enough_memory({retired_list::allocator_type::max_value_type_size()})) [[unlikely]] {
       return false;
     }
     retire_value(section_it->second);
@@ -361,12 +392,26 @@ auto storage::editor::upsert_one(const key_views& views, const mixed& value) noe
     return false;
   }
 
+  // Legacy reserves three array copies for detachment and insertion growth.
+  // Also cover vector-to-map conversion and shared retirement-list nodes.
+  const auto array_bytes{entries.calculate_memory_for_copying()};
+  const auto conversion_bytes{entries.is_vector() && previous == nullptr && (handles.remainder().is_string() || handles.remainder().as_int() != entries.count())
+                                  ? array<mixed>::estimate_size(static_cast<int64_t>(entries.count()) + 4, false)
+                                  : 0};
+  const auto remainder_bytes{previous == nullptr && handles.remainder().is_string() ? handles.remainder().as_string().estimate_memory_usage() : 0};
+  constexpr auto retired_node_bytes{retired_list::allocator_type::max_value_type_size()};
+  if (!check_has_enough_memory({array_bytes, array_bytes, array_bytes, conversion_bytes, remainder_bytes, retired_node_bytes, retired_node_bytes}))
+      [[unlikely]] {
+    return false;
+  }
   retire_for_shallow_destruction(mixed{entries});
   if (previous == nullptr) {
     entries.set_value(handles.make_remainder_copy(), value);
+    kphp::log::assertion(entries.get_reference_counter() == 1);
   } else {
     retire_value(*previous);
     entries.mutate_if_shared();
+    kphp::log::assertion(entries.get_reference_counter() == 1);
     auto entry_it{entries.find_no_mutate(handles.remainder())};
     kphp::log::assertion(entry_it != entries.end());
     entry_it.get_value() = value;
@@ -382,6 +427,10 @@ auto storage::editor::erase_one(const key_views& views) noexcept -> bool {
   }
 
   if (views.kind() == section_kind::simple_key) {
+    constexpr auto retired_node_bytes{retired_list::allocator_type::max_value_type_size()};
+    if (!check_has_enough_memory({retired_node_bytes, retired_node_bytes})) [[unlikely]] {
+      return false;
+    }
     retire_value(section_it->second);
     retire_for_shallow_destruction(mixed{section_it->first});
     m_values.erase(section_it);
@@ -394,8 +443,19 @@ auto storage::editor::erase_one(const key_views& views) noexcept -> bool {
     return false;
   }
 
+  const auto array_bytes{entries.get_reference_counter() > 1 ? entries.calculate_memory_for_copying() : 0};
+  // Removing a non-tail vector entry converts it to a map after detachment.
+  const auto conversion_bytes{entries.is_vector() && handles.remainder().as_int() != entries.count() - 1
+                                  ? array<mixed>::estimate_size(static_cast<int64_t>(entries.count()) + 4, false)
+                                  : 0};
+  constexpr auto retired_node_bytes{retired_list::allocator_type::max_value_type_size()};
+  // Detached array, entry key/value, and the section key if the array becomes empty.
+  if (!check_has_enough_memory({array_bytes, conversion_bytes, retired_node_bytes, retired_node_bytes, retired_node_bytes, retired_node_bytes})) [[unlikely]] {
+    return false;
+  }
   retire_for_shallow_destruction(mixed{entries});
   entries.mutate_if_shared();
+  kphp::log::assertion(entries.get_reference_counter() == 1);
   auto entry_it{entries.find_no_mutate(handles.remainder())};
   kphp::log::assertion(entry_it != entries.end());
   if (entry_it.is_string_key()) {
@@ -606,6 +666,19 @@ auto storage::resource() noexcept -> resource_type& {
   return allocator().get_memory_resource();
 }
 
+auto storage::has_enough_memory(std::initializer_list<size_t> allocations) noexcept -> bool {
+  size_t required_bytes{};
+  for (const auto bytes : allocations) {
+    const auto aligned_bytes{memory_resource::details::align_for_chunk(bytes)};
+    if (aligned_bytes < bytes || aligned_bytes > std::numeric_limits<size_t>::max() - required_bytes) [[unlikely]] {
+      return false;
+    }
+    required_bytes += aligned_bytes;
+  }
+  const auto usage{memory_usage()};
+  return usage.m_used < usage.m_oom_threshold && required_bytes < usage.m_oom_threshold - usage.m_used && resource().is_enough_memory_for(required_bytes);
+}
+
 auto storage::begin_update(bool copy_active_sample, sync_size_hints_ref size_hints) noexcept -> std::optional<editor> {
   kphp::log::assertion(!m_update_in_progress);
   kphp::log::assertion(is_valid_sample_id(m_active_sample));
@@ -618,9 +691,7 @@ auto storage::begin_update(bool copy_active_sample, sync_size_hints_ref size_hin
       return std::nullopt;
     }
     const auto required_size{active_size * max_node_size};
-    const auto usage{memory_usage()};
-    if (usage.m_used >= usage.m_oom_threshold || required_size >= usage.m_oom_threshold - usage.m_used || !resource().is_enough_memory_for(required_size))
-        [[unlikely]] {
+    if (!has_enough_memory({required_size})) [[unlikely]] {
       return std::nullopt;
     }
   }
@@ -642,6 +713,7 @@ auto storage::commit(editor& update) noexcept -> void {
   kphp::log::assertion(update.m_owner == this);
   kphp::log::assertion(is_valid_sample_id(update.m_destination));
   kphp::log::assertion(update.m_last_retired_value.is_null());
+  kphp::log::assertion(!update.m_memory_exhausted);
 
   with_storage_allocator([this, &update] noexcept {
     for (auto& [section, value] : update.m_values) {

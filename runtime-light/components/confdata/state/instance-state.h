@@ -89,6 +89,7 @@ struct InstanceState::confdata_sync_error final {
     wildcard_initialization,
     oom_threshold,
     synchronization,
+    replay,
     shared_memory_publication
   };
 

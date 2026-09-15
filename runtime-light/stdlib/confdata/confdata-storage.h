@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <optional>
 #include <span>
@@ -30,6 +31,8 @@
 namespace kphp::confdata {
 
 enum class storage_error : uint8_t { misaligned_buffer, insufficient_buffer, size_overflow, memory_limit_exceeded, invalid_oom_handling_size, invalid_storage };
+
+enum class mutation_error : uint8_t { not_enough_memory };
 
 struct storage_memory_usage final {
   /** Outstanding allocator bytes, including objects awaiting reclamation. */
@@ -170,6 +173,7 @@ private:
 
   auto allocator() noexcept -> kphp::memory::pool_allocator&;
   auto resource() noexcept -> resource_type&;
+  auto has_enough_memory(std::initializer_list<size_t> allocations) noexcept -> bool;
   auto begin_update(bool copy_active_sample, sync_size_hints_ref size_hints = {}) noexcept -> std::optional<editor>;
   auto commit(editor& update) noexcept -> void;
   auto cancel(editor& update) noexcept -> void;
@@ -256,9 +260,12 @@ class storage::editor final {
   /** Deduplicates the same logical value stored in multiple wildcard sections. */
   mixed m_last_retired_value;
   bool m_changed{};
+  /** A failed preflight makes the entire unpublished batch uncommittable. */
+  bool m_memory_exhausted{};
 
   editor(storage& owner, sample_id destination, bool copy_active_sample, sync_size_hints_ref size_hints) noexcept;
 
+  auto check_has_enough_memory(std::initializer_list<size_t> allocations) noexcept -> bool;
   auto apply_upsert(std::string_view key, const mixed& value) noexcept -> bool;
   auto apply_erase(std::string_view key) noexcept -> bool;
   auto upsert_one(const key_views& views, const mixed& value) noexcept -> bool;
@@ -277,12 +284,15 @@ public:
   /**
    * Constructs `value_factory()` under this piece's shared allocator and
    * applies the resulting value to every denormalized representation of `key`.
+   * `encoded_value_size` supplies the legacy 10x decoding memory estimate.
+   * On memory failure, this editor must be cancelled; earlier changes are unpublished.
    */
   template<std::invocable value_factory_type>
   requires std::same_as<std::invoke_result_t<value_factory_type>, mixed> && std::is_nothrow_invocable_v<value_factory_type>
-  auto upsert(std::string_view key, value_factory_type&& value_factory) noexcept -> bool;
+  [[nodiscard]] auto upsert(std::string_view key, size_t encoded_value_size,
+                            value_factory_type&& value_factory) noexcept -> std::expected<bool, mutation_error>;
   /** Applies one deletion to every denormalized representation of `key`. */
-  auto erase(std::string_view key) noexcept -> bool;
+  [[nodiscard]] auto erase(std::string_view key) noexcept -> std::expected<bool, mutation_error>;
   auto changed() const noexcept -> bool;
   /** Atomically publishes this working copy as the active sample. */
   auto commit() noexcept -> void;
@@ -292,8 +302,18 @@ public:
 
 template<std::invocable value_factory_type>
 requires std::same_as<std::invoke_result_t<value_factory_type>, mixed> && std::is_nothrow_invocable_v<value_factory_type>
-auto storage::editor::upsert(std::string_view key, value_factory_type&& value_factory) noexcept -> bool {
+auto storage::editor::upsert(std::string_view key, size_t encoded_value_size,
+                             value_factory_type&& value_factory) noexcept -> std::expected<bool, mutation_error> {
   kphp::log::assertion(m_owner != nullptr);
+  // Match legacy confdata's heuristic decoding allowance. Include a string
+  // header so small raw values also fit, and reject arithmetic overflow.
+  constexpr size_t decoding_factor{10};
+  const auto value_bytes{encoded_value_size > std::numeric_limits<size_t>::max() / decoding_factor ? std::numeric_limits<size_t>::max()
+                                                                                                   : encoded_value_size * decoding_factor};
+  if (!check_has_enough_memory({value_bytes, string::estimate_memory_usage(0)})) [[unlikely]] {
+    return std::unexpected{mutation_error::not_enough_memory};
+  }
+
   bool changed{};
   m_owner->with_storage_allocator([this, key, &value_factory, &changed] noexcept {
     const mixed value{std::invoke(std::forward<value_factory_type>(value_factory))};
@@ -301,6 +321,9 @@ auto storage::editor::upsert(std::string_view key, value_factory_type&& value_fa
     m_last_retired_value.clear();
   });
   m_changed = changed || m_changed;
+  if (m_memory_exhausted) [[unlikely]] {
+    return std::unexpected{mutation_error::not_enough_memory};
+  }
   return changed;
 }
 

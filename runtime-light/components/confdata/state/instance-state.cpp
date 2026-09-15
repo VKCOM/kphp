@@ -14,7 +14,6 @@
 #include <memory>
 #include <span>
 #include <string_view>
-#include <tuple>
 #include <utility>
 
 #include "runtime-common/stdlib/serialization/json-functions.h"
@@ -33,8 +32,8 @@
 
 namespace {
 
-constexpr auto CONFDATA_RETRY_INTERVAL{std::chrono::seconds{1}};
-constexpr auto CONFDATA_METRICS_INTERVAL{std::chrono::seconds{1}};
+constexpr auto CONFDATA_RETRY_INTERVAL{std::chrono::seconds{3}};
+constexpr auto CONFDATA_METRICS_INTERVAL{CONFDATA_RETRY_INTERVAL};
 
 // Event decoding stays component-local: only the writer sees serialization
 // flags, while readers consume the already-decoded shared `mixed` values.
@@ -49,16 +48,6 @@ auto decode_value(const tl::confdata::keyValuePair& event) noexcept -> mixed {
     return json_decode(event.value.value).value_or(mixed{});
   }
   return string{event.value.value.data(), static_cast<string::size_type>(event.value.value.size())};
-}
-
-auto report_reached_oom_threshold(const kphp::confdata::storage& storage) noexcept -> bool {
-  if (!storage.is_oom_threshold_reached()) {
-    return false;
-  }
-  const auto usage{storage.memory_usage()};
-  kphp::log::warning("confdata shared-memory OOM threshold reached: used -> {}, threshold -> {}, capacity -> {}", usage.m_used, usage.m_oom_threshold,
-                     usage.m_capacity);
-  return true;
 }
 
 } // namespace
@@ -93,6 +82,9 @@ struct std::formatter<InstanceState::confdata_sync_error> {
       break;
     case stage::synchronization:
       stage_name = "clean synchronization";
+      break;
+    case stage::replay:
+      stage_name = "snapshot replay";
       break;
     case stage::shared_memory_publication:
       stage_name = "shared memory publication";
@@ -255,17 +247,14 @@ auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
 }
 
 auto InstanceState::report_capacity_metrics() noexcept -> void {
-  bool reported_error{};
-  const auto send{
-      [&reported_error]<size_t count>(const std::array<kphp::diagnostics::metric_builder, count>& builders, const std::array<size_t, count>& values) noexcept {
-        for (size_t i{0}; i < count; ++i) {
-          const auto [_, result]{builders[i].send_value(static_cast<double>(values[i]))}; // FIXME: we can eliminate allocations here
-          if (!result && !reported_error) [[unlikely]] {
-            kphp::log::warning("failed to report confdata capacity metrics: error -> {}", result.error());
-            reported_error = true;
-          }
-        }
-      }};
+  constexpr auto send{[]<size_t count>(const std::array<kphp::diagnostics::metric_builder, count>& builders, const std::array<size_t, count>& values) noexcept {
+    for (size_t i{0}; i < count; ++i) {
+      const auto [_, result]{builders[i].send_value(static_cast<double>(values[i]))}; // FIXME: we can eliminate allocations here
+      if (!result) [[unlikely]] {
+        kphp::log::warning("failed to report confdata capacity metrics: error -> {}", result.error());
+      }
+    }
+  }};
 
   if (!m_confdata_pieces.empty()) {
     auto& current{m_confdata_pieces.back().storage()};
@@ -339,7 +328,6 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(snapshot.error()))}};
   }
-
   size_hints.finish();
 
   size_t encoded_bytes{};
@@ -366,10 +354,10 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   if (!replay_result) [[unlikely]] {
     sync_editor.cancel();
     co_return std::unexpected{
-        confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(replay_result.error()))}};
+        confdata_sync_error{.m_stage = confdata_sync_error::stage::replay, .m_code = static_cast<int32_t>(std::to_underlying(replay_result.error()))}};
   }
-
   sync_editor.commit();
+
   const auto diagnostic_sample{piece.storage().acquire_active_sample()};
   const auto diagnostic_sections{piece.storage().values(diagnostic_sample).size()};
   piece.storage().release_sample(diagnostic_sample);
@@ -441,18 +429,18 @@ auto InstanceState::apply_events(kphp::confdata::storage& storage, kphp::confdat
                                  std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
 
   for (const auto& event : events) {
-    if (report_reached_oom_threshold(storage)) [[unlikely]] {
-      return false;
-    }
-
     if (event.inner.key.value.size() > kphp::confdata::MAX_KEY_LENGTH) [[unlikely]] {
       kphp::log::warning("confdata event key is too long and was ignored: size -> {}", event.inner.key.value.size());
       continue;
     }
-    if (event.inner.value.value.empty()) {
-      std::ignore = editor.erase(event.inner.key.value);
-    } else {
-      std::ignore = editor.upsert(event.inner.key.value, [&event] noexcept { return decode_value(event.inner); });
+    const auto applied{event.inner.value.value.empty()
+                           ? editor.erase(event.inner.key.value)
+                           : editor.upsert(event.inner.key.value, event.inner.value.value.size(), [&event] noexcept { return decode_value(event.inner); })};
+    if (!applied) [[unlikely]] {
+      const auto usage{storage.memory_usage()};
+      kphp::log::warning("not enough confdata shared memory to apply event: key -> {}, used -> {}, threshold -> {}, capacity -> {}", event.inner.key.value,
+                         usage.m_used, usage.m_oom_threshold, usage.m_capacity);
+      return false;
     }
   }
   return true;
@@ -461,10 +449,6 @@ auto InstanceState::apply_events(kphp::confdata::storage& storage, kphp::confdat
 auto InstanceState::perform_update(std::span<const tl::confdata::KeyValuePair> events) noexcept -> bool {
   kphp::log::assertion(!m_confdata_pieces.empty());
   auto& storage{m_confdata_pieces.back().storage()};
-  if (report_reached_oom_threshold(storage)) [[unlikely]] {
-    return false;
-  }
-
   auto editor{storage.start_update()};
   if (!editor) [[unlikely]] {
     return false;
