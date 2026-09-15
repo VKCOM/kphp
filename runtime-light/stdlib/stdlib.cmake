@@ -2,6 +2,7 @@ prepend(
   RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
   confdata/confdata-functions.cpp
+  cpu-info/cpu-info-state.cpp
   crypto/crypto-functions.cpp
   diagnostics/backtrace.cpp
   diagnostics/php-assert.cpp
