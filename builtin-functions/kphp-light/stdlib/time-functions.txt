@@ -18,6 +18,8 @@ function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: strin
 function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN,
                    $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
 
+function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
+
 function time() ::: int;
 
 function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
@@ -140,7 +142,5 @@ define('DATE_RFC3339', "Y-m-d\TH:i:sP");
 define('DATE_RSS', "D, d M Y H:i:s O");
 define('DATE_W3C', "Y-m-d\TH:i:sP");
 
-/** @kphp-extern-func-info stub generation-required */
-function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
 /** @kphp-extern-func-info stub generation-required */
 function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;

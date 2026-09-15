@@ -112,12 +112,6 @@ function test() {
 
     #var_dump (getdate());
     var_dump (getdate($time));
-
-    #var_dump (localtime());
-    var_dump (localtime($time));
-
-    #var_dump (localtime(time(), true));
-    var_dump (localtime($time, true));
 }
 
 date_default_timezone_set ("Etc/GMT-3");

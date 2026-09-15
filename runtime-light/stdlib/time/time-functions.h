@@ -174,6 +174,40 @@ inline int64_t f$gmmktime(int64_t hour = std::numeric_limits<int64_t>::min(), in
                                  year != std::numeric_limits<int64_t>::min() ? std::make_optional(kphp::time::impl::fix_year(year)) : std::nullopt);
 }
 
+inline array<mixed> f$localtime(int64_t timestamp = std::numeric_limits<int64_t>::min(), bool is_associative = false) noexcept {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    namespace chrono = std::chrono;
+    timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
+  }
+  tm t{};
+  time_t time{timestamp};
+  tm* tp{k2::localtime_r(std::addressof(time), std::addressof(t))};
+  if (tp == nullptr) {
+    kphp::log::warning("unknown error in localtime with timestamp {}", timestamp);
+    std::memset(std::addressof(t), 0, sizeof(tm));
+  }
+
+  if (!is_associative) {
+    return array<mixed>::create(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
+  }
+
+  const auto& time_image_state{TimeImageState::get()};
+
+  array<mixed> result{array_size{9, false}};
+
+  result.set_value(time_image_state.TM_SEC_STR, t.tm_sec);
+  result.set_value(time_image_state.TM_MIN_STR, t.tm_min);
+  result.set_value(time_image_state.TM_HOUR_STR, t.tm_hour);
+  result.set_value(time_image_state.TM_MDAY_STR, t.tm_mday);
+  result.set_value(time_image_state.TM_MON_STR, t.tm_mon);
+  result.set_value(time_image_state.TM_YEAR_STR, t.tm_year);
+  result.set_value(time_image_state.TM_WDAY_STR, t.tm_wday);
+  result.set_value(time_image_state.TM_YDAY_STR, t.tm_yday);
+  result.set_value(time_image_state.TM_ISDST_STR, t.tm_isdst);
+
+  return result;
+}
+
 inline string f$date(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     namespace chrono = std::chrono;
