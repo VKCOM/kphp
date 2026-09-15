@@ -423,7 +423,7 @@ Optional<string> f$realpath(const string& path) {
 }
 
 static Optional<string> full_realpath(const string& path) { // realpath resolving only dirname to work with unexisted files
-  static char full_realpath_cache_storage[sizeof(array<string>)];
+  alignas(array<string>) static char full_realpath_cache_storage[sizeof(array<string>)];
   static array<string>* full_realpath_cache = reinterpret_cast<array<string>*>(full_realpath_cache_storage);
   static long long full_realpath_last_query_num = -1;
 
@@ -567,7 +567,7 @@ Optional<array<string>> f$scandir(const string& directory) {
   return file_list;
 }
 
-static char opened_files_storage[sizeof(array<FILE*>)];
+alignas(array<FILE*>) static char opened_files_storage[sizeof(array<FILE*>)];
 static array<FILE*>* opened_files = reinterpret_cast<array<FILE*>*>(opened_files_storage);
 static long long opened_files_last_query_num = -1;
 

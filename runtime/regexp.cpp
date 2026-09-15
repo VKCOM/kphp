@@ -311,7 +311,7 @@ bool regexp::is_valid_RE2_regexp(const char* regexp_string, int64_t regexp_len, 
 }
 
 void regexp::init(const string& regexp_string, const char* function, const char* file) {
-  static char regexp_cache_storage[sizeof(array<regexp*>)];
+  alignas(array<regexp*>) static char regexp_cache_storage[sizeof(array<regexp*>)];
   static array<regexp*>* regexp_cache = (array<regexp*>*)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
 
