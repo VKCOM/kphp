@@ -230,9 +230,10 @@ public:
     return metric_sender{metric_name};
   }
 
-  metric_sender& tag(std::string_view tag_name, std::string_view tag_value) noexcept {
-    this->tags.emplace_back(tag_name, tag_value);
-    return *this;
+  template<typename Self>
+  auto tag(this Self&& self, std::string_view tag_name, std::string_view tag_value) noexcept -> Self&& {
+    self.tags.emplace_back(tag_name, tag_value);
+    return std::forward<Self>(self);
   }
 
   auto send_value(double value, std::optional<uint64_t> timestamp = std::nullopt) const noexcept {
