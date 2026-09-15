@@ -32,8 +32,8 @@
 
 namespace {
 
-constexpr auto CONFDATA_RETRY_INTERVAL{std::chrono::seconds{3}};
-constexpr auto CONFDATA_METRICS_INTERVAL{CONFDATA_RETRY_INTERVAL};
+constexpr auto CONFDATA_RETRY_INTERVAL{std::chrono::seconds{1}};
+constexpr auto CONFDATA_METRICS_INTERVAL{std::chrono::seconds{1}};
 
 // Event decoding stays component-local: only the writer sees serialization
 // flags, while readers consume the already-decoded shared `mixed` values.
