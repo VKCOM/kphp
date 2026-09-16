@@ -14,6 +14,7 @@
 #include "common/algorithms/contains.h"
 #include "common/wrappers/iterator_range.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"
@@ -155,6 +156,21 @@ bool VertexUtil::is_const_int(VertexPtr root) {
     break;
   }
   return false;
+}
+
+bool VertexUtil::is_interruptible_expr(VertexPtr v) {
+  FunctionPtr callee;
+  if (auto call = v.try_as<op_func_call>()) {
+    callee = call->func_id;
+  } else if (auto call = v.try_as<op_invoke_call>()) {
+    callee = call->func_id;
+  }
+
+  if (callee && callee->is_interruptible) {
+    return true;
+  }
+
+  return std::any_of(v->begin(), v->end(), is_interruptible_expr);
 }
 
 VertexPtr VertexUtil::create_conv_to(PrimitiveType targetType, VertexPtr x) {
