@@ -48,6 +48,8 @@ function file_exists ($name ::: string) ::: bool;
 
 function file ($name ::: string) ::: string[] | false;
 
+function is_dir ($name ::: string) ::: bool;
+
 function is_file ($name ::: string) ::: bool;
 
 function fgets ($stream ::: mixed, $length ::: int = -1) ::: string | false;
@@ -65,8 +67,6 @@ function dirname ($name ::: string) ::: string;
 function filectime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function filemtime ($name ::: string) ::: int | false;
-/** @kphp-extern-func-info stub generation-required */
-function is_dir ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function is_readable ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */

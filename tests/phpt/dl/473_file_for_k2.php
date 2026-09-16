@@ -8,6 +8,8 @@
   var_dump (basename ('/etc/sudoers.d', '.d'));
 
   $filename = '/tmp/' . rand(1, 2e9);
+  var_dump (is_dir ('/tmp'));
+  var_dump (is_dir ($filename));
   var_dump (is_file ($filename));
 //  var_dump ($filename);
   $file = fopen ($filename, "w");
