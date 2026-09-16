@@ -79,7 +79,7 @@ bool f$header_register_callback(F&& f) noexcept {
   auto headers_callback_task{std::invoke(
       [](F f) noexcept -> kphp::coro::task<> {
         if constexpr (kphp::coro::is_task_function_v<F>) {
-          co_await kphp::coro::on_stack(std::move(f));
+          CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f)));
         } else if constexpr (kphp::coro::is_async_function_v<F>) {
           co_await std::invoke(std::move(f));
         } else {

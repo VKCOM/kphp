@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/curl/curl-context.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/curl/defs.h"
@@ -24,7 +23,7 @@
 #include "runtime-light/stdlib/web-transfer-lib/web-simple-transfer.h"
 
 inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kphp::web::curl::easy_type> {
-  auto open_res{co_await kphp::coro::on_stack([]() noexcept { return kphp::forks::id_managed(kphp::web::simple::open, kphp::web::transfer_backend::CURL); })};
+  auto open_res{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::simple::open, kphp::web::transfer_backend::CURL))};
   if (!open_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_warning("could not initialize a new curl easy handle", std::move(open_res.error()));
     co_return 0;
@@ -411,9 +410,7 @@ inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::co
   if (!curl_state.easy_ctx.has(easy_id)) {
     co_return false;
   }
-  auto res{co_await kphp::coro::on_stack(
-      [](kphp::web::curl::easy_type easy_id) noexcept { return kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id}); },
-      easy_id)};
+  auto res{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id}))};
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   easy_ctx.has_been_executed = true;
   if (!res.has_value()) [[unlikely]] {
@@ -434,9 +431,7 @@ inline auto f$curl_close(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
     co_return;
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto res{co_await kphp::coro::on_stack(
-      [](kphp::web::curl::easy_type easy_id) noexcept { return kphp::forks::id_managed(kphp::web::simple::close, kphp::web::simple::transfer{easy_id}); },
-      easy_id)};
+  auto res{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::simple::close, kphp::web::simple::transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
     kphp::web::curl::print_warning("could not close curl easy handle", std::move(res.error()));
@@ -449,9 +444,7 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
     co_return;
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto res{co_await kphp::coro::on_stack(
-      [](kphp::web::curl::easy_type easy_id) noexcept { return kphp::forks::id_managed(kphp::web::simple::reset, kphp::web::simple::transfer{easy_id}); },
-      easy_id)};
+  auto res{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::simple::reset, kphp::web::simple::transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
     kphp::web::curl::print_warning("could not reset curl easy handle", std::move(res.error()));
@@ -480,13 +473,9 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto task_to_schedule{
-      [](kphp::web::curl::easy_type easy_id) noexcept { return kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id}); }};
-  auto sched_res{co_await kphp::coro::on_stack(
-      [](duration_type timeout, auto task_to_schedule, kphp::web::curl::easy_type easy_id) noexcept {
-        return kphp::coro::io_scheduler::get().schedule(timeout, std::move(task_to_schedule), easy_id);
-      },
-      timeout, std::move(task_to_schedule), easy_id)};
+  auto sched_res{CO_AWAIT_TASK_ON_STACK(kphp::coro::io_scheduler::get().schedule(
+      timeout, [](kphp::web::simple::transfer st) noexcept { return kphp::forks::id_managed(kphp::web::simple::perform, st); },
+      kphp::web::simple::transfer{easy_id}))};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_debug(
         "could not execute curl easy handle concurrently",
@@ -534,12 +523,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   switch (static_cast<kphp::web::curl::CURLINFO>(option)) {
   case kphp::web::curl::CURLINFO::NONE: {
-    auto res{co_await kphp::coro::on_stack(
-        [](kphp::web::curl::easy_type easy_id) noexcept {
-          return kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id}, std::nullopt,
-                                         kphp::web::property::get_policy::load);
-        },
-        easy_id)};
+    auto res{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id},
+                                                            std::nullopt, kphp::web::property::get_policy::load))};
     if (!res.has_value()) [[unlikely]] {
       easy_ctx.set_errno(res.error().code, res.error().description);
       kphp::web::curl::print_warning("could not get all info options of easy handle", std::move(res.error()));
@@ -560,12 +545,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
     const auto& image_state{CurlImageState::get()};
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property::id>(kphp::web::curl::CURLOPT::URL)};
-      const auto url{co_await kphp::coro::on_stack(
-          [](kphp::web::curl::easy_type easy_id) noexcept {
-            return kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id}, url_opt_id,
-                                           kphp::web::property::get_policy::cached);
-          },
-          easy_id)};
+      const auto url{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id},
+                                                                    url_opt_id, kphp::web::property::get_policy::cached))};
       if (url.has_value()) {
         const auto& v{(*url).find(url_opt_id)};
         kphp::log::assertion(v != (*url).end());
@@ -609,12 +590,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   case kphp::web::curl::CURLINFO::EFFECTIVE_URL:
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property::id>(kphp::web::curl::CURLOPT::URL)};
-      const auto url{co_await kphp::coro::on_stack(
-          [](kphp::web::curl::easy_type easy_id) noexcept {
-            return kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id}, url_opt_id,
-                                           kphp::web::property::get_policy::cached);
-          },
-          easy_id)};
+      const auto url{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id},
+                                                                    url_opt_id, kphp::web::property::get_policy::cached))};
       if (url.has_value()) {
         co_return (*url).find(url_opt_id)->second.to_mixed();
       }
@@ -646,12 +623,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   case kphp::web::curl::CURLINFO::CONDITION_UNMET:
   case kphp::web::curl::CURLINFO::NUM_CONNECTS:
   case kphp::web::curl::CURLINFO::HEADER_OUT: {
-    auto res{co_await kphp::coro::on_stack(
-        [](kphp::web::curl::easy_type easy_id, int64_t option) noexcept {
-          return kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id}, option,
-                                         kphp::web::property::get_policy::load);
-        },
-        easy_id, option)};
+    auto res{CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::web::property::get<kphp::web::simple::transfer>, kphp::web::simple::transfer{easy_id}, option,
+                                                            kphp::web::property::get_policy::load))};
     if (!res.has_value()) [[unlikely]] {
       easy_ctx.set_errno(res.error().code, res.error().description);
       kphp::web::curl::print_warning("could not get a specific info of easy handle", std::move(res.error()));

@@ -230,8 +230,13 @@ auto InstanceState::erase_if_retired_and_unused(confdata_piece_list::iterator pi
 }
 
 auto InstanceState::init() noexcept -> void {
+  auto main_task{run()};
+  // initialize async stack
+  auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
+  main_task_async_stack_frame.async_stack_root = std::addressof(m_coroutine_instance_state.coroutine_stack_root);
+  m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = std::addressof(main_task_async_stack_frame);
   // spawn main task onto the scheduler
-  kphp::log::assertion(m_io_scheduler.spawn(&InstanceState::run, this));
+  kphp::log::assertion(m_io_scheduler.spawn(std::move(main_task)));
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
@@ -483,8 +488,7 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       m_pagination = {};
       break;
     }
-    co_await kphp::coro::on_stack([](kphp::coro::io_scheduler& io_scheduler) noexcept { return io_scheduler.schedule(CONFDATA_RETRY_INTERVAL); },
-                                  m_io_scheduler);
+    co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
   }
 }
 

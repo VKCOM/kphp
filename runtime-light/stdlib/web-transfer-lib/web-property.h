@@ -107,9 +107,7 @@ inline auto get(Transfer transfer, std::optional<property::id> prop_id, get_poli
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await kphp::coro::on_stack([](kphp::component::inter_component_session::client& client, std::span<const std::byte> request,
-                                             auto callback) noexcept { return client.query(request, std::move(callback)); },
-                                          (*session).get()->client, tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request for a getting of web properties");
   }
