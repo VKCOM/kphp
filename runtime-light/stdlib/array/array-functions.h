@@ -245,7 +245,7 @@ kphp::coro::task<array<T>> array_filter_by_key_impl(array<T> a, F f) noexcept {
   array<T> result{a.size()};
   for (const auto& it : std::as_const(a)) {
     bool condition{};
-    if constexpr (kphp::coro::is_tasl_function_v<F, typename array<T>::const_iterator::key_type>) {
+    if constexpr (kphp::coro::is_task_function_v<F, typename array<T>::const_iterator::key_type>) {
       condition = f$boolval(CO_AWAIT_TASK_ON_STACK(std::invoke(f, it.get_key())));
     } else if constexpr (kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::key_type>) {
       condition = f$boolval(co_await std::invoke(f, it.get_key()));
