@@ -631,7 +631,7 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 [[nodiscard]] auto
 io_scheduler::schedule(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<std::invoke_result_t<F, Args...>>::return_type> {
   co_await schedule();
-  co_return CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...));
+  co_return CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
 }
 
 template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>

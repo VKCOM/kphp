@@ -83,10 +83,10 @@ public:
 
       kphp::forks::details::storage s{};
       if constexpr (std::same_as<kphp::coro::async_function_return_type_t<F, Args...>, void>) {
-        CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...));
+        CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
         s.store();
       } else {
-        s.store<kphp::coro::async_function_return_type_t<F, Args...>>(CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...)));
+        s.store<kphp::coro::async_function_return_type_t<F, Args...>>(CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...)));
       }
       co_return s;
     }};

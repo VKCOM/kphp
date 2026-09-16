@@ -401,9 +401,9 @@ requires(kphp::coro::is_task_function_v<F, Args...>)
 auto make_await_set_task(F f, Args... args) noexcept
     -> await_set_task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
-    CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...));
+    co_await CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
   } else {
-    co_yield CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...));
+    co_yield CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
   }
 }
 
