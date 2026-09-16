@@ -452,21 +452,6 @@ inline int64_t can_use_precomputed_hash_indexing_array(VertexPtr key) {
   return 0;
 }
 
-bool is_interruptible_expr(VertexPtr vertex) {
-  FunctionPtr callee;
-  if (auto call = vertex.try_as<op_func_call>()) {
-    callee = call->func_id;
-  } else if (auto call = vertex.try_as<op_invoke_call>()) {
-    callee = call->func_id;
-  }
-
-  if (callee && callee->is_interruptible) {
-    return true;
-  }
-
-  return std::any_of(vertex->begin(), vertex->end(), is_interruptible_expr);
-}
-
 void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& W) {
   const TypeData* type = tinf::get_type(root);
   auto lhs = root->lhs();
@@ -477,7 +462,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
 
-  bool interruptible_call = G->is_output_mode_k2() && is_interruptible_expr(rhs);
+  bool interruptible_call = G->is_output_mode_k2() && VertexUtil::is_interruptible_expr(rhs);
   if (interruptible_call) {
     W << "CO_AWAIT_TASK_ON_STACK(";
   }
