@@ -379,7 +379,7 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   // A separate one-node list owns the unpublished piece and later permits a
   // zero-allocation transfer into the registry.
   confdata_piece_list pending_piece{};
-  const auto created_piece{confdata_piece::create(pending_piece, m_component_state.m_confdata_memory_limit, m_component_state.m_confdata_oom_handling_size,
+  const auto created_piece{confdata_piece::create(pending_piece, m_component_state.m_confdata_piece_memory_size, m_component_state.m_confdata_oom_handling_size,
                                                   m_component_state.m_predefined_wildcards)};
   if (!created_piece) [[unlikely]] {
     co_return std::unexpected{created_piece.error()};

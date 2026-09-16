@@ -18,7 +18,7 @@
 struct ComponentState final : private vk::not_copyable {
   // === MEMBERS ==================================================================================
 private:
-  static constexpr std::string_view CONFDATA_MEMORY_LIMIT_ARG{"confdata-memory-limit"};
+  static constexpr std::string_view CONFDATA_PIECE_MEMORY_SIZE_ARG{"confdata-piece-memory-size"};
   static constexpr std::string_view CONFDATA_OOM_HANDLING_SIZE_ARG{"confdata-oom-handling-size"};
   static constexpr std::string_view CONFDATA_PROXY_ACTOR_NAME_ARG{"confdata-proxy-actor-name"};
   static constexpr std::string_view PREDEFINED_WILDCARDS_ARG{"predefined-wildcards"};
@@ -41,7 +41,7 @@ private:
 
 public:
   /** Total allocator payload available in each shared-memory piece. */
-  size_t m_confdata_memory_limit{};
+  size_t m_confdata_piece_memory_size{};
   /** Final allocatable part of the payload reserved for completing one in-flight operation safely. */
   size_t m_confdata_oom_handling_size{};
   kphp::stl::string<kphp::memory::script_allocator> m_confdata_proxy_actor_name;
@@ -55,7 +55,7 @@ public:
   static auto get_mutable() noexcept -> ComponentState&;
 
 private:
-  auto parse_confdata_memory_limit_arg(std::string_view) noexcept -> void;
+  auto parse_confdata_piece_memory_size_arg(std::string_view) noexcept -> void;
   auto parse_confdata_oom_handling_size_arg(std::string_view) noexcept -> void;
   auto parse_confdata_proxy_actor_name_arg(std::string_view) noexcept -> void;
   auto parse_predefined_wildcards_arg(std::string_view) noexcept -> void;
@@ -67,17 +67,17 @@ private:
 inline ComponentState::ComponentState() noexcept {
   parse_args();
 
-  if (m_confdata_memory_limit == 0) {
-    kphp::log::error("{} argument is required and must be a positive number", CONFDATA_MEMORY_LIMIT_ARG);
+  if (m_confdata_piece_memory_size == 0) {
+    kphp::log::error("{} argument is required and must be a positive number", CONFDATA_PIECE_MEMORY_SIZE_ARG);
   }
   if (m_confdata_oom_handling_size == 0) {
-    m_confdata_oom_handling_size = m_confdata_memory_limit / DEFAULT_OOM_HANDLING_SIZE_DIVISOR;
+    m_confdata_oom_handling_size = m_confdata_piece_memory_size / DEFAULT_OOM_HANDLING_SIZE_DIVISOR;
     if (m_confdata_oom_handling_size == 0) {
       m_confdata_oom_handling_size = 1;
     }
   }
-  if (m_confdata_oom_handling_size >= m_confdata_memory_limit) {
-    kphp::log::error("{} must be smaller than {}", CONFDATA_OOM_HANDLING_SIZE_ARG, CONFDATA_MEMORY_LIMIT_ARG);
+  if (m_confdata_oom_handling_size >= m_confdata_piece_memory_size) {
+    kphp::log::error("{} must be smaller than {}", CONFDATA_OOM_HANDLING_SIZE_ARG, CONFDATA_PIECE_MEMORY_SIZE_ARG);
   }
   if (m_confdata_proxy_actor_name.empty()) {
     kphp::log::error("{} argument is required", CONFDATA_PROXY_ACTOR_NAME_ARG);

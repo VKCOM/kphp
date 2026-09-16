@@ -15,13 +15,13 @@
 #include "runtime-light/stdlib/confdata/predefined-wildcards.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-auto ComponentState::parse_confdata_memory_limit_arg(std::string_view value_view) noexcept -> void {
+auto ComponentState::parse_confdata_piece_memory_size_arg(std::string_view value_view) noexcept -> void {
   size_t parsed{};
   const auto [end, error]{std::from_chars(value_view.begin(), value_view.end(), parsed)};
   if (value_view.empty() || error != std::errc{} || end != value_view.end() || parsed == 0) [[unlikely]] {
-    kphp::log::error("{} must be a positive integer, got '{}'", CONFDATA_MEMORY_LIMIT_ARG, value_view);
+    kphp::log::error("{} must be a positive integer, got '{}'", CONFDATA_PIECE_MEMORY_SIZE_ARG, value_view);
   }
-  m_confdata_memory_limit = parsed;
+  m_confdata_piece_memory_size = parsed;
 }
 
 auto ComponentState::parse_confdata_oom_handling_size_arg(std::string_view value_view) noexcept -> void {
@@ -96,8 +96,8 @@ auto ComponentState::parse_args() noexcept -> void {
     const std::string_view key_view{arg_key.get(), std::strlen(arg_key.get())};
     const std::string_view value_view{arg_value.get(), std::strlen(arg_value.get())};
 
-    if (key_view == CONFDATA_MEMORY_LIMIT_ARG) {
-      parse_confdata_memory_limit_arg(value_view);
+    if (key_view == CONFDATA_PIECE_MEMORY_SIZE_ARG) {
+      parse_confdata_piece_memory_size_arg(value_view);
     } else if (key_view == CONFDATA_OOM_HANDLING_SIZE_ARG) {
       parse_confdata_oom_handling_size_arg(value_view);
     } else if (key_view == CONFDATA_PROXY_ACTOR_NAME_ARG) {
