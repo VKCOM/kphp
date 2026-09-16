@@ -53,7 +53,7 @@ private:
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
-  size_t m_stack_requests{0};
+  bool m_stack_alloc_requested{false};
   bool m_stack_alloc_used{false};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
@@ -134,18 +134,20 @@ public:
   }
 
   auto request_stack_alloc() noexcept -> void {
-    ++m_stack_requests;
+    kphp::log::assertion(!std::exchange(m_stack_alloc_requested, true));
   }
 
   auto consume_stack_alloc_request() noexcept -> void {
-    --m_stack_requests;
+    m_stack_alloc_requested = false;
     m_stack_alloc_used = false;
   }
 
-  auto check_stack_alloc_request() noexcept -> bool {
-    bool stack_alloc_requested{m_stack_requests > 0};
-    kphp::log::assertion(!std::exchange(m_stack_alloc_used, stack_alloc_requested));
-    return stack_alloc_requested;
+  auto check_stack_alloc_request() const noexcept -> bool {
+    return m_stack_alloc_requested;
+  }
+
+  auto mark_stack_alloc_used() noexcept -> void {
+    kphp::log::assertion(!std::exchange(m_stack_alloc_used, true));
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {

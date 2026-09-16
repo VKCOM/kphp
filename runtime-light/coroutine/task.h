@@ -282,23 +282,12 @@ public:
 } // namespace task_impl
 
 /*
- * This function is used to optimize allocation of task<T>. If this function is used, task<T>, that returns from provided function, is allocated with stack
- * allocator. If this function is not coroutine, but just function, that returns task<T>, during its call is not allowed to create more than one
- * task<T> object (the one it returns). Using this function you must co_await returned awaitable immediately after call, otherwise there are no guarantees
- * that program is correct. It's strongly recommended to use this function instead of writing co_await f(...), where f returns task<T>.
- */
-template<typename F, typename... Args>
-requires(std::invocable<F, Args...> &&
-         requires {
-           { static_cast<kphp::coro::task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
-         })
-[[nodiscard]] auto on_stack(F&& f, Args&&... args) noexcept {
-  kphp::coro::detail::memory::task_allocator::get().request_stack_alloc();
-  return kphp::coro::task_impl::stack_task_awaitable{std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
-}
-
-/*
- * This macro is used only in code gen. Use kphp::coro::on_stack function in runtime instead.
+ * This macro is used to optimize allocation of task<T>. If this macro is used, task<T>, that returns from provided call, is allocated with stack
+ * allocator. You must follow these rules:
+ * 1) If this call is not coroutine call, but just function call, that returns task<T>, during its call is not allowed to create more than one
+ * task<T> object (the one it returns).
+ * 2) During evaluation of arguments of this call is now allowed to create other task<T> objects.
+ * It's strongly recommended to use this macro instead of writing co_await f(...), where f returns task<T>.
  */
 #define CO_AWAIT_TASK_ON_STACK(...)                                                                                                                            \
   (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), kphp::coro::task_impl::stack_task_awaitable{__VA_ARGS__}))
