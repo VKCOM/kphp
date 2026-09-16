@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -55,7 +56,11 @@ private:
   uint64_t m_update_events_count{};
   uint64_t m_delete_events_count{};
   kphp::confdata::metrics::events m_events_metrics;
+
   kphp::confdata::metrics::capacity m_capacity_metrics;
+
+  kphp::confdata::metrics::update_failures m_update_failure_metrics;
+  std::array<uint64_t, std::tuple_size_v<decltype(m_update_failure_metrics.m_failures)>> m_update_failure_counts{};
 
 public:
   kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
@@ -77,6 +82,7 @@ private:
 
   auto report_events_metrics(uint64_t timestamp) noexcept -> void;
   auto report_capacity_metrics(uint64_t timestamp) noexcept -> void;
+  auto report_update_failure_metrics(uint64_t timestamp) noexcept -> void;
 
   auto release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void;
   auto serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<>;

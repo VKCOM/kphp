@@ -5,7 +5,9 @@
 #pragma once
 
 #include <array>
+#include <utility>
 
+#include "runtime-light/components/confdata/confdata-proxy/sync-functions.h"
 #include "runtime-light/stdlib/diagnostics/metrics.h"
 
 namespace kphp::confdata::metrics {
@@ -29,6 +31,21 @@ struct events final {
       kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_events").tag("kind", "update"),
       kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_events").tag("kind", "delete"),
   };
+};
+
+struct update_failures final {
+  std::array<kphp::diagnostics::metric_sender, 5> m_failures{
+      kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_update_fails").tag("error", "transport"),
+      kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_update_fails").tag("error", "old_offset"),
+      kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_update_fails").tag("error", "malformed_response"),
+      kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_update_fails").tag("error", "not_synced"),
+      kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_update_fails").tag("error", "batch_rejected"),
+  };
+  static_assert(std::to_underlying(kphp::confdata::subscribe_error::transport) == 0);
+  static_assert(std::to_underlying(kphp::confdata::subscribe_error::old_offset) == 1);
+  static_assert(std::to_underlying(kphp::confdata::subscribe_error::malformed_response) == 2);
+  static_assert(std::to_underlying(kphp::confdata::subscribe_error::not_synced) == 3);
+  static_assert(std::to_underlying(kphp::confdata::subscribe_error::batch_rejected) == 4);
 };
 
 } // namespace kphp::confdata::metrics

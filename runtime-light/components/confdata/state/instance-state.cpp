@@ -249,6 +249,7 @@ auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
     const auto ts{static_cast<uint64_t>(kphp::time::now().time_since_epoch().count())};
     report_events_metrics(ts);
     report_capacity_metrics(ts);
+    report_update_failure_metrics(ts);
     co_await m_io_scheduler.schedule(CONFDATA_METRICS_INTERVAL);
   }
 }
@@ -258,7 +259,7 @@ auto InstanceState::report_events_metrics(uint64_t timestamp) noexcept -> void {
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
 
     std::ignore = sender.send_count(count, timestamp)
-                      .transform([&counter] noexcept { counter = {}; })
+                      .transform([&counter, count] noexcept { counter -= count; })
                       .or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
                         kphp::log::warning("failed to report confdata events metrics: error -> {}", error);
                         return std::unexpected{error};
@@ -267,6 +268,20 @@ auto InstanceState::report_events_metrics(uint64_t timestamp) noexcept -> void {
 
   send(m_events_metrics.m_events[0], m_update_events_count);
   send(m_events_metrics.m_events[1], m_delete_events_count);
+}
+
+auto InstanceState::report_update_failure_metrics(uint64_t timestamp) noexcept -> void {
+  for (size_t index{}; index < m_update_failure_counts.size(); ++index) {
+    auto& counter{m_update_failure_counts[index]};
+    const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
+    std::ignore = m_update_failure_metrics.m_failures[index]
+                      .send_count(count, timestamp)
+                      .transform([&counter, count] noexcept { counter -= count; })
+                      .or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
+                        kphp::log::warning("failed to report confdata update failure metrics: error -> {}", error);
+                        return std::unexpected{error};
+                      });
+  }
 }
 
 auto InstanceState::report_capacity_metrics(uint64_t timestamp) noexcept -> void {
@@ -426,6 +441,9 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
                                                 [this](std::span<const tl::confdata::KeyValuePair> events) noexcept { return perform_update(events); })};
     // update returns only on error; m_pagination was advanced in place up to the last applied batch
     kphp::log::assertion(!update.has_value());
+    kphp::log::assertion(std::to_underlying(update.error()) < m_update_failure_counts.size());
+    ++m_update_failure_counts[std::to_underlying(update.error())];
+
     switch (update.error()) {
     case kphp::confdata::subscribe_error::old_offset:
     case kphp::confdata::subscribe_error::not_synced:
