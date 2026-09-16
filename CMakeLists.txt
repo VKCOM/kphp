@@ -96,8 +96,11 @@ install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp 
 # k2 specific
 if(COMPILE_RUNTIME_LIGHT)
     install(TARGETS kphp-confdata-pic
-            LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs
-            COMPONENT KPHP)
+            LIBRARY DESTINATION ${VK_INSTALL_DIR}/k2-components
+            COMPONENT KPHP-CONFDATA)
+
+    set(CPACK_DEBIAN_KPHP-CONFDATA_PACKAGE_NAME "k2kphp-confdata")
+    set(CPACK_DEBIAN_KPHP-CONFDATA_DESCRIPTION "K2 kPHP confdata component")
 
     install(FILES ${OBJS_DIR}/libk2kphp-rt.a
             COMPONENT KPHP
