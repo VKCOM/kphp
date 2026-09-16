@@ -22,6 +22,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/confdata/confdata-storage.h"
+#include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/streams/stream.h"
 
 struct InstanceState final : vk::not_copyable {
@@ -59,6 +60,8 @@ private:
 public:
   kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};
   kphp::coro::io_scheduler m_io_scheduler{m_coroutine_instance_state};
+
+  StringInstanceState m_string_state;
 
   // === METHODS ==================================================================================
   InstanceState() noexcept = default;

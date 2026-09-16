@@ -15,6 +15,7 @@
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/string/string-state.h"
 
 namespace kphp::coro {
 
@@ -51,4 +52,8 @@ auto ErrorHandlingState::try_get() noexcept -> std::optional<std::reference_wrap
 
 auto RuntimeContext::get() noexcept -> RuntimeContext& {
   kphp::log::error("unexpected access to RuntimeContext"); // confdata doesn't have a runtime context
+}
+
+auto StringInstanceState::get() noexcept -> StringInstanceState& {
+  kphp::log::error("unexpected access to StringInstanceState"); // confdata doesn't actually use StringInstanceState
 }
