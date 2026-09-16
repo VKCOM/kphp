@@ -65,11 +65,11 @@ auto id_managed(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::c
   auto& fork_instance_st{ForkInstanceState::get()};
   const auto saved_fork_id{fork_instance_st.current_id};
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
-    CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...));
+    CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
     fork_instance_st.current_id = saved_fork_id;
     co_return;
   } else {
-    auto value{CO_AWAIT_TASK_ON_STACK(std::move(f)(std::move(args)...))};
+    auto value{CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...))};
     fork_instance_st.current_id = saved_fork_id;
     co_return std::move(value);
   }
