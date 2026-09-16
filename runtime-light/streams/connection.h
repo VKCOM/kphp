@@ -7,7 +7,6 @@
 #include <concepts>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -132,8 +131,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }};
 
     static constexpr auto descriptor_awaiter{[](k2::descriptor descriptor) noexcept -> kphp::coro::task<std::monostate> {
-      co_await kphp::coro::on_stack(
-          [](k2::descriptor descriptor) noexcept { return kphp::coro::io_scheduler::get().poll(descriptor, kphp::coro::poll_op::close); }, descriptor);
+      CO_AWAIT_TASK_ON_STACK(kphp::coro::io_scheduler::get().poll(descriptor, kphp::coro::poll_op::close));
       co_return std::monostate{};
     }};
 
@@ -146,7 +144,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     const auto v{co_await kphp::coro::when_any(std::bind_front(unwatch_awaiter, std::move(state)), std::bind_front(descriptor_awaiter, descriptor))};
     if (std::holds_alternative<std::monostate>(v)) {
       if constexpr (kphp::coro::is_task_function_v<on_abort_handler_type>) {
-        co_await kphp::coro::on_stack(std::move(h));
+        CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(h)));
       } else if constexpr (kphp::coro::is_async_function_v<on_abort_handler_type>) {
         co_await std::invoke(std::move(h));
       } else {
