@@ -30,7 +30,7 @@ auto instance_state::init() noexcept -> kphp::coro::task<> {
     co_return kphp::log::warning("failed to acquire a valid confdata reader lease");
   }
 
-  const auto shared_memory{k2::get_shared_memory(lease.shared_memory_name())};
+  const auto shared_memory{k2::shared_memory_get(lease.shared_memory_name())};
   if (!shared_memory) {
     co_return kphp::log::warning("failed to get confdata shared memory: error -> {}", shared_memory.error());
   }
