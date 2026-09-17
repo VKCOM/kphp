@@ -30,7 +30,7 @@ class reader_lease final {
   storage::sample_id m_sample_id{storage::INVALID_SAMPLE_ID};
   /** Number of meaningful bytes in `m_shared_memory_name`. */
   uint32_t m_shared_memory_name_size{};
-  /** Name passed to `k2_get_shared_memory`; it is not null-terminated. */
+  /** Name passed to `k2_shared_memory_get`; it is not null-terminated. */
   std::array<char, MAX_SHARED_MEMORY_NAME_SIZE> m_shared_memory_name{};
 
 public:
