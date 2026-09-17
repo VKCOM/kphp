@@ -141,15 +141,32 @@ VertexPtr IsolateInterruptibleArgsPass::process_ternary(VertexAdaptor<op_ternary
   // run it regardless of cond. Instead the ternary is rewritten into if (cond) { tmp = true_expr; } else
   // { tmp = false_expr; }, so each branch's own hoists stay local to that branch's op_seq instead of
   // escaping to before the whole statement.
-  auto temp_var = declare_temp_var(ternary);
+  //
+  // When the ternary itself is used only as a bare statement (e.g. $cond ? sideEffect() : null;), tinf
+  // infers its type as void - a branch can then legally be a
+  // void-returning call, which cannot be stored in a temp var. In that
+  // case there is no value to preserve at all, so skip the temp var and keep each branch a plain statement.
+  bool is_void = tinf::get_type(ternary)->ptype() == tp_void;
 
   std::vector<VertexPtr> true_hoists;
   auto true_expr = process(ternary->true_expr(), in_interruptible_call, true_hoists);
+  std::vector<VertexPtr> false_hoists;
+  auto false_expr = process(ternary->false_expr(), in_interruptible_call, false_hoists);
+
+  if (is_void) {
+    true_hoists.emplace_back(true_expr);
+    false_hoists.emplace_back(false_expr);
+    auto true_branch = VertexAdaptor<op_seq>::create(true_hoists).set_rl_type(val_none).set_location(ternary);
+    auto false_branch = VertexAdaptor<op_seq>::create(false_hoists).set_rl_type(val_none).set_location(ternary);
+
+    return VertexAdaptor<op_if>::create(ternary->cond(), true_branch, false_branch).set_rl_type(val_none).set_location(ternary);
+  }
+
+  auto temp_var = declare_temp_var(ternary);
+
   true_hoists.emplace_back(VertexAdaptor<op_set>::create(temp_var.clone().set_rl_type(val_l), true_expr).set_rl_type(val_none).set_location(ternary));
   auto true_branch = VertexAdaptor<op_seq>::create(true_hoists).set_rl_type(val_none).set_location(ternary);
 
-  std::vector<VertexPtr> false_hoists;
-  auto false_expr = process(ternary->false_expr(), in_interruptible_call, false_hoists);
   false_hoists.emplace_back(VertexAdaptor<op_set>::create(temp_var.clone().set_rl_type(val_l), false_expr).set_rl_type(val_none).set_location(ternary));
   auto false_branch = VertexAdaptor<op_seq>::create(false_hoists).set_rl_type(val_none).set_location(ternary);
 
