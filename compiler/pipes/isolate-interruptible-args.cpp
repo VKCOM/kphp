@@ -97,6 +97,14 @@ VertexPtr IsolateInterruptibleArgsPass::process_func_call(VertexAdaptor<op_func_
     return call;
   }
 
+  // A void call can legally end up here (e.g. implicitly converted to mixed - see
+  // OptimizationPass::remove_extra_conversions, which wraps it as op_seq_rval(void_call, null)). There is no
+  // value to store in that case, so just hoist the call as a bare statement and put null in its place.
+  if (tinf::get_type(call)->ptype() == tp_void) {
+    pending_hoists.emplace_back(call);
+    return VertexAdaptor<op_null>::create().set_location(call);
+  }
+
   auto temp_var = make_temp_var(call);
   pending_hoists.emplace_back(temp_var.second);
 
