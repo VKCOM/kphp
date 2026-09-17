@@ -156,10 +156,13 @@ VertexPtr IsolateInterruptibleArgsPass::process_ternary(VertexAdaptor<op_ternary
   // case there is no value to preserve at all, so skip the temp var and keep each branch a plain statement.
   bool is_void = tinf::get_type(ternary)->ptype() == tp_void;
 
+  // Each branch now runs inside its own if/else arm, which is itself hoisted before the call that opened
+  // the window - so by the time this code runs, no window is active anymore. Recursing with the ambient
+  // in_interruptible_call here would make a call inside the branch get hoisted a second, redundant time.
   std::vector<VertexPtr> true_hoists;
-  auto true_expr = process(ternary->true_expr(), in_interruptible_call, true_hoists);
+  auto true_expr = process(ternary->true_expr(), false, true_hoists);
   std::vector<VertexPtr> false_hoists;
-  auto false_expr = process(ternary->false_expr(), in_interruptible_call, false_hoists);
+  auto false_expr = process(ternary->false_expr(), false, false_hoists);
 
   if (is_void) {
     true_hoists.emplace_back(true_expr);
@@ -203,7 +206,9 @@ VertexPtr IsolateInterruptibleArgsPass::process_lazy_logical_op(VertexAdaptor<me
   auto temp_var = declare_temp_var(op);
 
   std::vector<VertexPtr> rhs_hoists;
-  auto rhs_expr = process(op->rhs(), true, rhs_hoists);
+  // rhs now runs inside its own if/else arm, itself hoisted before the call that opened the window - so a
+  // call inside it does not need to be hoisted again.
+  auto rhs_expr = process(op->rhs(), false, rhs_hoists);
   rhs_hoists.emplace_back(VertexAdaptor<op_set>::create(temp_var.clone().set_rl_type(val_l), rhs_expr).set_rl_type(val_none).set_location(op));
   auto rhs_branch = VertexAdaptor<op_seq>::create(rhs_hoists).set_rl_type(val_none).set_location(op);
 
