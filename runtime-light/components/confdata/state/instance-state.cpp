@@ -151,7 +151,7 @@ InstanceState::confdata_piece::~confdata_piece() {
   if (m_storage.is_initialized()) {
     m_storage.close();
   }
-  if (const auto released{k2::release_shared_memory(m_memory)}; !released) [[unlikely]] {
+  if (const auto released{k2::shared_memory_release(m_memory)}; !released) [[unlikely]] {
     kphp::log::warning("failed to free confdata shared memory: error -> {}", released.error());
   }
 }
@@ -167,7 +167,7 @@ auto InstanceState::confdata_piece::create(confdata_piece_list& owner, size_t me
                                                .m_code = static_cast<int32_t>(std::to_underlying(shared_memory_size.error()))}};
   }
 
-  const auto shared_memory{k2::alloc_shared_memory(*shared_memory_size, kphp::confdata::storage::memory_alignment())};
+  const auto shared_memory{k2::shared_memory_alloc(*shared_memory_size, kphp::confdata::storage::memory_alignment())};
   if (!shared_memory) [[unlikely]] {
     return std::unexpected{confdata_sync_error{.m_stage = confdata_sync_error::stage::shared_memory_allocation, .m_code = shared_memory.error()}};
   }
@@ -427,7 +427,7 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
                    piece.storage().memory_usage().m_used);
   // A lease must keep resolving to its pinned piece even if another sync completes before the reader maps it.
   // Reject name collisions rather than replacing an allocation that an outstanding lease may still name.
-  if (const auto published{k2::publish_shared_memory(piece.shared_memory_name(), piece.storage().memory().data(), 0, true, false)}; !published) [[unlikely]] {
+  if (const auto published{k2::shared_memory_publish(piece.shared_memory_name(), piece.storage().memory().data(), 0, true, false)}; !published) [[unlikely]] {
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::shared_memory_publication, .m_code = static_cast<int32_t>(published.error())}};
   }
