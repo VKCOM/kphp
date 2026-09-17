@@ -15,7 +15,6 @@ VertexAdaptor<op_var> IsolateInterruptibleArgsPass::declare_temp_var(VertexPtr t
   temp_var->str_val = gen_unique_name("isolated_interruptible_arg");
   temp_var->var_id = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
   temp_var->var_id->tinf_node.copy_type_from(tinf::get_type(type_source));
-  temp_var->val_ref_flag = type_source->val_ref_flag;
 
   return temp_var;
 }
@@ -23,6 +22,8 @@ VertexAdaptor<op_var> IsolateInterruptibleArgsPass::declare_temp_var(VertexPtr t
 std::pair<VertexAdaptor<op_move>, VertexAdaptor<op_set>> IsolateInterruptibleArgsPass::make_temp_var(VertexPtr init) noexcept {
   auto temp_var = declare_temp_var(init);
   auto set_op = VertexAdaptor<op_set>::create(temp_var.clone().set_rl_type(val_l), init).set_rl_type(val_none).set_location(init);
+  // This occurrence replaces init at its original use site, so it must reproduce init's own val_ref_flag.
+  temp_var->val_ref_flag = init->val_ref_flag;
   auto move_op = VertexAdaptor<op_move>::create(temp_var.set_rl_type(val_r)).set_rl_type(val_r).set_location(init);
 
   return {move_op, set_op};
@@ -184,6 +185,8 @@ VertexPtr IsolateInterruptibleArgsPass::process_ternary(VertexAdaptor<op_ternary
   auto if_v = VertexAdaptor<op_if>::create(ternary->cond(), true_branch, false_branch).set_rl_type(val_none).set_location(ternary);
   pending_hoists.emplace_back(if_v);
 
+  // This occurrence replaces the ternary at its original use site, so it must reproduce the ternary's own val_ref_flag.
+  temp_var->val_ref_flag = ternary->val_ref_flag;
   return VertexAdaptor<op_move>::create(temp_var.set_rl_type(val_r)).set_rl_type(val_r).set_location(ternary);
 }
 
@@ -222,6 +225,8 @@ VertexPtr IsolateInterruptibleArgsPass::process_lazy_logical_op(VertexAdaptor<me
   if_v.set_rl_type(val_none).set_location(op);
   pending_hoists.emplace_back(if_v);
 
+  // This occurrence replaces the logical-op node at its original use site, so it must reproduce that node's own val_ref_flag.
+  temp_var->val_ref_flag = op->val_ref_flag;
   return VertexAdaptor<op_move>::create(temp_var.set_rl_type(val_r)).set_rl_type(val_r).set_location(op);
 }
 
