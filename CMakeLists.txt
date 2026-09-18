@@ -83,7 +83,7 @@ endif()
 add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
 
 if (COMPILE_RUNTIME_LIGHT)
-    add_dependencies(kphp kphp2cpp kphp-light-runtime-pic)
+    add_dependencies(kphp kphp2cpp kphp-light-runtime-pic kphp-confdata-pic)
 else ()
     add_dependencies(kphp kphp2cpp kphp-full-runtime-no-pic kphp-full-runtime-pic)
 endif ()
@@ -95,6 +95,13 @@ install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp 
 
 # k2 specific
 if(COMPILE_RUNTIME_LIGHT)
+    install(TARGETS kphp-confdata-pic
+            LIBRARY DESTINATION ${VK_INSTALL_DIR}/k2-components
+            COMPONENT KPHP-CONFDATA)
+
+    set(CPACK_DEBIAN_KPHP-CONFDATA_PACKAGE_NAME "k2kphp-confdata")
+    set(CPACK_DEBIAN_KPHP-CONFDATA_DESCRIPTION "K2 kPHP confdata component")
+
     install(FILES ${OBJS_DIR}/libk2kphp-rt.a
             COMPONENT KPHP
             DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
