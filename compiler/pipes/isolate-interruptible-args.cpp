@@ -4,10 +4,13 @@
 
 #include "compiler/pipes/isolate-interruptible-args.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/find.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 
 VertexAdaptor<op_var> IsolateInterruptibleArgsPass::declare_temp_var(VertexPtr type_source) noexcept {
@@ -54,11 +57,11 @@ bool IsolateInterruptibleArgsPass::contains_unsafe_call_in_window(VertexPtr vert
 
   if (auto null_coalesce = vertex.try_as<op_null_coalesce>()) {
     bool own_window = VertexUtil::is_interruptible_expr(null_coalesce->rhs());
-    if (contains_unsafe_call_in_window(null_coalesce->lhs(), own_window || in_interruptible_call)) {
+    if (contains_unsafe_call_in_window(null_coalesce->lhs(), own_window)) {
       return true;
     }
 
-    return contains_unsafe_call_in_window(null_coalesce->rhs(), in_interruptible_call);
+    return in_interruptible_call;
   }
 
   for (VertexPtr child : *vertex) {
@@ -117,18 +120,33 @@ VertexPtr IsolateInterruptibleArgsPass::process_null_coalesce(VertexAdaptor<op_n
   // See compile_null_coalesce: the whole expression is wrapped in its own CO_AWAIT_TASK_ON_STACK only when
   // rhs itself contains an interruptible call. In that case, lhs is evaluated while constructing
   // NullCoalesce<T>(lhs), which happens strictly inside this node's own freshly-opened window - regardless
-  // of whether an ambient one is also active. If this node doesn't open its own window, lhs is plain inline
-  // code and simply inherits whatever ambient window is active.
+  // of whether an ambient one is also active.
   bool own_window = VertexUtil::is_interruptible_expr(null_coalesce->rhs());
-  null_coalesce->lhs() = process(null_coalesce->lhs(), own_window || in_interruptible_call, pending_hoists);
+  null_coalesce->lhs() = process(null_coalesce->lhs(), own_window, pending_hoists);
 
   // rhs, when non-trivial, is compiled into a lambda invoked lazily from inside NullCoalesce<T>::finalize().
-  // By the time that invocation happens, this node's own window (if any) has already been consumed - so rhs
-  // never runs inside a window opened by *this* null_coalesce. It only inherits the ambient window that was
-  // already active around the whole expression.
-  null_coalesce->rhs() = process(null_coalesce->rhs(), in_interruptible_call, pending_hoists);
+  // By the time that invocation happens, all windows have already been consumed - so rhs never runs inside an opened window.
+  // Hoists from rhs must be local in generated lambda.
+  VertexPtr original_rhs = null_coalesce->rhs();
+  std::vector<VertexPtr> rhs_hoists;
+  auto rhs_expr = process(original_rhs, false, rhs_hoists);
+  if (!rhs_hoists.empty()) {
+    rhs_hoists.emplace_back(rhs_expr);
+    auto wrapped = VertexAdaptor<op_seq_rval>::create(rhs_hoists).set_location(null_coalesce);
+    wrapped->tinf_node.copy_type_from(tinf::get_type(original_rhs));
+    null_coalesce->rhs() = wrapped;
+  } else {
+    null_coalesce->rhs() = rhs_expr;
+  }
 
-  return null_coalesce;
+  if (!in_interruptible_call) {
+    return null_coalesce;
+  }
+
+  auto temp_var = make_temp_var(null_coalesce);
+  pending_hoists.emplace_back(temp_var.second);
+
+  return temp_var.first;
 }
 
 VertexPtr IsolateInterruptibleArgsPass::process_ternary(VertexAdaptor<op_ternary> ternary, bool in_interruptible_call,
