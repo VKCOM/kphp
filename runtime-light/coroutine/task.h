@@ -265,7 +265,8 @@ public:
           : kphp::coro::task_impl::awaiter_base<typename Task::promise_type>{coro} {}
 
       auto await_ready() noexcept -> bool {
-        kphp::coro::detail::memory::task_allocator::get().consume_stack_alloc_request();
+        kphp::coro::detail::memory::task_allocator::get().consume_stack_alloc_request(
+            kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::m_coro.address());
         return kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_ready();
       }
 
