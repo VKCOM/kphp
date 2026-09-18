@@ -14,6 +14,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <tuple>
@@ -282,6 +283,15 @@ auto InstanceState::report_update_failure_metrics(uint64_t timestamp) noexcept -
                         return std::unexpected{error};
                       });
   }
+
+  std::ignore = m_update_failure_old_offset.transform([this, timestamp](auto old_offset) noexcept {
+    return m_update_failure_metrics.m_old_offset.send_value(static_cast<double>(old_offset), timestamp)
+        .transform([this] noexcept { m_update_failure_old_offset.reset(); })
+        .or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
+          kphp::log::warning("failed to report 'old_offset' confdata update failure: error -> {}", error);
+          return std::unexpected{error};
+        });
+  });
 }
 
 auto InstanceState::report_capacity_metrics(uint64_t timestamp) noexcept -> void {
@@ -446,6 +456,8 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
 
     switch (update.error()) {
     case kphp::confdata::subscribe_error::old_offset:
+      m_update_failure_old_offset = m_pagination.m_offset;
+      [[fallthrough]];
     case kphp::confdata::subscribe_error::not_synced:
       // local version is too old: clean re-sync required
       kphp::log::warning("confdata update failed: error -> {}, resyncing", std::to_underlying(update.error()));

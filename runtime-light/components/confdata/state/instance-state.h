@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <span>
 #include <string_view>
 
@@ -61,6 +62,7 @@ private:
 
   kphp::confdata::metrics::update_failures m_update_failure_metrics;
   std::array<uint64_t, std::tuple_size_v<decltype(m_update_failure_metrics.m_failures)>> m_update_failure_counts{};
+  std::optional<int64_t> m_update_failure_old_offset; // We only report the last old offset
 
 public:
   kphp::coro::instance_state m_coroutine_instance_state{INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE, DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE, 0};

@@ -46,6 +46,10 @@ struct update_failures final {
   static_assert(std::to_underlying(kphp::confdata::subscribe_error::malformed_response) == 2);
   static_assert(std::to_underlying(kphp::confdata::subscribe_error::not_synced) == 3);
   static_assert(std::to_underlying(kphp::confdata::subscribe_error::batch_rejected) == 4);
+
+  kphp::diagnostics::metric_sender m_old_offset{
+      kphp::diagnostics::metric_sender::metric("k2_kphp_confdata_update_fails_old_offset"),
+  };
 };
 
 } // namespace kphp::confdata::metrics
