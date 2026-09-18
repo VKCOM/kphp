@@ -58,8 +58,8 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (task_allocator.check_stack_alloc_request() && total_size <= task_allocator.segment_size()) {
-    task_allocator.mark_stack_alloc_used();
+  bool use_stack{task_allocator.check_stack_alloc_request() && total_size <= task_allocator.segment_size()};
+  if (use_stack) {
     if (task_allocator.current_stack() == nullptr) {
       auto& stack{task_allocator.acquire_stack()};
       task_allocator.set_stack(std::addressof(stack));
@@ -83,6 +83,10 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   // The smallest multiple of `align` greater than or equal to requested memory
   const uint64_t aligned_u{((base_u + cb_size) + (align - 1)) & ~(align - 1)};
   const uint64_t base_offset_u{aligned_u - base_u};
+
+  if (use_stack) {
+    task_allocator.mark_stack_alloc_used(reinterpret_cast<void*>(aligned_u)); // NOLINT
+  }
 
   std::construct_at(reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(aligned_u - cb_size), task_allocator.current_stack(), // NOLINT
                     static_cast<uint16_t>(base_offset_u), backend);
