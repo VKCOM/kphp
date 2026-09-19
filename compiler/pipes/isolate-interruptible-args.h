@@ -35,7 +35,7 @@ private:
   static VertexPtr process_do(VertexAdaptor<op_do> do_v, std::vector<VertexPtr>& pending_hoists) noexcept;
   static VertexPtr process_for(VertexAdaptor<op_for> for_v, std::vector<VertexPtr>& pending_hoists) noexcept;
 
-  static bool contains_unsafe_call_in_window(VertexPtr vertex, bool in_interruptible_call) noexcept;
+  static bool needs_hoits(VertexPtr vertex, bool in_interruptible_call) noexcept;
 
 public:
   std::string get_description() override {
