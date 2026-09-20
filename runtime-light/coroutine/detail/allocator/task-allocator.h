@@ -134,11 +134,13 @@ public:
   }
 
   auto request_stack_alloc() noexcept -> void {
-    kphp::log::assertion(!std::exchange(m_stack_alloc_requested, true));
+    if (std::exchange(m_stack_alloc_requested, true))
+      kphp::log::assertion(false);
   }
 
   auto consume_stack_alloc_request(const void* self) noexcept -> void {
-    kphp::log::assertion(m_stack_alloc_used_by == nullptr || std::exchange(m_stack_alloc_used_by, nullptr) == self);
+    if (m_stack_alloc_used_by != nullptr && std::exchange(m_stack_alloc_used_by, nullptr) != self)
+      kphp::log::assertion(false);
 
     m_stack_alloc_requested = false;
   }
@@ -148,12 +150,16 @@ public:
   }
 
   auto mark_stack_alloc_used(void* used_by) noexcept -> void {
-    kphp::log::assertion(std::exchange(m_stack_alloc_used_by, used_by) == nullptr);
+    if (std::exchange(m_stack_alloc_used_by, used_by) != nullptr)
+      kphp::log::assertion(false);
   }
 
   auto alloc_script_memory(size_t size) noexcept -> void* {
-    kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_stack != nullptr);
+    if (size == 0)
+      kphp::log::assertion(size != 0);
+
+    if (m_curr_stack == nullptr)
+      kphp::log::assertion(m_curr_stack != nullptr);
 
     void* mem{m_curr_stack->allocate(size)};
     if (mem == nullptr) [[unlikely]] {
@@ -182,8 +188,11 @@ public:
   }
 
   auto free_script_memory(void* mem, size_t size) noexcept -> void {
-    kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_stack != nullptr);
+    if (size == 0)
+      kphp::log::assertion(size != 0);
+
+    if (m_curr_stack == nullptr)
+      kphp::log::assertion(m_curr_stack != nullptr);
 
     m_curr_stack->deallocate(mem, size);
   }

@@ -9,8 +9,8 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/public.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
-#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 
 VertexAdaptor<op_var> IsolateInterruptibleArgsPass::declare_temp_var(VertexPtr type_source) noexcept {
@@ -32,11 +32,11 @@ std::pair<VertexAdaptor<op_move>, VertexAdaptor<op_set>> IsolateInterruptibleArg
   return {move_op, set_op};
 }
 
-bool IsolateInterruptibleArgsPass::needs_hoits(VertexPtr vertex, bool in_interruptible_call) noexcept {
+bool IsolateInterruptibleArgsPass::needs_hoist(VertexPtr vertex, bool in_interruptible_call) noexcept {
   if (auto fork_call = vertex.try_as<op_fork>()) {
     auto call = fork_call->func_call();
     for (VertexPtr arg : call->args()) {
-      if (needs_hoits(arg, false)) {
+      if (needs_hoist(arg, false)) {
         return true;
       }
     }
@@ -47,7 +47,7 @@ bool IsolateInterruptibleArgsPass::needs_hoits(VertexPtr vertex, bool in_interru
   if (auto call = vertex.try_as<op_func_call>()) {
     bool is_interruptible_call = call->func_id->is_interruptible;
     for (VertexPtr arg : call->args()) {
-      if (needs_hoits(arg, is_interruptible_call)) {
+      if (needs_hoist(arg, is_interruptible_call)) {
         return true;
       }
     }
@@ -57,7 +57,7 @@ bool IsolateInterruptibleArgsPass::needs_hoits(VertexPtr vertex, bool in_interru
 
   if (auto null_coalesce = vertex.try_as<op_null_coalesce>()) {
     bool own_window = VertexUtil::is_interruptible_expr(null_coalesce->rhs());
-    if (needs_hoits(null_coalesce->lhs(), own_window)) {
+    if (needs_hoist(null_coalesce->lhs(), own_window)) {
       return true;
     }
 
@@ -65,7 +65,7 @@ bool IsolateInterruptibleArgsPass::needs_hoits(VertexPtr vertex, bool in_interru
   }
 
   for (VertexPtr child : *vertex) {
-    if (needs_hoits(child, in_interruptible_call)) {
+    if (needs_hoist(child, in_interruptible_call)) {
       return true;
     }
   }
@@ -155,8 +155,8 @@ VertexPtr IsolateInterruptibleArgsPass::process_ternary(VertexAdaptor<op_ternary
   // cond is unconditionally evaluated - safe to process in place with the ambient window.
   ternary->cond() = process(ternary->cond(), in_interruptible_call, pending_hoists);
 
-  bool true_needs_split = needs_hoits(ternary->true_expr(), in_interruptible_call);
-  bool false_needs_split = needs_hoits(ternary->false_expr(), in_interruptible_call);
+  bool true_needs_split = needs_hoist(ternary->true_expr(), in_interruptible_call);
+  bool false_needs_split = needs_hoist(ternary->false_expr(), in_interruptible_call);
 
   if (!true_needs_split && !false_needs_split) {
     ternary->true_expr() = process(ternary->true_expr(), in_interruptible_call, pending_hoists);
@@ -218,7 +218,7 @@ VertexPtr IsolateInterruptibleArgsPass::process_lazy_logical_op(VertexAdaptor<me
   // is rewritten into an equivalent if/else assigning a temp var instead.
   op->lhs() = process(op->lhs(), in_interruptible_call, pending_hoists);
 
-  if (!needs_hoits(op->rhs(), in_interruptible_call)) {
+  if (!needs_hoist(op->rhs(), in_interruptible_call)) {
     op->rhs() = process(op->rhs(), in_interruptible_call, pending_hoists);
     return op;
   }
@@ -264,11 +264,15 @@ VertexAdaptor<op_var> IsolateInterruptibleArgsPass::make_loop_guard_var(VertexPt
 }
 
 VertexPtr IsolateInterruptibleArgsPass::process_while(VertexAdaptor<op_while> while_v, std::vector<VertexPtr>& pending_hoists) noexcept {
-  if (needs_hoits(while_v->cond(), false)) {
+  if (needs_hoist(while_v->cond(), false)) {
     auto should_break = VertexAdaptor<op_log_not>::create(while_v->cond()).set_location(while_v);
     auto break_if = make_break_if(should_break);
     while_v->cmd_ref() = VertexAdaptor<op_seq>::create(break_if, while_v->cmd()).set_rl_type(val_none).set_location(while_v);
     while_v->cond() = VertexAdaptor<op_true>::create().set_location(while_v);
+  } else {
+    std::vector<VertexPtr> hoists;
+    while_v->cond() = process(while_v->cond(), false, hoists);
+    kphp_assert(hoists.empty());
   }
 
   while_v->cmd_ref() = process(while_v->cmd_ref(), false, pending_hoists);
@@ -277,7 +281,7 @@ VertexPtr IsolateInterruptibleArgsPass::process_while(VertexAdaptor<op_while> wh
 }
 
 VertexPtr IsolateInterruptibleArgsPass::process_do(VertexAdaptor<op_do> do_v, std::vector<VertexPtr>& pending_hoists) noexcept {
-  if (needs_hoits(do_v->cond(), false)) {
+  if (needs_hoist(do_v->cond(), false)) {
     // Neither top-of-body nor bottom-of-body placement alone works for do-while: a native "continue"
     // jumps straight to the while (cond) test (bottom placement would be skipped), but cond must not
     // be evaluated before the loop's very first iteration (top placement alone would evaluate it too
@@ -301,6 +305,10 @@ VertexPtr IsolateInterruptibleArgsPass::process_do(VertexAdaptor<op_do> do_v, st
 
     do_v->cmd_ref() = VertexAdaptor<op_seq>::create(break_if, clear_guard, do_v->cmd()).set_rl_type(val_none).set_location(do_v);
     do_v->cond() = VertexAdaptor<op_true>::create().set_location(do_v);
+  } else {
+    std::vector<VertexPtr> hoists;
+    do_v->cond() = process(do_v->cond(), false, hoists);
+    kphp_assert(hoists.empty());
   }
 
   do_v->cmd_ref() = process(do_v->cmd_ref(), false, pending_hoists);
@@ -309,7 +317,7 @@ VertexPtr IsolateInterruptibleArgsPass::process_do(VertexAdaptor<op_do> do_v, st
 }
 
 VertexPtr IsolateInterruptibleArgsPass::process_for(VertexAdaptor<op_for> for_v, std::vector<VertexPtr>& pending_hoists) noexcept {
-  if (needs_hoits(for_v->cond(), false)) {
+  if (needs_hoist(for_v->cond(), false)) {
     // cond is always an op_seq_comma (even for a single expression or the empty/default case, see
     // GenTree::get_for): every expression but the last runs purely for its side effects, and the last one
     // (already bool-converted by the parser) is the actual condition. Move the non-last expressions to the
@@ -331,6 +339,10 @@ VertexPtr IsolateInterruptibleArgsPass::process_for(VertexAdaptor<op_for> for_v,
 
     for_v->cmd_ref() = VertexAdaptor<op_seq>::create(new_body_children).set_rl_type(val_none).set_location(for_v);
     for_v->cond() = VertexAdaptor<op_seq_comma>::create(VertexAdaptor<op_true>::create().set_location(for_v)).set_location(for_v);
+  } else {
+    std::vector<VertexPtr> hoists;
+    for_v->cond() = process(for_v->cond(), false, hoists);
+    kphp_assert(hoists.empty());
   }
 
   // pre_cond and post_cond are themselves op_seq (self-scoping via process_block below), so unlike cond
