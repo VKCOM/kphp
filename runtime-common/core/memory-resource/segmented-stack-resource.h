@@ -95,8 +95,7 @@ public:
   auto deallocate(void* mem, size_t size) noexcept -> void {
     m_segment_curr -= size;
 
-    if (static_cast<std::byte*>(mem) != m_segment_curr)
-      php_assert(false);
+    php_assert(static_cast<std::byte*>(mem) == m_segment_curr);
 
     if (m_segment_curr == m_segment_begin) {
       switch_to_old_segment();
