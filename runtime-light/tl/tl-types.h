@@ -1048,7 +1048,7 @@ struct httpConnection final {
   }
 };
 
-// HTTP responses are sent as a sequence of chunks (one per flush(), plus a final one from finalize_server()).
+// HTTP responses are sent as a sequence of chunks (zero+ per flush(), plus a final one from finalize_server()).
 // A chunk always carries a body, but only the very first chunk also carries a header, since the status code
 // and headers may only be sent once, at the very start of the response.
 struct httpResponseHeader final {
@@ -1116,17 +1116,19 @@ public:
 
 class HttpResponseChunk final {
   static constexpr uint32_t BLOCK_FINISH_MAGIC = 0xa3e5'0d92;
+  static constexpr uint32_t RESPONSE_FINISH_MAGIC = 0x6f3a'9c12;
 
 public:
   std::optional<tl::HttpResponseHeader> opt_header;
   tl::HttpResponseBody body{};
+  bool last{};
 
   void store(tl::storer& tls) const noexcept {
     if (opt_header.has_value()) {
       opt_header->store(tls);
     }
     body.store(tls);
-    tl::magic{.value = BLOCK_FINISH_MAGIC}.store(tls);
+    tl::magic{.value = last ? RESPONSE_FINISH_MAGIC : BLOCK_FINISH_MAGIC}.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {

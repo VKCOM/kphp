@@ -7,17 +7,28 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <locale>
 #include <optional>
 #include <ranges>
 #include <string_view>
 #include <utility>
 
+#include "zlib/zlib.h"
+
 #include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
+#include "runtime-light/stdlib/zlib/zlib-functions.h"
+#include "runtime-light/streams/connection.h"
+#include "runtime-light/streams/stream.h"
+#include "runtime-light/tl/tl-core.h"
+#include "runtime-light/tl/tl-types.h"
 
 namespace {
 
@@ -93,9 +104,111 @@ std::optional<uint64_t> valid_http_status_header(std::string_view header) noexce
   return http_response_code;
 }
 
+// flush() consumes only the system buffer; finalization also drains open user buffers.
+string take_response_body(HttpServerInstanceState& state, bool finish) noexcept {
+  auto& buffers{OutputInstanceState::get().output_buffers};
+  auto& system_buffer{buffers.system_buffer().get()};
+  string body{};
+  if (state.http_method != kphp::http::method::head) {
+    body.append(system_buffer.buffer(), system_buffer.size());
+    if (finish) {
+      for (const auto& buffer : buffers.user_buffers()) {
+        body.append(buffer.buffer(), buffer.size());
+      }
+    }
+  }
+  system_buffer.clean();
+
+  if (state.response_encoding != 0 && state.http_method != kphp::http::method::head) {
+    auto compressed{state.body_compressor.compress({body.c_str(), static_cast<size_t>(body.size())}, finish)};
+    if (!compressed) [[unlikely]] {
+      kphp::log::error("can't compress HTTP response");
+    }
+    body = std::move(*compressed);
+  }
+  if (finish) {
+    state.body_compressor.close();
+  }
+  return body;
+}
+
+// Freeze content encoding together with the headers, independently of later ob_* calls.
+tl::HttpResponseHeader build_response_header(HttpServerInstanceState& state) noexcept {
+  if (state.auto_encoding_enabled) {
+    const bool accepts_gzip{(state.encoding & HttpServerInstanceState::ENCODING_GZIP) != 0};
+    state.response_encoding = accepts_gzip ? HttpServerInstanceState::ENCODING_GZIP : (state.encoding & HttpServerInstanceState::ENCODING_DEFLATE);
+  }
+  if (state.response_encoding != 0) {
+    const bool use_gzip{state.response_encoding == HttpServerInstanceState::ENCODING_GZIP};
+    const auto encoding{use_gzip ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE};
+    if (!state.body_compressor.ensure_active(kphp::zlib::DEFAULT_COMPRESSION_LEVEL, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY)) [[unlikely]] {
+      kphp::log::error("can't initialize HTTP response compression");
+    }
+    kphp::http::header(use_gzip ? "Content-Encoding: gzip" : "Content-Encoding: deflate", /* replace = */ true, kphp::http::status::NO_STATUS);
+  }
+
+  tl::HttpResponseHeader header{};
+  const auto status_code{state.status_code == kphp::http::status::NO_STATUS ? kphp::http::status::OK : state.status_code};
+  header.inner.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11};
+  header.inner.status_code = {.value = static_cast<int32_t>(status_code)};
+  header.inner.headers.value.reserve(state.headers().size());
+  std::transform(state.headers().cbegin(), state.headers().cend(), std::back_inserter(header.inner.headers.value), [](const auto& header_entry) noexcept {
+    const auto& [name, value]{header_entry};
+    return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+  });
+  return header;
+}
+
+// Serialize writers across suspension points so concurrent forks cannot interleave TL packets.
+// Callbacks run before joining this queue: a callback may itself call flush().
+kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::optional<kphp::coro::shared_task<>> previous, bool finish) noexcept {
+  if (previous.has_value()) {
+    co_await kphp::forks::id_managed(previous->when_ready());
+    previous.reset();
+  }
+  if (state.response_finished || state.connection->is_aborted()) {
+    co_return;
+  }
+
+  tl::HttpResponseChunk chunk{};
+  if (!state.headers_sent) {
+    chunk.opt_header = build_response_header(state);
+    state.headers_sent = true;
+  }
+  string body{take_response_body(state, finish)};
+  chunk.body.inner.body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()};
+  chunk.last = finish;
+  tl::storer tls{chunk.footprint()};
+  chunk.store(tls);
+
+  auto& stream{state.connection->get_stream()};
+  if (auto expected{co_await kphp::forks::id_managed(stream.write_all(tls.view()))}; !expected) [[unlikely]] {
+    state.response_finished = true;
+    stream.shutdown_write();
+    kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
+  }
+  if (finish) {
+    state.response_finished = true;
+    stream.shutdown_write();
+  }
+}
+
 } // namespace
 
 namespace kphp::http {
+
+kphp::coro::task<> invoke_headers_callback(HttpServerInstanceState& state) noexcept {
+  if (!std::exchange(state.headers_callback_started, true) && state.headers_registered_callback.has_value()) {
+    auto callback{std::exchange(state.headers_registered_callback, std::nullopt)};
+    co_await kphp::forks::id_managed(std::move(*callback));
+  }
+}
+
+kphp::coro::task<> send_response(HttpServerInstanceState& state, bool finish) noexcept {
+  auto writer{write_response(state, std::exchange(state.pending_response, std::nullopt), finish)};
+  state.pending_response.emplace(writer);
+  co_await kphp::forks::id_managed(std::move(writer));
+}
 
 void header(std::string_view header_view, bool replace, int64_t response_code) noexcept {
   if (response_code < 0) [[unlikely]] {
@@ -103,14 +216,7 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   }
 
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  switch (http_server_instance_st.response_state) {
-  case kphp::http::response_state::not_started:
-  case kphp::http::response_state::sending_headers:
-    break;
-  case kphp::http::response_state::headers_sent:
-  case kphp::http::response_state::sending_body:
-  case kphp::http::response_state::completed:
-    // don't add header since it will not be sent
+  if (http_server_instance_st.headers_sent) {
     return;
   }
 

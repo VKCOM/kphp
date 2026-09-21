@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <iterator>
 #include <locale>
 #include <optional>
@@ -29,12 +28,10 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/multipart/multipart.h"
-#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/output/output-state.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/server/http-functions.h"
 #include "runtime-light/stdlib/system/system-functions.h"
-#include "runtime-light/stdlib/zlib/zlib-functions.h"
 #include "runtime-light/streams/connection.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
@@ -203,82 +200,6 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
   }
 
   return content_type;
-}
-
-string get_http_response_body(HttpServerInstanceState& http_server_instance_st) noexcept {
-  string body{};
-  if (http_server_instance_st.http_method != kphp::http::method::head) {
-    auto& output_instance_st{OutputInstanceState::get()};
-    const auto system_buffer{output_instance_st.output_buffers.system_buffer()};
-    const auto user_buffers{output_instance_st.output_buffers.user_buffers()};
-
-    const auto body_size{std::ranges::fold_left(user_buffers | std::views::transform([](const auto& buffer) noexcept { return buffer.size(); }),
-                                                system_buffer.get().size(), std::plus<string::size_type>{})};
-    body.reserve_at_least(body_size);
-
-    body.append(system_buffer.get().buffer(), system_buffer.get().size());
-    const auto appender{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
-    std::ranges::for_each(user_buffers | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; }), appender);
-
-    const bool auto_encoding_enabled{http_server_instance_st.auto_encoding_enabled};
-    const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
-    const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
-    // compress body if needed
-    if (auto_encoding_enabled && (gzip_encoded || deflate_encoded)) {
-      auto& compressor{http_server_instance_st.body_compressor};
-      if (compressor.ensure_active(kphp::zlib::DEFAULT_COMPRESSION_LEVEL, gzip_encoded ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE,
-                                   MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY)) [[likely]] {
-        if (auto encoded_body{compressor.compress({body.c_str(), static_cast<size_t>(body.size())}, /* finish = */ true)}; encoded_body.has_value())
-            [[likely]] {
-          body = std::move(*encoded_body);
-        }
-      }
-      compressor.close();
-    }
-  }
-  return body;
-}
-
-// Builds the response header block. Shared between finalize_server() and the future flush() — neither knows about
-// the other, they both just build/send chunks and coordinate solely through HttpServerInstanceState::response_state.
-tl::HttpResponseHeader build_response_header(HttpServerInstanceState& http_server_instance_st) noexcept {
-  const bool auto_encoding_enabled{http_server_instance_st.auto_encoding_enabled};
-  const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
-  const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
-  if (auto_encoding_enabled && (gzip_encoded || deflate_encoded)) {
-    auto& static_SB{RuntimeContext::get().static_SB};
-    static_SB.clean() << kphp::http::headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
-    kphp::http::header({static_SB.c_str(), static_SB.size()}, true, kphp::http::status::NO_STATUS);
-  }
-
-  tl::HttpResponseHeader header{};
-  const auto status_code{http_server_instance_st.status_code == kphp::http::status::NO_STATUS ? kphp::http::status::OK : http_server_instance_st.status_code};
-  header.inner.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11};
-  header.inner.status_code = {.value = static_cast<int32_t>(status_code)};
-  header.inner.headers.value.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(header.inner.headers.value),
-                 [](const auto& header_entry) noexcept {
-                   const auto& [name, value]{header_entry};
-                   return tl::httpHeaderEntry{
-                       .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                 });
-  return header;
-}
-
-// Serializes and sends a single response chunk. Shared between finalize_server() and the future flush() — see the
-// comment on build_response_header() above.
-kphp::coro::task<> send_response_chunk(HttpServerInstanceState& http_server_instance_st, std::optional<tl::HttpResponseHeader> opt_header,
-                                       std::span<const std::byte> body) noexcept {
-  tl::HttpResponseChunk response_chunk{};
-  response_chunk.opt_header = std::move(opt_header);
-  response_chunk.body.inner.body = body;
-
-  tl::storer tls{response_chunk.footprint()};
-  response_chunk.store(tls);
-
-  if (auto expected{co_await kphp::component::send_response(http_server_instance_st.connection->get_stream(), tls.view())}; !expected) [[unlikely]] {
-    kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
-  }
 }
 
 } // namespace
@@ -456,7 +377,6 @@ kphp::coro::task<> finalize_server() noexcept {
   http_server_instance_st.connection->unregister_abort_handler();
 
   const auto finalizer{vk::finally([&http_server_instance_st] noexcept {
-    // TODO pay attention when adding flush
     std::ranges::for_each(http_server_instance_st.multipart_temporary_files, [](const auto& multipart_filename) noexcept {
       if (const auto expected{k2::unlink(multipart_filename)}; !expected) {
         kphp::log::warning("failed to unlink multipart temporary file: error code -> {}", expected.error());
@@ -469,26 +389,20 @@ kphp::coro::task<> finalize_server() noexcept {
     co_return kphp::log::info("HTTP connection closed");
   }
 
-  string response_body{};
-  std::optional<tl::HttpResponseHeader> opt_header{};
+  // This progression is private to finalization. The shared writer owns wire state.
   switch (http_server_instance_st.response_state) {
   case kphp::http::response_state::not_started:
     http_server_instance_st.response_state = kphp::http::response_state::sending_headers;
-    if (http_server_instance_st.headers_registered_callback.has_value()) {
-      co_await *std::exchange(http_server_instance_st.headers_registered_callback, std::nullopt);
-    }
     [[fallthrough]];
   case kphp::http::response_state::sending_headers:
-    opt_header = build_response_header(http_server_instance_st);
+    co_await kphp::forks::id_managed(invoke_headers_callback(http_server_instance_st));
     http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
     [[fallthrough]];
   case kphp::http::response_state::headers_sent:
-    response_body = get_http_response_body(http_server_instance_st);
     http_server_instance_st.response_state = kphp::http::response_state::sending_body;
     [[fallthrough]];
   case kphp::http::response_state::sending_body:
-    co_await send_response_chunk(http_server_instance_st, std::move(opt_header),
-                                 {reinterpret_cast<const std::byte*>(response_body.c_str()), response_body.size()});
+    co_await kphp::forks::id_managed(send_response(http_server_instance_st, /* finish = */ true));
     http_server_instance_st.response_state = kphp::http::response_state::completed;
     [[fallthrough]];
   case kphp::http::response_state::completed:
