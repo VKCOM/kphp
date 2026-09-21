@@ -490,7 +490,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
 
   bool interruptible_call = G->is_output_mode_k2() && VertexUtil::is_interruptible_expr(rhs);
   if (interruptible_call) {
-    W << "co_await";
+    W << "CO_AWAIT_TASK_ON_STACK(";
   }
 
   W << "NullCoalesce< " << TypeName{type} << " >(";
@@ -542,6 +542,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
     context.inside_null_coalesce_fallback--;
+  }
+
+  if (interruptible_call) {
+    W << ")";
   }
 
   W << ")";
@@ -916,13 +920,13 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(kphp::forks::start(" << FunctionName(func);
+        W << "(kphp::forks::start(" << "[]<typename... Args>(Args&&... args) noexcept { return " << FunctionName(func) << "(std::forward<Args>(args)...); }";
       } else {
         W << FunctionForkName(func);
       }
     } else {
       if (func->is_interruptible) {
-        W << "(" << "co_await ";
+        W << "CO_AWAIT_TASK_ON_STACK(";
       }
       W << FunctionName(func);
     }
@@ -931,7 +935,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     const TypeData* tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-  W << "(";
+
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
+    W << "(";
+  }
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -959,7 +966,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
   if (is_function_call_should_be_tracked(func)) {
     W << "))";
   }
-  W << ")";
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
+    W << ")";
+  }
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
       W << "))";
@@ -2113,11 +2122,11 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
   }
   W << BEGIN;
 
-  W << (k2_async_callback ? "co_return(co_await " : "return ") << FunctionName(root->func_id) << "(";
+  W << (k2_async_callback ? "co_return(CO_AWAIT_TASK_ON_STACK(" : "return ") << FunctionName(root->func_id) << "(";
   for (int idx = 1; idx <= root->size(); ++idx) {
     W << "captured" << idx << ", ";
   }
-  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? ")" : "") << ";";
+  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? "))" : "") << ";";
 
   W << NL << END;
   W << UnlockComments{};
