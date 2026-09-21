@@ -128,7 +128,7 @@ define('LC_MESSAGES', 5);
 
 function debug_backtrace() ::: string[][];
 
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info interruptible */
 function flush() ::: void;
 
 define('PHP_QUERY_RFC1738', 1);

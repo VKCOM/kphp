@@ -5,8 +5,11 @@
 #include "runtime-light/stdlib/zlib/zlib-stream-compressor.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <memory>
+#include <optional>
+#include <span>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -79,7 +82,11 @@ std::optional<string> stream_compressor::compress(std::span<const char> data, bo
     buffer_used = out_size - zstrm.avail_out;
   } while (status == Z_OK && zstrm.avail_out == 0);
 
-  if (status != Z_OK && status != Z_STREAM_END) [[unlikely]] {
+  // Repeated empty Z_SYNC_FLUSH calls have no output and may return Z_BUF_ERROR.
+  if (status == Z_BUF_ERROR && !finish && data.empty() && buffer_used == 0) {
+    return string{};
+  }
+  if ((finish && status != Z_STREAM_END) || (!finish && status != Z_OK)) [[unlikely]] {
     kphp::log::warning("zlib error while incrementally compressing data: {}", status);
     return {};
   }

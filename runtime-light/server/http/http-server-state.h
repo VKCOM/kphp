@@ -15,6 +15,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/zlib/zlib-stream-compressor.h"
 #include "runtime-light/streams/connection.h"
@@ -70,6 +71,13 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   kphp::http::method http_method{kphp::http::method::other};
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
   kphp::http::response_state response_state{kphp::http::response_state::not_started};
+
+  // Wire state shared by all response writers. response_state above belongs only to finalize_server().
+  bool headers_sent{};
+  bool headers_callback_started{};
+  bool response_finished{};
+  uint32_t response_encoding{};
+  std::optional<kphp::coro::shared_task<>> pending_response;
 
   // The headers_registered_callback function should only be invoked once
   std::optional<kphp::coro::task<>> headers_registered_callback;
