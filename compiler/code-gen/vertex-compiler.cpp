@@ -490,7 +490,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
 
   bool interruptible_call = G->is_output_mode_k2() && VertexUtil::is_interruptible_expr(rhs);
   if (interruptible_call) {
-    W << "co_await ";
+    W << "co_await";
   }
 
   W << "NullCoalesce< " << TypeName{type} << " >(";
