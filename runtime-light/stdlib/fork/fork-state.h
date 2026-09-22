@@ -78,18 +78,19 @@ public:
   template<typename F, typename... Args>
   requires(kphp::coro::is_task_function_v<F, Args...>)
   std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(F&& f, Args&&... args) noexcept {
-    static constexpr auto fork_coroutine{[](F f, Args... args, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
-      ForkInstanceState::get().current_id = fork_id;
+    static constexpr auto fork_coroutine{
+        [](std::remove_cvref_t<F> f, std::remove_cvref_t<Args>... args, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
+          ForkInstanceState::get().current_id = fork_id;
 
-      kphp::forks::details::storage s{};
-      if constexpr (std::same_as<kphp::coro::async_function_return_type_t<F, Args...>, void>) {
-        CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
-        s.store();
-      } else {
-        s.store<kphp::coro::async_function_return_type_t<F, Args...>>(CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...)));
-      }
-      co_return s;
-    }};
+          kphp::forks::details::storage s{};
+          if constexpr (std::same_as<kphp::coro::async_function_return_type_t<F, Args...>, void>) {
+            CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
+            s.store();
+          } else {
+            s.store<kphp::coro::async_function_return_type_t<F, Args...>>(CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...)));
+          }
+          co_return s;
+        }};
 
     const int64_t fork_id{next_fork_id--};
     auto fork_task{std::invoke(fork_coroutine, std::forward<F>(f), std::forward<Args>(args)..., fork_id)};
