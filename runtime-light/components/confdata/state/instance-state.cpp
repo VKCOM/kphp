@@ -247,10 +247,11 @@ auto InstanceState::run() noexcept -> kphp::coro::task<> {
 
 auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
   for (;;) {
-    const auto ts{static_cast<uint64_t>(kphp::time::now().time_since_epoch().count())};
-    report_events_metrics(ts);
-    report_capacity_metrics(ts);
-    report_update_failure_metrics(ts);
+    k2::SystemTime now{};
+    k2::system_time(std::addressof(now));
+    report_events_metrics(now.since_epoch_ns);
+    report_capacity_metrics(now.since_epoch_ns);
+    report_update_failure_metrics(now.since_epoch_ns);
     co_await m_io_scheduler.schedule(CONFDATA_METRICS_INTERVAL);
   }
 }
