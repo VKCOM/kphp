@@ -11,6 +11,24 @@ function flush_from_fork(string $tag): int {
 }
 
 switch ($_SERVER['PHP_SELF']) {
+    case '/no-body':
+        $status = (int)$_GET['status'];
+        header("HTTP/1.1 $status No Body");
+        echo 'first';
+        flush();
+        usleep(100000);
+        for ($i = 0; $i < 4; ++$i) {
+            echo str_repeat('x', 65536);
+            flush();
+        }
+        fwrite(fopen('php://stderr', 'w'), "no-body completed $status\n");
+        break;
+    case '/content-length':
+        header('Content-Length: 10');
+        echo 'first';
+        flush();
+        echo '-last';
+        break;
     case '/stream':
         echo "first\n";
         flush();
@@ -51,6 +69,21 @@ switch ($_SERVER['PHP_SELF']) {
             ob_end_clean();
         }
         echo '-last';
+        break;
+    case '/gzip-binary':
+        ob_start('ob_gzhandler');
+        $data = '';
+        $random_state = 1;
+        for ($i = 0; $i < 65536; ++$i) {
+            $random_state = ($random_state * 1103515245 + 12345) & 0x7fffffff;
+            $data .= chr(($random_state >> 16) & 255);
+        }
+        foreach ([0, 1, 7, 8, 31, 32, 255, 256, 16383, 65536] as $size) {
+            echo substr($data, 0, $size);
+            ob_flush();
+            flush();
+            flush();
+        }
         break;
     case '/late-gzip':
         echo 'first';

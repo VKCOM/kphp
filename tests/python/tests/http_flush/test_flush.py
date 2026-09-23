@@ -54,6 +54,22 @@ class TestFlush(WebServerAutoTestCase):
                     self.assertTrue(decoder.eof)
                     self.assertEqual(decoder.unused_data, b'')
 
+    def test_compressed_binary_chunks(self):
+        data = bytearray()
+        random_state = 1
+        for _ in range(65536):
+            random_state = (random_state * 1103515245 + 12345) & 0x7fffffff
+            data.append((random_state >> 16) & 255)
+        expected = b''.join(data[:size] for size in [0, 1, 7, 8, 31, 32, 255, 256, 16383, 65536])
+        for encoding, window in [('gzip', 31), ('deflate', 15)]:
+            with self.subTest(encoding=encoding):
+                response = self.response('/gzip-binary', encoding)
+                self.assertEqual(response.getheader('content-encoding'), encoding)
+                decoder = zlib.decompressobj(window)
+                self.assertEqual(decoder.decompress(response.read()), expected)
+                self.assertTrue(decoder.eof)
+                self.assertEqual(decoder.unused_data, b'')
+
     def test_late_gzip_does_not_change_wire_encoding(self):
         response = self.response('/late-gzip', 'gzip')
         self.assertIsNone(response.getheader('content-encoding'))
@@ -80,6 +96,25 @@ class TestFlush(WebServerAutoTestCase):
     def test_empty_flush_and_head(self):
         self.assertEqual(self.response('/empty').read(), b'')
         self.assertEqual(self.response('/gzip', 'gzip', 'HEAD').read(), b'')
+
+    def test_suppressed_body_allows_script_to_finish(self):
+        for method, status in [('HEAD', 200), ('GET', 204), ('GET', 304)]:
+            with self.subTest(method=method, status=status):
+                conn = self.connect()
+                conn.request(method, f'/no-body?status={status}')
+                response = conn.getresponse()
+                self.assertEqual(response.status, status)
+                self.assertEqual(response.read(), b'')
+                self.web_server.assert_log([f'no-body completed {status}'])
+
+    def test_content_length_with_flush_and_keepalive(self):
+        conn = self.connect()
+        conn.request('GET', '/content-length')
+        response = conn.getresponse()
+        self.assertEqual(response.getheader('content-length'), '10')
+        self.assertEqual(response.read(), b'first-last')
+        conn.request('GET', '/empty')
+        self.assertEqual(conn.getresponse().read(), b'')
 
 
 @pytest.mark.kphp_skip_suite
