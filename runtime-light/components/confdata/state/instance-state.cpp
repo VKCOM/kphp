@@ -33,7 +33,6 @@
 #include "runtime-light/stdlib/confdata/confdata-storage.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/diagnostics/metrics.h"
-#include "runtime-light/stdlib/time/time-functions.h"
 #include "runtime-light/streams/connection.h"
 #include "runtime-light/streams/stream.h"
 
@@ -258,6 +257,12 @@ auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
 
 auto InstanceState::report_events_metrics(uint64_t timestamp) noexcept -> void {
   const auto send{[timestamp](kphp::diagnostics::metric_sender& sender, uint64_t& counter) noexcept {
+    // FIXME: needs to be fixed in platform
+    // Zero counts currently abort the platform's metrics batch flush.
+    if (counter == 0) {
+      return;
+    }
+
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
 
     std::ignore = sender.send_count(count, timestamp)
@@ -275,6 +280,12 @@ auto InstanceState::report_events_metrics(uint64_t timestamp) noexcept -> void {
 auto InstanceState::report_update_failure_metrics(uint64_t timestamp) noexcept -> void {
   for (size_t index{}; index < m_update_failure_counts.size(); ++index) {
     auto& counter{m_update_failure_counts[index]};
+    // FIXME: needs to be fixed in platform
+    // Zero counts currently abort the platform's metrics batch flush.
+    if (counter == 0) {
+      continue;
+    }
+
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
     std::ignore = m_update_failure_metrics.m_failures[index]
                       .send_count(count, timestamp)
