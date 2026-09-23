@@ -25,7 +25,7 @@ void header(std::string_view header, bool replace, int64_t response_code) noexce
 
 kphp::coro::task<> invoke_headers_callback(HttpServerInstanceState& state) noexcept;
 
-// finish also drains user buffers, finishes compression and closes the response stream.
+// When finish is true, also drains user buffers, finishes compression and closes the response stream.
 kphp::coro::task<> send_response(HttpServerInstanceState& state, bool finish) noexcept;
 
 } // namespace kphp::http

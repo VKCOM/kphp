@@ -35,7 +35,7 @@ enum status : uint16_t {
   BAD_REQUEST = 400,
 };
 
-enum class response_state : uint8_t { not_started, sending_headers, headers_sent, sending_body, completed };
+enum class finalization_state : uint8_t { not_started, invoking_headers_callback, sending_response, completed };
 
 namespace headers {
 
@@ -70,9 +70,9 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   uint64_t status_code{kphp::http::status::NO_STATUS};
   kphp::http::method http_method{kphp::http::method::other};
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
-  kphp::http::response_state response_state{kphp::http::response_state::not_started};
+  kphp::http::finalization_state finalization_state{kphp::http::finalization_state::not_started};
 
-  // Wire state shared by all response writers. response_state above belongs only to finalize_server().
+  // Wire state shared by all response writers. finalization_state above belongs only to finalize_server().
   bool headers_sent{};
   bool headers_callback_started{};
   bool response_finished{};

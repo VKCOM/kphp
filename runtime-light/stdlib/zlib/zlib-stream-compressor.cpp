@@ -29,7 +29,7 @@ void stream_compressor::dynamic_free([[maybe_unused]] voidpf opaque, voidpf addr
   kphp::memory::script::free(address);
 }
 
-bool stream_compressor::ensure_active(int32_t level, int32_t window_bits, int32_t memory, int32_t strategy) noexcept {
+bool stream_compressor::init_if_needed(int32_t level, int32_t encoding, int32_t memory, int32_t strategy) noexcept {
   if (this->m_stream.has_value()) {
     return true;
   }
@@ -38,13 +38,13 @@ bool stream_compressor::ensure_active(int32_t level, int32_t window_bits, int32_
     kphp::log::warning("incorrect compression level: {}", level);
     return false;
   }
-  if (window_bits != ENCODING_RAW && window_bits != ENCODING_DEFLATE && window_bits != ENCODING_GZIP) [[unlikely]] {
-    kphp::log::warning("incorrect encoding: {}", window_bits);
+  if (encoding != ENCODING_RAW && encoding != ENCODING_DEFLATE && encoding != ENCODING_GZIP) [[unlikely]] {
+    kphp::log::warning("incorrect encoding: {}", encoding);
     return false;
   }
 
   this->m_stream.emplace(z_stream{.zalloc = dynamic_calloc, .zfree = dynamic_free, .opaque = nullptr});
-  if (auto err{deflateInit2(std::addressof(*this->m_stream), level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) [[unlikely]] {
+  if (auto err{deflateInit2(std::addressof(*this->m_stream), level, Z_DEFLATED, encoding, memory, strategy)}; err != Z_OK) [[unlikely]] {
     kphp::log::warning("can't initialize zlib stream compressor: error {}", err);
     this->m_stream.reset();
     return false;
@@ -56,29 +56,31 @@ std::optional<string> stream_compressor::compress(std::span<const char> data, bo
   kphp::log::assertion(this->m_stream.has_value());
   z_stream& zstrm{*this->m_stream};
 
+  // Extra headroom for Z_SYNC_FLUSH; the buffer still grows if this estimate is insufficient.
   static constexpr uint64_t EXTRA_OUT_SIZE{30};
-  static constexpr uint64_t MIN_OUT_SIZE{64};
-
   auto out_size{static_cast<uint64_t>(deflateBound(std::addressof(zstrm), data.size())) + EXTRA_OUT_SIZE};
-  out_size = out_size < MIN_OUT_SIZE ? MIN_OUT_SIZE : out_size;
   string out{static_cast<string::size_type>(out_size), false};
 
+  // zlib advances next_in but does not modify input bytes; its API lacks const without ZLIB_CONST.
   zstrm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(data.data()));
   zstrm.avail_in = static_cast<uInt>(data.size());
   zstrm.next_out = reinterpret_cast<Bytef*>(out.buffer());
   zstrm.avail_out = static_cast<uInt>(out_size);
 
-  const auto flush_type{finish ? Z_FINISH : Z_SYNC_FLUSH};
+  const auto zlib_flush_mode{finish ? Z_FINISH : Z_SYNC_FLUSH};
   auto status{Z_OK};
   uint64_t buffer_used{};
+
+  // If the output buffer is too small, grow it and continue writing compressed data.
   do {
     if (zstrm.avail_out == 0) {
-      out_size += MIN_OUT_SIZE;
+      const auto previous_size{out_size};
+      out_size += previous_size;
       out.reserve_at_least(static_cast<string::size_type>(out_size));
-      zstrm.avail_out = MIN_OUT_SIZE;
+      zstrm.avail_out = static_cast<uInt>(out_size - previous_size);
       zstrm.next_out = reinterpret_cast<Bytef*>(std::next(out.buffer(), static_cast<ptrdiff_t>(buffer_used)));
     }
-    status = deflate(std::addressof(zstrm), flush_type);
+    status = deflate(std::addressof(zstrm), zlib_flush_mode);
     buffer_used = out_size - zstrm.avail_out;
   } while (status == Z_OK && zstrm.avail_out == 0);
 

@@ -25,7 +25,7 @@ public:
   stream_compressor() noexcept = default;
   ~stream_compressor();
 
-  bool ensure_active(int32_t level, int32_t window_bits, int32_t memory, int32_t strategy) noexcept;
+  bool init_if_needed(int32_t level, int32_t encoding, int32_t memory, int32_t strategy) noexcept;
   std::optional<string> compress(std::span<const char> data, bool finish) noexcept;
   void close() noexcept;
 };

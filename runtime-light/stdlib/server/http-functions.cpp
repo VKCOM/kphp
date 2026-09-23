@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <locale>
 #include <optional>
@@ -105,17 +106,19 @@ std::optional<uint64_t> valid_http_status_header(std::string_view header) noexce
 }
 
 // flush() consumes only the system buffer; finalization also drains open user buffers.
-string take_response_body(HttpServerInstanceState& state, bool finish) noexcept {
+string prepare_http_response_body(HttpServerInstanceState& state, bool finish) noexcept {
   auto& buffers{OutputInstanceState::get().output_buffers};
   auto& system_buffer{buffers.system_buffer().get()};
   string body{};
   if (state.http_method != kphp::http::method::head) {
+    const auto user_buffers{buffers.user_buffers().first(finish ? buffers.user_level() : 0)};
+    const auto body_size{std::ranges::fold_left(user_buffers | std::views::transform([](const auto& buffer) noexcept { return buffer.size(); }),
+                                                system_buffer.size(), std::plus<string::size_type>{})};
+    body.reserve_at_least(body_size);
+
     body.append(system_buffer.buffer(), system_buffer.size());
-    if (finish) {
-      for (const auto& buffer : buffers.user_buffers()) {
-        body.append(buffer.buffer(), buffer.size());
-      }
-    }
+    const auto appender{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
+    std::ranges::for_each(user_buffers | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; }), appender);
   }
   system_buffer.clean();
 
@@ -134,17 +137,17 @@ string take_response_body(HttpServerInstanceState& state, bool finish) noexcept 
 
 // Freeze content encoding together with the headers, independently of later ob_* calls.
 tl::HttpResponseHeader build_response_header(HttpServerInstanceState& state) noexcept {
-  if (state.auto_encoding_enabled) {
-    const bool accepts_gzip{(state.encoding & HttpServerInstanceState::ENCODING_GZIP) != 0};
-    state.response_encoding = accepts_gzip ? HttpServerInstanceState::ENCODING_GZIP : (state.encoding & HttpServerInstanceState::ENCODING_DEFLATE);
-  }
-  if (state.response_encoding != 0) {
-    const bool use_gzip{state.response_encoding == HttpServerInstanceState::ENCODING_GZIP};
-    const auto encoding{use_gzip ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE};
-    if (!state.body_compressor.ensure_active(kphp::zlib::DEFAULT_COMPRESSION_LEVEL, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY)) [[unlikely]] {
+  const bool auto_encoding_enabled{state.auto_encoding_enabled};
+  const bool gzip_encoded{static_cast<bool>(state.encoding & HttpServerInstanceState::ENCODING_GZIP)};
+  const bool deflate_encoded{static_cast<bool>(state.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
+
+  if (auto_encoding_enabled && (gzip_encoded || deflate_encoded)) {
+    state.response_encoding = gzip_encoded ? HttpServerInstanceState::ENCODING_GZIP : HttpServerInstanceState::ENCODING_DEFLATE;
+    const auto encoding{gzip_encoded ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE};
+    if (!state.body_compressor.init_if_needed(kphp::zlib::DEFAULT_COMPRESSION_LEVEL, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY)) [[unlikely]] {
       kphp::log::error("can't initialize HTTP response compression");
     }
-    kphp::http::header(use_gzip ? "Content-Encoding: gzip" : "Content-Encoding: deflate", /* replace = */ true, kphp::http::status::NO_STATUS);
+    kphp::http::header(gzip_encoded ? "Content-Encoding: gzip" : "Content-Encoding: deflate", /* replace = */ true, kphp::http::status::NO_STATUS);
   }
 
   tl::HttpResponseHeader header{};
@@ -175,7 +178,7 @@ kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::op
     chunk.opt_header = build_response_header(state);
     state.headers_sent = true;
   }
-  string body{take_response_body(state, finish)};
+  string body{prepare_http_response_body(state, finish)};
   chunk.body.inner.body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()};
   chunk.last = finish;
   tl::storer tls{chunk.footprint()};
