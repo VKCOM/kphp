@@ -154,22 +154,7 @@ inline bool f$instance_cache_delete(const string& key) noexcept {
     return false;
   }
   InstanceCacheInstanceState::get().request_cache.erase(key);
-<<<<<<< HEAD
   return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_PERCENTILE,
                                        EXPIRED_ELEMENT_REMAINING_LIFETIME_LIMIT_MS)
       .has_value();
-=======
-
-  tl::CacheDelete cache_delete{.key = tl::string{.value = {key.c_str(), key.size()}}};
-  tl::storer tls{cache_delete.footprint()};
-  cache_delete.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
-  }
-
-  auto stream{*std::move(expected_stream)};
-  if (!CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed([](kphp::component::stream& stream, std::span<const std::byte> request,
-                                                         std::span<std::byte> response) noexcept { return kphp::component::query(stream, request, response); },
-                                                      std::reference_wrapper{stream}, tls.view(), std::span<std::byte>{response}))) [[unlikely]] {
+}

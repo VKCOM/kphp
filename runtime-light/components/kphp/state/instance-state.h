@@ -8,10 +8,6 @@
 #include <cstdint>
 
 #include "common/mixin/not_copyable.h"
-<<<<<<< HEAD
-
-=======
->>>>>>> 2184933d6 (refactor coroutine memory)
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
@@ -47,20 +43,14 @@
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 
-    /**
+/**
  * Supported kinds of KPHP images:
  * 1. cli — works the same way as regular PHP script does
  * 2. server — automatically accepts a stream and expects it to contain either http or job worker request
  * 3. oneshot — can only accept one incoming stream
  * 4. multishot — can accept any number of incoming streams
  */
-    enum class image_kind : uint8_t {
-      invalid,
-      cli,
-      server,
-      oneshot,
-      multishot
-    };
+enum class image_kind : uint8_t { invalid, cli, server, oneshot, multishot };
 
 enum class instance_kind : uint8_t { invalid, cli, http_server, rpc_server, job_server, oneshot, multishot };
 
@@ -103,7 +93,13 @@ struct InstanceState final : vk::not_copyable {
   kphp::log::contextual_tags instance_tags;
 
   kphp::coro::instance_state coroutine_instance_state{component_state.initial_instance_coroutine_memory_size,
-                                                      component_state.min_instance_extra_coroutine_memory_size, 0};
+                                                      component_state.min_instance_extra_coroutine_memory_size,
+                                                      0,
+                                                      component_state.initial_instance_task_memory_size,
+                                                      component_state.instance_task_allocator_segment_size,
+                                                      component_state.instance_task_allocator_stack_pool_chunk_size,
+                                                      component_state.min_instance_extra_task_memory_size,
+                                                      0};
   kphp::coro::io_scheduler io_scheduler{coroutine_instance_state};
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;

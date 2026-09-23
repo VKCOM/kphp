@@ -1446,15 +1446,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
   W << "class " << FunctionClassName(func) << " final : public Resumable " << BEGIN << "private:" << NL << Indent(+2);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> 9cc91b9b9 (revert formatting in compiler)
   //MEMBER VARIABLES
-=======
-  // MEMBER VARIABLES
->>>>>>> 4964c9338 (bug fix)
   for (VarPtr var : func->param_ids) {
     kphp_error(!var->is_reference, "reference function parametrs are forbidden in resumable mode");
     W << VarPlainDeclaration(var);
@@ -1519,32 +1511,9 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << Indent(-2);
   W << END << ";" << NL;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-  //CALL FUNCTION
-<<<<<<< HEAD
-  W << FunctionDeclaration(func, false) << " " << BEGIN;
-  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
-=======
-  W << FunctionDeclaration(func, false) << " " << BEGIN;
-  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
->>>>>>> b444d2c69 (revert formatting in vertex-compiler)
-=======
-  // CALL FUNCTION
-  W << FunctionDeclaration(func, false) << " " << BEGIN;
-  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
->>>>>>> dc71b0d14 (formatting)
-=======
   //CALL FUNCTION
   W << FunctionDeclaration(func, false) << " " << BEGIN;
   W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
->>>>>>> 9cc91b9b9 (revert formatting in compiler)
-=======
-  // CALL FUNCTION
-  W << FunctionDeclaration(func, false) << " " << BEGIN;
-  W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
->>>>>>> 4964c9338 (bug fix)
 
   const auto var_name_gen = [](CodeGenerator& W, VarPtr var) { W << VarName(var); };
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
@@ -1552,22 +1521,8 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << "));" << NL;
   W << END << NL;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-  //FORK FUNCTION
-=======
-  // FORK FUNCTION
->>>>>>> dc71b0d14 (formatting)
-  W << FunctionForkDeclaration(func, false) << " " << BEGIN;
-=======
   //FORK FUNCTION
   W << FunctionForkDeclaration(func, false) << " " << BEGIN;
->>>>>>> 9cc91b9b9 (revert formatting in compiler)
-=======
-  // FORK FUNCTION
-  W << FunctionForkDeclaration(func, false) << " " << BEGIN;
->>>>>>> 4964c9338 (bug fix)
   W << "return fork_resumable(new " << FunctionClassName(func) << "(";
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
   W << "));" << NL;
@@ -2305,11 +2260,6 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
   case op_seq_rval:
     compile_seq_rval(root, W);
     break;
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4964c9338 (bug fix)
   case op_int_const:
     W << IntLit{root.as<op_int_const>()->str_val};
     break;
@@ -2340,8 +2290,6 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
       W << VarName(var_id);
     }
     break;
-<<<<<<< HEAD
-=======
   }
   case op_string:
     compile_string(root.as<op_string>(), W);
@@ -2501,447 +2449,439 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
     break;
 >>>>>>> 4964c9338 (bug fix)
   }
-  case op_string:
-    compile_string(root.as<op_string>(), W);
-    break;
+case op_string:
+  compile_string(root.as<op_string>(), W);
+  break;
 
-  case op_if:
-    compile_if(root.as<op_if>(), W);
-    break;
-  case op_return:
-    compile_return(root.as<op_return>(), W);
-    break;
-  case op_global:
-  case op_static:
-<<<<<<< HEAD
-    //already processed
-    break;
-  case op_throw:
-    compile_throw(root.as<op_throw>(), W);
-    break;
-  case op_continue:
-  case op_break:
-    compile_break_continue(root.as<meta_op_goto>(), W);
-    break;
-  case op_try:
-    compile_try(root.as<op_try>(), W);
-    break;
-  case op_fork:
-    compile_fork(root.as<op_fork>(), W);
-    break;
-  case op_async:
-    compile_async(root.as<op_async>(), W);
-    break;
-  case op_function:
-    compile_function(root.as<op_function>(), W);
-    break;
-  case op_ffi_cdata_value_ref:
-    compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
-    break;
-  case op_ffi_new:
-    compile_ffi_new(root.as<op_ffi_new>(), W);
-    break;
-  case op_ffi_addr:
-    compile_ffi_addr(root.as<op_ffi_addr>(), W);
-    break;
-  case op_ffi_cast:
-    compile_ffi_cast(root.as<op_ffi_cast>(), W);
-    break;
-  case op_ffi_load_call:
-    compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
-    break;
-  case op_ffi_array_get:
-    compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
-    break;
-  case op_ffi_array_set:
-    compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
-    break;
-  case op_func_call:
-    compile_func_call_fast(root.as<op_func_call>(), W);
-    break;
-  case op_callback_of_builtin:
-    compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
-    break;
-  case op_string_build:
-    compile_string_build(root.as<op_string_build>(), W);
-    break;
-  case op_index:
-    compile_index(root.as<op_index>(), W);
-    break;
-  case op_instance_prop:
-    compile_instance_prop(root.as<op_instance_prop>(), W);
-    break;
-  case op_isset:
-    compile_xset(root.as<meta_op_xset>(), W);
-    break;
-  case op_list:
-    compile_list(root.as<op_list>(), W);
-    break;
-  case op_array:
-    compile_array(root.as<op_array>(), W);
-    break;
-  case op_tuple:
-    compile_tuple(root.as<op_tuple>(), W);
-    break;
-  case op_shape:
-    compile_shape(root.as<op_shape>(), W);
-    break;
-  case op_unset:
-    compile_xset(root.as<meta_op_xset>(), W);
-    break;
-  case op_empty:
-  case op_phpdoc_var:
-    break;
-  case op_defined:
-    compile_defined(root.as<op_defined>(), W);
-    break;
-  case op_conv_array_l:
-    compile_conv_l(root.as<op_conv_array_l>(), W);
-    break;
-  case op_conv_int_l:
-    compile_conv_l(root.as<op_conv_int_l>(), W);
-    break;
-  case op_conv_string_l:
-    compile_conv_l(root.as<op_conv_string_l>(), W);
-    break;
-  case op_set_value:
-    compile_set_value(root.as<op_set_value>(), W);
-    break;
-  case op_push_back:
-    compile_push_back(root.as<op_push_back>(), W);
-    break;
-  case op_push_back_return:
-    compile_push_back_return(root.as<op_push_back_return>(), W);
-    break;
-  case op_noerr:
-    compile_noerr(root.as<op_noerr>(), W);
-    break;
-  case op_clone: {
-    const auto* tp = tinf::get_type(root);
-    if (auto klass = tp->class_type()) {
-      if (klass->is_class()) {
-        W << root.as<op_clone>()->expr() << ".clone()";
-        break;
-      }
+case op_if:
+  compile_if(root.as<op_if>(), W);
+  break;
+case op_return:
+  compile_return(root.as<op_return>(), W);
+  break;
+case op_global:
+case op_static:
+  //already processed
+  break;
+case op_throw:
+  compile_throw(root.as<op_throw>(), W);
+  break;
+case op_continue:
+case op_break:
+  compile_break_continue(root.as<meta_op_goto>(), W);
+  break;
+case op_try:
+  compile_try(root.as<op_try>(), W);
+  break;
+case op_fork:
+  compile_fork(root.as<op_fork>(), W);
+  break;
+case op_async:
+  compile_async(root.as<op_async>(), W);
+  break;
+case op_function:
+  compile_function(root.as<op_function>(), W);
+  break;
+case op_ffi_cdata_value_ref:
+  compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
+  break;
+case op_ffi_new:
+  compile_ffi_new(root.as<op_ffi_new>(), W);
+  break;
+case op_ffi_addr:
+  compile_ffi_addr(root.as<op_ffi_addr>(), W);
+  break;
+case op_ffi_cast:
+  compile_ffi_cast(root.as<op_ffi_cast>(), W);
+  break;
+case op_ffi_load_call:
+  compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
+  break;
+case op_ffi_array_get:
+  compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
+  break;
+case op_ffi_array_set:
+  compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
+  break;
+case op_func_call:
+  compile_func_call_fast(root.as<op_func_call>(), W);
+  break;
+case op_callback_of_builtin:
+  compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
+  break;
+case op_string_build:
+  compile_string_build(root.as<op_string_build>(), W);
+  break;
+case op_index:
+  compile_index(root.as<op_index>(), W);
+  break;
+case op_instance_prop:
+  compile_instance_prop(root.as<op_instance_prop>(), W);
+  break;
+case op_isset:
+  compile_xset(root.as<meta_op_xset>(), W);
+  break;
+case op_list:
+  compile_list(root.as<op_list>(), W);
+  break;
+case op_array:
+  compile_array(root.as<op_array>(), W);
+  break;
+case op_tuple:
+  compile_tuple(root.as<op_tuple>(), W);
+  break;
+case op_shape:
+  compile_shape(root.as<op_shape>(), W);
+  break;
+case op_unset:
+  compile_xset(root.as<meta_op_xset>(), W);
+  break;
+case op_empty:
+case op_phpdoc_var:
+  break;
+case op_defined:
+  compile_defined(root.as<op_defined>(), W);
+  break;
+case op_conv_array_l:
+  compile_conv_l(root.as<op_conv_array_l>(), W);
+  break;
+case op_conv_int_l:
+  compile_conv_l(root.as<op_conv_int_l>(), W);
+  break;
+case op_conv_string_l:
+  compile_conv_l(root.as<op_conv_string_l>(), W);
+  break;
+case op_set_value:
+  compile_set_value(root.as<op_set_value>(), W);
+  break;
+case op_push_back:
+  compile_push_back(root.as<op_push_back>(), W);
+  break;
+case op_push_back_return:
+  compile_push_back_return(root.as<op_push_back_return>(), W);
+  break;
+case op_noerr:
+  compile_noerr(root.as<op_noerr>(), W);
+  break;
+case op_clone: {
+  const auto* tp = tinf::get_type(root);
+  if (auto klass = tp->class_type()) {
+    if (klass->is_class()) {
+      W << root.as<op_clone>()->expr() << ".clone()";
       break;
     }
-  case op_string:
-    compile_string(root.as<op_string>(), W);
     break;
-
-<<<<<<< HEAD
-  case op_if:
-    compile_if(root.as<op_if>(), W);
-    break;
-  case op_return:
-    compile_return(root.as<op_return>(), W);
-    break;
-  case op_global:
-  case op_static:
-    //already processed
+  }
+case op_string:
+  compile_string(root.as<op_string>(), W);
+  break;
+case op_if:
+  compile_if(root.as<op_if>(), W);
+  break;
+case op_return:
+  compile_return(root.as<op_return>(), W);
+  break;
+case op_global:
+case op_static:
+  //already processed
 =======
-    // already processed
+  // already processed
 >>>>>>> dc71b0d14 (formatting)
-    break;
-  case op_throw:
-    compile_throw(root.as<op_throw>(), W);
-    break;
-  case op_continue:
-  case op_break:
-    compile_break_continue(root.as<meta_op_goto>(), W);
-    break;
-  case op_try:
-    compile_try(root.as<op_try>(), W);
-    break;
-  case op_fork:
-    compile_fork(root.as<op_fork>(), W);
-    break;
-  case op_async:
-    compile_async(root.as<op_async>(), W);
-    break;
-  case op_function:
-    compile_function(root.as<op_function>(), W);
-    break;
-  case op_ffi_cdata_value_ref:
-    compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
-    break;
-  case op_ffi_new:
-    compile_ffi_new(root.as<op_ffi_new>(), W);
-    break;
-  case op_ffi_addr:
-    compile_ffi_addr(root.as<op_ffi_addr>(), W);
-    break;
-  case op_ffi_cast:
-    compile_ffi_cast(root.as<op_ffi_cast>(), W);
-    break;
-  case op_ffi_load_call:
-    compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
-    break;
-  case op_ffi_array_get:
-    compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
-    break;
-  case op_ffi_array_set:
-    compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
-    break;
-  case op_func_call:
-    compile_func_call_fast(root.as<op_func_call>(), W);
-    break;
-  case op_callback_of_builtin:
-    compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
-    break;
-  case op_string_build:
-    compile_string_build(root.as<op_string_build>(), W);
-    break;
-  case op_index:
-    compile_index(root.as<op_index>(), W);
-    break;
-  case op_instance_prop:
-    compile_instance_prop(root.as<op_instance_prop>(), W);
-    break;
-  case op_isset:
-    compile_xset(root.as<meta_op_xset>(), W);
-    break;
-  case op_list:
-    compile_list(root.as<op_list>(), W);
-    break;
-  case op_array:
-    compile_array(root.as<op_array>(), W);
-    break;
-  case op_tuple:
-    compile_tuple(root.as<op_tuple>(), W);
-    break;
-  case op_shape:
-    compile_shape(root.as<op_shape>(), W);
-    break;
-  case op_unset:
-    compile_xset(root.as<meta_op_xset>(), W);
-    break;
-  case op_empty:
-  case op_phpdoc_var:
-    break;
-  case op_defined:
-    compile_defined(root.as<op_defined>(), W);
-    break;
-  case op_conv_array_l:
-    compile_conv_l(root.as<op_conv_array_l>(), W);
-    break;
-  case op_conv_int_l:
-    compile_conv_l(root.as<op_conv_int_l>(), W);
-    break;
-  case op_conv_string_l:
-    compile_conv_l(root.as<op_conv_string_l>(), W);
-    break;
-  case op_set_value:
-    compile_set_value(root.as<op_set_value>(), W);
-    break;
-  case op_push_back:
-    compile_push_back(root.as<op_push_back>(), W);
-    break;
-  case op_push_back_return:
-    compile_push_back_return(root.as<op_push_back_return>(), W);
-    break;
-  case op_noerr:
-    compile_noerr(root.as<op_noerr>(), W);
-    break;
-  case op_clone: {
-    const auto* tp = tinf::get_type(root);
-    if (auto klass = tp->class_type()) {
-      if (klass->is_class()) {
-        W << root.as<op_clone>()->expr() << ".clone()";
-        break;
+  break;
+case op_throw:
+  compile_throw(root.as<op_throw>(), W);
+  break;
+case op_continue:
+case op_break:
+  compile_break_continue(root.as<meta_op_goto>(), W);
+  break;
+case op_try:
+  compile_try(root.as<op_try>(), W);
+  break;
+case op_fork:
+  compile_fork(root.as<op_fork>(), W);
+  break;
+case op_async:
+  compile_async(root.as<op_async>(), W);
+  break;
+case op_function:
+  compile_function(root.as<op_function>(), W);
+  break;
+case op_ffi_cdata_value_ref:
+  compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
+  break;
+case op_ffi_new:
+  compile_ffi_new(root.as<op_ffi_new>(), W);
+  break;
+case op_ffi_addr:
+  compile_ffi_addr(root.as<op_ffi_addr>(), W);
+  break;
+case op_ffi_cast:
+  compile_ffi_cast(root.as<op_ffi_cast>(), W);
+  break;
+case op_ffi_load_call:
+  compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
+  break;
+case op_ffi_array_get:
+  compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
+  break;
+case op_ffi_array_set:
+  compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
+  break;
+case op_func_call:
+  compile_func_call_fast(root.as<op_func_call>(), W);
+  break;
+case op_callback_of_builtin:
+  compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
+  break;
+case op_string_build:
+  compile_string_build(root.as<op_string_build>(), W);
+  break;
+case op_index:
+  compile_index(root.as<op_index>(), W);
+  break;
+case op_instance_prop:
+  compile_instance_prop(root.as<op_instance_prop>(), W);
+  break;
+case op_isset:
+  compile_xset(root.as<meta_op_xset>(), W);
+  break;
+case op_list:
+  compile_list(root.as<op_list>(), W);
+  break;
+case op_array:
+  compile_array(root.as<op_array>(), W);
+  break;
+case op_tuple:
+  compile_tuple(root.as<op_tuple>(), W);
+  break;
+case op_shape:
+  compile_shape(root.as<op_shape>(), W);
+  break;
+case op_unset:
+  compile_xset(root.as<meta_op_xset>(), W);
+  break;
+case op_empty:
+case op_phpdoc_var:
+  break;
+case op_defined:
+  compile_defined(root.as<op_defined>(), W);
+  break;
+case op_conv_array_l:
+  compile_conv_l(root.as<op_conv_array_l>(), W);
+  break;
+case op_conv_int_l:
+  compile_conv_l(root.as<op_conv_int_l>(), W);
+  break;
+case op_conv_string_l:
+  compile_conv_l(root.as<op_conv_string_l>(), W);
+  break;
+case op_set_value:
+  compile_set_value(root.as<op_set_value>(), W);
+  break;
+case op_push_back:
+  compile_push_back(root.as<op_push_back>(), W);
+  break;
+case op_push_back_return:
+  compile_push_back_return(root.as<op_push_back_return>(), W);
+  break;
+case op_noerr:
+  compile_noerr(root.as<op_noerr>(), W);
+  break;
+case op_clone: {
+  const auto* tp = tinf::get_type(root);
+  if (auto klass = tp->class_type()) {
+    if (klass->is_class()) {
+      W << root.as<op_clone>()->expr() << ".clone()";
+      break;
 =======
-case op_int_const:
-  W << IntLit{root.as<op_int_const>()->str_val};
-  break;
-case op_float_const:
-  str = root.as<op_float_const>()->str_val;
-  W << "(double)" << str;
-  break;
-case op_false:
-  W << "false";
-  break;
-case op_true:
-  W << "true";
-  break;
-case op_null:
-  W << "Optional<bool>{}";
-  break;
-case op_var: {
-  VarPtr var_id = root.as<op_var>()->var_id;
-  if (var_id->is_constant()) {
-    // auto-extracted constant variables (const strings, arrays, etc.) in codegen are C++ variables
-    W << var_id->name;
-  } else if (var_id->is_in_global_scope() && !var_id->is_foreach_reference) {
-    // mutable globals, as opposed, are not C++ variables: instead,
-    // they all are placed in linear memory chunks, see php-script-globals.h
-    // with the only exception of `foreach (... as &$ref)` in global scope, see compile_foreach_ref_header()
-    W << GlobalVarInPhpGlobals(var_id);
-  } else {
-    W << VarName(var_id);
+    case op_int_const:
+      W << IntLit{root.as<op_int_const>()->str_val};
+      break;
+    case op_float_const:
+      str = root.as<op_float_const>()->str_val;
+      W << "(double)" << str;
+      break;
+    case op_false:
+      W << "false";
+      break;
+    case op_true:
+      W << "true";
+      break;
+    case op_null:
+      W << "Optional<bool>{}";
+      break;
+    case op_var: {
+      VarPtr var_id = root.as<op_var>()->var_id;
+      if (var_id->is_constant()) {
+        // auto-extracted constant variables (const strings, arrays, etc.) in codegen are C++ variables
+        W << var_id->name;
+      } else if (var_id->is_in_global_scope() && !var_id->is_foreach_reference) {
+        // mutable globals, as opposed, are not C++ variables: instead,
+        // they all are placed in linear memory chunks, see php-script-globals.h
+        // with the only exception of `foreach (... as &$ref)` in global scope, see compile_foreach_ref_header()
+        W << GlobalVarInPhpGlobals(var_id);
+      } else {
+        W << VarName(var_id);
 >>>>>>> 9cc91b9b9 (revert formatting in compiler)
       }
       break;
     }
-  case op_string:
-    compile_string(root.as<op_string>(), W);
-    break;
+    case op_string:
+      compile_string(root.as<op_string>(), W);
+      break;
 =======
-    void compile_vertex(VertexPtr root, CodeGenerator & W) {
-      OperationType tp = OpInfo::type(root->type());
+      void compile_vertex(VertexPtr root, CodeGenerator & W) {
+        OperationType tp = OpInfo::type(root->type());
 >>>>>>> 4964c9338 (bug fix)
 
-  case op_if:
-    compile_if(root.as<op_if>(), W);
-    break;
-  case op_return:
-    compile_return(root.as<op_return>(), W);
-    break;
-  case op_global:
-  case op_static:
-    //already processed
-    break;
-  case op_throw:
-    compile_throw(root.as<op_throw>(), W);
-    break;
-  case op_continue:
-  case op_break:
-    compile_break_continue(root.as<meta_op_goto>(), W);
-    break;
-  case op_try:
-    compile_try(root.as<op_try>(), W);
-    break;
-  case op_fork:
-    compile_fork(root.as<op_fork>(), W);
-    break;
-  case op_async:
-    compile_async(root.as<op_async>(), W);
-    break;
-  case op_function:
-    compile_function(root.as<op_function>(), W);
-    break;
-  case op_ffi_cdata_value_ref:
-    compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
-    break;
-  case op_ffi_new:
-    compile_ffi_new(root.as<op_ffi_new>(), W);
-    break;
-  case op_ffi_addr:
-    compile_ffi_addr(root.as<op_ffi_addr>(), W);
-    break;
-  case op_ffi_cast:
-    compile_ffi_cast(root.as<op_ffi_cast>(), W);
-    break;
-  case op_ffi_load_call:
-    compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
-    break;
-  case op_ffi_array_get:
-    compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
-    break;
-  case op_ffi_array_set:
-    compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
-    break;
-  case op_func_call:
-    compile_func_call_fast(root.as<op_func_call>(), W);
-    break;
-  case op_callback_of_builtin:
-    compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
-    break;
-  case op_string_build:
-    compile_string_build(root.as<op_string_build>(), W);
-    break;
-  case op_index:
-    compile_index(root.as<op_index>(), W);
-    break;
-  case op_instance_prop:
-    compile_instance_prop(root.as<op_instance_prop>(), W);
-    break;
-  case op_isset:
-    compile_xset(root.as<meta_op_xset>(), W);
-    break;
-  case op_list:
-    compile_list(root.as<op_list>(), W);
-    break;
-  case op_array:
-    compile_array(root.as<op_array>(), W);
-    break;
-  case op_tuple:
-    compile_tuple(root.as<op_tuple>(), W);
-    break;
-  case op_shape:
-    compile_shape(root.as<op_shape>(), W);
-    break;
-  case op_unset:
-    compile_xset(root.as<meta_op_xset>(), W);
-    break;
-  case op_empty:
-  case op_phpdoc_var:
-    break;
-  case op_defined:
-    compile_defined(root.as<op_defined>(), W);
-    break;
-  case op_conv_array_l:
-    compile_conv_l(root.as<op_conv_array_l>(), W);
-    break;
-  case op_conv_int_l:
-    compile_conv_l(root.as<op_conv_int_l>(), W);
-    break;
-  case op_conv_string_l:
-    compile_conv_l(root.as<op_conv_string_l>(), W);
-    break;
-  case op_set_value:
-    compile_set_value(root.as<op_set_value>(), W);
-    break;
-  case op_push_back:
-    compile_push_back(root.as<op_push_back>(), W);
-    break;
-  case op_push_back_return:
-    compile_push_back_return(root.as<op_push_back_return>(), W);
-    break;
-  case op_noerr:
-    compile_noerr(root.as<op_noerr>(), W);
-    break;
-  case op_clone: {
-    const auto* tp = tinf::get_type(root);
-    if (auto klass = tp->class_type()) {
-      if (klass->is_class()) {
-        W << root.as<op_clone>()->expr() << ".clone()";
+      case op_if:
+        compile_if(root.as<op_if>(), W);
+        break;
+      case op_return:
+        compile_return(root.as<op_return>(), W);
+        break;
+      case op_global:
+      case op_static:
+        //already processed
+        break;
+      case op_throw:
+        compile_throw(root.as<op_throw>(), W);
+        break;
+      case op_continue:
+      case op_break:
+        compile_break_continue(root.as<meta_op_goto>(), W);
+        break;
+      case op_try:
+        compile_try(root.as<op_try>(), W);
+        break;
+      case op_fork:
+        compile_fork(root.as<op_fork>(), W);
+        break;
+      case op_async:
+        compile_async(root.as<op_async>(), W);
+        break;
+      case op_function:
+        compile_function(root.as<op_function>(), W);
+        break;
+      case op_ffi_cdata_value_ref:
+        compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
+        break;
+      case op_ffi_new:
+        compile_ffi_new(root.as<op_ffi_new>(), W);
+        break;
+      case op_ffi_addr:
+        compile_ffi_addr(root.as<op_ffi_addr>(), W);
+        break;
+      case op_ffi_cast:
+        compile_ffi_cast(root.as<op_ffi_cast>(), W);
+        break;
+      case op_ffi_load_call:
+        compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
+        break;
+      case op_ffi_array_get:
+        compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
+        break;
+      case op_ffi_array_set:
+        compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
+        break;
+      case op_func_call:
+        compile_func_call_fast(root.as<op_func_call>(), W);
+        break;
+      case op_callback_of_builtin:
+        compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
+        break;
+      case op_string_build:
+        compile_string_build(root.as<op_string_build>(), W);
+        break;
+      case op_index:
+        compile_index(root.as<op_index>(), W);
+        break;
+      case op_instance_prop:
+        compile_instance_prop(root.as<op_instance_prop>(), W);
+        break;
+      case op_isset:
+        compile_xset(root.as<meta_op_xset>(), W);
+        break;
+      case op_list:
+        compile_list(root.as<op_list>(), W);
+        break;
+      case op_array:
+        compile_array(root.as<op_array>(), W);
+        break;
+      case op_tuple:
+        compile_tuple(root.as<op_tuple>(), W);
+        break;
+      case op_shape:
+        compile_shape(root.as<op_shape>(), W);
+        break;
+      case op_unset:
+        compile_xset(root.as<meta_op_xset>(), W);
+        break;
+      case op_empty:
+      case op_phpdoc_var:
+        break;
+      case op_defined:
+        compile_defined(root.as<op_defined>(), W);
+        break;
+      case op_conv_array_l:
+        compile_conv_l(root.as<op_conv_array_l>(), W);
+        break;
+      case op_conv_int_l:
+        compile_conv_l(root.as<op_conv_int_l>(), W);
+        break;
+      case op_conv_string_l:
+        compile_conv_l(root.as<op_conv_string_l>(), W);
+        break;
+      case op_set_value:
+        compile_set_value(root.as<op_set_value>(), W);
+        break;
+      case op_push_back:
+        compile_push_back(root.as<op_push_back>(), W);
+        break;
+      case op_push_back_return:
+        compile_push_back_return(root.as<op_push_back_return>(), W);
+        break;
+      case op_noerr:
+        compile_noerr(root.as<op_noerr>(), W);
+        break;
+      case op_clone: {
+        const auto* tp = tinf::get_type(root);
+        if (auto klass = tp->class_type()) {
+          if (klass->is_class()) {
+            W << root.as<op_clone>()->expr() << ".clone()";
+            break;
+          }
+          if (klass->is_ffi_cdata()) {
+            W << "ffi_clone(" << root.as<op_clone>()->expr() << ")";
+            break;
+          }
+        }
+        kphp_error_return(false, "unsupported operand for cloning");
         break;
       }
-      if (klass->is_ffi_cdata()) {
-        W << "ffi_clone(" << root.as<op_clone>()->expr() << ")";
+      case op_alloc: {
+        const TypeData* tp = tinf::get_type(root);
+        kphp_assert(tp->ptype() == tp_Class);
+        const auto* alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
+        W << TypeName(tp) << alloc_function;
         break;
       }
-    }
-    kphp_error_return(false, "unsupported operand for cloning");
-    break;
-  }
-  case op_alloc: {
-    const TypeData* tp = tinf::get_type(root);
-    kphp_assert(tp->ptype() == tp_Class);
-    const auto* alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
-    W << TypeName(tp) << alloc_function;
-    break;
-  }
-  case op_arr_acc_set_return: {
-    auto v = root.as<op_arr_acc_set_return>();
-    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", " << "f$" << v->set_method->name << MacroEnd{};
-    break;
-  }
-  case op_arr_acc_check_and_get: {
-    auto v = root.as<op_arr_acc_check_and_get>();
+      case op_arr_acc_set_return: {
+        auto v = root.as<op_arr_acc_set_return>();
+        W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", " << "f$" << v->set_method->name << MacroEnd{};
+        break;
+      }
+      case op_arr_acc_check_and_get: {
+        auto v = root.as<op_arr_acc_check_and_get>();
 
-<<<<<<< HEAD
-    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << "f$" << v->check_method->name << ", " << "f$" << v->get_method->name << MacroEnd{};
-    break;
-  }
-  default:
-    kphp_fail();
-    break;
-<<<<<<< HEAD
-  }
-=======
->>>>>>> dc71b0d14 (formatting)
-=======
+        W << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << "f$" << v->check_method->name << ", " << "f$" << v->get_method->name << MacroEnd{};
+        break;
+      }
+      default:
+        kphp_fail();
+        break;
+      }
       if (v->is_empty) {
         W << "ARR_ACC_GET_IF_NOT_EMPTY";
       } else {
@@ -2951,14 +2891,12 @@ case op_var: {
       W << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << "f$" << v->check_method->name << ", " << "f$" << v->get_method->name << MacroEnd{};
       break;
     }
-    default:
-      kphp_fail();
-      break;
->>>>>>> 9cc91b9b9 (revert formatting in compiler)
+  default:
+    kphp_fail();
+    break;
   }
 
-<<<<<<< HEAD
-  } // anonymous namespace
+} // anonymous namespace
 
   void compile_vertex(VertexPtr root, CodeGenerator & W) {
     OperationType tp = OpInfo::type(root->type());
@@ -3009,36 +2947,36 @@ case op_var: {
     if (close_par) {
       W << ")";
 =======
-    if (root->extra_type == op_ex_safe_version) {
-      compile_safe_version(root, W);
-    } else {
-      switch (tp) {
-      case prefix_op:
-        compile_prefix_op(root.as<meta_op_unary>(), W);
-        break;
-      case postfix_op:
-        compile_postfix_op(root.as<meta_op_unary>(), W);
-        break;
-      case binary_op:
-      case binary_func_op:
-        compile_binary_op(root.as<meta_op_binary>(), W);
-        break;
-      case ternary_op:
-        compile_ternary_op(root.as<op_ternary>(), W);
-        break;
-      case common_op:
-        compile_common_op(root, W);
-        break;
-      case cycle_op:
-        compile_cycle_op(root, W);
-        break;
-      case conv_op:
-        compile_conv_op(root.as<meta_op_unary>(), W);
-        break;
-      default:
-        fmt_print("{}: {}\n", vk::to_underlying(tp), vk::to_underlying(root->type()));
-        assert(0);
-        break;
+      if (root->extra_type == op_ex_safe_version) {
+        compile_safe_version(root, W);
+      } else {
+        switch (tp) {
+        case prefix_op:
+          compile_prefix_op(root.as<meta_op_unary>(), W);
+          break;
+        case postfix_op:
+          compile_postfix_op(root.as<meta_op_unary>(), W);
+          break;
+        case binary_op:
+        case binary_func_op:
+          compile_binary_op(root.as<meta_op_binary>(), W);
+          break;
+        case ternary_op:
+          compile_ternary_op(root.as<op_ternary>(), W);
+          break;
+        case common_op:
+          compile_common_op(root, W);
+          break;
+        case cycle_op:
+          compile_cycle_op(root, W);
+          break;
+        case conv_op:
+          compile_conv_op(root.as<meta_op_unary>(), W);
+          break;
+        default:
+          fmt_print("{}: {}\n", vk::to_underlying(tp), vk::to_underlying(root->type()));
+          assert(0);
+          break;
 >>>>>>> 4964c9338 (bug fix)
-    }
-  }
+        }
+      }
