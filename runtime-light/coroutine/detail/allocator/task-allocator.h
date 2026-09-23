@@ -73,21 +73,13 @@ private:
 public:
   static auto get() noexcept -> task_allocator&;
 
-  task_allocator() = default;
-
-  task_allocator(size_t script_mem_size, size_t segment_size, size_t stack_pool_chunk_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
-      : m_min_extra_mem_size{min_extra_mem_size} {
+  task_allocator(size_t script_mem_size, size_t segment_size, size_t stack_pool_chunk_size, size_t min_extra_mem_size, size_t /*unused*/) noexcept
+      : m_segment_size{segment_size},
+        m_min_extra_mem_size{min_extra_mem_size} {
     void* buffer{kphp::memory::platform::alloc(script_mem_size)};
 
     kphp::log::assertion(buffer != nullptr);
 
-    init(buffer, script_mem_size, stack_pool_chunk_size, segment_size, oom_handling_mem_size);
-  }
-
-  auto init(void* buffer, size_t script_mem_size, size_t stack_pool_chunk_size, size_t segment_size, size_t /*unused*/) noexcept -> void {
-    kphp::log::assertion(buffer != nullptr);
-
-    m_segment_size = segment_size;
     m_stack_pool.init(stack_pool_chunk_size);
     m_chunk_pool.init(buffer, script_mem_size, m_segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
   }

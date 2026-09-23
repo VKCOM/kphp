@@ -17,13 +17,8 @@ private:
 public:
   static auto get() noexcept -> runtime_coroutine_allocator&;
 
-  runtime_coroutine_allocator() = default;
   runtime_coroutine_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
       : m_allocator{script_mem_size, min_extra_mem_size, oom_handling_mem_size} {}
-
-  auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void {
-    m_allocator.init(buffer, script_mem_size, oom_handling_mem_size);
-  }
 
   auto free() noexcept -> void {
     m_allocator.free();
