@@ -1,7 +1,11 @@
 prepend(
   RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
+  confdata/confdata-state.cpp
+  confdata/confdata-storage.cpp
+  confdata/confdata-keys.cpp
   confdata/confdata-functions.cpp
+  confdata/predefined-wildcards.cpp
   crypto/crypto-functions.cpp
   diagnostics/backtrace.cpp
   diagnostics/php-assert.cpp
