@@ -107,7 +107,7 @@ Result async_sort(array<U>& arr, Comparator comparator, bool renumber) noexcept 
       arr.mutate_if_vector_shared();
     }
 
-    U* begin = reinterpret_cast<U*>(arr.p->entries());
+    U* begin{reinterpret_cast<U*>(arr.p->entries())};
     CO_AWAIT_TASK_ON_STACK(async_sort<U, decltype(comparator)>(begin, begin + n, std::move(comparator)));
     co_return;
   }

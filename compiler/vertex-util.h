@@ -47,6 +47,6 @@ public:
   static bool is_positive_constexpr_int(VertexPtr v);
   static bool is_const_int(VertexPtr root);
 
-  // True if `v` calls (directly, or nested at any depth) a function marked `is_interruptible`. K2 only.
+  // True if v calls (directly, or nested at any depth) a function marked is_interruptible. K2 only.
   static bool is_interruptible_expr(VertexPtr v);
 };
