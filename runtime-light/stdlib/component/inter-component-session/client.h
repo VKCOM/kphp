@@ -141,7 +141,7 @@ private:
     reader(const shared_ctx_type& _ctx, shared_transport_type _t) noexcept
         : ctx(_ctx),
           interrupter(reader::wait_until_interrupt(_ctx)),
-          runner(reader::run(_ctx, std::move(_t), interrupter)){};
+          runner(reader::run(_ctx, std::move(_t), interrupter)) {};
 
     static auto run(shared_ctx_type ctx, shared_transport_type t, kphp::coro::shared_task<void> interrupter) noexcept -> kphp::coro::shared_task<void> {
       // Allocate buffer for header
