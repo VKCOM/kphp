@@ -389,23 +389,19 @@ kphp::coro::task<> finalize_server() noexcept {
     co_return kphp::log::info("HTTP connection closed");
   }
 
-  // This progression is private to finalization. The shared writer owns wire state.
-  switch (http_server_instance_st.response_state) {
-  case kphp::http::response_state::not_started:
-    http_server_instance_st.response_state = kphp::http::response_state::sending_headers;
+  switch (http_server_instance_st.finalization_state) {
+  case kphp::http::finalization_state::not_started:
+    http_server_instance_st.finalization_state = kphp::http::finalization_state::invoking_headers_callback;
     [[fallthrough]];
-  case kphp::http::response_state::sending_headers:
+  case kphp::http::finalization_state::invoking_headers_callback:
     co_await kphp::forks::id_managed(invoke_headers_callback(http_server_instance_st));
-    http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
+    http_server_instance_st.finalization_state = kphp::http::finalization_state::sending_response;
     [[fallthrough]];
-  case kphp::http::response_state::headers_sent:
-    http_server_instance_st.response_state = kphp::http::response_state::sending_body;
-    [[fallthrough]];
-  case kphp::http::response_state::sending_body:
+  case kphp::http::finalization_state::sending_response:
     co_await kphp::forks::id_managed(send_response(http_server_instance_st, /* finish = */ true));
-    http_server_instance_st.response_state = kphp::http::response_state::completed;
+    http_server_instance_st.finalization_state = kphp::http::finalization_state::completed;
     [[fallthrough]];
-  case kphp::http::response_state::completed:
+  case kphp::http::finalization_state::completed:
     co_return;
   }
 }
