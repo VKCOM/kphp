@@ -344,6 +344,8 @@ auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
 }
 
 auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<> {
+  // Outlive the connection, whose destructor unregisters the handler capturing this event.
+  kphp::coro::event reader_disconnected{};
   auto connection{kphp::component::connection::from_stream(std::move(reader_stream))};
   if (!connection) [[unlikely]] {
     co_return kphp::log::warning("failed to create a confdata reader connection: error -> {}", connection.error());
@@ -351,6 +353,10 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
 
   if (m_confdata_pieces.empty()) [[unlikely]] {
     co_return kphp::log::warning("can't serve a confdata reader lease: can't find confdata piece");
+  }
+
+  if (const auto registered{connection->register_abort_handler([&reader_disconnected] noexcept { reader_disconnected.set(); })}; !registered) [[unlikely]] {
+    co_return kphp::log::warning("failed to watch a confdata reader connection: error -> {}", registered.error());
   }
 
   reader_session session{*this, std::prev(m_confdata_pieces.end())};
@@ -364,10 +370,6 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
     co_return kphp::log::warning("failed to write a confdata reader lease: error -> {}", written.error());
   }
 
-  kphp::coro::event reader_disconnected{};
-  if (const auto registered{connection->register_abort_handler([&reader_disconnected] noexcept { reader_disconnected.set(); })}; !registered) [[unlikely]] {
-    co_return kphp::log::warning("failed to watch a confdata reader connection: error -> {}", registered.error());
-  }
   co_await reader_disconnected;
 }
 
