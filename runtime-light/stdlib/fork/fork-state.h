@@ -31,6 +31,8 @@ struct ForkInstanceState final : private vk::not_copyable {
   // manage and destroy the fork state once all referencing futures have been destroyed.
   struct fork_info final {
     bool awaited{};
+    // Inherited by child forks to recognize reentrant asynchronous callbacks.
+    const void* callback_context{};
     Throwable thrown_exception;
     std::optional<kphp::coro::shared_task<kphp::forks::details::storage>> opt_handle;
   };
@@ -65,11 +67,14 @@ public:
           co_return s;
         }};
 
+    const auto parent{get_info(current_id)};
+    const void* callback_context{parent ? parent->get().callback_context : nullptr};
     const int64_t fork_id{next_fork_id--};
     auto fork_task{std::invoke(fork_coroutine, std::move(task), fork_id)};
-    forks.emplace(
-        fork_id,
-        fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(fork_task)});
+    forks.emplace(fork_id, fork_info{.awaited = {},
+                                     .callback_context = callback_context,
+                                     .thrown_exception = {},
+                                     .opt_handle = static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(fork_task)});
     return std::make_pair(fork_id, std::move(fork_task));
   }
 

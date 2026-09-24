@@ -15,6 +15,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/event.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/zlib/zlib-stream-compressor.h"
@@ -75,6 +76,8 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   // Wire state shared by all response writers. finalization_state above belongs only to finalize_server().
   bool headers_sent{};
   bool headers_callback_started{};
+  std::optional<kphp::coro::event> headers_ready;
+  std::optional<kphp::coro::shared_task<>> headers_callback_task;
   bool response_finished{};
   uint32_t response_encoding{};
   std::optional<kphp::coro::shared_task<>> pending_response;

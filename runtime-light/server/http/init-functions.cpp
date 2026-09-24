@@ -394,7 +394,7 @@ kphp::coro::task<> finalize_server() noexcept {
     http_server_instance_st.finalization_state = kphp::http::finalization_state::invoking_headers_callback;
     [[fallthrough]];
   case kphp::http::finalization_state::invoking_headers_callback:
-    co_await kphp::forks::id_managed(invoke_headers_callback(http_server_instance_st));
+    co_await kphp::forks::id_managed(invoke_headers_callback(http_server_instance_st, /* finish = */ true));
     http_server_instance_st.finalization_state = kphp::http::finalization_state::sending_response;
     [[fallthrough]];
   case kphp::http::finalization_state::sending_response:

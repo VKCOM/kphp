@@ -10,6 +10,7 @@
 #include <functional>
 #include <iterator>
 #include <locale>
+#include <memory>
 #include <optional>
 #include <ranges>
 #include <string_view>
@@ -19,11 +20,13 @@
 
 #include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/output-state.h"
+#include "runtime-light/stdlib/system/system-functions.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
 #include "runtime-light/streams/connection.h"
@@ -162,6 +165,32 @@ tl::HttpResponseHeader build_response_header(HttpServerInstanceState& state) noe
   return header;
 }
 
+// event::set() resumes waiters inline, which can change both the fork ID and the async stack.
+void notify_headers_ready(HttpServerInstanceState& state) noexcept {
+  if (state.headers_ready.has_value()) {
+    const kphp::forks::scoped_id_managed restore_fork_id{};
+    auto& stack{kphp::coro::instance_state::get().coroutine_stack_root};
+    auto* previous_frame{stack.top_async_stack_frame};
+    state.headers_ready->set();
+    stack.top_async_stack_frame = previous_frame;
+  }
+}
+
+kphp::coro::task<> wait_headers_ready(HttpServerInstanceState& state) noexcept {
+  if (!state.headers_ready.has_value()) {
+    co_return;
+  }
+  co_await *state.headers_ready;
+}
+
+kphp::coro::shared_task<> run_headers_callback(HttpServerInstanceState& state, kphp::coro::task<> callback) noexcept {
+  auto& fork{ForkInstanceState::get().current_info().get()};
+  const void* previous_context{std::exchange(fork.callback_context, std::addressof(state))};
+  co_await kphp::forks::id_managed(std::move(callback));
+  fork.callback_context = previous_context;
+  notify_headers_ready(state);
+}
+
 // Serialize writers across suspension points so concurrent forks cannot interleave TL packets.
 // Callbacks run before joining this queue: a callback may itself call flush().
 kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::optional<kphp::coro::shared_task<>> previous, bool finish) noexcept {
@@ -170,6 +199,7 @@ kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::op
     previous.reset();
   }
   if (state.response_finished || state.connection->is_aborted()) {
+    OutputInstanceState::get().output_buffers.system_buffer().get().clean();
     co_return;
   }
 
@@ -177,6 +207,7 @@ kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::op
   if (!state.headers_sent) {
     chunk.opt_header = build_response_header(state);
     state.headers_sent = true;
+    notify_headers_ready(state);
   }
   string body{prepare_http_response_body(state, finish)};
   chunk.body.inner.body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()};
@@ -186,8 +217,15 @@ kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::op
 
   auto& stream{state.connection->get_stream()};
   if (auto expected{co_await kphp::forks::id_managed(stream.write_all(tls.view()))}; !expected) [[unlikely]] {
+    const bool aborted{expected.error() == k2::errno_eshutdown || state.connection->is_aborted()};
     state.response_finished = true;
     stream.shutdown_write();
+    if (aborted) {
+      if (state.connection->get_ignore_abort_level() == 0) {
+        co_await kphp::forks::id_managed(kphp::system::exit(1));
+      }
+      co_return;
+    }
     kphp::log::error("can't write HTTP response: error code -> {}", expected.error());
   }
   if (finish) {
@@ -200,10 +238,24 @@ kphp::coro::shared_task<> write_response(HttpServerInstanceState& state, std::op
 
 namespace kphp::http {
 
-kphp::coro::task<> invoke_headers_callback(HttpServerInstanceState& state) noexcept {
+kphp::coro::task<> invoke_headers_callback(HttpServerInstanceState& state, bool finish) noexcept {
   if (!std::exchange(state.headers_callback_started, true) && state.headers_registered_callback.has_value()) {
     auto callback{std::exchange(state.headers_registered_callback, std::nullopt)};
-    co_await kphp::forks::id_managed(std::move(*callback));
+    state.headers_ready.emplace();
+    state.headers_callback_task.emplace(run_headers_callback(state, std::move(*callback)));
+    co_await kphp::forks::id_managed(*state.headers_callback_task);
+    co_return;
+  }
+  if (!state.headers_callback_task.has_value() || ForkInstanceState::get().current_info().get().callback_context == std::addressof(state)) {
+    // The callback and forks created inside it may flush or exit without waiting for themselves.
+    co_return;
+  }
+  if (finish) {
+    co_await kphp::forks::id_managed(*state.headers_callback_task);
+  } else if (!state.headers_sent) {
+    // An independent fork must not commit headers while the callback is still preparing them.
+    // Before awaiting such a fork, the callback must explicitly flush to release this gate.
+    co_await kphp::forks::id_managed(wait_headers_ready(state));
   }
 }
 
