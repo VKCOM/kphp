@@ -81,10 +81,11 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   }
 
   encoded_snapshot_page response_buffer{};
-  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
-    response_buffer.resize(size);
-    return response_buffer;
-  })};
+  auto expected_response{
+      CO_AWAIT_TASK_ON_STACK(kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
+        response_buffer.resize(size);
+        return response_buffer;
+      }))};
   if (!expected_response) [[unlikely]] {
     kphp::log::warning("failed to fetch subscribe response: {}", expected_response.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
@@ -131,7 +132,8 @@ auto sync(std::string_view confdata_proxy_actor,
   snapshot snapshot{};
   for (; !snapshot.m_pagination.m_has_synced;) {
     snapshot.m_pages.emplace_back();
-    if (auto expected{co_await subscribe(confdata_proxy_actor, snapshot.m_pagination, event_handler, snapshot.m_pages.back())}; !expected) [[unlikely]] {
+    if (auto expected{CO_AWAIT_TASK_ON_STACK(subscribe(confdata_proxy_actor, snapshot.m_pagination, event_handler, snapshot.m_pages.back()))}; !expected)
+        [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
   }
@@ -184,10 +186,10 @@ auto update(std::string_view confdata_proxy_actor, kphp::confdata::pagination& f
   }
 
   for (;;) {
-    if (auto expected{co_await subscribe(confdata_proxy_actor, from, event_handler)}; !expected) [[unlikely]] {
+    if (auto expected{CO_AWAIT_TASK_ON_STACK(subscribe(confdata_proxy_actor, from, event_handler))}; !expected) [[unlikely]] {
       co_return std::unexpected{expected.error()};
     }
-    co_await kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL);
+    CO_AWAIT_TASK_ON_STACK(kphp::coro::io_scheduler::get().schedule(UPDATE_INTERVAL));
   }
 }
 
