@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/isolate-interruptible-args.h"
 
+#include <algorithm>
+
 #include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/find.h"
 #include "compiler/compiler-core.h"
@@ -64,13 +66,7 @@ bool IsolateInterruptibleArgsPass::needs_hoist(VertexPtr vertex, bool in_interru
     return in_interruptible_call;
   }
 
-  for (VertexPtr child : *vertex) {
-    if (needs_hoist(child, in_interruptible_call)) {
-      return true;
-    }
-  }
-
-  return false;
+  return std::any_of(vertex->begin(), vertex->end(), [in_interruptible_call](VertexPtr vertex) noexcept { return needs_hoist(vertex, in_interruptible_call); });
 }
 
 VertexPtr IsolateInterruptibleArgsPass::process_fork(VertexAdaptor<op_fork> fork_call, bool in_interruptible_call,
