@@ -25,6 +25,43 @@ class TestFlush(WebServerAutoTestCase):
         self.assertEqual(response.status, 200)
         return response
 
+    def test_response_headers_grow_beyond_one_megabyte(self):
+        response = self.response('/large-headers')
+        for i in range(24):
+            self.assertEqual(response.getheader(f'x-large-{i}'), 'x' * 49152)
+        self.assertEqual(response.read(), b'large headers')
+
+    def test_content_length_fully_flushed_before_script_finishes(self):
+        for size in [0, 5]:
+            with self.subTest(size=size):
+                conn = self.connect()
+                conn.request('GET', f'/content-length-flushed?size={size}')
+                response = conn.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.read(), b'first' if size else b'')
+                self.web_server.assert_log([f'content-length completed {size}'], timeout=1)
+                conn.request('GET', '/empty')
+                self.assertEqual(conn.getresponse().read(), b'')
+
+    def test_ignore_user_abort_during_flush(self):
+        conn = self.connect()
+        conn.request('GET', '/ignore-abort-flush')
+        response = conn.getresponse()
+        self.assertEqual(response.read(5), b'first')
+        response.close()
+        conn.close()
+        self.web_server.assert_log([r'Error serving connection: .*', 'ignore-abort flush completed'], timeout=1)
+
+    def test_user_abort_during_flush_runs_shutdown(self):
+        conn = self.connect()
+        conn.request('GET', '/abort-flush')
+        response = conn.getresponse()
+        self.assertEqual(response.read(5), b'first')
+        response.close()
+        conn.close()
+        self.web_server.assert_log([r'Error serving connection: .*', 'abort flush shutdown completed'], timeout=1)
+        self.assertFalse(any('ignore-abort flush completed' in line for line in self.web_server.get_log()))
+
     def test_streaming_before_script_finishes(self):
         response = self.response('/stream')
         self.assertEqual(response.read(6), b'first\n')
@@ -42,6 +79,40 @@ class TestFlush(WebServerAutoTestCase):
         for path in ['/callback-final', '/callback-flush']:
             with self.subTest(path=path):
                 self.assertEqual(self.response(path).read(), b'before-callback-after')
+
+    def test_concurrent_flush_waits_for_header_callback(self):
+        for path in ['/callback-concurrent', '/callback-preexisting']:
+            with self.subTest(path=path):
+                response = self.response(path)
+                self.assertEqual(response.getheader('x-callback'), 'ready')
+                self.assertEqual(response.read(), b'callback-done')
+
+    def test_header_callback_descendants_can_flush(self):
+        for path in ['/callback-descendants', '/callback-descendants-final']:
+            with self.subTest(path=path):
+                response = self.response(path)
+                self.assertEqual(response.getheader('x-callback'), 'ready')
+                self.assertIsNone(response.getheader('x-too-late'))
+                self.assertEqual(response.read(), b'child-after')
+
+    def test_header_callback_flush_releases_waiting_fork(self):
+        response = self.response('/callback-release-waiter')
+        self.assertEqual(response.getheader('x-callback'), 'ready')
+        self.assertEqual(response.read(), b'first-after')
+
+    def test_finalization_waits_for_running_header_callback(self):
+        for path in ['/callback-finalize-running', '/callback-finalize-committed']:
+            with self.subTest(path=path):
+                response = self.response(path)
+                self.assertEqual(response.getheader('x-callback'), 'ready')
+                self.assertEqual(response.read(), b'first-last')
+
+    def test_exit_inside_header_callback(self):
+        for path in ['/callback-exit-flush', '/callback-exit-final']:
+            with self.subTest(path=path):
+                response = self.response(path)
+                self.assertEqual(response.getheader('x-callback'), 'ready')
+                self.assertEqual(response.read(), b'exit')
 
     def test_compressed_chunks_form_one_stream(self):
         for encoding, window in [('gzip', 31), ('deflate', 15)]:
