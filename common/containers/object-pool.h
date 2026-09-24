@@ -63,9 +63,9 @@ public:
   }
 
   explicit object_pool(size_t chunk_size, Allocator<std::byte> allocator) noexcept
-      : m_chunk_size{chunk_size},
-        m_chunk_byte_size{sizeof(object_pool_chunk_header) + chunk_size * sizeof(object_pool_slot)},
-        Allocator<std::byte>(std::move(allocator)) {
+      : Allocator<std::byte>(std::move(allocator)),
+        m_chunk_size{chunk_size},
+        m_chunk_byte_size{sizeof(object_pool_chunk_header) + chunk_size * sizeof(object_pool_slot)} {
     assert(chunk_size > 0);
 
     link_new_chunk();
