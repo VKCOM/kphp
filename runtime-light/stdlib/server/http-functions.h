@@ -17,13 +17,15 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/connection.h"
 
 namespace kphp::http {
 
 void header(std::string_view header, bool replace, int64_t response_code) noexcept;
 
-kphp::coro::task<> invoke_headers_callback(HttpServerInstanceState& state) noexcept;
+// Finalization waits for the whole callback; flush may proceed once headers are committed.
+kphp::coro::task<> invoke_headers_callback(HttpServerInstanceState& state, bool finish = false) noexcept;
 
 // When finish is true, also drains user buffers, finishes compression and closes the response stream.
 kphp::coro::task<> send_response(HttpServerInstanceState& state, bool finish) noexcept;
@@ -94,6 +96,8 @@ inline kphp::coro::task<> f$flush() noexcept {
     co_return;
   }
   if (state.connection->is_aborted() || state.response_finished) {
+    // Scripts with ignore_user_abort may keep producing output after disconnection.
+    OutputInstanceState::get().output_buffers.system_buffer().get().clean();
     co_return;
   }
   co_await kphp::forks::id_managed(kphp::http::invoke_headers_callback(state));
