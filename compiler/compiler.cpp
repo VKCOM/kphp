@@ -93,7 +93,7 @@
 #include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/instantiate-ffi-operations.h"
 #include "compiler/pipes/instantiate-generics-and-lambdas.h"
-#include "compiler/pipes/isolate-interruptible-args.h"
+#include "compiler/pipes/isolate-args-from-interruptible-call.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
 #include "compiler/pipes/parse-and-apply-phpdoc.h"
@@ -274,7 +274,7 @@ bool compiler_execute(CompilerSettings* settings) {
       PassC<CollectMainEdgesPass>{} >> SyncC<TypeInfererF>{} >> SyncC<CheckRestrictionsF>{} >> PipeC<CFGEndF>{} >> PassC<CheckClassesPass>{} >>
       PassC<CheckConversionsPass>{} >> PassC<OptimizationPass>{} >> PassC<ArrayAccessTransformPass>{} >> PassC<FixReturnsPass>{} >> PassC<CalcValRefPass>{} >>
       PassC<CalcFuncDepPass>{} >> SyncC<CalcBadVarsF>{} >> PipeC<CheckUBF>{} >> PassC<ExtractResumableCallsPass>{} >> PassC<ExtractAsyncPass>{} >>
-      PassC<IsolateInterruptibleArgsPass>{} >> PassC<CheckNestedForeachPass>{} >> PassC<InlineSimpleFunctions>{} >> PassC<CommonAnalyzerPass>{} >>
+      PassC<IsolateArgsFromInterruptibleCallPass>{} >> PassC<CheckNestedForeachPass>{} >> PassC<InlineSimpleFunctions>{} >> PassC<CommonAnalyzerPass>{} >>
       PassC<CheckTlClasses>{} >> PassC<CheckAccessModifiersPass>{} >> PassC<AnalyzePerformance>{} >> PassC<FinalCheckPass>{} >>
       PassC<CollectForkableTypesPass>{} >> SyncC<CodeGenF>{} // create all codegen commands and launch them in "just calc hashes" mode
       >> PipeC<CodeGenForDiffF>{}                            // re-launch codegen commands that diff from the previous kphp launch
