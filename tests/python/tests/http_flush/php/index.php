@@ -1,6 +1,7 @@
 <?php
 
-function flush_from_fork(string $tag): int {
+function flush_from_fork(string $tag): int
+{
     $id = (int)get_running_fork_id();
     echo str_repeat($tag, 100000);
     flush();
@@ -10,7 +11,147 @@ function flush_from_fork(string $tag): int {
     return 1;
 }
 
+function checked_callback_flush(int $delay = 0): int
+{
+    $id = (int)get_running_fork_id();
+    if ($delay > 0) {
+        usleep($delay);
+    }
+    flush();
+    if ((int)get_running_fork_id() !== $id) {
+        critical_error('callback changed the running fork ID');
+    }
+    return 1;
+}
+
+/** @param future<int> $id */
+function wait_callback_fork($id): int
+{
+    try {
+        return (int)wait($id);
+    } catch (Throwable $e) {
+        critical_error('unexpected exception from callback fork: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+function callback_child(int $depth): int
+{
+    if ($depth > 0) {
+        $child = fork(callback_child($depth - 1));
+        return wait_callback_fork($child);
+    }
+    echo 'child';
+    return checked_callback_flush();
+}
+
 switch ($_SERVER['PHP_SELF']) {
+    case '/callback-concurrent':
+    case '/callback-preexisting':
+        header_register_callback(function () {
+            usleep(50000);
+            header('X-Callback: ready');
+            echo 'callback';
+        });
+        if ($_SERVER['PHP_SELF'] === '/callback-concurrent') {
+            $first = fork(checked_callback_flush());
+            $second = fork(checked_callback_flush());
+            wait($first);
+            wait($second);
+        } else {
+            $other = fork(checked_callback_flush(10000));
+            checked_callback_flush();
+            wait_callback_fork($other);
+        }
+        echo '-done';
+        break;
+    case '/callback-descendants-final':
+    case '/callback-descendants':
+        header_register_callback(function () {
+            usleep(10000);
+            header('X-Callback: ready');
+            $child = fork(callback_child(2));
+            wait_callback_fork($child);
+            header('X-Too-Late: no');
+            echo '-after';
+        });
+        if ($_SERVER['PHP_SELF'] === '/callback-descendants') {
+            checked_callback_flush();
+        }
+        break;
+    case '/callback-release-waiter':
+        $other = fork(checked_callback_flush(10000));
+        header_register_callback(function () use ($other) {
+            usleep(50000); // The preexisting fork is now waiting inside flush().
+            header('X-Callback: ready');
+            echo 'first';
+            checked_callback_flush(); // Commit headers and release the other fork.
+            wait_callback_fork($other);
+            echo '-after';
+        });
+        checked_callback_flush();
+        break;
+    case '/callback-finalize-running':
+    case '/callback-finalize-committed':
+        $commit = $_SERVER['PHP_SELF'] === '/callback-finalize-committed';
+        header_register_callback(function () use ($commit) {
+            header('X-Callback: ready');
+            echo 'first';
+            if ($commit) {
+                checked_callback_flush();
+            }
+            usleep(50000);
+            echo '-last';
+        });
+        fork(checked_callback_flush());
+        // Finalization must await the callback, including output after a nested flush().
+        break;
+    case '/callback-exit-flush':
+    case '/callback-exit-final':
+        header_register_callback(function () {
+            usleep(10000);
+            header('X-Callback: ready');
+            echo 'exit';
+            exit(0);
+        });
+        if ($_SERVER['PHP_SELF'] === '/callback-exit-flush') {
+            checked_callback_flush();
+            echo 'unreachable';
+        }
+        break;
+    case '/large-headers':
+        for ($i = 0; $i < 24; ++$i) {
+            header('X-Large-' . $i . ': ' . str_repeat('x', 49152));
+        }
+        echo 'large headers';
+        flush();
+        break;
+    case '/content-length-flushed':
+        $size = (int)$_GET['size'];
+        header("Content-Length: $size");
+        if ($size > 0) {
+            echo 'first';
+        }
+        flush();
+        usleep(100000);
+        fwrite(fopen('php://stderr', 'w'), "content-length completed $size\n");
+        break;
+    case '/abort-flush':
+    case '/ignore-abort-flush':
+        $ignore = $_SERVER['PHP_SELF'] === '/ignore-abort-flush';
+        ignore_user_abort($ignore);
+        register_shutdown_function(function () {
+            fwrite(fopen('php://stderr', 'w'), "abort flush shutdown completed\n");
+        });
+        echo 'first';
+        flush();
+        for ($i = 0; $i < 8; ++$i) {
+            echo str_repeat('x', 4 * 1024 * 1024);
+            flush();
+        }
+        usleep(100000);
+        fwrite(fopen('php://stderr', 'w'), "ignore-abort flush completed\n");
+        break;
     case '/no-body':
         $status = (int)$_GET['status'];
         header("HTTP/1.1 $status No Body");
