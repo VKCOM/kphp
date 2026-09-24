@@ -58,8 +58,8 @@ private:
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
     size_t extra_mem_size{std::max(m_min_extra_mem_size, requested_size)};
-    // Take into account internal layout of `memory_resource::buffer_list_node`
-    extra_mem_size += sizeof(memory_resource::buffer_list_node);
+    // Take into account internal layout of header for buffer
+    extra_mem_size += sizeof(memory_resource::chunk_pool_resource::buffer_header_size());
     // The smallest power of two that is not smaller than `extra_mem_size`
     extra_mem_size = std::bit_ceil(extra_mem_size);
 
@@ -74,20 +74,20 @@ public:
   static auto get() noexcept -> task_allocator&;
 
   task_allocator(size_t script_mem_size, size_t segment_size, size_t stack_pool_chunk_size, size_t min_extra_mem_size, size_t /*unused*/) noexcept
-      : m_segment_size{segment_size},
+      : m_stack_pool{stack_pool_chunk_size},
+        m_segment_size{segment_size},
         m_min_extra_mem_size{min_extra_mem_size} {
     void* buffer{kphp::memory::platform::alloc(script_mem_size)};
 
     kphp::log::assertion(buffer != nullptr);
 
-    m_stack_pool.init(stack_pool_chunk_size);
     m_chunk_pool.init(buffer, script_mem_size, m_segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
   }
 
   auto free() noexcept -> void {
     auto* curr_buffer{m_chunk_pool.get_buffer_list_head()};
     while (curr_buffer != nullptr) {
-      auto* next_buffer = curr_buffer->next_in_chain;
+      auto* next_buffer = curr_buffer->next;
       kphp::memory::platform::free(curr_buffer);
       curr_buffer = next_buffer;
     }
@@ -95,7 +95,7 @@ public:
 
   auto acquire_stack() noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>& {
     auto& stack{m_stack_pool.acquire()};
-    // we can pass nullptr as buffer and 0 as buffer_size, because segment pool is already initialized
+    // We can pass nullptr as buffer and 0 as buffer_size, because init in shared_chunk_pool is noop
     stack.init(nullptr, 0, m_segment_size);
 
     return stack;
@@ -126,11 +126,13 @@ public:
   }
 
   auto request_stack_alloc() noexcept -> void {
+    // Part of checks to prevent request leakage
     kphp::log::assertion(!std::exchange(m_stack_alloc_requested, true));
   }
 
-  auto consume_stack_alloc_request(const void* self) noexcept -> void {
-    kphp::log::assertion(m_stack_alloc_used_by == nullptr || std::exchange(m_stack_alloc_used_by, nullptr) == self);
+  auto consume_stack_alloc_request(const void* consumed_by) noexcept -> void {
+    // To ensure that current request was used by nobody (if HALO occured) or task, that made this request
+    kphp::log::assertion(m_stack_alloc_used_by == nullptr || std::exchange(m_stack_alloc_used_by, nullptr) == consumed_by);
 
     m_stack_alloc_requested = false;
   }
@@ -140,6 +142,7 @@ public:
   }
 
   auto mark_stack_alloc_used(void* used_by) noexcept -> void {
+    // To ensure that at most one task was allocated on stack during current request
     kphp::log::assertion(std::exchange(m_stack_alloc_used_by, used_by) == nullptr);
   }
 

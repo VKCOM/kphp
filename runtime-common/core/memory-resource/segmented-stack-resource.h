@@ -9,7 +9,6 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/likely.h"
-#include "runtime-common/core/memory-resource/memory_resource.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
 namespace memory_resource {
@@ -55,7 +54,7 @@ class segmented_stack_resource : private vk::not_copyable {
 
 public:
   auto init(void* buffer, size_t buffer_size, size_t segment_size) noexcept -> void {
-    php_assert(buffer_size <= memory_buffer_limit() && reinterpret_cast<size_t>(buffer) % alignof(segment_list_node) == 0 && segment_size > 0);
+    php_assert(segment_size > 0);
 
     m_segment_size = segment_size;
     m_segment_pool.init(buffer, buffer_size, m_segment_size + segment_header_size());
@@ -103,8 +102,6 @@ public:
   }
 
   auto add_extra_memory(void* buffer, size_t buffer_size) noexcept -> void {
-    php_assert(buffer_size <= memory_buffer_limit() && reinterpret_cast<size_t>(buffer) % alignof(segment_list_node) == 0);
-
     m_segment_pool.add_extra_memory(buffer, buffer_size);
   }
 

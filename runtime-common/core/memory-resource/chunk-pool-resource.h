@@ -15,25 +15,25 @@
 
 namespace memory_resource {
 
-struct buffer_list_node {
-  buffer_list_node* next_in_chain{nullptr};
-};
-
 class chunk_pool_resource : private vk::not_copyable {
+  struct buffer_list_node {
+    buffer_list_node* next{nullptr};
+  };
+
   struct chunk_free_list_node {
-    chunk_free_list_node* m_next{nullptr};
+    chunk_free_list_node* next{nullptr};
   };
 
   std::size_t m_chunk_size{0};
   chunk_free_list_node* m_head_chunk{nullptr};
   buffer_list_node* m_head_buffer{nullptr};
 
-  auto init_buffer(void* buffer, size_t buffer_size) noexcept -> void {
+  auto link_new_buffer(void* buffer, size_t buffer_size) noexcept -> void {
     new (buffer) buffer_list_node{m_head_buffer};
 
-    std::byte* first_chunk{static_cast<std::byte*>(buffer) + sizeof(buffer_list_node)};
+    std::byte* first_chunk{static_cast<std::byte*>(buffer) + buffer_header_size()};
 
-    size_t payload_size{buffer_size - sizeof(buffer_list_node)};
+    size_t payload_size{buffer_size - buffer_header_size()};
     size_t used_buffer_size{payload_size - payload_size % m_chunk_size};
 
     std::byte* curr_chunk{first_chunk};
@@ -51,12 +51,12 @@ class chunk_pool_resource : private vk::not_copyable {
 
 public:
   auto init(void* buffer, size_t buffer_size, size_t chunk_size) noexcept -> void {
-    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= chunk_size + sizeof(buffer_list_node) &&
-               reinterpret_cast<size_t>(buffer) % alignof(buffer_list_node) == 0 && chunk_size >= sizeof(chunk_free_list_node) &&
+    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= chunk_size + buffer_header_size() &&
+               reinterpret_cast<size_t>(buffer) % alignof(buffer_list_node) == 0 && chunk_size >= chunk_header_size() &&
                chunk_size % alignof(chunk_free_list_node) == 0);
 
     m_chunk_size = chunk_size;
-    init_buffer(buffer, buffer_size);
+    link_new_buffer(buffer, buffer_size);
     m_head_buffer = static_cast<buffer_list_node*>(buffer);
   }
 
@@ -66,7 +66,7 @@ public:
     }
 
     void* allocated_chunk{m_head_chunk};
-    m_head_chunk = m_head_chunk->m_next;
+    m_head_chunk = m_head_chunk->next;
 
     return allocated_chunk;
   }
@@ -85,15 +85,23 @@ public:
   }
 
   auto add_extra_memory(void* buffer, size_t buffer_size) noexcept -> void {
-    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= m_chunk_size + sizeof(buffer_list_node) &&
+    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= m_chunk_size + buffer_header_size() &&
                reinterpret_cast<size_t>(buffer) % alignof(buffer_list_node) == 0);
 
-    init_buffer(buffer, buffer_size);
+    link_new_buffer(buffer, buffer_size);
     m_head_buffer = static_cast<buffer_list_node*>(buffer);
   }
 
   auto get_buffer_list_head() const noexcept -> buffer_list_node* {
     return m_head_buffer;
+  }
+
+  static auto chunk_header_size() noexcept -> std::size_t {
+    return sizeof(chunk_free_list_node);
+  }
+
+  static auto buffer_header_size() noexcept -> std::size_t {
+    return sizeof(buffer_list_node);
   }
 };
 

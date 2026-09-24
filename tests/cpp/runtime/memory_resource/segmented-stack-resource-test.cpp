@@ -22,7 +22,7 @@ constexpr size_t POOL_HEADER_SIZE{sizeof(void*)};
 // size of one chunk as seen by the underlying SegmentPool: segment payload + segment_list_node header
 constexpr size_t SEGMENT_CHUNK_SIZE{SEGMENT_SIZE + SEGMENT_HEADER_SIZE};
 
-// heap-allocated (as opposed to std::array) to avoid -Warray-bounds false positives in gcc
+// heap-allocated to avoid -Warray-bounds false positives in gcc
 [[gnu::noinline]] auto make_buffer(size_t segments) -> std::vector<std::byte> {
   return std::vector<std::byte>(POOL_HEADER_SIZE + segments * SEGMENT_CHUNK_SIZE);
 }
@@ -281,9 +281,9 @@ TEST(segmented_stack_resource_test, buffer_list_head_tracks_most_recently_added_
 
   auto* head{resource.get_buffer_list_head()};
 
-  ASSERT_EQ(static_cast<void*>(head->next_in_chain), static_cast<void*>(buffer1.data()));
+  ASSERT_EQ(static_cast<void*>(head->next), static_cast<void*>(buffer1.data()));
 
-  head = head->next_in_chain;
+  head = head->next;
 
-  ASSERT_EQ(static_cast<void*>(head->next_in_chain), nullptr);
+  ASSERT_EQ(static_cast<void*>(head->next), nullptr);
 }

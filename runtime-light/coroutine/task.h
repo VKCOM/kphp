@@ -23,7 +23,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base : kphp::coro::async_stack_element {
+struct promise_base : public kphp::coro::async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -287,7 +287,7 @@ public:
  * allocator. You must follow these rules:
  * 1) If this call is not coroutine call, but just function call, that returns task<T>, during its call is not allowed to create more than one
  * task<T> object (the one it returns).
- * 2) During evaluation of arguments of this call is now allowed to create other task<T> objects.
+ * 2) During evaluation of arguments of this call is not allowed to create other task<T> objects.
  * It's strongly recommended to use this macro instead of writing co_await f(...), where f returns task<T>.
  */
 #define CO_AWAIT_TASK_ON_STACK(...)                                                                                                                            \

@@ -76,15 +76,15 @@ private:
   static constexpr std::string_view INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE_ARG = "instance-task-allocator-stack-pool-chunk-size";
   static constexpr std::string_view MIN_INSTANCE_EXTRA_TASK_MEMORY_SIZE_ARG = "min-instance-extra-task-memory-size";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U);                              // 1MiB
-  static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U);                 // 64MiB
   static constexpr auto MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);                       // 1MiB
+  static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U);                 // 64MiB
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);                // 1MiB
   static constexpr auto DEFAULT_INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(8U * 1024U * 1024U);        // 8MiB
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
-  static constexpr auto DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(2U * 1024U * 1024U);             // 2MiB
+  static constexpr auto DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(4U * 1024U * 1024U);             // 4MiB
   static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(32U * 1024U);                 // 32KiB
-  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE = static_cast<size_t>(60U);
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U); // 1MiB
+  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE = static_cast<size_t>(80U);
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
 
   void parse_env() noexcept;
 

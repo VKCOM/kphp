@@ -54,11 +54,11 @@ struct promise_self_deleting : public kphp::coro::async_stack_element {
 
   static auto get_return_object_on_allocation_failure() noexcept -> task_self_deleting;
 
-  auto initial_suspend() noexcept -> std::suspend_always {
+  auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
 
-  auto final_suspend() noexcept -> std::suspend_never {
+  auto final_suspend() const noexcept -> std::suspend_never {
     return {};
   }
 

@@ -65,7 +65,7 @@ TEST(chunk_pool_resource_test, truncated_tail_is_unused) {
     ASSERT_NE(resource.allocate(), nullptr);
   }
 
-  // the trailing TAIL bytes don't make up a whole chunk, so they must not be handed out
+  // the trailing tail bytes don't make up a whole chunk, so they must not be handed out
   ASSERT_EQ(resource.allocate(), nullptr);
 }
 
@@ -193,13 +193,13 @@ TEST(chunk_pool_resource_test, buffer_list_head_tracks_most_recently_added_buffe
 
   auto* head{resource.get_buffer_list_head()};
 
-  ASSERT_EQ(static_cast<void*>(head->next_in_chain), static_cast<void*>(buffer2.data()));
+  ASSERT_EQ(static_cast<void*>(head->next), static_cast<void*>(buffer2.data()));
 
-  head = head->next_in_chain;
+  head = head->next;
 
-  ASSERT_EQ(static_cast<void*>(head->next_in_chain), static_cast<void*>(buffer1.data()));
+  ASSERT_EQ(static_cast<void*>(head->next), static_cast<void*>(buffer1.data()));
 
-  head = head->next_in_chain;
+  head = head->next;
 
-  ASSERT_EQ(static_cast<void*>(head->next_in_chain), nullptr);
+  ASSERT_EQ(static_cast<void*>(head->next), nullptr);
 }

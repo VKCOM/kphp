@@ -17,7 +17,7 @@ namespace kphp::coro {
  * The `resume` function is responsible for storing the current synchronous stack frame
  * in async_stack_root::stop_sync_frame before resuming the coroutine. This allows
  * capturing one of the stack frames in the synchronous stack trace.
- * All calls to resume() method of handle must be made with this function.
+ * All calls to resume() method of handle must be made with overload of this function.
  */
 inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept {
   kphp::coro::task_allocator_guard guard{task_allocator};
@@ -27,7 +27,7 @@ inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root,
 }
 
 /*
- * All calls to resume() method of handle must be made with this function.
+ * All calls to resume() method of handle must be made with overload of this function.
  */
 inline void resume(std::coroutine_handle<> handle, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept {
   kphp::coro::task_allocator_guard guard{task_allocator};
