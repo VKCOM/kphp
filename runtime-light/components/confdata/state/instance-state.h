@@ -66,6 +66,7 @@ public:
                                                         0,
                                                         m_component_state.m_initial_instance_task_memory_size,
                                                         m_component_state.m_instance_task_allocator_segment_size,
+                                                        m_component_state.m_instance_task_allocator_stack_pool_chunk_size,
                                                         m_component_state.m_min_instance_extra_task_memory_size,
                                                         0};
   kphp::coro::io_scheduler m_io_scheduler{m_coroutine_instance_state};

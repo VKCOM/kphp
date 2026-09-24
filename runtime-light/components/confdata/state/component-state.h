@@ -58,6 +58,7 @@ public:
   size_t m_min_instance_extra_coroutine_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE};
   size_t m_initial_instance_task_memory_size{DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE};
   size_t m_instance_task_allocator_segment_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE};
+  size_t m_instance_task_allocator_stack_pool_chunk_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE};
   size_t m_min_instance_extra_task_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE};
 
   // === METHODS ==================================================================================
