@@ -7,7 +7,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <utility>
 #include <variant>
 
@@ -18,6 +17,7 @@
 
 mixed f$preg_replace(const kphp::regex::regexp& regex, const mixed& replacement, const mixed& subject, int64_t limit,
                      Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
 
@@ -31,15 +31,18 @@ mixed f$preg_replace(const kphp::regex::regexp& regex, const mixed& replacement,
   }
 
   if (!subject.is_array()) {
-    return f$preg_replace(regex, replacement, subject.to_string(), limit, count);
+    auto string_subject{subject.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, replacement, string_subject, limit, count); });
   }
 
   const auto& subject_arr{subject.as_array()};
   array<mixed> result{subject_arr.size()};
   for (const auto& it : subject_arr) {
     int64_t replace_one_count{};
-    if (Optional replace_result{f$preg_replace(regex, replacement, it.get_value().to_string(), limit, replace_one_count)}; replace_result.has_value())
-        [[likely]] {
+    auto string_subject{it.get_value().to_string()};
+    if (Optional replace_result{
+            call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, replacement, string_subject, limit, replace_one_count); })};
+        replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result.set_value(it.get_key(), std::move(replace_result.val()));
     } else {
@@ -53,6 +56,7 @@ mixed f$preg_replace(const kphp::regex::regexp& regex, const mixed& replacement,
 
 Optional<string> f$preg_replace(const mixed& pattern, const string& replacement, const string& subject, int64_t limit,
                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
 
@@ -62,15 +66,18 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
   }
 
   if (!pattern.is_array()) {
-    return f$preg_replace(pattern.to_string(), replacement, subject, limit, count);
+    auto string_pattern{pattern.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(std::move(string_pattern), replacement, subject, limit, count); });
   }
 
   string result{subject};
   const auto& pattern_arr{pattern.as_array()};
   for (const auto& it : pattern_arr) {
     int64_t replace_one_count{};
-    if (Optional replace_result{f$preg_replace(it.get_value().to_string(), replacement, result, limit, replace_one_count)}; replace_result.has_value())
-        [[likely]] {
+    auto string_pattern{it.get_value().to_string()};
+    if (Optional replace_result{
+            call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(std::move(string_pattern), replacement, result, limit, replace_one_count); })};
+        replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result = std::move(replace_result.val());
     } else {
@@ -84,6 +91,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
 
 Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, const string& subject, int64_t limit,
                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
 
@@ -97,7 +105,8 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
   }
 
   if (!replacement.is_array()) {
-    return f$preg_replace(pattern, replacement.to_string(), subject, limit, count);
+    auto string_replacement{replacement.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(pattern, string_replacement, subject, limit, count); });
   }
   if (!pattern.is_array()) [[unlikely]] {
     kphp::log::warning("parameter mismatch: replacement is an array while pattern is string");
@@ -116,7 +125,9 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
     }
 
     int64_t replace_one_count{};
-    if (Optional replace_result{f$preg_replace(pattern_it.get_value().to_string(), replacement_str, result, limit, replace_one_count)};
+    auto string_pattern{pattern_it.get_value().to_string()};
+    if (Optional replace_result{call_with_paused_builtin_timer(
+            timer, [&] { return f$preg_replace(std::move(string_pattern), replacement_str, result, limit, replace_one_count); })};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result = std::move(replace_result.val());
@@ -131,6 +142,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
 
 mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed& subject, int64_t limit,
                      Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
 
@@ -148,15 +160,18 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
   }
 
   if (!subject.is_array()) {
-    return f$preg_replace(pattern, replacement, subject.to_string(), limit, count);
+    auto string_subject{subject.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(pattern, replacement, string_subject, limit, count); });
   }
 
   const auto& subject_arr{subject.as_array()};
   array<mixed> result{subject_arr.size()};
   for (const auto& it : subject_arr) {
     int64_t replace_one_count{};
-    if (Optional replace_result{f$preg_replace(pattern, replacement, it.get_value().to_string(), limit, replace_one_count)}; replace_result.has_value())
-        [[likely]] {
+    auto string_subject{it.get_value().to_string()};
+    if (Optional replace_result{
+            call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(pattern, replacement, string_subject, limit, replace_one_count); })};
+        replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result.set_value(it.get_key(), std::move(replace_result.val()));
     } else {

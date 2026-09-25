@@ -4,12 +4,14 @@
 
 #include "runtime-light/components/kphp/state/instance-state.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <span>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -26,6 +28,8 @@
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/confdata/confdata-constants.h"
+#include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
+#include "runtime-light/stdlib/diagnostics/curl-time-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/diagnostics/metrics.h"
 #include "runtime-light/stdlib/diagnostics/regex-time-state.h"
@@ -234,18 +238,28 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session.reset();
   }
   {
-    const auto& regex_time_stats{RegexTimeInstanceState::get()};
-    static constexpr std::string_view metric_name{"kphp_regex_builtin_time"};
-    auto send_metric{[](std::string_view method, uint64_t value) noexcept {
-      auto sender{kphp::diagnostics::metric_sender::metric(metric_name).tag("is_K2", "yes").tag("method", method)};
-      sender.send_value(static_cast<double>(value));
+    static constexpr std::string_view metric_name{"kphp_builtin_time"};
+    auto sender{kphp::diagnostics::metric_sender::metric(metric_name)};
+    std::array<std::pair<std::string_view, std::string_view>, 3> tags{{
+        {"is_K2", "yes"},
+        {"group", {}},
+        {"method", {}},
     }};
-    send_metric("total", regex_time_stats.total);
-    send_metric("preg_match", regex_time_stats.preg_match);
-    send_metric("preg_match_all", regex_time_stats.preg_match_all);
-    send_metric("preg_replace", regex_time_stats.preg_replace);
-    send_metric("preg_replace_callback", regex_time_stats.preg_replace_callback);
-    send_metric("preg_split", regex_time_stats.preg_split);
+    const auto send_metric{[&sender, &tags](std::string_view group, std::string_view method, uint64_t value) noexcept {
+      tags[1].second = group;
+      tags[2].second = method;
+      std::ignore = sender.send_value(tags, static_cast<double>(value));
+    }};
+    const auto send_group{[&send_metric](std::string_view group, const auto& stats, const auto& method_names) noexcept {
+      send_metric(group, "total", stats.total);
+      for (size_t i = 0; i < method_names.size(); ++i) {
+        send_metric(group, method_names[i], stats.methods[i]);
+      }
+    }};
+
+    send_group("regexp", RegexTimeInstanceState::get(), REGEX_BUILTIN_NAMES);
+    send_group("crypto", CryptoTimeInstanceState::get(), CRYPTO_BUILTIN_NAMES);
+    send_group("curl", CurlTimeInstanceState::get(), CURL_BUILTIN_NAMES);
   }
   confdata_instance_state.release();
 }

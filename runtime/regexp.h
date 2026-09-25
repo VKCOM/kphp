@@ -364,8 +364,7 @@ void preg_add_match(array<string>& v, const string& match, const string& name) {
 }
 
 Optional<int64_t> f$preg_match(const regexp& regex, const string& subject) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -374,8 +373,7 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject) {
 }
 
 Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -384,8 +382,7 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject) {
 }
 
 Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -394,8 +391,7 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed
 }
 
 Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -404,8 +400,7 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, m
 }
 
 Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -414,8 +409,7 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed
 }
 
 Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -424,61 +418,85 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, m
 }
 
 Optional<int64_t> f$preg_match(const string& regex, const string& subject) {
-  return f$preg_match(regexp(regex), subject);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(compiled_regex, subject); });
 }
 
 Optional<int64_t> f$preg_match_all(const string& regex, const string& subject) {
-  return f$preg_match_all(regexp(regex), subject);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(compiled_regex, subject); });
 }
 
 Optional<int64_t> f$preg_match(const string& regex, const string& subject, mixed& matches) {
-  return f$preg_match(regexp(regex), subject, matches);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(compiled_regex, subject, matches); });
 }
 
 Optional<int64_t> f$preg_match_all(const string& regex, const string& subject, mixed& matches) {
-  return f$preg_match_all(regexp(regex), subject, matches);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(compiled_regex, subject, matches); });
 }
 
 Optional<int64_t> f$preg_match(const string& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
-  return f$preg_match(regexp(regex), subject, matches, flags, offset);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(compiled_regex, subject, matches, flags, offset); });
 }
 
 Optional<int64_t> f$preg_match_all(const string& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
-  return f$preg_match_all(regexp(regex), subject, matches, flags, offset);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(compiled_regex, subject, matches, flags, offset); });
 }
 
 Optional<int64_t> f$preg_match(const mixed& regex, const string& subject) {
-  return f$preg_match(regexp(regex.to_string()), subject);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(compiled_regex, subject); });
 }
 
 Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject) {
-  return f$preg_match_all(regexp(regex.to_string()), subject);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(compiled_regex, subject); });
 }
 
 Optional<int64_t> f$preg_match(const mixed& regex, const string& subject, mixed& matches) {
-  return f$preg_match(regexp(regex.to_string()), subject, matches);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(compiled_regex, subject, matches); });
 }
 
 Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject, mixed& matches) {
-  return f$preg_match_all(regexp(regex.to_string()), subject, matches);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(compiled_regex, subject, matches); });
 }
 
 Optional<int64_t> f$preg_match(const mixed& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
-  return f$preg_match(regexp(regex.to_string()), subject, matches, flags, offset);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(compiled_regex, subject, matches, flags, offset); });
 }
 
 Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
-  return f$preg_match_all(regexp(regex.to_string()), subject, matches, flags, offset);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_match_all)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(compiled_regex, subject, matches, flags, offset); });
 }
 
 template<class T1, class T2, class T3, class>
 inline auto f$preg_replace(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count); });
 }
 
 Optional<string> f$preg_replace(const regexp& regex, const string& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_replace)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -487,19 +505,24 @@ Optional<string> f$preg_replace(const regexp& regex, const string& replace_val, 
 }
 
 Optional<string> f$preg_replace(const regexp& regex, const mixed& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
   if (replace_val.is_array()) {
     php_warning("Parameter mismatch, pattern is a string while replacement is an array");
     return false;
   }
 
-  return f$preg_replace(regex, replace_val.to_string(), subject, limit, replace_count);
+  auto string_replace_val{replace_val.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, string_replace_val, subject, limit, replace_count); });
 }
 
 mixed f$preg_replace(const regexp& regex, const string& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
+  mixed mixed_replace_val{replace_val};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, mixed_replace_val, subject, limit, replace_count); });
 }
 
 mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
   if (replace_val.is_array()) {
     php_warning("Parameter mismatch, pattern is a string while replacement is an array");
     return false;
@@ -511,7 +534,10 @@ mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed&
     const array<mixed>& subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
-      mixed cur_result = f$preg_replace(regex, replace_val.to_string(), it.get_value().to_string(), limit, replace_count_one);
+      auto string_replace_val{replace_val.to_string()};
+      auto string_subject{it.get_value().to_string()};
+      mixed cur_result =
+          call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, string_replace_val, string_subject, limit, replace_count_one); });
       if (!cur_result.is_null()) {
         result.set_value(it.get_key(), cur_result);
         replace_count += replace_count_one;
@@ -519,24 +545,33 @@ mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed&
     }
     return result;
   } else {
-    return f$preg_replace(regex, replace_val.to_string(), subject.to_string(), limit, replace_count);
+    auto string_replace_val{replace_val.to_string()};
+    auto string_subject{subject.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, string_replace_val, string_subject, limit, replace_count); });
   }
 }
 
 template<class T1, class T2>
 auto f$preg_replace(const string& regex, const T1& replace_val, const T2& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace(regexp(regex), replace_val, subject, limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(compiled_regex, replace_val, subject, limit, replace_count); });
 }
 
 Optional<string> f$preg_replace(const mixed& regex, const string& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
+  mixed mixed_replace_val{replace_val};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, mixed_replace_val, subject, limit, replace_count); });
 }
 
 mixed f$preg_replace(const mixed& regex, const string& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
+  mixed mixed_replace_val{replace_val};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, mixed_replace_val, subject, limit, replace_count); });
 }
 
 Optional<string> f$preg_replace(const mixed& regex, const mixed& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
   if (regex.is_array()) {
     Optional<string> result = subject;
 
@@ -553,14 +588,16 @@ Optional<string> f$preg_replace(const mixed& regex, const mixed& replace_val, co
           ++cur_replace_val;
         }
 
-        result = f$preg_replace(it.get_value().to_string(), replace_value, result, limit, replace_count_one);
+        auto string_regex{it.get_value().to_string()};
+        result = call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(string_regex, replace_value, result, limit, replace_count_one); });
         replace_count += replace_count_one;
       }
     } else {
       string replace_value = replace_val.to_string();
 
       for (array<mixed>::const_iterator it = regex.begin(); it != regex.end(); ++it) {
-        result = f$preg_replace(it.get_value().to_string(), replace_value, result, limit, replace_count_one);
+        auto string_regex{it.get_value().to_string()};
+        result = call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(string_regex, replace_value, result, limit, replace_count_one); });
         replace_count += replace_count_one;
       }
     }
@@ -572,18 +609,22 @@ Optional<string> f$preg_replace(const mixed& regex, const mixed& replace_val, co
       return false;
     }
 
-    return f$preg_replace(regex.to_string(), replace_val.to_string(), subject, limit, replace_count);
+    auto string_regex{regex.to_string()};
+    auto string_replace_val{replace_val.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(string_regex, string_replace_val, subject, limit, replace_count); });
   }
 }
 
 mixed f$preg_replace(const mixed& regex, const mixed& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace)};
   if (subject.is_array()) {
     replace_count = 0;
     int64_t replace_count_one;
     const array<mixed>& subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
-      mixed cur_result = f$preg_replace(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
+      auto string_subject{it.get_value().to_string()};
+      mixed cur_result = call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, replace_val, string_subject, limit, replace_count_one); });
       if (!cur_result.is_null()) {
         result.set_value(it.get_key(), cur_result);
         replace_count += replace_count_one;
@@ -591,28 +632,33 @@ mixed f$preg_replace(const mixed& regex, const mixed& replace_val, const mixed& 
     }
     return result;
   } else {
-    return f$preg_replace(regex, replace_val, subject.to_string(), limit, replace_count);
+    auto string_subject{subject.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, replace_val, string_subject, limit, replace_count); });
   }
 }
 
 template<class T1, class T2, class T3, class>
 auto f$preg_replace_callback(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace_callback(regex, replace_val, subject.val(), limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace_callback)};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(regex, replace_val, subject.val(), limit, replace_count); });
 }
 
 template<class T>
 Optional<string> f$preg_replace_callback(const regexp& regex, const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_replace_callback)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace_callback)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace_callback, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
   }
-  return regex.replace(replace_val, subject, limit, replace_count);
+  auto callback_without_timer = [&timer, &replace_val](auto&& matches) {
+    return call_with_paused_builtin_timer(timer, [&] { return replace_val(std::forward<decltype(matches)>(matches)); });
+  };
+  return regex.replace(callback_without_timer, subject, limit, replace_count);
 }
 
 template<class T>
 mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace_callback)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace_callback, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -623,7 +669,9 @@ mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const m
     const array<mixed>& subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
-      mixed cur_result = f$preg_replace_callback(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
+      auto string_subject{it.get_value().to_string()};
+      mixed cur_result =
+          call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(regex, replace_val, string_subject, limit, replace_count_one); });
       if (!cur_result.is_null()) {
         result.set_value(it.get_key(), cur_result);
         replace_count += replace_count_one;
@@ -631,17 +679,21 @@ mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const m
     }
     return result;
   } else {
-    return f$preg_replace_callback(regex, replace_val, subject.to_string(), limit, replace_count);
+    auto string_subject{subject.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(regex, replace_val, string_subject, limit, replace_count); });
   }
 }
 
 template<class T, class T2>
 auto f$preg_replace_callback(const string& regex, const T& replace_val, const T2& subject, int64_t limit, int64_t& replace_count) {
-  return f$preg_replace_callback(regexp(regex), replace_val, subject, limit, replace_count);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace_callback)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(compiled_regex, replace_val, subject, limit, replace_count); });
 }
 
 template<class T>
 Optional<string> f$preg_replace_callback(const mixed& regex, const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace_callback)};
   if (regex.is_array()) {
     Optional<string> result = subject;
 
@@ -649,25 +701,30 @@ Optional<string> f$preg_replace_callback(const mixed& regex, const T& replace_va
     int64_t replace_count_one;
 
     for (array<mixed>::const_iterator it = regex.begin(); it != regex.end(); ++it) {
-      result = f$preg_replace_callback(it.get_value().to_string(), replace_val, result, limit, replace_count_one);
+      auto string_regex{it.get_value().to_string()};
+      result = call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(string_regex, replace_val, result, limit, replace_count_one); });
       replace_count += replace_count_one;
     }
 
     return result;
   } else {
-    return f$preg_replace_callback(regex.to_string(), replace_val, subject, limit, replace_count);
+    auto string_regex{regex.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(string_regex, replace_val, subject, limit, replace_count); });
   }
 }
 
 template<class T>
 mixed f$preg_replace_callback(const mixed& regex, const T& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_replace_callback)};
   if (subject.is_array()) {
     replace_count = 0;
     int64_t replace_count_one;
     const array<mixed>& subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
-      mixed cur_result = f$preg_replace_callback(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
+      auto string_subject{it.get_value().to_string()};
+      mixed cur_result =
+          call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(regex, replace_val, string_subject, limit, replace_count_one); });
       if (!cur_result.is_null()) {
         result.set_value(it.get_key(), cur_result);
         replace_count += replace_count_one;
@@ -675,13 +732,13 @@ mixed f$preg_replace_callback(const mixed& regex, const T& replace_val, const mi
     }
     return result;
   } else {
-    return f$preg_replace_callback(regex, replace_val, subject.to_string(), limit, replace_count);
+    auto string_subject{subject.to_string()};
+    return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace_callback(regex, replace_val, string_subject, limit, replace_count); });
   }
 }
 
 Optional<array<mixed>> f$preg_split(const regexp& regex, const string& subject, int64_t limit, int64_t flags) {
-  auto& regex_time_stats{RegexTimeStats::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_split)};
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_split)};
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_split, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -690,11 +747,15 @@ Optional<array<mixed>> f$preg_split(const regexp& regex, const string& subject, 
 }
 
 Optional<array<mixed>> f$preg_split(const string& regex, const string& subject, int64_t limit, int64_t flags) {
-  return f$preg_split(regexp(regex), subject, limit, flags);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_split)};
+  regexp compiled_regex{regex};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_split(compiled_regex, subject, limit, flags); });
 }
 
 Optional<array<mixed>> f$preg_split(const mixed& regex, const string& subject, int64_t limit, int64_t flags) {
-  return f$preg_split(regexp(regex.to_string()), subject, limit, flags);
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_split)};
+  regexp compiled_regex{regex.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_split(compiled_regex, subject, limit, flags); });
 }
 
 int64_t f$preg_last_error() {

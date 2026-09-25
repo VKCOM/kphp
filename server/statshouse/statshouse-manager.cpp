@@ -450,10 +450,25 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
 }
 
 void StatsHouseManager::add_regex_time_stats(const RegexTimeStats& stats) noexcept {
-  client.metric("kphp_regex_builtin_time").tag("is_K2", "no").tag("method", "total").write_value(stats.total);
-  client.metric("kphp_regex_builtin_time").tag("is_K2", "no").tag("method", "preg_match").write_value(stats.preg_match);
-  client.metric("kphp_regex_builtin_time").tag("is_K2", "no").tag("method", "preg_match_all").write_value(stats.preg_match_all);
-  client.metric("kphp_regex_builtin_time").tag("is_K2", "no").tag("method", "preg_replace").write_value(stats.preg_replace);
-  client.metric("kphp_regex_builtin_time").tag("is_K2", "no").tag("method", "preg_replace_callback").write_value(stats.preg_replace_callback);
-  client.metric("kphp_regex_builtin_time").tag("is_K2", "no").tag("method", "preg_split").write_value(stats.preg_split);
+  static constexpr std::string_view metric_name{"kphp_builtin_time"};
+  client.metric(metric_name).tag("is_K2", "no").tag("group", "regexp").tag("method", "total").write_value(stats.total);
+  for (size_t i = 0; i < REGEX_BUILTIN_NAMES.size(); ++i) {
+    client.metric(metric_name).tag("is_K2", "no").tag("group", "regexp").tag("method", REGEX_BUILTIN_NAMES[i]).write_value(stats.methods[i]);
+  }
+}
+
+void StatsHouseManager::add_crypto_time_stats(const CryptoTimeStats& stats) noexcept {
+  static constexpr std::string_view metric_name{"kphp_builtin_time"};
+  client.metric(metric_name).tag("is_K2", "no").tag("group", "crypto").tag("method", "total").write_value(stats.total);
+  for (size_t i = 0; i < CRYPTO_BUILTIN_NAMES.size(); ++i) {
+    client.metric(metric_name).tag("is_K2", "no").tag("group", "crypto").tag("method", CRYPTO_BUILTIN_NAMES[i]).write_value(stats.methods[i]);
+  }
+}
+
+void StatsHouseManager::add_curl_time_stats(const CurlTimeStats& stats) noexcept {
+  static constexpr std::string_view metric_name{"kphp_builtin_time"};
+  client.metric(metric_name).tag("is_K2", "no").tag("group", "curl").tag("method", "total").write_value(stats.total);
+  for (size_t i = 0; i < CURL_BUILTIN_NAMES.size(); ++i) {
+    client.metric(metric_name).tag("is_K2", "no").tag("group", "curl").tag("method", CURL_BUILTIN_NAMES[i]).write_value(stats.methods[i]);
+  }
 }

@@ -22,6 +22,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/pause-timer-awaitable.h"
 #include "runtime-light/stdlib/diagnostics/regex-time-state.h"
 // correctly include PCRE2 lib
 #include "runtime-light/stdlib/string/regex-state.h"
@@ -757,8 +758,7 @@ inline bool preg_match_check_args(const string& subject, int64_t flags, int64_t&
 inline Optional<int64_t> preg_match_impl(const kphp::regex::regexp& regex, const string& subject,
                                          Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags,
                                          int64_t offset) noexcept {
-  auto& regex_time_stats{RegexTimeInstanceState::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match)};
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match)};
 
   const auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -810,8 +810,7 @@ inline bool preg_match_all_check_args(const string& subject, int64_t flags, int6
 inline Optional<int64_t> preg_match_all_impl(const kphp::regex::regexp& regex, const string& subject,
                                              Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags,
                                              int64_t offset) noexcept {
-  auto& regex_time_stats{RegexTimeInstanceState::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_match_all)};
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match_all)};
 
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -897,8 +896,7 @@ inline std::optional<string> preg_replace_preparing(const string& replacement, i
 
 inline Optional<string> preg_replace_impl(const kphp::regex::regexp& regex, const string& subject, const string& replacement, int64_t limit,
                                           int64_t& count) noexcept {
-  auto& regex_time_stats{RegexTimeInstanceState::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_replace)};
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
 
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -935,8 +933,7 @@ kphp::coro::task<Optional<string>> preg_replace_callback_impl(kphp::regex::regex
                                                               int64_t limit = kphp::regex::PREG_NOLIMIT) noexcept {
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
 
-  auto& regex_time_stats{RegexTimeInstanceState::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_replace_callback)};
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
 
   const auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -989,9 +986,10 @@ kphp::coro::task<Optional<string>> preg_replace_callback_impl(kphp::regex::regex
     }
     string replacement{};
     if constexpr (kphp::coro::is_async_function_v<F, array<string>>) {
-      replacement = co_await std::invoke(callback, std::move(matches));
+      auto callback_task{call_with_paused_builtin_timer(timer, [&] { return std::invoke(callback, std::move(matches)); })};
+      replacement = co_await pause_timer_while_awaiting(timer, std::move(callback_task));
     } else {
-      replacement = std::invoke(callback, std::move(matches));
+      replacement = call_with_paused_builtin_timer(timer, [&] { return std::invoke(callback, std::move(matches)); });
     }
 
     output_str.append(replacement);
@@ -1011,8 +1009,7 @@ inline bool preg_split_check_args(int64_t flags) noexcept {
 }
 
 inline Optional<array<mixed>> preg_split_impl(const kphp::regex::regexp& regex, const string& subject, int64_t limit, int64_t flags) noexcept {
-  auto& regex_time_stats{RegexTimeInstanceState::get()};
-  auto timer{regex_time_stats.write(regex_time_stats.preg_split)};
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_split)};
 
   auto opt_re{regex.get_regex()};
   if (!opt_re.has_value()) [[unlikely]] {
@@ -1088,7 +1085,8 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
 auto f$preg_replace(const T1& regex, const T2& replacement, const T3& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                     Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {}) noexcept {
-  return f$preg_replace(regex, replacement, subject.val(), limit, opt_count);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, replacement, subject.val(), limit, opt_count); });
 }
 
 // === preg_replace_callback ======================================================================
@@ -1142,25 +1140,30 @@ Optional<array<mixed>> f$preg_split(const mixed& pattern, const string& subject,
 inline Optional<int64_t> f$preg_match(const kphp::regex::regexp& regex, const string& subject,
                                       const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                       int64_t offset) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match)};
   if (!kphp::regex::details::preg_match_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
-  return kphp::regex::details::preg_match_impl(regex, subject, opt_matches, flags, offset);
+  return call_with_paused_builtin_timer(timer, [&] { return kphp::regex::details::preg_match_impl(regex, subject, opt_matches, flags, offset); });
 }
 
 inline Optional<int64_t> f$preg_match(string pattern, const string& subject,
                                       const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                       int64_t offset) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match)};
   if (!kphp::regex::details::preg_match_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
-  return kphp::regex::details::preg_match_impl(kphp::regex::regexp{std::move(pattern), subject}, subject, opt_matches, flags, offset);
+  const kphp::regex::regexp regex{std::move(pattern), subject};
+  return call_with_paused_builtin_timer(timer, [&] { return kphp::regex::details::preg_match_impl(regex, subject, opt_matches, flags, offset); });
 }
 
 inline Optional<int64_t> f$preg_match(const mixed& pattern, const string& subject,
                                       const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                       int64_t offset) noexcept {
-  return f$preg_match(pattern.to_string(), subject, opt_matches, flags, offset);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match)};
+  auto string_pattern{pattern.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match(std::move(string_pattern), subject, opt_matches, flags, offset); });
 }
 
 // === preg_match_all implementation ==============================================================
@@ -1168,42 +1171,50 @@ inline Optional<int64_t> f$preg_match(const mixed& pattern, const string& subjec
 inline Optional<int64_t> f$preg_match_all(const kphp::regex::regexp& regex, const string& subject,
                                           const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                           int64_t offset) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match_all)};
   if (!kphp::regex::details::preg_match_all_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
-  return kphp::regex::details::preg_match_all_impl(regex, subject, opt_matches, flags, offset);
+  return call_with_paused_builtin_timer(timer, [&] { return kphp::regex::details::preg_match_all_impl(regex, subject, opt_matches, flags, offset); });
 }
 
 inline Optional<int64_t> f$preg_match_all(string pattern, const string& subject,
                                           const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                           int64_t offset) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match_all)};
   if (!kphp::regex::details::preg_match_all_check_args(subject, flags, offset)) [[unlikely]] {
     return false;
   }
-  return kphp::regex::details::preg_match_all_impl(kphp::regex::regexp{std::move(pattern), subject}, subject, opt_matches, flags, offset);
+  const kphp::regex::regexp regex{std::move(pattern), subject};
+  return call_with_paused_builtin_timer(timer, [&] { return kphp::regex::details::preg_match_all_impl(regex, subject, opt_matches, flags, offset); });
 }
 
 inline Optional<int64_t> f$preg_match_all(const mixed& pattern, const string& subject,
                                           const Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>>& opt_matches, int64_t flags,
                                           int64_t offset) noexcept {
-  return f$preg_match_all(pattern.to_string(), subject, opt_matches, flags, offset);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_match_all)};
+  auto string_pattern{pattern.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_match_all(std::move(string_pattern), subject, opt_matches, flags, offset); });
 }
 
 // === preg_replace part of implementation ========================================================
 
 inline Optional<string> f$preg_replace(const kphp::regex::regexp& regex, const string& replacement, const string& subject, int64_t limit,
                                        Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
   const auto& pcre2_replacement{kphp::regex::details::preg_replace_preparing(replacement, limit)};
   if (!pcre2_replacement.has_value()) [[unlikely]] {
     return false;
   }
-  return kphp::regex::details::preg_replace_impl(regex, subject, pcre2_replacement.value(), limit, count);
+  return call_with_paused_builtin_timer(timer,
+                                        [&] { return kphp::regex::details::preg_replace_impl(regex, subject, pcre2_replacement.value(), limit, count); });
 }
 
 inline Optional<string> f$preg_replace(const kphp::regex::regexp& regex, const mixed& replacement, const string& subject, int64_t limit,
                                        Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
 
@@ -1212,16 +1223,20 @@ inline Optional<string> f$preg_replace(const kphp::regex::regexp& regex, const m
     return false;
   }
 
-  return f$preg_replace(regex, replacement.to_string(), subject, limit, opt_count);
+  auto string_replacement{replacement.to_string()};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, string_replacement, subject, limit, opt_count); });
 }
 
 inline mixed f$preg_replace(const kphp::regex::regexp& regex, const string& replacement, const mixed& subject, int64_t limit,
                             const Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count) noexcept {
-  return f$preg_replace(regex, mixed{replacement}, subject, limit, opt_count);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
+  mixed mixed_replacement{replacement};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(regex, mixed_replacement, subject, limit, opt_count); });
 }
 
 inline Optional<string> f$preg_replace(string pattern, const string& replacement, const string& subject, int64_t limit,
                                        Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
   const auto& pcre2_replacement{kphp::regex::details::preg_replace_preparing(replacement, limit)};
@@ -1229,12 +1244,15 @@ inline Optional<string> f$preg_replace(string pattern, const string& replacement
     return false;
   }
   const kphp::regex::regexp regex{std::move(pattern), subject};
-  return kphp::regex::details::preg_replace_impl(regex, subject, pcre2_replacement.value(), limit, count);
+  return call_with_paused_builtin_timer(timer,
+                                        [&] { return kphp::regex::details::preg_replace_impl(regex, subject, pcre2_replacement.value(), limit, count); });
 }
 
 inline mixed f$preg_replace(const mixed& pattern, const string& replacement, const mixed& subject, int64_t limit,
                             const Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count) noexcept {
-  return f$preg_replace(pattern, mixed{replacement}, subject, limit, opt_count);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace)};
+  mixed mixed_replacement{replacement};
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_replace(pattern, mixed_replacement, subject, limit, opt_count); });
 }
 
 // === preg_replace_callback implementation =======================================================
@@ -1244,25 +1262,29 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(kphp::regex::regexp r
                                                            Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count,
                                                            int64_t flags) noexcept {
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
   if (!kphp::regex::details::preg_replace_callback_check_args(limit, flags)) [[unlikely]] {
     co_return Optional<string>{};
   }
 
-  co_return co_await kphp::regex::details::preg_replace_callback_impl(regex, callback, subject, count, limit);
+  co_return co_await pause_timer_while_awaiting(timer, kphp::regex::details::preg_replace_callback_impl(regex, callback, subject, count, limit));
 }
 
 template<class F>
 kphp::coro::task<mixed> f$preg_replace_callback(kphp::regex::regexp regex, F callback, mixed subject, int64_t limit,
                                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count, int64_t flags) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
   if (subject.is_object()) [[unlikely]] {
     kphp::log::warning("invalid subject: object could not be converted to string");
     co_return mixed{};
   }
 
   if (!subject.is_array()) {
-    co_return co_await f$preg_replace_callback(regex, std::move(callback), subject.to_string(), limit, opt_count, flags);
+    auto string_subject{subject.to_string()};
+    co_return co_await pause_timer_while_awaiting(timer,
+                                                  f$preg_replace_callback(regex, std::move(callback), std::move(string_subject), limit, opt_count, flags));
   }
 
   int64_t count{};
@@ -1272,7 +1294,9 @@ kphp::coro::task<mixed> f$preg_replace_callback(kphp::regex::regexp regex, F cal
   array<mixed> result{subject_arr.size()};
   for (const auto& it : subject_arr) {
     int64_t replace_one_count{};
-    if (auto replace_result{co_await f$preg_replace_callback(regex, callback, it.get_value().to_string(), limit, replace_one_count, flags)};
+    auto string_subject{it.get_value().to_string()};
+    if (auto replace_result{
+            co_await pause_timer_while_awaiting(timer, f$preg_replace_callback(regex, callback, std::move(string_subject), limit, replace_one_count, flags))};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result.set_value(it.get_key(), std::move(replace_result.val()));
@@ -1290,26 +1314,30 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
                                                            Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count,
                                                            int64_t flags) noexcept {
   static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
   int64_t count{};
   auto count_finalizer{kphp::regex::details::get_count_finalizer(count, opt_count)};
   if (!kphp::regex::details::preg_replace_callback_check_args(limit, flags)) [[unlikely]] {
     co_return Optional<string>{};
   }
   const kphp::regex::regexp regex{std::move(pattern), subject};
-  co_return co_await kphp::regex::details::preg_replace_callback_impl(regex, callback, subject, count, limit);
+  co_return co_await pause_timer_while_awaiting(timer, kphp::regex::details::preg_replace_callback_impl(regex, callback, subject, count, limit));
 }
 
 template<class F>
 kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F callback, string subject, int64_t limit,
                                                            Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count,
                                                            int64_t flags) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
   if (pattern.is_object()) [[unlikely]] {
     kphp::log::warning("invalid pattern: object could not be converted to string");
     co_return Optional<string>{};
   }
 
   if (!pattern.is_array()) {
-    co_return co_await f$preg_replace_callback(pattern.to_string(), std::move(callback), subject, limit, opt_count, flags);
+    auto string_pattern{pattern.to_string()};
+    co_return co_await pause_timer_while_awaiting(timer,
+                                                  f$preg_replace_callback(std::move(string_pattern), std::move(callback), subject, limit, opt_count, flags));
   }
 
   int64_t count{};
@@ -1319,7 +1347,9 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
   const auto& pattern_arr{pattern.as_array()};
   for (const auto& it : pattern_arr) {
     int64_t replace_one_count{};
-    if (auto replace_result{co_await f$preg_replace_callback(it.get_value().to_string(), callback, std::move(result), limit, replace_one_count, flags)};
+    auto string_pattern{it.get_value().to_string()};
+    if (auto replace_result{co_await pause_timer_while_awaiting(
+            timer, f$preg_replace_callback(std::move(string_pattern), callback, std::move(result), limit, replace_one_count, flags))};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result = std::move(replace_result.val());
@@ -1335,6 +1365,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
 template<class F>
 kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed subject, int64_t limit,
                                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count, int64_t flags) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
   if (pattern.is_object()) [[unlikely]] {
     kphp::log::warning("invalid pattern: object could not be converted to string");
     co_return mixed{};
@@ -1345,7 +1376,9 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
   }
 
   if (!subject.is_array()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), subject.to_string(), limit, opt_count, flags);
+    auto string_subject{subject.to_string()};
+    co_return co_await pause_timer_while_awaiting(
+        timer, f$preg_replace_callback(std::move(pattern), std::move(callback), std::move(string_subject), limit, opt_count, flags));
   }
 
   int64_t count{};
@@ -1355,7 +1388,9 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
   array<mixed> result{subject_arr.size()};
   for (const auto& it : subject_arr) {
     int64_t replace_one_count{};
-    if (auto replace_result{co_await f$preg_replace_callback(pattern, callback, it.get_value().to_string(), limit, replace_one_count, flags)};
+    auto string_subject{it.get_value().to_string()};
+    if (auto replace_result{
+            co_await pause_timer_while_awaiting(timer, f$preg_replace_callback(pattern, callback, std::move(string_subject), limit, replace_one_count, flags))};
         replace_result.has_value()) [[likely]] {
       count += replace_one_count;
       result.set_value(it.get_key(), std::move(replace_result.val()));
@@ -1373,29 +1408,35 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
                              Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count,
                              int64_t flags) noexcept -> decltype(f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback),
                                                                                          std::forward<T3>(subject).val(), limit, opt_count, flags)) {
-  co_return co_await f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, opt_count, flags);
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_replace_callback)};
+  co_return co_await pause_timer_while_awaiting(
+      timer, f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, opt_count, flags));
 }
 
 // === preg_split implementation ==================================================================
 
 inline Optional<array<mixed>> f$preg_split(const kphp::regex::regexp& regex, const string& subject, int64_t limit, int64_t flags) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_split)};
   if (!kphp::regex::details::preg_split_check_args(flags)) {
     return false;
   }
-  return kphp::regex::details::preg_split_impl(regex, subject, limit, flags);
+  return call_with_paused_builtin_timer(timer, [&] { return kphp::regex::details::preg_split_impl(regex, subject, limit, flags); });
 }
 
 inline Optional<array<mixed>> f$preg_split(string pattern, const string& subject, int64_t limit, int64_t flags) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_split)};
   if (!kphp::regex::details::preg_split_check_args(flags)) {
     return false;
   }
-  return kphp::regex::details::preg_split_impl(kphp::regex::regexp{std::move(pattern), subject}, subject, limit, flags);
+  const kphp::regex::regexp regex{std::move(pattern), subject};
+  return call_with_paused_builtin_timer(timer, [&] { return kphp::regex::details::preg_split_impl(regex, subject, limit, flags); });
 }
 
 inline Optional<array<mixed>> f$preg_split(const mixed& pattern, const string& subject, int64_t limit, int64_t flags) noexcept {
+  auto timer{RegexTimeInstanceState::get().write(RegexBuiltin::preg_split)};
   if (!pattern.is_string()) [[unlikely]] {
     kphp::log::warning("preg_split() expects parameter 1 to be string, {} given", pattern.get_type_or_class_name());
     return false;
   }
-  return f$preg_split(pattern.as_string(), subject, limit, flags);
+  return call_with_paused_builtin_timer(timer, [&] { return f$preg_split(pattern.as_string(), subject, limit, flags); });
 }

@@ -10,7 +10,9 @@
 
 #include "common/md5.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/crypto-time-stats.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -51,6 +53,7 @@ kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool
 kphp::coro::task<string> f$sha1(string s, bool raw_output = false) noexcept;
 
 inline string f$md5(const string& str, bool binary = false) noexcept {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::md5)};
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
   md5(reinterpret_cast<const unsigned char*>(str.c_str()), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char*>(output.buffer()));

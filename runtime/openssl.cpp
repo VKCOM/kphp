@@ -28,6 +28,7 @@
 #include "common/wrappers/openssl.h"
 #include "common/wrappers/string_view.h"
 #include "common/wrappers/to_array.h"
+#include "runtime-common/stdlib/diagnostics/crypto-time-stats.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
@@ -41,6 +42,12 @@
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
+
+static CryptoTimeStats crypto_time_stats;
+
+CryptoTimeStats& CryptoTimeStats::get() noexcept {
+  return crypto_time_stats;
+}
 
 namespace {
 
@@ -108,9 +115,7 @@ const HashTraits& find_hash_algorithm(const char* algo) noexcept {
   return *it;
 }
 
-} // namespace
-
-array<string> f$hash_algos() noexcept {
+array<string> hash_algos_impl() noexcept {
   const auto& supported_algorithms = get_supported_hash_algorithms();
   array<string> result{array_size{static_cast<int64_t>(supported_algorithms.size()), true}};
   for (const auto& algo : supported_algorithms) {
@@ -119,23 +124,35 @@ array<string> f$hash_algos() noexcept {
   return result;
 }
 
+} // namespace
+
+array<string> f$hash_algos() noexcept {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::hash_algos)};
+  return hash_algos_impl();
+}
+
 array<string> f$hash_hmac_algos() noexcept {
-  return f$hash_algos();
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::hash_hmac_algos)};
+  return hash_algos_impl();
 }
 
 string f$hash(const string& algo, const string& s, bool raw_output) noexcept {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::hash)};
   return find_hash_algorithm(algo.c_str()).hash(s, raw_output);
 }
 
 string f$hash_hmac(const string& algo, const string& data, const string& key, bool raw_output) noexcept {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::hash_hmac)};
   return find_hash_algorithm(algo.c_str()).hash_hmac(data, key, raw_output);
 }
 
 string f$sha1(const string& s, bool raw_output) noexcept {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::sha1)};
   return make_sha1_traits().hash(s, raw_output);
 }
 
 string f$md5(const string& s, bool raw_output) noexcept {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::md5)};
   return make_md5_traits().hash(s, raw_output);
 }
 
@@ -373,6 +390,7 @@ bool f$openssl_public_encrypt(const string& data, string& result, const string& 
 }
 
 bool f$openssl_public_encrypt(const string& data, mixed& result, const string& key) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_public_encrypt)};
   string result_string;
   if (f$openssl_public_encrypt(data, result_string, key)) {
     result = result_string;
@@ -421,6 +439,7 @@ bool f$openssl_private_decrypt(const string& data, string& result, const string&
 }
 
 bool f$openssl_private_decrypt(const string& data, mixed& result, const string& key) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_private_decrypt)};
   string result_string;
   if (f$openssl_private_decrypt(data, result_string, key)) {
     result = result_string;
@@ -431,6 +450,7 @@ bool f$openssl_private_decrypt(const string& data, mixed& result, const string& 
 }
 
 Optional<string> f$openssl_pkey_get_private(const string& key, const string& passphrase) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_pkey_get_private)};
   Optional<string> result = false;
   dl::CriticalSectionSmartGuard critical_section;
   bool from_cache = false;
@@ -444,6 +464,7 @@ Optional<string> f$openssl_pkey_get_private(const string& key, const string& pas
 }
 
 Optional<string> f$openssl_pkey_get_public(const string& key) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_pkey_get_public)};
   Optional<string> result = false;
   dl::CriticalSectionSmartGuard critical_section;
   bool from_cache = false;
@@ -504,6 +525,7 @@ static const char* ssl_get_error_string() {
 }
 
 bool f$openssl_sign(const string& data, string& signature, const string& priv_key_id, int64_t algo) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_sign)};
   dl::CriticalSectionSmartGuard critical_section;
   const EVP_MD* mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
   if (!mdtype) {
@@ -546,6 +568,7 @@ bool f$openssl_sign(const string& data, string& signature, const string& priv_ke
 }
 
 int64_t f$openssl_verify(const string& data, const string& signature, const string& pub_key_id, int64_t algo) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_verify)};
   dl::CriticalSectionSmartGuard critical_section;
   const EVP_MD* mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
 
@@ -575,6 +598,7 @@ int64_t f$openssl_verify(const string& data, const string& signature, const stri
 }
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_random_pseudo_bytes)};
   if (length <= 0 || length > string::max_size()) {
     return false;
   }
@@ -1378,6 +1402,7 @@ private:
 X509_ptr X509_parser::processing_x509_;
 
 Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames /* = true */) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_x509_parse)};
   return X509_parser{data}.parse(shortnames);
 }
 
@@ -1762,6 +1787,7 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data
 } // namespace
 
 array<string> f$openssl_get_cipher_methods(bool aliases) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_get_cipher_methods)};
   array<string> return_value;
   // Don't use OBJ_NAME_do_all_sorted, because it implicitly allocates memory on heap
   OBJ_NAME_do_all(OBJ_NAME_TYPE_CIPHER_METH, aliases ? openssl_add_method<true> : openssl_add_method<false>, &return_value);
@@ -1770,6 +1796,7 @@ array<string> f$openssl_get_cipher_methods(bool aliases) {
 }
 
 Optional<int64_t> f$openssl_cipher_iv_length(const string& method) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_cipher_iv_length)};
   if (method.empty()) {
     php_warning("Unknown cipher algorithm");
     return false;
@@ -1787,6 +1814,7 @@ string default_tag_stub;
 } // namespace impl_
 Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& key, int64_t options, const string& iv, string& tag,
                                    const string& aad, int64_t tag_length) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_encrypt)};
   string out_tag;
   if (&tag != &impl_::default_tag_stub) {
     out_tag.assign(static_cast<std::uint32_t>(tag_length), '\0');
@@ -1802,6 +1830,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
 }
 
 Optional<string> f$openssl_decrypt(string data, const string& method, const string& key, int64_t options, const string& iv, string tag, const string& aad) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_decrypt)};
   if (!(options & OPENSSL_RAW_DATA)) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {
