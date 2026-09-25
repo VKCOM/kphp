@@ -48,38 +48,27 @@ auto IsolateArgsFromInterruptibleCallPass::make_loop_guard_var(VertexPtr locatio
 }
 
 auto IsolateArgsFromInterruptibleCallPass::needs_hoist(VertexPtr vertex, bool in_interruptible_call) noexcept -> bool {
-  if (auto fork_call = vertex.try_as<op_fork>()) {
-    auto call = fork_call->func_call();
-    for (VertexPtr arg : call->args()) {
-      if (needs_hoist(arg, false)) {
-        return true;
-      }
-    }
-
-    return in_interruptible_call;
+  switch (vertex->type()) {
+  case op_fork: {
+    auto args = vertex.as<op_fork>()->func_call()->args();
+    return std::any_of(args.begin(), args.end(), [](VertexPtr arg) noexcept { return needs_hoist(arg, false); }) || in_interruptible_call;
   }
-
-  if (auto call = vertex.try_as<op_func_call>()) {
-    bool is_interruptible_call = call->func_id->is_interruptible;
-    for (VertexPtr arg : call->args()) {
-      if (needs_hoist(arg, is_interruptible_call)) {
-        return true;
-      }
-    }
-
-    return in_interruptible_call;
+  case op_func_call: {
+    auto call = vertex.as<op_func_call>();
+    auto args = call->args();
+    return std::any_of(args.begin(), args.end(),
+                       [is_interruptible_call = call->func_id->is_interruptible](VertexPtr arg) noexcept { return needs_hoist(arg, is_interruptible_call); }) ||
+           in_interruptible_call;
   }
-
-  if (auto null_coalesce = vertex.try_as<op_null_coalesce>()) {
+  case op_null_coalesce: {
+    auto null_coalesce = vertex.as<op_null_coalesce>();
     bool own_window = VertexUtil::is_interruptible_expr(null_coalesce->rhs());
-    if (needs_hoist(null_coalesce->lhs(), own_window)) {
-      return true;
-    }
-
-    return in_interruptible_call;
+    return needs_hoist(null_coalesce->lhs(), own_window) || in_interruptible_call;
   }
-
-  return std::any_of(vertex->begin(), vertex->end(), [in_interruptible_call](VertexPtr vertex) noexcept { return needs_hoist(vertex, in_interruptible_call); });
+  default:
+    return std::any_of(vertex->begin(), vertex->end(),
+                       [in_interruptible_call](VertexPtr vertex) noexcept { return needs_hoist(vertex, in_interruptible_call); });
+  }
 }
 
 auto IsolateArgsFromInterruptibleCallPass::process_fork(VertexAdaptor<op_fork> fork_call, bool in_interruptible_call,
