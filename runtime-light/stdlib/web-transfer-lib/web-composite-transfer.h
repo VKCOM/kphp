@@ -44,7 +44,7 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request for Composite descriptor creation");
   }
@@ -115,7 +115,7 @@ inline auto add(composite::transfer ct, simple::transfer st) noexcept -> kphp::c
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of adding Simple into Composite transfer");
   }
@@ -192,7 +192,7 @@ inline auto remove(composite::transfer ct, simple::transfer st) noexcept -> kphp
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of removing Simple into Composite transfer");
   }
@@ -247,7 +247,7 @@ inline auto perform(composite::transfer ct) noexcept -> kphp::coro::task<std::ex
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of performing Composite transfer");
   }
@@ -289,7 +289,7 @@ inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expe
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
   auto it_simple_transfer{simple_transfers.begin()};
   while (simple_transfers.size()) {
-    if (auto remove_res{co_await kphp::web::composite::remove(ct, kphp::web::simple::transfer{*it_simple_transfer})}; !remove_res.has_value()) {
+    if (auto remove_res{CO_AWAIT_TASK_ON_STACK(kphp::web::composite::remove(ct, kphp::web::simple::transfer{*it_simple_transfer}))}; !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
   }
@@ -304,7 +304,7 @@ inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expe
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of closing Composite transfer");
   }
@@ -353,7 +353,7 @@ inline auto wait_updates(composite::transfer ct,
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request of waiting Composite transfer updates");
   }

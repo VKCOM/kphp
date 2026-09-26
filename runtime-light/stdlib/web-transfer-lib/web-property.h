@@ -107,7 +107,7 @@ inline auto get(Transfer transfer, std::optional<property::id> prop_id, get_poli
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{CO_AWAIT_TASK_ON_STACK((*session).get()->client.query(tls.view(), std::move(response_buffer_provider)))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request for a getting of web properties");
   }

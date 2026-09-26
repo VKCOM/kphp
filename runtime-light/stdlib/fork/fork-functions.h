@@ -59,10 +59,37 @@ auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename 
   }
 }
 
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto id_managed(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
+  auto& fork_instance_st{ForkInstanceState::get()};
+  const auto saved_fork_id{fork_instance_st.current_id};
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
+    CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
+    fork_instance_st.current_id = saved_fork_id;
+    co_return;
+  } else {
+    auto value{CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...))};
+    fork_instance_st.current_id = saved_fork_id;
+    co_return std::move(value);
+  }
+}
+
 template<typename return_type>
 auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
   auto& fork_instance_st{ForkInstanceState::get()};
   auto [fork_id, fork_task]{fork_instance_st.create_fork(std::move(task))};
+  auto saved_fork_id{fork_instance_st.current_id};
+  kphp::log::assertion(kphp::coro::io_scheduler::get().start(std::move(fork_task)));
+  fork_instance_st.current_id = saved_fork_id;
+  return fork_id;
+}
+
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto start(F&& f, Args&&... args) noexcept -> int64_t {
+  auto& fork_instance_st{ForkInstanceState::get()};
+  auto [fork_id, fork_task]{fork_instance_st.create_fork(std::forward<F>(f), std::forward<Args>(args)...)};
   auto saved_fork_id{fork_instance_st.current_id};
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(std::move(fork_task)));
   fork_instance_st.current_id = saved_fork_id;
@@ -113,8 +140,7 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
-  auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fork_task), timeout)};
-
+  auto expected{CO_AWAIT_TASK_ON_STACK(kphp::coro::io_scheduler::get().schedule(std::move(fork_task), timeout))};
   if (!expected) [[unlikely]] {
     co_return std::nullopt;
   }
@@ -127,26 +153,27 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
 template<std::default_initializable return_type>
 requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
 kphp::coro::task<return_type> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto opt_result{co_await kphp::forks::id_managed(kphp::forks::wait<return_type>(fork_id, std::chrono::duration<double>{timeout}))};
+  auto opt_result{CO_AWAIT_TASK_ON_STACK(
+      kphp::forks::id_managed(kphp::forks::wait<return_type, std::chrono::duration<double>>, fork_id, std::chrono::duration<double>{timeout}))};
   co_return opt_result ? return_type{*std::move(opt_result)} : return_type{};
 }
 
 template<typename return_type>
 requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
 kphp::coro::task<return_type> f$wait(Optional<int64_t> opt_fork_id, double timeout = -1.0) noexcept {
-  co_return co_await f$wait<return_type>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout);
+  co_return CO_AWAIT_TASK_ON_STACK(f$wait<return_type>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout));
 }
 
 template<typename return_type>
 requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
 kphp::coro::task<return_type> f$wait_synchronously(int64_t fork_id) noexcept {
-  co_return co_await f$wait<return_type>(fork_id);
+  co_return CO_AWAIT_TASK_ON_STACK(f$wait<return_type>(fork_id));
 }
 
 template<typename return_type>
 requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
 kphp::coro::task<return_type> f$wait_synchronously(Optional<int64_t> opt_fork_id) noexcept {
-  co_return co_await f$wait<return_type>(opt_fork_id);
+  co_return CO_AWAIT_TASK_ON_STACK(f$wait<return_type>(opt_fork_id));
 }
 
 // ================================================================================================
@@ -161,24 +188,24 @@ inline kphp::coro::task<bool> f$wait_concurrently(int64_t fork_id) noexcept {
   const auto fork_info{*opt_info};
   if (fork_info.get().opt_handle) {
     auto fork_task{*fork_info.get().opt_handle};
-    co_await kphp::forks::id_managed(fork_task.when_ready());
+    CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(fork_task.when_ready()));
   }
   co_return true;
 }
 
 inline kphp::coro::task<bool> f$wait_concurrently(Optional<int64_t> opt_fork_id) noexcept {
-  co_return co_await f$wait_concurrently(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID);
+  co_return CO_AWAIT_TASK_ON_STACK(f$wait_concurrently(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID));
 }
 
 inline kphp::coro::task<bool> f$wait_concurrently(const mixed& fork_id) noexcept {
-  co_return co_await f$wait_concurrently(fork_id.to_int());
+  co_return CO_AWAIT_TASK_ON_STACK(f$wait_concurrently(fork_id.to_int()));
 }
 
 template<typename T>
 kphp::coro::task<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
   T res{};
   for (const auto& it : std::as_const(fork_ids)) {
-    res.set_value(it.get_key(), TRY_CALL_CORO(typename T::value_type, T, co_await f$wait<typename T::value_type>(it.get_value())));
+    res.set_value(it.get_key(), TRY_CALL_CORO(typename T::value_type, T, CO_AWAIT_TASK_ON_STACK(f$wait<typename T::value_type>(it.get_value()))));
   }
   co_return std::move(res);
 }
@@ -186,17 +213,19 @@ kphp::coro::task<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
 template<typename T>
 kphp::coro::task<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
   const auto ids{array<int64_t>::convert_from(fork_ids)};
-  co_return co_await f$wait_multi<T>(ids);
+  co_return CO_AWAIT_TASK_ON_STACK(f$wait_multi<T>(ids));
 }
 
 // ================================================================================================
 
 inline kphp::coro::task<> f$sched_yield() noexcept {
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule());
+  CO_AWAIT_TASK_ON_STACK(kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule()));
 }
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(std::chrono::duration<double>{duration}));
+  CO_AWAIT_TASK_ON_STACK(
+      kphp::forks::id_managed([](std::chrono::duration<double> duration) noexcept { return kphp::coro::io_scheduler::get().schedule(duration); },
+                              std::chrono::duration<double>{duration}));
 }
 
 // ================================================================================================

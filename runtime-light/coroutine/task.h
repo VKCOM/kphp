@@ -7,12 +7,15 @@
 #include <concepts>
 #include <coroutine>
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "common/mixin/not_copyable.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+#include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -20,7 +23,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base : kphp::coro::async_stack_element {
+struct promise_base : public kphp::coro::async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -65,17 +68,12 @@ struct promise_base : kphp::coro::async_stack_element {
   }
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::alloc(n);
-  }
-
-  template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::alloc_aligned(n, al);
+    return kphp::coro::detail::memory::task::alloc_aligned(n, al);
   }
 
-  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::coro::detail::memory::free(ptr);
+  auto operator delete(void* ptr, size_t n, std::align_val_t al) noexcept -> void {
+    kphp::coro::detail::memory::task::free_aligned(ptr, n, al);
   }
 
   void* m_next{};
@@ -245,5 +243,54 @@ struct task {
 private:
   std::coroutine_handle<promise_type> m_coro{};
 };
+
+namespace task_impl {
+
+template<typename Task>
+requires(requires {
+  { static_cast<kphp::coro::task<>>(std::declval<Task>()) };
+})
+struct stack_task_awaitable : private vk::not_copyable {
+private:
+  Task m_task;
+
+public:
+  explicit stack_task_awaitable(Task task) noexcept
+      : m_task{std::move(task)} {}
+
+  auto operator co_await() && noexcept {
+    struct awaiter : public kphp::coro::task_impl::awaiter_base<typename Task::promise_type> {
+    public:
+      explicit awaiter(std::coroutine_handle<typename Task::promise_type> coro) noexcept
+          : kphp::coro::task_impl::awaiter_base<typename Task::promise_type>{coro} {}
+
+      auto await_ready() noexcept -> bool {
+        kphp::coro::detail::memory::task_allocator::get().consume_stack_alloc_request(
+            kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::m_coro.address());
+        return kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_ready();
+      }
+
+      auto await_resume() noexcept {
+        kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::await_resume();
+        return kphp::coro::task_impl::awaiter_base<typename Task::promise_type>::m_coro.promise().result();
+      }
+    };
+
+    return awaiter{m_task.get_handle()};
+  }
+};
+
+} // namespace task_impl
+
+/*
+ * This macro is used to optimize allocation of task<T>. If this macro is used, task<T>, that returns from provided call, is allocated with stack
+ * allocator. You must follow these rules:
+ * 1) If this call is not coroutine call, but just function call, that returns task<T>, during its call is not allowed to create more than one
+ * task<T> object (the one it returns).
+ * 2) During evaluation of arguments of this call is not allowed to create other task<T> objects.
+ * It's strongly recommended to use this macro instead of writing co_await f(...), where f returns task<T>.
+ */
+#define CO_AWAIT_TASK_ON_STACK(...)                                                                                                                            \
+  (co_await (kphp::coro::detail::memory::task_allocator::get().request_stack_alloc(), kphp::coro::task_impl::stack_task_awaitable{__VA_ARGS__}))
 
 } // namespace kphp::coro

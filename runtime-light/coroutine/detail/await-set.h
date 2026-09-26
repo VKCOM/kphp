@@ -9,10 +9,15 @@
 #include <expected>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -41,6 +46,7 @@ class await_broker {
   vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>> m_awaiters;
   await_set_ready_task_element<return_type>* m_ready_tasks{};
   size_t m_tasks_count{0};
+  kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
 
 public:
   await_broker() noexcept = default;
@@ -82,7 +88,7 @@ public:
        * (in the future invariant [1] may not work).
        */
       m_awaiters.pop_front();
-      coroutine.resume();
+      kphp::coro::resume(coroutine, m_task_allocator);
     }
   }
 
@@ -116,7 +122,7 @@ public:
      */
     m_tasks_storage.erase(task_iterator);
     --m_tasks_count;
-    typed_handle.destroy();
+    kphp::coro::destroy(typed_handle, m_task_allocator);
 
     return result_t{std::move(result)};
   }
@@ -125,14 +131,14 @@ public:
     m_ready_tasks = nullptr;
     detach_all();
     while (!m_tasks_storage.empty()) {
-      auto coroutine{m_tasks_storage.front()};
+      auto coroutine{std::coroutine_handle<typename await_set_task<return_type>::promise_type>::from_address(m_tasks_storage.front().address())};
       /*
        * We can remove pop_front() here, because list node will be destroyed after destruction of coroutine frame and in its
        * destructor will call unlink() [1]. But we left pop_front() for better readability and safety
        * (in the future invariant [1] may not work).
        */
       m_tasks_storage.pop_front();
-      coroutine.destroy();
+      kphp::coro::destroy(coroutine, m_task_allocator);
     }
 
     m_tasks_count = 0;
@@ -150,12 +156,16 @@ public:
        * (in the future invariant [1] may not work).
        */
       awaiters.pop_front();
-      coroutine.resume();
+      kphp::coro::resume(coroutine, m_task_allocator);
     }
   }
 
   size_t size() noexcept {
     return m_tasks_count;
+  }
+
+  kphp::coro::detail::memory::task_allocator& task_allocator() noexcept {
+    return m_task_allocator;
   }
 
   ~await_broker() {
@@ -192,7 +202,10 @@ public:
   }
 
   auto final_suspend() const noexcept {
-    struct completion_notifier {
+    struct completion_notifier : private kphp::coro::task_allocator_guard {
+
+      explicit completion_notifier(kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
+          : kphp::coro::task_allocator_guard(task_allocator) {}
 
       constexpr auto await_ready() const noexcept {
         return false;
@@ -207,7 +220,8 @@ public:
 
       constexpr auto await_resume() const noexcept -> void {}
     };
-    return completion_notifier{};
+
+    return completion_notifier{m_await_broker->get().task_allocator()};
   }
 
   void unhandled_exception() const noexcept {
@@ -231,7 +245,7 @@ public:
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+    kphp::coro::resume(std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)), m_await_broker->get().task_allocator());
   }
 };
 
@@ -314,14 +328,15 @@ public:
 private:
   await_broker<return_type>& m_await_broker;
 
-  class awaiter {
+  class awaiter : private kphp::coro::task_allocator_guard {
     vk::intrusive::list_node<std::coroutine_handle<>> m_awaiting_coroutine_node;
     await_broker<return_type>& m_await_broker;
     kphp::coro::async_stack_frame* caller_frame{};
 
   public:
     explicit awaiter(await_broker<return_type>& await_broker) noexcept
-        : m_await_broker(await_broker) {}
+        : kphp::coro::task_allocator_guard(await_broker.task_allocator()),
+          m_await_broker(await_broker) {}
 
     awaiter(awaiter&& other) noexcept = delete;
     awaiter(const awaiter& other) = delete;
@@ -378,6 +393,17 @@ auto make_await_set_task(awaitable_type coroutine) noexcept -> await_set_task<ty
     co_await std::move(coroutine);
   } else {
     co_yield co_await std::move(coroutine);
+  }
+}
+
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto make_await_set_task(F f, Args... args) noexcept
+    -> await_set_task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
+    CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
+  } else {
+    co_yield CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
   }
 }
 

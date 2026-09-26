@@ -13,6 +13,8 @@
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail {
@@ -21,8 +23,9 @@ namespace task_self_deleting {
 
 class task_self_deleting;
 
-struct promise_self_deleting : kphp::coro::async_stack_element {
+struct promise_self_deleting : public kphp::coro::async_stack_element {
   vk::intrusive::list_node<std::coroutine_handle<>> m_coroutine_node;
+  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_prev_resource{nullptr};
 
   promise_self_deleting() noexcept = default;
   ~promise_self_deleting() = default;
@@ -110,6 +113,13 @@ inline auto promise_self_deleting::get_return_object_on_allocation_failure() noe
 template<kphp::coro::concepts::awaitable awaitable_type>
 auto make_task_self_deleting(awaitable_type awaitable) noexcept -> task_self_deleting::task_self_deleting {
   co_await std::move(awaitable);
+  co_return;
+}
+
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto make_task_self_deleting(F f, Args... args) noexcept -> task_self_deleting::task_self_deleting {
+  CO_AWAIT_TASK_ON_STACK(std::invoke(std::move(f), std::move(args)...));
   co_return;
 }
 

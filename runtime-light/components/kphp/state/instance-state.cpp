@@ -62,31 +62,26 @@ void InstanceState::init_script_execution() noexcept {
   kphp::coro::task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
-  auto main_task{std::invoke(
-      [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
-        // wrap script with additional check for unhandled exception
-        script_task = std::invoke(
-            [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
-              co_await script_task;
-              if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
-                kphp::log::error("unhandled exception {}", std::move(exception));
-              }
-            },
-            std::move(script_task));
-        kphp::log::assertion(co_await f$wait_concurrently(kphp::forks::start(std::move(script_task))));
-      },
-      std::move(script_task))};
-  // initialize async stack
-  auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
-  main_task_async_stack_frame.async_stack_root = std::addressof(coroutine_instance_state.coroutine_stack_root);
-  coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = std::addressof(main_task_async_stack_frame);
+  auto main_task{([](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
+    // wrap script with additional check for unhandled exception
+    auto script_task_func{[](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
+      co_await script_task;
+      if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
+        kphp::log::error("unhandled exception {}", std::move(exception));
+      }
+    }};
+
+    int64_t fork_id{kphp::forks::start(std::move(script_task_func), std::move(script_task))};
+    kphp::log::assertion(CO_AWAIT_TASK_ON_STACK(f$wait_concurrently(fork_id)));
+  })};
+
   // spawn main task onto the scheduler
-  kphp::log::assertion(io_scheduler.spawn(std::move(main_task)));
+  kphp::log::assertion(io_scheduler.spawn(std::move(main_task), std::move(script_task)));
 }
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
   instance_kind_ = instance_kind::cli;
-  auto opt_output_stream{co_await kphp::component::stream::accept()};
+  auto opt_output_stream{CO_AWAIT_TASK_ON_STACK(kphp::component::stream::accept())};
   kphp::log::assertion(opt_output_stream.has_value());
   kphp::cli::init_cli_server(std::move(*opt_output_stream));
 }
@@ -102,12 +97,13 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
     server.set_value(string{SERVER_SIGNATURE.data(), SERVER_SIGNATURE.size()}, string{SERVER_SIGNATURE_VALUE.data(), SERVER_SIGNATURE_VALUE.size()});
   }
 
-  auto opt_request_stream{co_await kphp::component::stream::accept()};
+  auto opt_request_stream{CO_AWAIT_TASK_ON_STACK(kphp::component::stream::accept())};
   kphp::log::assertion(opt_request_stream.has_value());
   auto request_stream{std::move(*opt_request_stream)};
 
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> request{};
-  if (auto expected{co_await kphp::component::fetch_request(request_stream, kphp::component::read_ext::append(request))}; !expected) [[unlikely]] {
+  if (auto expected{CO_AWAIT_TASK_ON_STACK(kphp::component::fetch_request(request_stream, kphp::component::read_ext::append(request)))}; !expected)
+      [[unlikely]] {
     kphp::log::error("failed to read a request: stream -> {}", request_stream.descriptor());
   }
 
@@ -151,7 +147,7 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
   }
 
   if (k2::component_access(kphp::confdata::COMPONENT_LINK_ALIAS) == k2::errno_ok) { // TODO: we want to do it during either component state init or warmup
-    co_await confdata_instance_state.init();
+    CO_AWAIT_TASK_ON_STACK(confdata_instance_state.init());
   } else {
     kphp::log::info("confdata initialization skipped: component link '{}' is unavailable", kphp::confdata::COMPONENT_LINK_ALIAS);
   }
@@ -167,9 +163,9 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
 
   // specific initialization
   if constexpr (kind == image_kind::cli) {
-    co_await init_cli_instance();
+    CO_AWAIT_TASK_ON_STACK(init_cli_instance());
   } else if constexpr (kind == image_kind::server) {
-    co_await init_server_instance();
+    CO_AWAIT_TASK_ON_STACK(init_server_instance());
   }
 }
 
@@ -181,13 +177,13 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::mul
 // === finalization ===============================================================================
 
 kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
-  co_await kphp::cli::finalize_cli_server();
+  CO_AWAIT_TASK_ON_STACK(kphp::cli::finalize_cli_server());
 }
 
 kphp::coro::task<> InstanceState::finalize_server_instance() const noexcept {
   switch (instance_kind()) {
   case instance_kind::http_server: {
-    co_await kphp::http::finalize_server();
+    CO_AWAIT_TASK_ON_STACK(kphp::http::finalize_server());
     break;
   }
   case instance_kind::rpc_server:
@@ -216,10 +212,10 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   case image_kind::multishot:
     break;
   case image_kind::cli:
-    co_await finalize_cli_instance();
+    CO_AWAIT_TASK_ON_STACK(finalize_cli_instance());
     break;
   case image_kind::server:
-    co_await finalize_server_instance();
+    CO_AWAIT_TASK_ON_STACK(finalize_server_instance());
     break;
   default:
     kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));

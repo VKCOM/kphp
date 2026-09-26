@@ -25,7 +25,7 @@ auto instance_state::init() noexcept -> kphp::coro::task<> {
   }
 
   kphp::confdata::reader_lease lease{};
-  const auto read{co_await lease_stream->read(std::as_writable_bytes(std::span{std::addressof(lease), 1}))};
+  const auto read{CO_AWAIT_TASK_ON_STACK(lease_stream->read(std::as_writable_bytes(std::span{std::addressof(lease), 1})))};
   if (!read || *read != sizeof(lease) || !lease.is_valid()) [[unlikely]] {
     co_return kphp::log::warning("failed to acquire a valid confdata reader lease");
   }

@@ -240,7 +240,8 @@ auto InstanceState::init() noexcept -> void {
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
-  co_await kphp::coro::when_all(service_loop(), accept_loop(), metrics_loop()); // all never return
+  co_await kphp::coro::when_all(std::bind_front(&InstanceState::service_loop, this), std::bind_front(&InstanceState::accept_loop, this),
+                                std::bind_front(&InstanceState::metrics_loop, this)); // all never return
   kphp::log::assertion(false);
 }
 
@@ -251,7 +252,7 @@ auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
     report_events_metrics(now.since_epoch_ns);
     report_capacity_metrics(now.since_epoch_ns);
     report_update_failure_metrics(now.since_epoch_ns);
-    co_await m_io_scheduler.schedule(CONFDATA_METRICS_INTERVAL);
+    CO_AWAIT_TASK_ON_STACK(m_io_scheduler.schedule(CONFDATA_METRICS_INTERVAL));
   }
 }
 
@@ -331,7 +332,7 @@ auto InstanceState::report_capacity_metrics(uint64_t timestamp) noexcept -> void
 
 auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
   for (;;) {
-    auto stream{co_await kphp::component::stream::accept()};
+    auto stream{CO_AWAIT_TASK_ON_STACK(kphp::component::stream::accept())};
     if (!stream.has_value()) [[unlikely]] {
       continue;
     }
@@ -366,7 +367,8 @@ auto InstanceState::serve_reader_lease(kphp::component::stream reader_stream) no
   // The generated shared-memory name and internally acquired sample ID must be valid.
   // Failure here is an internal invariant violation, not a recoverable client error.
   kphp::log::assertion(lease.has_value());
-  if (const auto written{co_await connection->get_stream().write_all(std::as_bytes(std::span{std::addressof(*lease), 1}))}; !written) [[unlikely]] {
+  if (const auto written{CO_AWAIT_TASK_ON_STACK(connection->get_stream().write_all(std::as_bytes(std::span{std::addressof(*lease), 1})))}; !written)
+      [[unlikely]] {
     co_return kphp::log::warning("failed to write a confdata reader lease: error -> {}", written.error());
   }
 
@@ -380,14 +382,14 @@ auto InstanceState::perform_sync(std::string_view confdata_proxy_actor) noexcept
   // proxy responses and replay those same bytes after collecting size hints.
   kphp::confdata::storage::sync_size_hints size_hints{};
 
-  auto snapshot{co_await kphp::confdata::sync(confdata_proxy_actor, [&size_hints](std::span<const tl::confdata::KeyValuePair> events) noexcept {
+  auto snapshot{CO_AWAIT_TASK_ON_STACK(kphp::confdata::sync(confdata_proxy_actor, [&size_hints](std::span<const tl::confdata::KeyValuePair> events) noexcept {
     for (const auto& event : events) {
       if (!event.inner.value.value.empty()) {
         size_hints.add(event.inner.key.value);
       }
     }
     return true;
-  })};
+  }))};
   if (!snapshot) [[unlikely]] {
     co_return std::unexpected{
         confdata_sync_error{.m_stage = confdata_sync_error::stage::synchronization, .m_code = static_cast<int32_t>(std::to_underlying(snapshot.error()))}};
@@ -452,17 +454,17 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
 
   for (;;) {
     if (!m_pagination.m_has_synced) {
-      const auto sync_result{co_await perform_sync(confdata_proxy_actor)};
+      const auto sync_result{CO_AWAIT_TASK_ON_STACK(perform_sync(confdata_proxy_actor))};
       if (!sync_result) [[unlikely]] {
         kphp::log::warning("failed to prepare a synchronized confdata shared-memory piece: {}; retrying", sync_result.error());
-        co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
+        CO_AWAIT_TASK_ON_STACK(m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL));
         continue;
       }
       m_warmup_status = InstanceState::warmup_status::done;
     }
 
-    auto update{co_await kphp::confdata::update(confdata_proxy_actor, m_pagination,
-                                                [this](std::span<const tl::confdata::KeyValuePair> events) noexcept { return perform_update(events); })};
+    auto update{CO_AWAIT_TASK_ON_STACK(kphp::confdata::update(
+        confdata_proxy_actor, m_pagination, [this](std::span<const tl::confdata::KeyValuePair> events) noexcept { return perform_update(events); }))};
     // update returns only on error; m_pagination was advanced in place up to the last applied batch
     kphp::log::assertion(!update.has_value());
     kphp::log::assertion(std::to_underlying(update.error()) < m_update_failure_counts.size());
@@ -490,7 +492,7 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       m_pagination = {};
       break;
     }
-    co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
+    CO_AWAIT_TASK_ON_STACK(m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL));
   }
 }
 

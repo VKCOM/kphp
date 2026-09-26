@@ -1,0 +1,126 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2026 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include <bit>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <new>
+
+#include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
+
+namespace kphp::coro::detail::memory::task {
+
+struct control_block {
+private:
+  static constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00; // 4GiB
+
+public:
+  enum class backend_type : uint8_t { stack, stack_owner, coroutine_pool };
+
+  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack{nullptr};
+  uint16_t base_offset{};
+  backend_type backend{};
+
+  static constexpr auto max_size() noexcept -> uint64_t {
+    return MALLOC_REPLACER_MAX_ALLOC;
+  }
+
+  static constexpr auto max_alignment() noexcept -> uint64_t {
+    return std::numeric_limits<uint16_t>::max();
+  }
+};
+
+inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
+  // Check that provided alignment is power of two
+  const size_t align{static_cast<uint64_t>(al)};
+  if (align == 0 || !std::has_single_bit(align) || align >= kphp::coro::detail::memory::task::control_block::max_alignment()) [[unlikely]] {
+    php_warning("allocation alignment have to be non-zero power of two and not greater than %" PRIu64 ", got : %lu",
+                kphp::coro::detail::memory::task::control_block::max_alignment(), align);
+    return nullptr;
+  }
+
+  // Check that memory is enough
+  constexpr size_t cb_size{sizeof(kphp::coro::detail::memory::task::control_block)};
+  if (size > kphp::coro::detail::memory::task::control_block::max_size() - (align - 1) - cb_size) [[unlikely]] {
+    php_warning("attempt to allocate too much memory by malloc replacer, requested : %lu", size);
+    return nullptr;
+  }
+
+  // Request mem from underlying memory manager
+  const size_t total_size{size + (align - 1) + cb_size};
+  void* base{nullptr};
+  kphp::coro::detail::memory::task::control_block::backend_type backend{};
+  auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
+  bool use_stack{task_allocator.check_stack_alloc_request() && total_size <= task_allocator.segment_size()};
+  if (use_stack) {
+    if (task_allocator.current_stack() == nullptr) {
+      auto& stack{task_allocator.acquire_stack()};
+      task_allocator.set_stack(std::addressof(stack));
+      backend = kphp::coro::detail::memory::task::control_block::backend_type::stack_owner;
+    } else {
+      backend = kphp::coro::detail::memory::task::control_block::backend_type::stack;
+    }
+
+    base = task_allocator.alloc_script_memory(total_size);
+  } else {
+    base = kphp::coro::detail::memory::runtime_coroutine_allocator::get().alloc_script_memory(total_size);
+    backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
+  }
+
+  if (base == nullptr) [[unlikely]] {
+    php_warning("not enough script memory to allocate, requested : %lu, actual requested: %lu", size, total_size);
+    return base;
+  }
+
+  const uint64_t base_u{reinterpret_cast<uint64_t>(base)};
+  // The smallest multiple of `align` greater than or equal to requested memory
+  const uint64_t aligned_u{((base_u + cb_size) + (align - 1)) & ~(align - 1)};
+  const uint64_t base_offset_u{aligned_u - base_u};
+
+  if (use_stack) {
+    task_allocator.mark_stack_alloc_used(reinterpret_cast<void*>(aligned_u)); // NOLINT
+  }
+
+  std::construct_at(reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(aligned_u - cb_size), task_allocator.current_stack(), // NOLINT
+                    static_cast<uint16_t>(base_offset_u), backend);
+
+  return reinterpret_cast<void*>(aligned_u); // NOLINT
+}
+
+inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -> void {
+  if (ptr == nullptr) [[unlikely]] {
+    return;
+  }
+
+  const size_t align{static_cast<uint64_t>(al)};
+  const size_t cb_size{sizeof(kphp::coro::detail::memory::task::control_block)};
+  const size_t total_size{size + (align - 1) + cb_size};
+  auto* cb{reinterpret_cast<kphp::coro::detail::memory::task::control_block*>(static_cast<std::byte*>(ptr) - cb_size)};
+  auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
+  switch (cb->backend) {
+  case kphp::coro::detail::memory::task::control_block::backend_type::stack:
+    kphp::log::assertion(task_allocator.current_stack() == cb->stack);
+
+    task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    break;
+  case kphp::coro::detail::memory::task::control_block::backend_type::stack_owner:
+    kphp::log::assertion(task_allocator.current_stack() == cb->stack);
+
+    task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    task_allocator.set_stack(nullptr);
+    task_allocator.release_stack(*cb->stack);
+    break;
+  case kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool:
+    kphp::coro::detail::memory::runtime_coroutine_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
+    break;
+  }
+}
+
+} // namespace kphp::coro::detail::memory::task

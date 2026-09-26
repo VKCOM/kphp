@@ -160,6 +160,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         inline-simple-functions.cpp
         instantiate-generics-and-lambdas.cpp
         instantiate-ffi-operations.cpp
+        isolate-args-from-interruptible-call.cpp
         load-files.cpp
         early-optimization.cpp
         optimization.cpp

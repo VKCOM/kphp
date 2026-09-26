@@ -18,7 +18,8 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         wrappers/span-test.cpp
         wrappers/string_view-test.cpp
         ucontext/ucontext-portable-test.cpp
-        containers/intrusive-list-test.cpp)
+        containers/intrusive-list-test.cpp
+        containers/object-pool-test.cpp)
 
 allow_deprecated_declarations(${COMMON_TESTS_SOURCES}/algorithms/projections-test.cpp)
 

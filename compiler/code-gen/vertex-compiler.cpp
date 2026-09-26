@@ -235,7 +235,7 @@ struct EmptyReturn {
 };
 
 struct ThrowAction {
-  //TODO: some interface for context?
+  // TODO: some interface for context?
   static void compile(CodeGenerator& W) {
     CGContext& context = W.get_context();
     if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
@@ -479,21 +479,6 @@ inline int64_t can_use_precomputed_hash_indexing_array(VertexPtr key) {
   return 0;
 }
 
-bool is_interruptible_expr(VertexPtr vertex) {
-  FunctionPtr callee;
-  if (auto call = vertex.try_as<op_func_call>()) {
-    callee = call->func_id;
-  } else if (auto call = vertex.try_as<op_invoke_call>()) {
-    callee = call->func_id;
-  }
-
-  if (callee && callee->is_interruptible) {
-    return true;
-  }
-
-  return std::any_of(vertex->begin(), vertex->end(), is_interruptible_expr);
-}
-
 void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& W) {
   const TypeData* type = tinf::get_type(root);
   auto lhs = root->lhs();
@@ -504,9 +489,9 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
 
-  bool interruptible_call = G->is_output_mode_k2() && is_interruptible_expr(rhs);
+  bool interruptible_call = G->is_output_mode_k2() && VertexUtil::is_interruptible_expr(rhs);
   if (interruptible_call) {
-    W << "co_await ";
+    W << "CO_AWAIT_TASK_ON_STACK(";
   }
 
   W << "NullCoalesce< " << TypeName{type} << " >(";
@@ -558,6 +543,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator& 
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
     context.inside_null_coalesce_fallback--;
+  }
+
+  if (interruptible_call) {
+    W << ")";
   }
 
   W << ")";
@@ -657,7 +646,7 @@ void compile_ternary_op(VertexAdaptor<op_ternary> root, CodeGenerator& W) {
   true_expr_tp = tinf::get_type(true_expr);
   false_expr_tp = tinf::get_type(false_expr);
 
-  //TODO: optimize type_out
+  // TODO: optimize type_out
   if (type_out(true_expr_tp) != type_out(false_expr_tp)) {
     res_tp = tinf::get_type(root);
   }
@@ -932,13 +921,13 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(kphp::forks::start(" << FunctionName(func);
+        W << "(kphp::forks::start(" << "[]<typename... Args>(Args&&... args) noexcept { return " << FunctionName(func) << "(std::forward<Args>(args)...); }";
       } else {
         W << FunctionForkName(func);
       }
     } else {
       if (func->is_interruptible) {
-        W << "(" << "co_await ";
+        W << "CO_AWAIT_TASK_ON_STACK(";
       }
       W << FunctionName(func);
     }
@@ -947,7 +936,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     const TypeData* tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-  W << "(";
+
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
+    W << "(";
+  }
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -962,11 +954,18 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     }
   }
 
+  if (func->is_interruptible && mode == func_call_mode::fork_call && !args.empty()) {
+    W << ", ";
+  }
+
   W << JoinValues(args, ", ");
+
   if (is_function_call_should_be_tracked(func)) {
     W << "))";
   }
-  W << ")";
+  if (!func->is_interruptible || mode != func_call_mode::fork_call) {
+    W << ")";
+  }
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
       W << "))";
@@ -1106,7 +1105,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   kphp_error(!W.get_context().resumable_flag, "foreach by reference is forbidden in resumable mode");
   auto params = root->params();
 
-  //foreach (xs as [key =>] x)
+  // foreach (xs as [key =>] x)
   VertexPtr xs = params->xs();
   VertexPtr x = params->x();
   VertexPtr key;
@@ -1119,7 +1118,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   const TypeData* xs_type = tinf::get_type(xs);
 
   W << BEGIN;
-  //save array to 'xs_copy_str'
+  // save array to 'xs_copy_str'
   W << TypeName(xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
   std::string it = gen_unique_name("it");
@@ -1131,7 +1130,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
   W << TypeName(tinf::get_type(x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
-  //save key
+  // save key
   if (key) {
     W << key << " = " << it << ".get_key();" << NL;
   }
@@ -1139,7 +1138,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W
 
 void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator& W) {
   auto params = root->params();
-  //foreach (xs as [key =>] x)
+  // foreach (xs as [key =>] x)
   VertexPtr x = params->x();
   VertexPtr xs = params->xs();
   VertexPtr key;
@@ -1160,16 +1159,16 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator&
   }
 
   W << BEGIN;
-  //save array to 'xs_copy_str'
+  // save array to 'xs_copy_str'
   W << temp_var << " = " << xs << ";" << NL;
   W << temp_var << "$it = const_begin(" << temp_var << ");" << NL;
   W << temp_var << "$it$end = const_end(" << temp_var << ");" << NL;
   W << "for (; " << temp_var << "$it != " << temp_var << "$it$end; ++" << temp_var << "$it) " << BEGIN;
 
-  //save value
+  // save value
   W << x << " = " << temp_var << "$it" << ".get_value();" << NL;
 
-  //save key
+  // save key
   if (key) {
     W << key << " = " << temp_var << "$it" << ".get_key();" << NL;
   }
@@ -1179,7 +1178,7 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator& W) {
   auto params = root->params();
   auto cmd = root->cmd();
 
-  //foreach (xs as [key =>] x)
+  // foreach (xs as [key =>] x)
   if (params->x()->ref_flag) {
     compile_foreach_ref_header(root, W);
   } else {
@@ -1444,7 +1443,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
   W << "class " << FunctionClassName(func) << " final : public Resumable " << BEGIN << "private:" << NL << Indent(+2);
 
-  //MEMBER VARIABLES
+  // MEMBER VARIABLES
   for (VarPtr var : func->param_ids) {
     kphp_error(!var->is_reference, "reference function parametrs are forbidden in resumable mode");
     W << VarPlainDeclaration(var);
@@ -1461,10 +1460,10 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
   W << Indent(-2) << "public:" << NL << Indent(+2);
 
-  //ReturnT
+  // ReturnT
   W << "using ReturnT = " << TypeName(tinf::get_type(func, -1)) << ";" << NL;
 
-  //CONSTRUCTOR
+  // CONSTRUCTOR
   FunctionSignatureGenerator(W) << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
   bool has_members_in_constructor = !func->param_ids.empty() || !func->local_var_ids.empty() || func->has_global_vars_inside;
   if (has_members_in_constructor) {
@@ -1509,7 +1508,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << Indent(-2);
   W << END << ";" << NL;
 
-  //CALL FUNCTION
+  // CALL FUNCTION
   W << FunctionDeclaration(func, false) << " " << BEGIN;
   W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" << "(new " << FunctionClassName(func) << "(";
 
@@ -1519,7 +1518,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << "));" << NL;
   W << END << NL;
 
-  //FORK FUNCTION
+  // FORK FUNCTION
   W << FunctionForkDeclaration(func, false) << " " << BEGIN;
   W << "return fork_resumable(new " << FunctionClassName(func) << "(";
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
@@ -1589,7 +1588,7 @@ static bool can_save_ref(VertexPtr v) {
   if (v->type() == op_func_call) {
     FunctionPtr func = v.as<op_func_call>()->func_id;
     if (func->is_extern()) {
-      //todo
+      // todo
       return false;
     }
     return true;
@@ -1990,7 +1989,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator& W) {
   std::string arr_name = "tmp_array";
   W << TypeName(type) << " " << arr_name << " = ";
 
-  //TODO: check
+  // TODO: check
   if (type->ptype() == tp_array) {
     W << TypeName(type);
   } else {
@@ -2075,11 +2074,11 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
   }
   W << BEGIN;
 
-  W << (k2_async_callback ? "co_return(co_await " : "return ") << FunctionName(root->func_id) << "(";
+  W << (k2_async_callback ? "co_return(CO_AWAIT_TASK_ON_STACK(" : "return ") << FunctionName(root->func_id) << "(";
   for (int idx = 1; idx <= root->size(); ++idx) {
     W << "captured" << idx << ", ";
   }
-  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? ")" : "") << ";";
+  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? "))" : "") << ";";
 
   W << NL << END;
   W << UnlockComments{};
@@ -2087,7 +2086,7 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
 
 void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator& W __attribute__((unused))) {
   W << "false";
-  //TODO: it is not CodeGen part
+  // TODO: it is not CodeGen part
 }
 
 bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator& W) {
@@ -2302,7 +2301,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
     break;
   case op_global:
   case op_static:
-    //already processed
+    // already processed
     break;
   case op_throw:
     compile_throw(root.as<op_throw>(), W);
@@ -2428,8 +2427,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
   }
   case op_arr_acc_set_return: {
     auto v = root.as<op_arr_acc_set_return>();
-    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", "
-      << "f$" << v->set_method->name << MacroEnd{};
+    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", " << "f$" << v->set_method->name << MacroEnd{};
     break;
   }
   case op_arr_acc_check_and_get: {
@@ -2441,9 +2439,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
       W << "ARR_ACC_GET_IF_ISSET";
     }
 
-    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", "
-      << "f$" << v->check_method->name << ", "
-      << "f$" << v->get_method->name << MacroEnd{};
+    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << "f$" << v->check_method->name << ", " << "f$" << v->get_method->name << MacroEnd{};
     break;
   }
   default:
