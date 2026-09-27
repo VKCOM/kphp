@@ -221,6 +221,7 @@ PhpScript::~PhpScript() noexcept {
 }
 
 void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
+  BuiltinTimeNetworkScope::reset();
   assert (script != nullptr);
   assert_state(run_state_t::empty);
 

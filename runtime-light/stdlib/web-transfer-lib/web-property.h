@@ -57,7 +57,10 @@ inline auto set(Transfer transfer, property::id prop_id, property::value prop_va
 
 template<typename Transfer>
 requires std::same_as<std::remove_cvref_t<Transfer>, simple::transfer> || std::same_as<std::remove_cvref_t<Transfer>, composite::transfer>
-inline auto get(Transfer transfer, std::optional<property::id> prop_id, get_policy policy) -> kphp::coro::task<std::expected<properties_type, error>> {
+inline auto get(Transfer transfer,
+                std::optional<property::id> prop_id,
+                get_policy policy,
+                BuiltinTimeGuard* timer = nullptr) -> kphp::coro::task<std::expected<properties_type, error>> {
   // Try to get a cached prop
   if (prop_id.has_value() && policy == get_policy::cached) {
     const auto p{prop_id.value()};
@@ -117,7 +120,9 @@ inline auto get(Transfer transfer, std::optional<property::id> prop_id, get_poli
   if (!get_transfer_props_resp.fetch(tlf)) [[unlikely]] {
     kphp::log::error("failed to parse response with web properties");
   }
-  if (auto r{std::move(get_transfer_props_resp.value)}; std::holds_alternative<tl::WebTransferGetPropertiesResultOk>(r)) {
+  auto r{std::move(get_transfer_props_resp.value)};
+  details::subtract_network_wait(timer, r);
+  if (std::holds_alternative<tl::WebTransferGetPropertiesResultOk>(r)) {
     properties_type props{};
     auto& tl_props{std::get<tl::WebTransferGetPropertiesResultOk>(r).properties};
     for (const auto& p : tl_props) {

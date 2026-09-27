@@ -347,7 +347,7 @@ static EVP_PKEY* openssl_get_public_evp(const string& key, bool& from_cache) {
 
 using RSA_ptr = vk::unique_ptr_with_delete_function<rsa_st, RSA_free>;
 
-bool f$openssl_public_encrypt(const string& data, string& result, const string& key) {
+static bool openssl_public_encrypt_impl(const string& data, string& result, const string& key) {
   bool from_cache = false;
   dl::CriticalSectionSmartGuard critical_section;
   EVP_PKEY* pkey = openssl_get_public_evp(key, from_cache);
@@ -389,10 +389,15 @@ bool f$openssl_public_encrypt(const string& data, string& result, const string& 
   return true;
 }
 
+bool f$openssl_public_encrypt(const string& data, string& result, const string& key) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_public_encrypt)};
+  return openssl_public_encrypt_impl(data, result, key);
+}
+
 bool f$openssl_public_encrypt(const string& data, mixed& result, const string& key) {
   auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_public_encrypt)};
   string result_string;
-  if (f$openssl_public_encrypt(data, result_string, key)) {
+  if (openssl_public_encrypt_impl(data, result_string, key)) {
     result = result_string;
     return true;
   }
@@ -400,7 +405,7 @@ bool f$openssl_public_encrypt(const string& data, mixed& result, const string& k
   return false;
 }
 
-bool f$openssl_private_decrypt(const string& data, string& result, const string& key) {
+static bool openssl_private_decrypt_impl(const string& data, string& result, const string& key) {
   bool from_cache = false;
   dl::CriticalSectionSmartGuard critical_section;
   EVP_PKEY* pkey = openssl_get_private_evp(key, string(), from_cache);
@@ -438,10 +443,15 @@ bool f$openssl_private_decrypt(const string& data, string& result, const string&
   return true;
 }
 
+bool f$openssl_private_decrypt(const string& data, string& result, const string& key) {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_private_decrypt)};
+  return openssl_private_decrypt_impl(data, result, key);
+}
+
 bool f$openssl_private_decrypt(const string& data, mixed& result, const string& key) {
   auto timer{CryptoTimeStats::get().write(CryptoBuiltin::openssl_private_decrypt)};
   string result_string;
-  if (f$openssl_private_decrypt(data, result_string, key)) {
+  if (openssl_private_decrypt_impl(data, result_string, key)) {
     result = result_string;
     return true;
   }

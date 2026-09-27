@@ -12,6 +12,7 @@
 #include <variant>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/builtin-time-stats.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
@@ -22,7 +23,8 @@
 
 namespace kphp::web::details {
 
-inline auto process_simple_response(std::span<const std::byte> request) noexcept -> kphp::coro::task<std::expected<response, error>> {
+inline auto process_simple_response(std::span<const std::byte> request,
+                                    BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<response, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto session{web_state.session_get_or_init()};
@@ -56,8 +58,8 @@ inline auto process_simple_response(std::span<const std::byte> request) noexcept
     }
   }};
 
-  const auto response_handler{[&frame_num, &err, &ok_or_error_buffer](
-                                  [[maybe_unused]] std::span<std::byte> _) noexcept -> kphp::component::inter_component_session::client::response_readiness {
+  const auto response_handler{[&frame_num, &err, &ok_or_error_buffer, &resp,
+                               timer](std::span<std::byte> frame) noexcept -> kphp::component::inter_component_session::client::response_readiness {
     switch (frame_num) {
     case 0: {
       frame_num += 1;
@@ -66,7 +68,9 @@ inline auto process_simple_response(std::span<const std::byte> request) noexcept
       if (!simple_web_transfer_resp.fetch(tlf)) [[unlikely]] {
         kphp::log::error("failed to parse response of Simple descriptor");
       }
-      if (auto r{simple_web_transfer_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+      auto r{simple_web_transfer_resp.value};
+      if (std::holds_alternative<tl::WebError>(r)) {
+        details::subtract_network_wait(timer, r);
         err.emplace(details::process_error(std::get<tl::WebError>(r)));
         return kphp::component::inter_component_session::client::response_readiness::ready;
       }
@@ -75,8 +79,17 @@ inline auto process_simple_response(std::span<const std::byte> request) noexcept
     case 1:
       frame_num += 1;
       return kphp::component::inter_component_session::client::response_readiness::pending;
-    case 2: // NOLINT
+    case 2: { // NOLINT
+      kphp::log::assertion(frame.size() >= tl::u64{}.footprint());
+      tl::fetcher tlf{frame.last(tl::u64{}.footprint())};
+      tl::u64 network_wait_ns{};
+      kphp::log::assertion(network_wait_ns.fetch(tlf));
+      if (timer != nullptr) {
+        timer->subtract_elapsed_ns(network_wait_ns.value);
+      }
+      resp.body.shrink(static_cast<string::size_type>(frame.size() - tl::u64{}.footprint()));
       return kphp::component::inter_component_session::client::response_readiness::ready;
+    }
     default:
       return kphp::component::inter_component_session::client::response_readiness::ready;
     }

@@ -26,7 +26,6 @@
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/diagnostics/pause-timer-awaitable.h"
 #include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
@@ -56,8 +55,7 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
     co_return false;
   }
 
@@ -81,8 +79,7 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -130,8 +127,7 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -159,7 +155,7 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::magic{}.footprint()> response{};
-  if (!co_await pause_timer_while_awaiting(timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response)))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
     co_return 0;
   }
 
@@ -344,8 +340,7 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -417,8 +412,7 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -445,8 +439,7 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcep
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -476,8 +469,7 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -491,7 +483,7 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string
   co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_data, string public_key, BuiltinTimeGuard& timer) noexcept {
+kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_data, string public_key) noexcept {
   tl::PublicEncrypt public_encrypt{
       .key = {.value = {public_key.c_str(), public_key.size()}},
       .data = {.value = {data.c_str(), data.size()}},
@@ -506,8 +498,7 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_d
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -525,7 +516,7 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_d
 kphp::coro::task<bool> f$openssl_public_encrypt(string data, mixed& result, string key) noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_public_encrypt)};
   string result_string;
-  if (co_await f$openssl_public_encrypt(data, result_string, key, timer)) {
+  if (co_await f$openssl_public_encrypt(data, result_string, key)) {
     result = std::move(result_string);
     co_return true;
   }
@@ -533,7 +524,7 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string data, mixed& result, stri
   co_return false;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_data, string private_key, BuiltinTimeGuard& timer) noexcept {
+kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_data, string private_key) noexcept {
   tl::PrivateDecrypt private_decrypt{
       .key = {.value = {private_key.c_str(), private_key.size()}},
       .data = {.value = {data.c_str(), data.size()}},
@@ -548,8 +539,7 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -567,7 +557,7 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_
 kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_private_decrypt)};
   string result_string;
-  if (co_await f$openssl_private_decrypt(data, result_string, key, timer)) {
+  if (co_await f$openssl_private_decrypt(data, result_string, key)) {
     result = std::move(result_string);
     co_return true;
   }
@@ -595,7 +585,7 @@ std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo
   return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
 
-kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output, BuiltinTimeGuard& timer) noexcept {
+kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output) noexcept {
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
     co_return false;
@@ -603,8 +593,7 @@ kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output, Bu
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await pause_timer_while_awaiting(
-          timer, kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes))))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
@@ -620,11 +609,11 @@ kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output, Bu
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
 
-kphp::coro::task<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output, BuiltinTimeGuard& timer) noexcept {
+kphp::coro::task<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
   tl::Hash hash{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
   tl::storer tls{hash.footprint()};
   hash.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output, timer);
+  co_return co_await send_and_get_string(std::move(tls), raw_output);
 }
 
 array<string> hash_algos_impl() noexcept {
@@ -653,7 +642,7 @@ kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noex
   if (!algo) [[unlikely]] {
     kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
   }
-  co_return co_await hash_impl(*algo, s, raw_output, timer);
+  co_return co_await hash_impl(*algo, s, raw_output);
 }
 
 kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
@@ -666,12 +655,12 @@ kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool
   tl::HashHmac hash_hmac{.algorithm = *algo, .data = {.value = {s.c_str(), s.size()}}, .secret_key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{hash_hmac.footprint()};
   hash_hmac.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output, timer);
+  co_return co_await send_and_get_string(std::move(tls), raw_output);
 }
 
 kphp::coro::task<string> f$sha1(string s, bool raw_output) noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::sha1)};
-  co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output, timer);
+  co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
 int64_t f$crc32(const string& s) noexcept {

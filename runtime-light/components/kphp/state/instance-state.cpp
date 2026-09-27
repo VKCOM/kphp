@@ -246,6 +246,11 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
         {"method", {}},
     }};
     const auto send_metric{[&sender, &tags](std::string_view group, std::string_view method, uint64_t value) noexcept {
+      // These are per-request samples for requests that used this builtin.
+      // In particular, auxiliary HTTP requests must not dilute the average.
+      if (value == 0) {
+        return;
+      }
       tags[1].second = group;
       tags[2].second = method;
       std::ignore = sender.send_value(tags, static_cast<double>(value));

@@ -450,25 +450,43 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
 }
 
 void StatsHouseManager::add_regex_time_stats(const RegexTimeStats& stats) noexcept {
+  if (stats.total == 0) {
+    return;
+  }
   static constexpr std::string_view metric_name{"kphp_builtin_time"};
   client.metric(metric_name).tag("is_K2", "no").tag("group", "regexp").tag("method", "total").write_value(stats.total);
   for (size_t i = 0; i < REGEX_BUILTIN_NAMES.size(); ++i) {
+    if (stats.methods[i] == 0) {
+      continue;
+    }
     client.metric(metric_name).tag("is_K2", "no").tag("group", "regexp").tag("method", REGEX_BUILTIN_NAMES[i]).write_value(stats.methods[i]);
   }
 }
 
 void StatsHouseManager::add_crypto_time_stats(const CryptoTimeStats& stats) noexcept {
+  if (stats.total == 0) {
+    return;
+  }
   static constexpr std::string_view metric_name{"kphp_builtin_time"};
   client.metric(metric_name).tag("is_K2", "no").tag("group", "crypto").tag("method", "total").write_value(stats.total);
   for (size_t i = 0; i < CRYPTO_BUILTIN_NAMES.size(); ++i) {
+    if (stats.methods[i] == 0) {
+      continue;
+    }
     client.metric(metric_name).tag("is_K2", "no").tag("group", "crypto").tag("method", CRYPTO_BUILTIN_NAMES[i]).write_value(stats.methods[i]);
   }
 }
 
 void StatsHouseManager::add_curl_time_stats(const CurlTimeStats& stats) noexcept {
+  if (stats.total == 0) {
+    return;
+  }
   static constexpr std::string_view metric_name{"kphp_builtin_time"};
   client.metric(metric_name).tag("is_K2", "no").tag("group", "curl").tag("method", "total").write_value(stats.total);
   for (size_t i = 0; i < CURL_BUILTIN_NAMES.size(); ++i) {
+    if (stats.methods[i] == 0) {
+      continue;
+    }
     client.metric(metric_name).tag("is_K2", "no").tag("group", "curl").tag("method", CURL_BUILTIN_NAMES[i]).write_value(stats.methods[i]);
   }
 }

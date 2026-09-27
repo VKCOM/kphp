@@ -23,7 +23,7 @@
 
 namespace kphp::web::simple {
 
-inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::expected<simple::transfer, error>> {
+inline auto open(transfer_backend backend, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<simple::transfer, error>> {
   auto& web_state{WebInstanceState::get()};
   auto session{web_state.session_get_or_init()};
   if (!session.has_value()) [[unlikely]] {
@@ -56,6 +56,7 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
   }
 
   auto result{transfer_open_resp.value};
+  details::subtract_network_wait(timer, result);
   if (std::holds_alternative<tl::WebError>(result)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
   }
@@ -73,7 +74,7 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
   co_return std::expected<simple::transfer, error>{descriptor};
 }
 
-inline auto perform(simple::transfer st) noexcept -> kphp::coro::task<std::expected<response, error>> {
+inline auto perform(simple::transfer st, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<response, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& simple2config{web_state.simple_transfer2config};
@@ -92,10 +93,10 @@ inline auto perform(simple::transfer st) noexcept -> kphp::coro::task<std::expec
   tl::storer tls{tl_perform.footprint()};
   tl_perform.store(tls);
 
-  co_return co_await details::process_simple_response(tls.view());
+  co_return co_await details::process_simple_response(tls.view(), timer);
 }
 
-inline auto get_response(simple::transfer st) noexcept -> kphp::coro::task<std::expected<response, error>> {
+inline auto get_response(simple::transfer st, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<response, error>> {
   auto& web_state{WebInstanceState::get()};
 
   if (!web_state.simple_transfer2config.contains(st.descriptor)) {
@@ -106,10 +107,10 @@ inline auto get_response(simple::transfer st) noexcept -> kphp::coro::task<std::
   tl::storer tls{web_transfer_get_resp.footprint()};
   web_transfer_get_resp.store(tls);
 
-  co_return co_await details::process_simple_response(tls.view());
+  co_return co_await details::process_simple_response(tls.view(), timer);
 }
 
-inline auto reset(simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto reset(simple::transfer st, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   if (!web_state.simple_transfer2config.contains(st.descriptor)) {
@@ -146,7 +147,9 @@ inline auto reset(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
     kphp::log::error("failed to parse response of Simple descriptor resetting");
   }
 
-  if (auto r{transfer_reset_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+  auto r{transfer_reset_resp.value};
+  details::subtract_network_wait(timer, r);
+  if (std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
@@ -158,7 +161,7 @@ inline auto reset(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
   co_return std::expected<void, error>{};
 }
 
-inline auto close(simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto close(simple::transfer st, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   if (!web_state.simple_transfer2config.contains(st.descriptor)) {
@@ -177,7 +180,8 @@ inline auto close(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
   // Checking that Simple transfer is still held by some Composite transfer
   auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
   if (composite_holder.has_value()) {
-    if (auto remove_res{co_await kphp::web::composite::remove(kphp::web::composite::transfer{*composite_holder}, kphp::web::simple::transfer{st.descriptor})};
+    if (auto remove_res{co_await kphp::web::composite::remove(
+            kphp::web::composite::transfer{*composite_holder}, kphp::web::simple::transfer{st.descriptor}, timer)};
         !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
@@ -204,7 +208,9 @@ inline auto close(simple::transfer st) noexcept -> kphp::coro::task<std::expecte
     kphp::log::error("failed to parse response of Simple descriptor closing");
   }
 
-  if (auto& r{transfer_close_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+  auto& r{transfer_close_resp.value};
+  details::subtract_network_wait(timer, r);
+  if (std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
