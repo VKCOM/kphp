@@ -34,7 +34,6 @@ function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 
 function openssl_cipher_iv_length($method ::: string) ::: int | false;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
                          string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
 
