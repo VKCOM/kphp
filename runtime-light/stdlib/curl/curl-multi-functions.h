@@ -238,7 +238,7 @@ inline auto f$curl_multi_select(kphp::web::curl::multi_type multi_id, double tim
   }
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
   auto res{co_await kphp::forks::id_managed(kphp::web::composite::wait_updates(
-      kphp::web::composite::transfer{multi_id}, std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{timeout}), &timer))};
+      kphp::web::composite::transfer{multi_id}, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>{timeout}), &timer))};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code);
     kphp::web::curl::print_warning("could not select curl multi handle", std::move(res.error()));
