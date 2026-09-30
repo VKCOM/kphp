@@ -387,8 +387,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-Optional<string> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv,
-                                   std::optional<std::reference_wrapper<string>> tag, string aad, [[maybe_unused]] int64_t tag_length) noexcept {
+Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& source_key, int64_t options, const string& source_iv,
+                                   std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
   auto algorithm{parse_cipher_algorithm_test(method)};
   if (!algorithm) {
     kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
