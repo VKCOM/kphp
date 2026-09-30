@@ -387,8 +387,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& source_key, int64_t options, const string& source_iv,
-                                   std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
+Optional<string> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv,
+                                   std::optional<std::reference_wrapper<string>> tag, string aad, [[maybe_unused]] int64_t tag_length) noexcept {
   auto algorithm{parse_cipher_algorithm_test(method)};
   if (!algorithm) {
     kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
@@ -422,8 +422,8 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
   }
 
   auto encrypted_size{calc_encrypted_size(*algorithm, padding, tag_length, data.size())};
-  string encrypted_data{encrypted_size.cipher_text_size};
-  string received_tag{encrypted_size.tag_size};
+  string encrypted_data{static_cast<string::size_type>(encrypted_size.cipher_text_size), false};
+  string received_tag{static_cast<string::size_type>(encrypted_size.tag_size), false};
   auto res{k2::openssl_encrypt(*algorithm, padding, {key_iv.val().first.c_str(), key_iv.val().first.size()},
                                {key_iv.val().second.c_str(), key_iv.val().second.size()}, tag_length, {aad.c_str(), aad.size()}, {data.c_str(), data.size()},
                                {encrypted_data.buffer(), encrypted_data.size()}, {received_tag.buffer(), received_tag.size()})};
