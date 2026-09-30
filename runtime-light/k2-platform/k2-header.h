@@ -518,8 +518,8 @@ int32_t k2_unlink(const char* path, size_t path_len);
  */
 int32_t k2_component_access(size_t name_len, const char* name);
 
-int32_t k2_openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, const char* passphrase, size_t passphrase_len, const char* iv, size_t iv_len,
-                           int64_t tag_size, const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data,
+int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* passphrase, size_t passphrase_len, const char* iv,
+                           size_t iv_len, int64_t tag_size, const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data,
                            size_t encrypted_data_len, char* received_tag, size_t received_tag_len);
 
 /**
