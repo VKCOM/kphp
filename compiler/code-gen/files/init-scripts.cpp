@@ -276,7 +276,7 @@ void InitScriptsCpp::compile(CodeGenerator& W) const {
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
   if (G->is_output_mode_k2()) {
-    W << "run = " << FunctionName(main_file_id->main_function) << "$run();" << NL;
+    W << "run = FORK_TASK(" << FunctionName(main_file_id->main_function) << "$run());" << NL;
   } else {
     W << "set_script (" << FunctionName(main_file_id->main_function) << "$run, " << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
   }
@@ -320,11 +320,7 @@ void ComponentInfoFile::compile(CodeGenerator& W) const {
     << R"(static std::array extraInfo {ImageInfo::KeyValuePair{.key = "compiler_version", .value = ")" << G->settings().get_version() << "\"}};" << NL
     << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << "," << (G->is_output_mode_k2_multishot() ? "0" : "1") << ","
     << std::to_string(std::chrono::duration_cast<std::chrono::seconds>(G->settings().build_tp.time_since_epoch()).count()) << ","
-    << "K2_PLATFORM_HEADER_H_VERSION, "
-    << "{" << php_code_commit_hash << "},"
-    << "\"" << G->settings().php_code_version.get() << "\","
-    << "extraInfo.size()" << ","
-    << "extraInfo.data()"
-    << "};" << NL << "return &imageInfo;" << NL << END;
+    << "K2_PLATFORM_HEADER_H_VERSION, " << "{" << php_code_commit_hash << "}," << "\"" << G->settings().php_code_version.get() << "\"," << "extraInfo.size()"
+    << "," << "extraInfo.data()" << "};" << NL << "return &imageInfo;" << NL << END;
   W << CloseFile();
 }
