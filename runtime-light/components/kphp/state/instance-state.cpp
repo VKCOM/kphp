@@ -62,7 +62,7 @@ void InstanceState::init_script_execution() noexcept {
   kphp::coro::task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
-  auto main_task{std::invoke(
+  auto main_task{FORK_TASK(std::invoke(
       [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
         // wrap script with additional check for unhandled exception
         script_task = std::invoke(
@@ -75,7 +75,7 @@ void InstanceState::init_script_execution() noexcept {
             std::move(script_task));
         kphp::log::assertion(co_await f$wait_concurrently(kphp::forks::start(std::move(script_task))));
       },
-      std::move(script_task))};
+      std::move(script_task)))};
   // initialize async stack
   auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
   main_task_async_stack_frame.async_stack_root = std::addressof(coroutine_instance_state.coroutine_stack_root);
