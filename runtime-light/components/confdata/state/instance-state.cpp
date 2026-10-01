@@ -230,7 +230,7 @@ auto InstanceState::erase_if_retired_and_unused(confdata_piece_list::iterator pi
 }
 
 auto InstanceState::init() noexcept -> void {
-  auto main_task{run()};
+  auto main_task{FORK_TASK(run())};
   // initialize async stack
   auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
   main_task_async_stack_frame.async_stack_root = std::addressof(m_coroutine_instance_state.coroutine_stack_root);
@@ -337,7 +337,7 @@ auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
     }
 
     kphp::log::debug("accepted a stream: descriptor -> {}", stream->descriptor());
-    if (!m_io_scheduler.start(serve_reader_lease(std::move(*stream)))) [[unlikely]] {
+    if (!m_io_scheduler.start(FORK_TASK(serve_reader_lease(std::move(*stream))))) [[unlikely]] {
       kphp::log::warning("failed to serve a confdata reader lease");
     }
   }

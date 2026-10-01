@@ -110,7 +110,7 @@ private:
       // The protocol design assumes that interrupting the transfer in the middle of a frame leads to critical error.
       // Therefore, we need to write the request in a separate coroutine.
       // This technique prevents integrity violations when this coroutine is cancelled.
-      kphp::coro::io_scheduler::get().start(process_write(t, qid, payload));
+      kphp::coro::io_scheduler::get().start(FORK_TASK(process_write(t, qid, payload)));
       co_await req_finish_notifier[qid];
 
       kphp::log::assertion(req_status.contains(qid));

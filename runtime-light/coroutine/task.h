@@ -253,4 +253,4 @@ private:
 
 } // namespace kphp::coro
 
-#define FORK_TASK(...) (kphp::coro::detail::memory::task_allocator::get().fork(), ...);
+#define FORK_TASK(...) (kphp::coro::detail::memory::task_allocator::get().fork(), __VA_ARGS__)

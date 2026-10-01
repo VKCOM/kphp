@@ -151,7 +151,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
   }};
 
   m_shared_state.get()->m_unwatch_event.emplace();
-  if (!kphp::coro::io_scheduler::get().spawn(watcher(m_stream.descriptor(), m_shared_state, std::forward<on_abort_handler_type>(h)))) [[unlikely]] {
+  if (!kphp::coro::io_scheduler::get().spawn(FORK_TASK(watcher(m_stream.descriptor(), m_shared_state, std::forward<on_abort_handler_type>(h))))) [[unlikely]] {
     m_shared_state.get()->m_unwatch_event.reset();
     return std::unexpected{k2::errno_ebusy};
   }
