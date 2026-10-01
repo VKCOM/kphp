@@ -24,15 +24,21 @@ private:
   static constexpr std::string_view PREDEFINED_WILDCARDS_ARG{"predefined-wildcards"};
   static constexpr std::string_view INITIAL_INSTANCE_MEMORY_SIZE_ARG{"initial-instance-memory-size"};
   static constexpr std::string_view MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG{"min-instance-extra-memory-size"};
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)};                 // 1MiB
-  static constexpr auto DEFAULT_MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U); // 1MiB
-  static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE{static_cast<size_t>(64U * 1024U * 1024U)};    // 64MiB
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE{64U * 1024U * 1024U};                       // 64MiB
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)};                              // 1MiB
+  static constexpr auto MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U);                      // 1MiB
+  static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(64U * 1024U * 1024U);                // 64MiB
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE{static_cast<size_t>(64U * 1024U * 1024U)};          // 64MiB
+  static constexpr auto DEFAULT_INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE{static_cast<size_t>(16U * 1024U * 1024U)};       // 16MiB
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE{static_cast<size_t>(1U * 1024U * 1024U)}; // 1MiB
+  static constexpr auto DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(4U * 1024U * 1024U);            // 4MiB
+  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(32U * 1024U);                // 32KiB
+  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE = static_cast<size_t>(80U);
+  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
   /** Leaves the same five-percent runway between legacy kPHP's hard OOM threshold and its memory limit. */
   static constexpr size_t DEFAULT_OOM_HANDLING_SIZE_DIVISOR{20};
 
 public:
-  AllocatorState m_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, DEFAULT_MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE, 0};
+  AllocatorState m_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE, 0};
 
 private:
   const uint32_t m_argc{k2::args_count()};
@@ -47,7 +53,13 @@ public:
   kphp::stl::string<kphp::memory::script_allocator> m_confdata_proxy_actor_name;
   kphp::stl::vector<std::string_view, kphp::memory::script_allocator> m_predefined_wildcards;
   size_t m_initial_instance_memory_size{DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE};
-  size_t m_min_instance_extra_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE};
+  size_t m_min_instance_extra_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_POOL_SIZE};
+  size_t m_initial_instance_coroutine_memory_size{DEFAULT_INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE};
+  size_t m_min_instance_extra_coroutine_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE};
+  size_t m_initial_instance_task_memory_size{DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE};
+  size_t m_instance_task_allocator_segment_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE};
+  size_t m_instance_task_allocator_stack_pool_chunk_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE};
+  size_t m_min_instance_extra_task_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE};
 
   // === METHODS ==================================================================================
   ComponentState() noexcept;

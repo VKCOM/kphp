@@ -6,7 +6,7 @@
 
 #include <cstddef>
 
-#include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
 
 namespace kphp::coro::detail::memory {
 
@@ -20,11 +20,11 @@ struct coroutine_allocator {
   explicit coroutine_allocator(const coroutine_allocator<U>& /*unused*/) noexcept {}
 
   constexpr value_type* allocate(size_t n) noexcept {
-    return static_cast<value_type*>(kphp::coro::instance_state::get_coroutine_allocator().alloc_script_memory(n * sizeof(T)));
+    return static_cast<value_type*>(kphp::coro::detail::memory::runtime_coroutine_allocator::get().alloc_script_memory(n * sizeof(T)));
   }
 
   constexpr void deallocate(T* p, size_t n) noexcept {
-    kphp::coro::instance_state::get_coroutine_allocator().free_script_memory(p, n * sizeof(T));
+    kphp::coro::detail::memory::runtime_coroutine_allocator::get().free_script_memory(p, n * sizeof(T));
   }
 };
 
