@@ -12,7 +12,8 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+#include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -65,20 +66,17 @@ struct promise_base : kphp::coro::async_stack_element {
   }
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::alloc(n);
-  }
-
-  template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::alloc_aligned(n, al);
+    return kphp::coro::detail::memory::task::alloc_aligned(n, al);
   }
 
-  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::coro::detail::memory::free(ptr);
+  auto operator delete(void* ptr, size_t n, std::align_val_t al) noexcept -> void {
+    kphp::coro::detail::memory::task::free_aligned(ptr, n, al);
   }
 
   void* m_next{};
+  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_stack{};
+  kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
 };
 
 template<typename promise_type>
@@ -103,6 +101,7 @@ protected:
   bool m_started{};
   bool m_suspended{};
   std::coroutine_handle<promise_type> m_coro{};
+  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_prev_stack{};
 
 public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
@@ -131,6 +130,7 @@ public:
 
   template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> std::coroutine_handle<promise_type> {
+    m_prev_stack = m_coro.promise().m_task_allocator.exchange_stack(m_coro.promise().m_stack);
     push_async_stack_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_coro.promise().m_next = awaiting_coroutine.address();
     m_suspended = true;
@@ -138,6 +138,7 @@ public:
   }
 
   auto await_resume() noexcept -> void {
+    m_coro.promise().m_task_allocator.set_stack(m_prev_stack);
     m_suspended = false;
   }
 };
@@ -176,12 +177,16 @@ struct task {
 
   ~task() {
     if (m_coro) {
+      auto& task_allocator{m_coro.promise().task_allocator};
+      auto* prev_stack{task_allocator.exchange_stack(m_coro.promise().m_stack)};
       m_coro.destroy();
+      task_allocator.set_stack(prev_stack);
     }
   }
 
   struct promise_base : task_impl::promise_base<promise_type> {
     auto get_return_object() noexcept -> task {
+      this->m_stack = this->m_task_allocator.current_stack();
       return task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
@@ -247,3 +252,5 @@ private:
 };
 
 } // namespace kphp::coro
+
+#define FORK_TASK(...) (kphp::coro::detail::memory::task_allocator::get().fork(), ...);

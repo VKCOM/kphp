@@ -18,6 +18,7 @@
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -103,7 +104,9 @@ public:
       m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
+      auto* prev_stack{m_task_allocator.exchange_stack(nullptr)};
       kphp::coro::resume(handle, async_stack_root);
+      m_task_allocator.set_stack(prev_stack);
     }
 
     // coroutine already completed, don't suspend
@@ -140,6 +143,7 @@ public:
 private:
   uint32_t m_refcnt{1};
   std::variant<not_started_tag, done_tag, vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>> m_state;
+  kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
 };
 
 template<typename promise_type>

@@ -932,7 +932,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(kphp::forks::start(" << FunctionName(func);
+        W << "(kphp::forks::start(FORK_TASK(" << FunctionName(func);
       } else {
         W << FunctionForkName(func);
       }
@@ -969,7 +969,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
   W << ")";
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
-      W << "))";
+      W << ")))";
     } else {
       W << ")";
     }
@@ -2428,8 +2428,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
   }
   case op_arr_acc_set_return: {
     auto v = root.as<op_arr_acc_set_return>();
-    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", "
-      << "f$" << v->set_method->name << MacroEnd{};
+    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", " << "f$" << v->set_method->name << MacroEnd{};
     break;
   }
   case op_arr_acc_check_and_get: {
@@ -2441,9 +2440,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
       W << "ARR_ACC_GET_IF_ISSET";
     }
 
-    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", "
-      << "f$" << v->check_method->name << ", "
-      << "f$" << v->get_method->name << MacroEnd{};
+    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << "f$" << v->check_method->name << ", " << "f$" << v->get_method->name << MacroEnd{};
     break;
   }
   default:
