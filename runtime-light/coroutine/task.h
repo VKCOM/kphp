@@ -177,7 +177,7 @@ struct task {
 
   ~task() {
     if (m_coro) {
-      auto& task_allocator{m_coro.promise().task_allocator};
+      auto& task_allocator{m_coro.promise().m_task_allocator};
       auto* prev_stack{task_allocator.exchange_stack(m_coro.promise().m_stack)};
       m_coro.destroy();
       task_allocator.set_stack(prev_stack);

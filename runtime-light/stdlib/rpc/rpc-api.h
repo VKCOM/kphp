@@ -254,7 +254,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
   tl::storer tls{rpc_response.footprint()};
   rpc_response.store(tls);
 
-  if (auto expected{co_await kphp::forks::id_managed(kphp::rpc::send_response(tls.view()))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::forks::id_managed(kphp::rpc::send_response, tls.view())}; !expected) [[unlikely]] {
     kphp::log::warning("can't store RPC error: {}", expected.error());
   }
   kphp::log::error("store_error called. error_code: {}, error_msg: {}", error_code, error_msg.c_str());
@@ -277,7 +277,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
   tl::storer tls{rpc_response.footprint()};
   rpc_response.store(tls);
 
-  if (auto expected{co_await kphp::forks::id_managed(kphp::rpc::send_response(tls.view()))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::forks::id_managed(kphp::rpc::send_response, tls.view())}; !expected) [[unlikely]] {
     kphp::log::warning("can't store RPC response: {}", expected.error());
   }
 }
@@ -317,7 +317,7 @@ inline array<int64_t> f$rpc_send_requests(const string& actor, const array<mixed
 inline kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
   for (const auto& it : std::as_const(query_ids)) {
-    res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::rpc_tl_query_result_one_impl(it.get_value())));
+    res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::rpc_tl_query_result_one_impl, it.get_value()));
   }
   co_return std::move(res);
 }
@@ -369,7 +369,7 @@ requires std::default_initializable<error_factory_type>
 kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_responses(array<query_id_type> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto& it : std::as_const(query_ids)) {
-    res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_type{})));
+    res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl, it.get_value(), error_factory_type{}));
   }
   co_return std::move(res);
 }

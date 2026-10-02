@@ -95,7 +95,7 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   } else {
     exit_code = 1;
   }
-  co_await kphp::forks::id_managed(kphp::system::exit(static_cast<int32_t>(exit_code)));
+  co_await kphp::forks::id_managed(kphp::system::exit, static_cast<int32_t>(exit_code));
 }
 
 inline kphp::coro::task<> f$die(mixed v = 0) noexcept {
@@ -221,7 +221,8 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
     kphp::log::warning("value of microseconds ({}) must be positive", microseconds);
     co_return;
   }
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(std::chrono::microseconds{microseconds}));
+  co_await kphp::forks::id_managed([](std::chrono::microseconds microseconds) noexcept { return kphp::coro::io_scheduler::get().schedule(microseconds); },
+                                   std::chrono::microseconds{microseconds});
 }
 
 inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
@@ -230,7 +231,8 @@ inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
     co_return;
   }
 
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(std::chrono::seconds{seconds}));
+  co_await kphp::forks::id_managed([](std::chrono::seconds seconds) noexcept { return kphp::coro::io_scheduler::get().schedule(seconds); },
+                                   std::chrono::seconds{seconds});
   co_return;
 }
 

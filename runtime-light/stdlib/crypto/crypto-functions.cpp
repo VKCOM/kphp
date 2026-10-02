@@ -52,7 +52,8 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -75,7 +76,8 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -122,7 +124,8 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -149,7 +152,9 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
   auto stream{*std::move(expected_stream)};
   std::array<std::byte, tl::magic{}.footprint()> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
+  if (!co_await kphp::forks::id_managed([](kphp::component::stream& stream, std::span<const std::byte> request,
+                                           std::span<std::byte> response) noexcept { return kphp::component::query(stream, request, response); },
+                                        stream, tls.view(), response)) [[unlikely]] {
     co_return 0;
   }
 
@@ -331,7 +336,8 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -402,7 +408,8 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -428,7 +435,8 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcep
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -457,7 +465,8 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -486,7 +495,8 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_d
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -526,7 +536,8 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
@@ -579,7 +590,8 @@ kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output) no
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+  auto callback{kphp::component::read_ext::append(response_bytes)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query<decltype(callback)>, stream, tls.view(), std::move(callback))) [[unlikely]] {
     co_return false;
   }
 
