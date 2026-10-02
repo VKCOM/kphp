@@ -12,6 +12,7 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"

@@ -150,7 +150,7 @@ private:
 
       while (!ctx.get()->interrupted.is_set()) {
         // Read response header or interrupt
-        auto read_header_res{co_await kphp::coro::when_any(t.get()->stream.read(resp_header_buf), interrupter)};
+        auto read_header_res{co_await kphp::coro::when_any(FORK_TASK(t.get()->stream.read(resp_header_buf)), interrupter)};
         // An interrupt has occurred
         if (std::holds_alternative<kphp::coro::void_value>(read_header_res)) [[unlikely]] {
           kphp::log::debug("reader has been interrupted");

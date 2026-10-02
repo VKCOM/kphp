@@ -140,7 +140,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }
 
     const auto finalizer{vk::finally([state] noexcept { state.get()->m_unwatch_event.reset(); })};
-    const auto v{co_await kphp::coro::when_any(unwatch_awaiter(std::move(state)), descriptor_awaiter(descriptor))};
+    const auto v{co_await kphp::coro::when_any(FORK_TASK(unwatch_awaiter(std::move(state))), FORK_TASK(descriptor_awaiter(descriptor)))};
     if (std::holds_alternative<std::monostate>(v)) {
       if constexpr (kphp::coro::is_async_function_v<on_abort_handler_type>) {
         co_await std::invoke(std::move(h));

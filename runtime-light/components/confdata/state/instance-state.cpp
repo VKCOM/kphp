@@ -240,7 +240,7 @@ auto InstanceState::init() noexcept -> void {
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
-  co_await kphp::coro::when_all(service_loop(), accept_loop(), metrics_loop()); // all never return
+  co_await kphp::coro::when_all(FORK_TASK(service_loop()), FORK_TASK(accept_loop()), FORK_TASK(metrics_loop())); // all never return
   kphp::log::assertion(false);
 }
 
