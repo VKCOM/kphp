@@ -13,6 +13,7 @@
 
 #include "common/containers/intrusive-list.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
@@ -386,7 +387,7 @@ public:
   ~await_set_awaitable() = default;
 };
 
-template<kphp::coro::concepts::awaitable awaitable_type>
+template<kphp::coro::concepts::detached_awaitable awaitable_type>
 auto make_await_set_task(awaitable_type coroutine) noexcept -> await_set_task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
     co_await std::move(coroutine);

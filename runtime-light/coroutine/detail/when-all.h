@@ -310,7 +310,7 @@ public:
   }
 };
 
-template<kphp::coro::concepts::awaitable awaitable_type>
+template<kphp::coro::concepts::detached_awaitable awaitable_type>
 auto make_when_all_task(awaitable_type awaitable) noexcept -> when_all_task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
     co_await std::move(awaitable);

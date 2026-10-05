@@ -99,7 +99,7 @@ public:
    * @param coroutine The coroutine to spawn.
    * @return True if the coroutine was successfully spawned, false otherwise.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type>
   auto spawn(coroutine_type coroutine) noexcept -> bool;
 
   /**
@@ -107,7 +107,7 @@ public:
    * @param corotuine The coroutine to start.
    * @return True if the coroutine was successfully started, false otherwise.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type>
   auto start(coroutine_type coroutine) noexcept -> bool;
 
   /**
@@ -129,7 +129,7 @@ public:
    * @param coroutine The coroutine to schedule.
    * @return A task that will yield the coroutine's return value when completed.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type>;
   /**
    * @brief Schedules a coroutine with a timeout.
@@ -139,7 +139,7 @@ public:
    *        - Positive: rounded up to the next whole millisecond.
    * @return A task that yields either the coroutine's result or kphp::coro::timeout_status::timeout.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type, kphp::concepts::duration duration_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine, duration_type timeout) noexcept
       -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>>;
 
@@ -446,7 +446,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
   return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollReschedule;
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type>
 auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
   auto& coroutine_node{owned_task.get_coroutine_node()};
@@ -457,7 +457,7 @@ auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
   return true;
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type>
 auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
   auto handle{owned_task.get_handle()};
@@ -554,13 +554,13 @@ auto io_scheduler::schedule(duration_type timeout) noexcept -> kphp::coro::task<
   co_await poll_info;
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type>
 auto io_scheduler::schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type> {
   co_await schedule();
   co_return co_await std::move(coroutine);
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type, kphp::concepts::duration duration_type>
 auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noexcept
     -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>> {
   using expected_return_type = typename kphp::coro::coroutine_traits<coroutine_type>::return_type;
