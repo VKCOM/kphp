@@ -13,7 +13,7 @@
 
 namespace kphp::coro {
 
-template<kphp::coro::concepts::awaitable... awaitable_types>
+template<kphp::coro::concepts::detached_awaitable... awaitable_types>
 [[nodiscard]] auto when_all(awaitable_types... awaitables) noexcept {
   return detail::when_all::when_all_ready_awaitable<
       std::tuple<detail::when_all::when_all_task<typename kphp::coro::awaitable_traits<awaitable_types>::awaiter_return_type>...>>{

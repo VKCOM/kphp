@@ -44,7 +44,7 @@ public:
   scoped_id_managed& operator=(scoped_id_managed&&) = delete;
 };
 
-template<kphp::coro::concepts::awaitable awaitable_type>
+template<kphp::coro::concepts::detached_awaitable awaitable_type>
 auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   auto& fork_instance_st{ForkInstanceState::get()};
   const auto saved_fork_id{fork_instance_st.current_id};
