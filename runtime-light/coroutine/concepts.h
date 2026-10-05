@@ -9,6 +9,8 @@
 #include <utility>
 
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/detached-task.h"
+#include "runtime-light/coroutine/detail/type-traits-utils.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 
@@ -44,6 +46,9 @@ concept global_co_await_awaitable = requires(T&& t) {
 template<typename T>
 concept awaitable = detail::member_co_await_awaitable<T> || detail::global_co_await_awaitable<T> || detail::awaiter<T>;
 
+template<typename T>
+concept detached_awaitable = awaitable<T> && !is_task_v<T>;
+
 namespace detail {
 
 template<awaitable awaitable_type>
@@ -60,10 +65,13 @@ auto get_awaiter(awaitable_type&& value) noexcept {
 } // namespace detail
 
 template<typename T>
-concept coroutine = awaitable<T> && (requires {
-  { static_cast<kphp::coro::task<>>(std::declval<T>()) };
+concept coroutine = awaitable<T> && (is_task_v<T> || requires {
+  { static_cast<kphp::coro::detached_task<>>(std::declval<T>()) };
 } || requires {
   { static_cast<kphp::coro::shared_task<>>(std::declval<T>()) };
 });
+
+template<typename T>
+concept detached_coroutine = coroutine<T> && !is_task_v<T>;
 
 } // namespace kphp::coro::concepts

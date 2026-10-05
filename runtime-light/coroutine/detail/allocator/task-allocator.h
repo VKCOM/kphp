@@ -124,23 +124,6 @@ public:
     return prev;
   }
 
-  auto fork() noexcept {
-    struct fork_guard {
-      kphp::coro::detail::memory::task_allocator& m_task_allocator;
-      memory_resource::segmented_stack_resource<shared_chunk_pool>* m_prev_stack{nullptr};
-
-      explicit fork_guard(kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
-          : m_task_allocator{task_allocator},
-            m_prev_stack{task_allocator.exchange_stack(nullptr)} {}
-
-      ~fork_guard() {
-        m_task_allocator.set_stack(m_prev_stack);
-      }
-    };
-
-    return fork_guard{*this};
-  }
-
   auto alloc_script_memory(size_t size) noexcept -> void* {
     kphp::log::assertion(size != 0);
     kphp::log::assertion(m_curr_stack != nullptr);

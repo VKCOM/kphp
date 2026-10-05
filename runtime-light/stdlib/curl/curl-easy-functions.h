@@ -475,7 +475,7 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
-      FORK_TASK(kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id})), timeout)};
+      DETACH_TASK(kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id})), timeout)};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_debug(
         "could not execute curl easy handle concurrently",

@@ -62,10 +62,10 @@ void InstanceState::init_script_execution() noexcept {
   kphp::coro::task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
-  auto main_task{FORK_TASK(std::invoke(
+  auto main_task{DETACH_TASK(std::invoke(
       [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
         // wrap script with additional check for unhandled exception
-        script_task = FORK_TASK(std::invoke(
+        script_task = DETACH_TASK(std::invoke(
             [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
               co_await script_task;
               if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
