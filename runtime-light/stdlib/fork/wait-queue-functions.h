@@ -56,7 +56,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
-  auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(FORK_TASK(wait_queue_next_task(await_set.next())), timeout)};
+  auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(DETACH_TASK(wait_queue_next_task(await_set.next())), timeout)};
   if (!wait_result) {
     co_return std::nullopt;
   }
@@ -94,7 +94,7 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
       }};
 
   auto& await_set{(*opt_await_set).get()};
-  await_set.push(FORK_TASK(wait_queue_wrapper_task(std::move(fork_task), fork_id)));
+  await_set.push(DETACH_TASK(wait_queue_wrapper_task(std::move(fork_task), fork_id)));
 }
 
 } // namespace kphp::forks

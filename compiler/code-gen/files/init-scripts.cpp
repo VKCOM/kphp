@@ -276,7 +276,7 @@ void InitScriptsCpp::compile(CodeGenerator& W) const {
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
   if (G->is_output_mode_k2()) {
-    W << "run = FORK_TASK(" << FunctionName(main_file_id->main_function) << "$run());" << NL;
+    W << "run = DETACH_TASK(" << FunctionName(main_file_id->main_function) << "$run());" << NL;
   } else {
     W << "set_script (" << FunctionName(main_file_id->main_function) << "$run, " << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
   }

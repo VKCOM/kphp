@@ -574,7 +574,7 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
     }
   }
 
-  auto result{co_await kphp::coro::when_any(std::move(coroutine), FORK_TASK(make_timeout_task(std::chrono::ceil<std::chrono::milliseconds>(timeout))))};
+  auto result{co_await kphp::coro::when_any(std::move(coroutine), DETACH_TASK(make_timeout_task(std::chrono::ceil<std::chrono::milliseconds>(timeout))))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }
