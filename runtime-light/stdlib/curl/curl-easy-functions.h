@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/curl/curl-context.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
@@ -475,7 +476,9 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
-      DETACH_TASK(kphp::forks::id_managed(kphp::web::simple::perform, kphp::web::simple::transfer{easy_id})), timeout)};
+      kphp::coro::detach_task([](kphp::web::simple::transfer easy_id) noexcept { return kphp::forks::id_managed(kphp::web::simple::perform, easy_id); },
+                              kphp::web::simple::transfer{easy_id}),
+      timeout)};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_debug(
         "could not execute curl easy handle concurrently",

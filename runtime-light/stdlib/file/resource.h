@@ -23,6 +23,7 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -637,7 +638,7 @@ public:
   socket& operator=(socket&& other) noexcept {
     if (this != std::addressof(other)) {
       if (!finalized()) {
-        kphp::coro::io_scheduler::get().spawn(DETACH_TASK(finalizer(std::move(m_stream), std::move(m_buf))));
+        kphp::coro::io_scheduler::get().spawn(kphp::coro::detach_task(&socket::finalizer, std::move(m_stream), std::move(m_buf)));
       }
 
       m_open = std::exchange(other.m_open, false);
@@ -649,7 +650,7 @@ public:
 
   ~socket() override {
     if (!finalized()) {
-      kphp::coro::io_scheduler::get().spawn(DETACH_TASK(finalizer(std::move(m_stream), std::move(m_buf))));
+      kphp::coro::io_scheduler::get().spawn(kphp::coro::detach_task(&socket::finalizer, std::move(m_stream), std::move(m_buf)));
     }
   }
 

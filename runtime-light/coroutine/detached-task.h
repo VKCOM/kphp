@@ -19,6 +19,10 @@ namespace kphp::coro {
 
 namespace detail {
 
+template<typename F, typename... Args>
+requires std::invocable<F, Args...>
+class async_function_return_type;
+
 template<typename promise_type>
 class awaiter_base {
   void push_async_stack_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
@@ -80,12 +84,14 @@ public:
   }
 };
 
-template<typename T>
-auto make_fork_task(kphp::coro::task<T>&& task) noexcept {
-  return kphp::coro::detached_task<T>{std::move(task)};
-}
-
 } // namespace detail
+
+template<typename F, typename... Args>
+auto detach_task(F&& f, Args&&... args) noexcept {
+  auto guard{kphp::coro::task_allocator_guard{}};
+  return kphp::coro::detached_task<typename kphp::coro::detail::async_function_return_type<F, Args...>::type>{
+      std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
+}
 
 template<typename T = void>
 struct detached_task {
@@ -93,7 +99,8 @@ private:
   using task_promise_type = kphp::coro::task<T>::promise_type;
 
   explicit detached_task(kphp::coro::task<T>&& task) noexcept
-      : m_coro(std::exchange(task.m_coro, {})) {}
+      : m_coro(std::exchange(task.m_coro, {})),
+        m_stack(m_task_allocator.current_stack()) {}
 
 public:
   detached_task() noexcept = default;
@@ -161,10 +168,8 @@ private:
   kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
   memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_stack{nullptr};
 
-  template<typename U>
-  friend auto detail::make_fork_task(kphp::coro::task<U>&& task) noexcept;
+  template<typename F, typename... Args>
+  friend auto kphp::coro::detach_task(F&& f, Args&&... args) noexcept;
 };
 
 } // namespace kphp::coro
-
-#define DETACH_TASK(...) (kphp::coro::task_allocator_guard{}, kphp::coro::detail::make_fork_task(__VA_ARGS__))

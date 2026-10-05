@@ -13,8 +13,8 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/shared-task.h"
-#include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-storage.h"
@@ -50,9 +50,9 @@ public:
   static ForkInstanceState& get() noexcept;
 
   template<typename return_type>
-  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(kphp::coro::task<return_type> task) noexcept {
+  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(kphp::coro::detached_task<return_type> task) noexcept {
     static constexpr auto fork_coroutine{
-        [](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
+        [](kphp::coro::detached_task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
           ForkInstanceState::get().current_id = fork_id;
 
           kphp::forks::details::storage s{};

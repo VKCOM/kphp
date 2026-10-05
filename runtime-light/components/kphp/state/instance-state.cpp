@@ -59,23 +59,23 @@ consteval std::string_view resolve_sapi_name() noexcept {
 
 void InstanceState::init_script_execution() noexcept {
   runtime_context.init();
-  kphp::coro::task<> script_task;
+  kphp::coro::detached_task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
-  auto main_task{DETACH_TASK(std::invoke(
-      [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
+  auto main_task{kphp::coro::detach_task(
+      [](kphp::coro::detached_task<> script_task) noexcept -> kphp::coro::task<> {
         // wrap script with additional check for unhandled exception
-        script_task = DETACH_TASK(std::invoke(
-            [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
+        script_task = kphp::coro::detach_task(
+            [](kphp::coro::detached_task<> script_task) noexcept -> kphp::coro::task<> {
               co_await script_task;
               if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
                 kphp::log::error("unhandled exception {}", std::move(exception));
               }
             },
-            std::move(script_task)));
+            std::move(script_task));
         kphp::log::assertion(co_await f$wait_concurrently(kphp::forks::start(std::move(script_task))));
       },
-      std::move(script_task)))};
+      std::move(script_task))};
   // initialize async stack
   auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
   main_task_async_stack_frame.async_stack_root = std::addressof(coroutine_instance_state.coroutine_stack_root);

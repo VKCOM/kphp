@@ -75,7 +75,7 @@ bool f$header_register_callback(F&& f) noexcept {
     return false;
   }
 
-  auto headers_callback_task{DETACH_TASK(std::invoke(
+  auto headers_callback_task{kphp::coro::detach_task(
       [](F f) noexcept -> kphp::coro::task<> {
         if constexpr (kphp::coro::is_async_function_v<F>) {
           co_await std::invoke(std::move(f));
@@ -83,7 +83,7 @@ bool f$header_register_callback(F&& f) noexcept {
           std::invoke(std::move(f));
         }
       },
-      std::forward<F>(f)))};
+      std::forward<F>(f))};
 
   http_server_instance_st.headers_registered_callback.emplace(std::move(headers_callback_task));
   return true;
