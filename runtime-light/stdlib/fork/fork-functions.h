@@ -16,6 +16,7 @@
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
@@ -77,7 +78,7 @@ auto id_managed(F f,
 }
 
 template<typename return_type>
-auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
+auto start(kphp::coro::detached_task<return_type> task) noexcept -> int64_t {
   auto& fork_instance_st{ForkInstanceState::get()};
   auto [fork_id, fork_task]{fork_instance_st.create_fork(std::move(task))};
   auto saved_fork_id{fork_instance_st.current_id};

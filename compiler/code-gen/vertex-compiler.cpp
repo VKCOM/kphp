@@ -932,7 +932,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(kphp::forks::start(DETACH_TASK(" << FunctionName(func);
+        W << "(kphp::forks::start(kphp::coro::detach_task([](auto&&... args) noexcept { return " << FunctionName(func);
       } else {
         W << FunctionForkName(func);
       }
@@ -947,7 +947,12 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     const TypeData* tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-  W << "(";
+
+  if (func->is_interruptible && mode == func_call_mode::fork_call) {
+    W << "(std::forward<decltype(args)>(args)...); }";
+  } else {
+    W << "(";
+  }
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -962,6 +967,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     }
   }
 
+  if (!args.empty() && func->is_interruptible && mode == func_call_mode::fork_call) {
+    W << ", ";
+  }
+
   W << JoinValues(args, ", ");
   if (is_function_call_should_be_tracked(func)) {
     W << "))";
@@ -969,7 +978,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
   W << ")";
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
-      W << ")))";
+      W << "))";
     } else {
       W << ")";
     }

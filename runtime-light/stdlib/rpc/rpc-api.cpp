@@ -20,6 +20,7 @@
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
@@ -358,7 +359,7 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
           return {reinterpret_cast<std::byte*>(response_exp->buffer()), size};
         }};
 
-        auto fetch_task{DETACH_TASK(kphp::rpc::query::response(std::move(q), response_buffer_provider))};
+        auto fetch_task{kphp::coro::detach_task(kphp::rpc::query::response<decltype(response_buffer_provider)>, std::move(q), response_buffer_provider)};
         auto fetch_result{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task))};
         if (!fetch_result) [[unlikely]] {
           response_exp = std::unexpected{fetch_result.error()};

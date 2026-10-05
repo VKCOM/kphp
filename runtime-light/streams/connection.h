@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/event.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -140,7 +141,8 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
     }
 
     const auto finalizer{vk::finally([state] noexcept { state.get()->m_unwatch_event.reset(); })};
-    const auto v{co_await kphp::coro::when_any(DETACH_TASK(unwatch_awaiter(std::move(state))), DETACH_TASK(descriptor_awaiter(descriptor)))};
+    const auto v{
+        co_await kphp::coro::when_any(kphp::coro::detach_task(unwatch_awaiter, std::move(state)), kphp::coro::detach_task(descriptor_awaiter, descriptor))};
     if (std::holds_alternative<std::monostate>(v)) {
       if constexpr (kphp::coro::is_async_function_v<on_abort_handler_type>) {
         co_await std::invoke(std::move(h));
@@ -151,7 +153,7 @@ auto connection::register_abort_handler(on_abort_handler_type&& h) noexcept -> s
   }};
 
   m_shared_state.get()->m_unwatch_event.emplace();
-  if (!kphp::coro::io_scheduler::get().spawn(DETACH_TASK(watcher(m_stream.descriptor(), m_shared_state, std::forward<on_abort_handler_type>(h)))))
+  if (!kphp::coro::io_scheduler::get().spawn(kphp::coro::detach_task(watcher, m_stream.descriptor(), m_shared_state, std::forward<on_abort_handler_type>(h))))
       [[unlikely]] {
     m_shared_state.get()->m_unwatch_event.reset();
     return std::unexpected{k2::errno_ebusy};

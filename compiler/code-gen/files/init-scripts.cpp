@@ -259,7 +259,7 @@ void InitScriptsCpp::compile(CodeGenerator& W) const {
 
   if (G->is_output_mode_k2()) {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument()
-                                  << ", kphp::coro::task<> &run"
+                                  << ", kphp::coro::detached_task<> &run"
                                      ")"
                                   << BEGIN;
   } else {
@@ -276,7 +276,7 @@ void InitScriptsCpp::compile(CodeGenerator& W) const {
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
   if (G->is_output_mode_k2()) {
-    W << "run = DETACH_TASK(" << FunctionName(main_file_id->main_function) << "$run());" << NL;
+    W << "run = kphp::coro::detach_task(" << FunctionName(main_file_id->main_function) << "$run);" << NL;
   } else {
     W << "set_script (" << FunctionName(main_file_id->main_function) << "$run, " << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
   }

@@ -25,6 +25,7 @@
 #include "runtime-light/components/confdata/confdata-proxy/sync-functions.h"
 #include "runtime-light/components/confdata/confdata-proxy/tl.h"
 #include "runtime-light/components/confdata/state/component-state.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/event.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/when-all.h"
@@ -230,7 +231,7 @@ auto InstanceState::erase_if_retired_and_unused(confdata_piece_list::iterator pi
 }
 
 auto InstanceState::init() noexcept -> void {
-  auto main_task{DETACH_TASK(run())};
+  auto main_task{kphp::coro::detach_task(&InstanceState::run, this)};
   // initialize async stack
   auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
   main_task_async_stack_frame.async_stack_root = std::addressof(m_coroutine_instance_state.coroutine_stack_root);
@@ -240,7 +241,8 @@ auto InstanceState::init() noexcept -> void {
 }
 
 auto InstanceState::run() noexcept -> kphp::coro::task<> {
-  co_await kphp::coro::when_all(DETACH_TASK(service_loop()), DETACH_TASK(accept_loop()), DETACH_TASK(metrics_loop())); // all never return
+  co_await kphp::coro::when_all(kphp::coro::detach_task(&InstanceState::service_loop, this), kphp::coro::detach_task(&InstanceState::accept_loop, this),
+                                kphp::coro::detach_task(&InstanceState::metrics_loop, this)); // all never return
   kphp::log::assertion(false);
 }
 
@@ -337,7 +339,7 @@ auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {
     }
 
     kphp::log::debug("accepted a stream: descriptor -> {}", stream->descriptor());
-    if (!m_io_scheduler.start(DETACH_TASK(serve_reader_lease(std::move(*stream))))) [[unlikely]] {
+    if (!m_io_scheduler.start(kphp::coro::detach_task(&InstanceState::serve_reader_lease, this, std::move(*stream)))) [[unlikely]] {
       kphp::log::warning("failed to serve a confdata reader lease");
     }
   }

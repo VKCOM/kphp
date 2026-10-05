@@ -70,7 +70,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   kphp::http::response_state response_state{kphp::http::response_state::not_started};
 
   // The headers_registered_callback function should only be invoked once
-  std::optional<kphp::coro::task<>> headers_registered_callback;
+  std::optional<kphp::coro::detached_task<>> headers_registered_callback;
 
   kphp::stl::unordered_set<kphp::stl::string<kphp::memory::script_allocator>, kphp::memory::script_allocator> multipart_temporary_files;
 
