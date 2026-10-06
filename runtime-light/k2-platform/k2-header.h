@@ -98,6 +98,10 @@ enum UpdateStatus {
   NewDescriptor = 2,
 };
 
+enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3 };
+
+enum BlockPadding : uint32_t { PKCS7 = 0, NO_PADDING = 1 };
+
 enum RpcKind {
   TL_RPC = 0,
 };
@@ -513,6 +517,10 @@ int32_t k2_unlink(const char* path, size_t path_len);
  * `EACCES` => permission denied
  */
 int32_t k2_component_access(size_t name_len, const char* name);
+
+int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* passphrase, size_t passphrase_len, const char* iv,
+                           size_t iv_len, int64_t tag_size, const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data,
+                           size_t encrypted_data_len, char* received_tag, size_t received_tag_len);
 
 /**
  * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.
