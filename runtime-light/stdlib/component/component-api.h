@@ -119,7 +119,8 @@ inline auto f$component_client_send_request(string name, string request) noexcep
 
   auto stream{std::move(*expected_stream)};
   auto request_span{std::span<const char>{request.c_str(), request.size()}};
-  if (auto expected{co_await kphp::forks::id_managed(kphp::component::send_request, stream, std::as_bytes(request_span))}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::forks::id_managed(kphp::component::send_request, std::reference_wrapper{stream}, std::as_bytes(request_span))}; !expected)
+      [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
   co_return make_instance<C$ComponentQuery>(std::move(stream));
@@ -133,7 +134,8 @@ inline auto f$component_client_fetch_response(class_instance<C$ComponentQuery> q
 
   string response{};
   auto callback{kphp::component::read_ext::append(response)};
-  if (auto expected{co_await kphp::forks::id_managed(kphp::component::fetch_response<decltype(callback)>, query.get()->stream(), std::move(callback))};
+  if (auto expected{co_await kphp::forks::id_managed(kphp::component::fetch_response<decltype(callback)>, std::reference_wrapper{query.get()->stream()},
+                                                     std::move(callback))};
       !expected) [[unlikely]] {
     co_return string{};
   }
@@ -158,7 +160,8 @@ inline auto f$component_server_fetch_request(class_instance<C$ComponentQuery> qu
 
   string request{};
   auto callback{kphp::component::read_ext::append(request)};
-  if (auto expected{co_await kphp::forks::id_managed(kphp::component::fetch_request<decltype(callback)>, query.get()->stream(), std::move(callback))};
+  if (auto expected{co_await kphp::forks::id_managed(kphp::component::fetch_request<decltype(callback)>, std::reference_wrapper{query.get()->stream()},
+                                                     std::move(callback))};
       !expected) [[unlikely]] {
     co_return string{};
   }
@@ -173,5 +176,5 @@ inline auto f$component_server_send_response(class_instance<C$ComponentQuery> qu
 
   auto& stream{query.get()->stream()};
   auto response_span{std::span<const char>{response.c_str(), response.size()}};
-  co_await kphp::forks::id_managed(kphp::component::send_response, stream, std::as_bytes(response_span));
+  co_await kphp::forks::id_managed(kphp::component::send_response, std::reference_wrapper{stream}, std::as_bytes(response_span));
 }
