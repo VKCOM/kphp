@@ -248,21 +248,15 @@ auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
   for (;;) {
     k2::SystemTime now{};
     k2::system_time(std::addressof(now));
-    report_events_metrics(now.since_epoch_ns);
-    report_capacity_metrics(now.since_epoch_ns);
-    report_update_failure_metrics(now.since_epoch_ns);
+    report_events_metrics(now);
+    report_capacity_metrics(now);
+    report_update_failure_metrics(now);
     co_await m_io_scheduler.schedule(CONFDATA_METRICS_INTERVAL);
   }
 }
 
-auto InstanceState::report_events_metrics(uint64_t timestamp) noexcept -> void {
-  const auto send{[timestamp](kphp::diagnostics::metric_sender& sender, uint64_t& counter) noexcept {
-    // FIXME: needs to be fixed in platform
-    // Zero counts currently abort the platform's metrics batch flush.
-    if (counter == 0) {
-      return;
-    }
-
+auto InstanceState::report_events_metrics(k2::SystemTime timestamp) noexcept -> void {
+  const auto send{[timestamp](kphp::diagnostics::counter_sender& sender, uint64_t& counter) noexcept {
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
 
     std::ignore = sender.send_count(count, timestamp)
@@ -277,15 +271,9 @@ auto InstanceState::report_events_metrics(uint64_t timestamp) noexcept -> void {
   send(m_events_metrics.m_events[1], m_delete_events_count);
 }
 
-auto InstanceState::report_update_failure_metrics(uint64_t timestamp) noexcept -> void {
+auto InstanceState::report_update_failure_metrics(k2::SystemTime timestamp) noexcept -> void {
   for (size_t index{}; index < m_update_failure_counts.size(); ++index) {
     auto& counter{m_update_failure_counts[index]};
-    // FIXME: needs to be fixed in platform
-    // Zero counts currently abort the platform's metrics batch flush.
-    if (counter == 0) {
-      continue;
-    }
-
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
     std::ignore = m_update_failure_metrics.m_failures[index]
                       .send_count(count, timestamp)
@@ -306,8 +294,8 @@ auto InstanceState::report_update_failure_metrics(uint64_t timestamp) noexcept -
   });
 }
 
-auto InstanceState::report_capacity_metrics(uint64_t timestamp) noexcept -> void {
-  const auto send{[timestamp](kphp::diagnostics::metric_sender& sender, size_t value) noexcept {
+auto InstanceState::report_capacity_metrics(k2::SystemTime timestamp) noexcept -> void {
+  const auto send{[timestamp](kphp::diagnostics::gauge_sender& sender, size_t value) noexcept {
     std::ignore = sender.send_value(static_cast<double>(value), timestamp).or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
       kphp::log::warning("failed to report confdata capacity metrics: error -> {}", error);
       return std::unexpected{error};

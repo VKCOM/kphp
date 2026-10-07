@@ -82,9 +82,9 @@ private:
   auto service_loop() noexcept -> kphp::coro::task<>;
   auto metrics_loop() noexcept -> kphp::coro::task<>;
 
-  auto report_events_metrics(uint64_t timestamp) noexcept -> void;
-  auto report_capacity_metrics(uint64_t timestamp) noexcept -> void;
-  auto report_update_failure_metrics(uint64_t timestamp) noexcept -> void;
+  auto report_events_metrics(k2::SystemTime timestamp) noexcept -> void;
+  auto report_capacity_metrics(k2::SystemTime timestamp) noexcept -> void;
+  auto report_update_failure_metrics(k2::SystemTime timestamp) noexcept -> void;
 
   auto release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void;
   auto serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<>;
