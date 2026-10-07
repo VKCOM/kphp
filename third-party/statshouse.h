@@ -442,7 +442,16 @@ private:
      return 0; // if even more tags added, we do not care, so empty string is good enough.
    return names[i];
  }
- static char * pack_string(char * begin, const char * end, const char * str, size_t len) {
+ // GCC 8 inlines copies of this function into the caller and merges them
+ // (cross-jumping), after which it loses the relation between `len` and the
+ // source object and emits false positive -Warray-bounds for small string
+ // literals. noinline prevents the merge and keeps each call analyzable.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 8
+#define STATSHOUSE_PACK_STRING_NOINLINE __attribute__((noinline))
+#else
+#define STATSHOUSE_PACK_STRING_NOINLINE
+#endif
+ static STATSHOUSE_PACK_STRING_NOINLINE char * pack_string(char * begin, const char * end, const char * str, size_t len) {
    if (STATSHOUSE_UNLIKELY(len > TL_MAX_TINY_STRING_LEN)) {
      if (STATSHOUSE_UNLIKELY(len > TL_BIG_STRING_LEN)) {
        len = TL_BIG_STRING_LEN;
@@ -467,6 +476,7 @@ private:
    }
    return begin;
  }
+#undef STATSHOUSE_PACK_STRING_NOINLINE
  char * pack_header(uint32_t now, size_t min_space, const MetricBuilder & metric,
                    double counter, uint32_t tsUnixSec, size_t fields_mask) {
    if (STATSHOUSE_UNLIKELY(metric.did_not_fit)) {
