@@ -232,4 +232,6 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     web_state.session.reset();
   }
   confdata_instance_state.release();
+
+  coroutine_instance_state.task_allocator.log_stats();
 }

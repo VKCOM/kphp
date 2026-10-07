@@ -57,6 +57,8 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
     backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
   }
 
+  task_allocator.record_frame(size, backend == kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool);
+
   const uint64_t base_u{reinterpret_cast<uint64_t>(base)};
   // The smallest multiple of `align` greater than or equal to requested memory
   const uint64_t aligned_u{((base_u + cb_size) + (align - 1)) & ~(align - 1)};

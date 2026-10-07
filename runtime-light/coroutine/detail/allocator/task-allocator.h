@@ -62,7 +62,22 @@ private:
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
 
+  size_t m_chain_count{0};
+  size_t m_active_chains{0};
+  size_t m_max_active_chains{0};
+  size_t m_max_chain_depth{0};
+  size_t m_sum_max_depth{0};
+  size_t m_max_bytes_per_chain{0};
+  size_t m_sum_max_bytes_per_chain{0};
+  size_t m_frame_count{0};
+  size_t m_max_frame_size{0};
+  size_t m_sum_frame_size{0};
+  size_t m_extra_mem_requests{0};
+  size_t m_coroutine_pool_frames{0};
+
   auto request_extra_memory(size_t requested_size) noexcept -> void {
+    ++m_extra_mem_requests;
+
     size_t extra_mem_size{std::max(m_min_extra_mem_size, requested_size)};
     // Take into account internal layout of header for buffer
     extra_mem_size += sizeof(memory_resource::chunk_pool_resource::buffer_header_size());
@@ -104,10 +119,20 @@ public:
     // We can pass nullptr as buffer and 0 as buffer_size, because init in shared_chunk_pool is noop
     stack.init(nullptr, 0, m_segment_size);
 
+    ++m_active_chains;
+    m_max_active_chains = std::max(m_max_active_chains, m_active_chains);
+
     return stack;
   }
 
   auto release_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>& stack) noexcept -> void {
+    ++m_chain_count;
+    --m_active_chains;
+    m_max_chain_depth = std::max(m_max_chain_depth, stack.max_depth());
+    m_sum_max_depth += stack.max_depth();
+    m_max_bytes_per_chain = std::max(m_max_bytes_per_chain, stack.max_bytes_in_use());
+    m_sum_max_bytes_per_chain += stack.max_bytes_in_use();
+
     m_stack_pool.release(stack);
   }
 
@@ -131,6 +156,19 @@ public:
     return prev;
   }
 
+  auto log_stats() const noexcept -> void {
+    const double avg_max_chain_depth{m_chain_count != 0 ? static_cast<double>(m_sum_max_depth) / static_cast<double>(m_chain_count) : 0.0};
+    const double avg_max_bytes_per_chain{m_chain_count != 0 ? static_cast<double>(m_sum_max_bytes_per_chain) / static_cast<double>(m_chain_count) : 0.0};
+    const double avg_frame_size{m_frame_count != 0 ? static_cast<double>(m_sum_frame_size) / static_cast<double>(m_frame_count) : 0.0};
+
+    kphp::log::info("coro stats: chains={} max_active_chains={} max_chain_depth={} avg_max_chain_depth={} "
+                     "max_bytes_per_chain={} avg_max_bytes_per_chain={} "
+                     "frames={} max_frame_size={} avg_frame_size={} "
+                     "coroutine_pool_frames={} extra_mem_requests={}",
+                     m_chain_count, m_max_active_chains, m_max_chain_depth, avg_max_chain_depth, m_max_bytes_per_chain, avg_max_bytes_per_chain,
+                     m_frame_count, m_max_frame_size, avg_frame_size, m_coroutine_pool_frames, m_extra_mem_requests);
+  }
+
 private:
   auto alloc_script_memory(size_t size) noexcept -> void* {
     void* mem{m_curr_stack->allocate(size)};
@@ -146,6 +184,15 @@ private:
 
   auto free_script_memory(void* mem, size_t size) noexcept -> void {
     m_curr_stack->deallocate(mem, size);
+  }
+
+  auto record_frame(size_t size, bool coroutine_pool_backend) noexcept -> void {
+    ++m_frame_count;
+    m_max_frame_size = std::max(m_max_frame_size, size);
+    m_sum_frame_size += size;
+    if (coroutine_pool_backend) {
+      ++m_coroutine_pool_frames;
+    }
   }
 
   friend inline auto kphp::coro::detail::memory::task::alloc_aligned(size_t size, std::align_val_t al) noexcept -> void*;

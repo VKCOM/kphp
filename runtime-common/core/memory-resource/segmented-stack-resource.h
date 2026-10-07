@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 
@@ -25,6 +26,10 @@ class segmented_stack_resource : private vk::not_copyable {
   segment_list_node* m_head{nullptr};
   std::byte* m_segment_begin{nullptr};
   std::byte* m_segment_curr{nullptr};
+  std::size_t m_depth{0};
+  std::size_t m_max_depth{0};
+  std::size_t m_bytes_in_use{0};
+  std::size_t m_max_bytes_in_use{0};
 
   auto switch_to_new_segment(void* segment) noexcept -> void {
     if (m_head != nullptr) {
@@ -77,6 +82,11 @@ public:
     void* allocated{m_segment_curr};
     m_segment_curr += size;
 
+    ++m_depth;
+    m_max_depth = std::max(m_max_depth, m_depth);
+    m_bytes_in_use += size;
+    m_max_bytes_in_use = std::max(m_max_bytes_in_use, m_bytes_in_use);
+
     return allocated;
   }
 
@@ -94,6 +104,9 @@ public:
 
     php_assert(static_cast<std::byte*>(mem) == m_segment_curr);
 
+    --m_depth;
+    m_bytes_in_use -= size;
+
     if (m_segment_curr == m_segment_begin) {
       switch_to_old_segment();
     }
@@ -109,6 +122,14 @@ public:
 
   static auto segment_header_size() noexcept -> size_t {
     return sizeof(segment_list_node);
+  }
+
+  auto max_depth() const noexcept -> size_t {
+    return m_max_depth;
+  }
+
+  auto max_bytes_in_use() const noexcept -> size_t {
+    return m_max_bytes_in_use;
   }
 };
 
