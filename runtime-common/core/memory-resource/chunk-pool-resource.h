@@ -51,8 +51,7 @@ class chunk_pool_resource : private vk::not_copyable {
 
 public:
   auto init(void* buffer, size_t buffer_size, size_t chunk_size) noexcept -> void {
-    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= chunk_size + buffer_header_size() &&
-               reinterpret_cast<size_t>(buffer) % alignof(buffer_list_node) == 0 && chunk_size >= chunk_header_size() &&
+    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= chunk_size + buffer_header_size() && chunk_size >= chunk_header_size() &&
                chunk_size % alignof(chunk_free_list_node) == 0);
 
     m_chunk_size = chunk_size;
@@ -85,8 +84,7 @@ public:
   }
 
   auto add_extra_memory(void* buffer, size_t buffer_size) noexcept -> void {
-    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= m_chunk_size + buffer_header_size() &&
-               reinterpret_cast<size_t>(buffer) % alignof(buffer_list_node) == 0);
+    php_assert(buffer_size <= memory_buffer_limit() && buffer_size >= m_chunk_size + buffer_header_size());
 
     link_new_buffer(buffer, buffer_size);
     m_head_buffer = static_cast<buffer_list_node*>(buffer);

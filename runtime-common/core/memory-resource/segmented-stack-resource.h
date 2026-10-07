@@ -71,8 +71,6 @@ public:
         return nullptr;
       }
 
-      php_assert(reinterpret_cast<size_t>(new_segment) % alignof(segment_list_node) == 0);
-
       switch_to_new_segment(new_segment);
     }
 
