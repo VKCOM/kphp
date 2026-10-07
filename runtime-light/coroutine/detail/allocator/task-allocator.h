@@ -9,12 +9,19 @@
 #include "common/containers/object-pool.h"
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/memory-resource/chunk-pool-resource.h"
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
-#include "runtime-light/coroutine/detail/allocator/coroutine-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::memory {
+
+namespace task {
+
+inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void*;
+inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -> void;
+
+} // namespace task
 
 struct task_allocator final : private vk::not_copyable {
   struct shared_chunk_pool {
@@ -48,7 +55,7 @@ struct task_allocator final : private vk::not_copyable {
 
 private:
   vk::object_pool<memory_resource::segmented_stack_resource<shared_chunk_pool>,
-                  kphp::coro::detail::memory::coroutine_allocator<memory_resource::segmented_stack_resource<shared_chunk_pool>>>
+                  kphp::memory::script_allocator<memory_resource::segmented_stack_resource<shared_chunk_pool>>>
       m_stack_pool;
   memory_resource::chunk_pool_resource m_chunk_pool;
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
@@ -124,10 +131,8 @@ public:
     return prev;
   }
 
+private:
   auto alloc_script_memory(size_t size) noexcept -> void* {
-    kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_stack != nullptr);
-
     void* mem{m_curr_stack->allocate(size)};
     if (mem == nullptr) [[unlikely]] {
       request_extra_memory(size);
@@ -139,27 +144,12 @@ public:
     return mem;
   }
 
-  auto calloc_script_memory(size_t size) noexcept -> void* {
-    kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_stack != nullptr);
-
-    void* mem{m_curr_stack->allocate0(size)};
-    if (mem == nullptr) [[unlikely]] {
-      request_extra_memory(size);
-      mem = m_curr_stack->allocate0(size);
-
-      kphp::log::assertion(mem != nullptr);
-    }
-
-    return mem;
-  }
-
   auto free_script_memory(void* mem, size_t size) noexcept -> void {
-    kphp::log::assertion(size != 0);
-    kphp::log::assertion(m_curr_stack != nullptr);
-
     m_curr_stack->deallocate(mem, size);
   }
+
+  friend inline auto kphp::coro::detail::memory::task::alloc_aligned(size_t size, std::align_val_t al) noexcept -> void*;
+  friend inline auto kphp::coro::detail::memory::task::free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -> void;
 };
 
 } // namespace kphp::coro::detail::memory
