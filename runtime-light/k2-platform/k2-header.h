@@ -664,6 +664,9 @@ struct K2LabelPair {
  *     cases where the set of series is not known in advance.
  *
  * Contract (shared by all kinds):
+ *   - the metrics API is available from `k2_create_component` onwards;
+ *     calls from image-level entry points (`k2_describe`,
+ *     `k2_create_image`/`k2_init_image`) fail with `EINVAL`;
  *   - buckets are explicit upper boundaries; `buckets_size == 0`
  *     registers a histogram with a default bucket layout;
  *   - descriptors are valid until the component exits; there is no
