@@ -12,6 +12,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/memory-resource/chunk-pool-resource.h"
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::memory {
@@ -58,6 +59,7 @@ private:
                   kphp::memory::script_allocator<memory_resource::segmented_stack_resource<shared_chunk_pool>>>
       m_stack_pool;
   memory_resource::chunk_pool_resource m_chunk_pool;
+  kphp::stl::vector<memory_resource::segmented_stack_resource<shared_chunk_pool>*, kphp::memory::script_allocator> m_free_stacks;
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
@@ -88,9 +90,14 @@ public:
     kphp::log::assertion(buffer != nullptr);
 
     m_chunk_pool.init(buffer, script_mem_size, m_segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
+    m_free_stacks.reserve(stack_pool_chunk_size);
   }
 
   auto free() noexcept -> void {
+    for (auto* stack : m_free_stacks) {
+      m_stack_pool.release(*stack);
+    }
+
     auto* curr_buffer{m_chunk_pool.get_buffer_list_head()};
     while (curr_buffer != nullptr) {
       auto* next_buffer = curr_buffer->next;
@@ -100,15 +107,22 @@ public:
   }
 
   auto acquire_stack() noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>& {
-    auto& stack{m_stack_pool.acquire()};
-    // We can pass nullptr as buffer and 0 as buffer_size, because init in shared_chunk_pool is noop
-    stack.init(nullptr, 0, m_segment_size);
+    if (m_free_stacks.empty()) {
+      auto& stack{m_stack_pool.acquire()};
+      // We can pass nullptr as buffer and 0 as buffer_size, because init in shared_chunk_pool is noop
+      stack.init(nullptr, 0, m_segment_size);
 
-    return stack;
+      return stack;
+    }
+
+    auto* stack{m_free_stacks.back()};
+    m_free_stacks.pop_back();
+
+    return *stack;
   }
 
   auto release_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>& stack) noexcept -> void {
-    m_stack_pool.release(stack);
+    m_free_stacks.push_back(std::addressof(stack));
   }
 
   auto segment_size() const noexcept -> size_t {
