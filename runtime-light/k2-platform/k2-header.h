@@ -28,7 +28,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 16
+#define K2_PLATFORM_HEADER_H_VERSION 17
 
 // Always check that enum value is a valid value!
 
@@ -631,30 +631,80 @@ void* k2_mmap(uint64_t* md, void* addr, size_t len, int32_t prot, int32_t flags,
 int32_t k2_madvise(void* addr, size_t length, int32_t advise);
 
 /**
- * Writes a pre-serialized metrics to the specified monitoring system.
+ * A byte string: a pointer and a size.
+ */
+struct K2StringView {
+  const char* ptr;
+  size_t size;
+};
+
+/// A `(key, value)` label pair of a metric series.
+struct K2LabelPair {
+  struct K2StringView key;
+  struct K2StringView value;
+};
+
+/**
+ * Metrics: a component registers each metric once (at initialization) and
+ * then updates it through descriptors.
  *
- * The buffer must contain a metric serialized according to the following format
- * (TL serialization, native byte order):
- *   <timestamp:u64><metric name:tl string><value format><tags count:u32><tag1><tag2>...
- *   tag := <name:tl string><value:tl string>
+ * The registration fixes the metric name, its kind and its label schema
+ * (the set of label KEYS; values are supplied per series or per update).
+ * There is one registration function per kind; only the histogram
+ * registration carries kind options (explicit bucket boundaries).
  *
- * value format:
- *   <`VALUE_MAGIC`:u32><f64>                              - single double value
- *   <`VALUES_ARRAY_MAGIC`:u32><len:u32><f64><f64>...      - array of double values
- *   <`COUNT_MAGIC`:u32><u32>                              - count value
- *   <`INC_MAGIC`:u32>                                     - counter increment
+ * Two update styles:
+ *   - bound: `k2_metrics_bind` fixes a series (a set of `(key, value)`
+ *     label pairs) and returns a series descriptor; the
+ *     `k2_metrics_<kind>_*` functions then take just the series
+ *     descriptor, the value and a timestamp — the hot path without any
+ *     per-write string work;
+ *   - dynamic: the `k2_metrics_<kind>_*_with_labels` functions take the
+ *     metric descriptor plus the `(key, value)` pairs of the series, for
+ *     cases where the set of series is not known in advance.
  *
- * tl string is the standard TL string encoding.
+ * Contract (shared by all kinds):
+ *   - the metrics API is available from `k2_create_component` onwards;
+ *     calls from image-level entry points (`k2_describe`,
+ *     `k2_create_image`/`k2_init_image`) fail with `EINVAL`;
+ *   - buckets are explicit upper boundaries; `buckets_size == 0`
+ *     registers a histogram with a default bucket layout;
+ *   - descriptors are valid until the component exits; there is no
+ *     unregistration; registering the same name twice within one
+ *     component is an error;
+ *   - `timestamp_ns` is nanoseconds since epoch; `0` means "now" (the
+ *     k2-node substitutes the current time);
+ *   - a kind mismatch (e.g. `k2_metrics_gauge_set` on a counter series)
+ *     is rejected with `EINVAL`, as is an unknown descriptor.
  *
- * Multiple metrics can be sent in a single call by concatenating them sequentially:
- *   <metric1><metric2>...
- * Each metric is serialized independently using the format described above.
- *
- * @param `buf` A pointer to the serialized metric(s) data.
- * @param `buf_len` The length of the serialized metric(s) data in bytes.
+ * @param `md`/`sd` Out-pointers receiving the descriptor (0 on failure).
+ * @param `name_ptr` A pointer to the metric name (valid UTF-8).
+ * @param `name_size` The size of the metric name.
+ * @param `labels_ptr` (registration) A pointer to an array of label
+ * names (keys only, the metric's label schema).
+ * @param `labels_size` (registration) The size of the array of label
+ * names.
+ * @param `buckets_ptr` A pointer to an array of buckets.
+ * @param `buckets_size` The size of the array of buckets.
+ * @param `label_pairs_ptr` (bind/updates) A pointer to an array of the
+ * `(key, value)` label pairs of the series.
+ * @param `label_pairs_size` (bind/updates) The size of the array of
+ * label pairs.
  * @return returns 0 if everything is fine, otherwise error code
  */
-int32_t k2_write_metrics(const void* buf, size_t buf_len);
+int32_t k2_metrics_register_counter(uint64_t* md, const char* name_ptr, size_t name_size, const struct K2StringView* labels_ptr, size_t labels_size);
+int32_t k2_metrics_register_gauge(uint64_t* md, const char* name_ptr, size_t name_size, const struct K2StringView* labels_ptr, size_t labels_size);
+int32_t k2_metrics_register_histogram(uint64_t* md, const char* name_ptr, size_t name_size, const double* buckets_ptr, size_t buckets_size,
+                                      const struct K2StringView* labels_ptr, size_t labels_size);
+int32_t k2_metrics_bind(uint64_t* sd, uint64_t md, const struct K2LabelPair* label_pairs_ptr, size_t label_pairs_size);
+int32_t k2_metrics_counter_add(uint64_t sd, double value, uint64_t timestamp_ns);
+int32_t k2_metrics_gauge_set(uint64_t sd, double value, uint64_t timestamp_ns);
+int32_t k2_metrics_histogram_observe(uint64_t sd, double value, uint64_t timestamp_ns);
+int32_t k2_metrics_counter_add_with_labels(uint64_t md, double value, const struct K2LabelPair* label_pairs_ptr, size_t label_pairs_size,
+                                           uint64_t timestamp_ns);
+int32_t k2_metrics_gauge_set_with_labels(uint64_t md, double value, const struct K2LabelPair* label_pairs_ptr, size_t label_pairs_size, uint64_t timestamp_ns);
+int32_t k2_metrics_histogram_observe_with_labels(uint64_t md, double value, const struct K2LabelPair* label_pairs_ptr, size_t label_pairs_size,
+                                                 uint64_t timestamp_ns);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
