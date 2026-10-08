@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <bit>
 
 #include "common/containers/object-pool.h"
@@ -12,6 +13,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/memory-resource/chunk-pool-resource.h"
 #include "runtime-common/core/memory-resource/segmented-stack-resource.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::memory {
@@ -59,6 +61,7 @@ private:
       m_stack_pool;
   memory_resource::chunk_pool_resource m_chunk_pool;
   memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
+  kphp::stl::vector<memory_resource::segmented_stack_resource<shared_chunk_pool>*, kphp::memory::script_allocator> m_active_stacks;
   size_t m_segment_size{0};
   size_t m_min_extra_mem_size{0};
 
@@ -121,6 +124,7 @@ public:
 
     ++m_active_chains;
     m_max_active_chains = std::max(m_max_active_chains, m_active_chains);
+    m_active_stacks.push_back(std::addressof(stack));
 
     return stack;
   }
@@ -132,6 +136,11 @@ public:
     m_sum_max_depth += stack.max_depth();
     m_max_bytes_per_chain = std::max(m_max_bytes_per_chain, stack.max_bytes_in_use());
     m_sum_max_bytes_per_chain += stack.max_bytes_in_use();
+
+    auto it{std::ranges::find(m_active_stacks, std::addressof(stack))};
+    kphp::log::assertion(it != m_active_stacks.end());
+    *it = m_active_stacks.back();
+    m_active_stacks.pop_back();
 
     m_stack_pool.release(stack);
   }
@@ -157,15 +166,32 @@ public:
   }
 
   auto log_stats() const noexcept -> void {
-    const double avg_max_chain_depth{m_chain_count != 0 ? static_cast<double>(m_sum_max_depth) / static_cast<double>(m_chain_count) : 0.0};
-    const double avg_max_bytes_per_chain{m_chain_count != 0 ? static_cast<double>(m_sum_max_bytes_per_chain) / static_cast<double>(m_chain_count) : 0.0};
+    size_t chain_count{m_chain_count};
+    size_t max_chain_depth{m_max_chain_depth};
+    size_t sum_max_depth{m_sum_max_depth};
+    size_t max_bytes_per_chain{m_max_bytes_per_chain};
+    size_t sum_max_bytes_per_chain{m_sum_max_bytes_per_chain};
+
+    // Chains still open at this point (the one running log_stats() itself, plus any
+    // genuinely dangling background forks) never went through release_stack(), so their
+    // stats are folded in here using their live (so far) peak values.
+    for (auto* stack : m_active_stacks) {
+      ++chain_count;
+      max_chain_depth = std::max(max_chain_depth, stack->max_depth());
+      sum_max_depth += stack->max_depth();
+      max_bytes_per_chain = std::max(max_bytes_per_chain, stack->max_bytes_in_use());
+      sum_max_bytes_per_chain += stack->max_bytes_in_use();
+    }
+
+    const double avg_max_chain_depth{chain_count != 0 ? static_cast<double>(sum_max_depth) / static_cast<double>(chain_count) : 0.0};
+    const double avg_max_bytes_per_chain{chain_count != 0 ? static_cast<double>(sum_max_bytes_per_chain) / static_cast<double>(chain_count) : 0.0};
     const double avg_frame_size{m_frame_count != 0 ? static_cast<double>(m_sum_frame_size) / static_cast<double>(m_frame_count) : 0.0};
 
     kphp::log::info("coro stats: chains={} max_active_chains={} max_chain_depth={} avg_max_chain_depth={} "
                      "max_bytes_per_chain={} avg_max_bytes_per_chain={} "
                      "frames={} max_frame_size={} avg_frame_size={} "
                      "coroutine_pool_frames={} extra_mem_requests={}",
-                     m_chain_count, m_max_active_chains, m_max_chain_depth, avg_max_chain_depth, m_max_bytes_per_chain, avg_max_bytes_per_chain,
+                     chain_count, m_max_active_chains, max_chain_depth, avg_max_chain_depth, max_bytes_per_chain, avg_max_bytes_per_chain,
                      m_frame_count, m_max_frame_size, avg_frame_size, m_coroutine_pool_frames, m_extra_mem_requests);
   }
 
