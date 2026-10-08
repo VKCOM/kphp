@@ -104,7 +104,9 @@ auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> voi
   extra_mem_size = std::bit_ceil(extra_mem_size);
 
   auto* extra_mem{kphp::memory::platform::alloc(extra_mem_size)};
-  kphp::log::assertion(extra_mem != nullptr);
+  if (extra_mem == nullptr) [[unlikely]] {
+    kphp::log::error("pool_allocator: failed to get extra memory from platform");
+  }
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
 
