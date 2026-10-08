@@ -666,9 +666,9 @@ struct K2LabelPair {
  * Contract (shared by all kinds):
  *   - buckets are explicit upper boundaries; `buckets_size == 0`
  *     registers a histogram with a default bucket layout;
- *   - descriptors are valid until the instance exits; there is no
+ *   - descriptors are valid until the component exits; there is no
  *     unregistration; registering the same name twice within one
- *     instance is an error;
+ *     component is an error;
  *   - `timestamp_ns` is nanoseconds since epoch; `0` means "now" (the
  *     k2-node substitutes the current time);
  *   - a kind mismatch (e.g. `k2_metrics_gauge_set` on a counter series)

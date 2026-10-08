@@ -12,7 +12,8 @@
 
 namespace kphp::confdata::metrics {
 
-// Each instance constructs these builders once, after its script allocator is ready.
+// The component constructs these once, at its initialization: the metrics are
+// component-scoped, every instance writes the same pre-bound series.
 struct capacity final {
   // The families are declared before the sender arrays: the senders bind their series on initialization.
   kphp::diagnostics::gauge_metric m_memory_metric{kphp::diagnostics::gauge_metric::metric("k2_kphp_confdata_memory", {"kind"})};

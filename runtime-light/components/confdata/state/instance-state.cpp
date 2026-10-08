@@ -256,7 +256,7 @@ auto InstanceState::metrics_loop() noexcept -> kphp::coro::task<> {
 }
 
 auto InstanceState::report_events_metrics(k2::SystemTime timestamp) noexcept -> void {
-  const auto send{[timestamp](kphp::diagnostics::counter_sender& sender, uint64_t& counter) noexcept {
+  const auto send{[timestamp](const kphp::diagnostics::counter_sender& sender, uint64_t& counter) noexcept {
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
 
     std::ignore = sender.send_count(count, timestamp)
@@ -267,15 +267,15 @@ auto InstanceState::report_events_metrics(k2::SystemTime timestamp) noexcept -> 
                       });
   }};
 
-  send(m_events_metrics.m_events[0], m_update_events_count);
-  send(m_events_metrics.m_events[1], m_delete_events_count);
+  send(m_component_state.m_events_metrics.m_events[0], m_update_events_count);
+  send(m_component_state.m_events_metrics.m_events[1], m_delete_events_count);
 }
 
 auto InstanceState::report_update_failure_metrics(k2::SystemTime timestamp) noexcept -> void {
   for (size_t index{}; index < m_update_failure_counts.size(); ++index) {
     auto& counter{m_update_failure_counts[index]};
     const auto count{static_cast<uint32_t>(std::min<uint64_t>(counter, std::numeric_limits<uint32_t>::max()))};
-    std::ignore = m_update_failure_metrics.m_failures[index]
+    std::ignore = m_component_state.m_update_failure_metrics.m_failures[index]
                       .send_count(count, timestamp)
                       .transform([&counter, count] noexcept { counter -= count; })
                       .or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
@@ -285,7 +285,7 @@ auto InstanceState::report_update_failure_metrics(k2::SystemTime timestamp) noex
   }
 
   std::ignore = m_update_failure_old_offset.transform([this, timestamp](auto old_offset) noexcept {
-    return m_update_failure_metrics.m_old_offset.send_value(static_cast<double>(old_offset), timestamp)
+    return m_component_state.m_update_failure_metrics.m_old_offset.send_value(static_cast<double>(old_offset), timestamp)
         .transform([this] noexcept { m_update_failure_old_offset.reset(); })
         .or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
           kphp::log::warning("failed to report 'old_offset' confdata update failure: error -> {}", error);
@@ -295,7 +295,7 @@ auto InstanceState::report_update_failure_metrics(k2::SystemTime timestamp) noex
 }
 
 auto InstanceState::report_capacity_metrics(k2::SystemTime timestamp) noexcept -> void {
-  const auto send{[timestamp](kphp::diagnostics::gauge_sender& sender, size_t value) noexcept {
+  const auto send{[timestamp](const kphp::diagnostics::gauge_sender& sender, size_t value) noexcept {
     std::ignore = sender.send_value(static_cast<double>(value), timestamp).or_else([](int32_t error) noexcept -> std::expected<void, int32_t> {
       kphp::log::warning("failed to report confdata capacity metrics: error -> {}", error);
       return std::unexpected{error};
@@ -305,16 +305,16 @@ auto InstanceState::report_capacity_metrics(k2::SystemTime timestamp) noexcept -
   if (!m_confdata_pieces.empty()) {
     auto& current{m_confdata_pieces.back().storage()};
     const auto usage{current.memory_usage()};
-    send(m_capacity_metrics.m_memory[0], usage.m_capacity);
-    send(m_capacity_metrics.m_memory[1], usage.m_allocated);
-    send(m_capacity_metrics.m_memory[2], usage.m_used);
-    send(m_capacity_metrics.m_memory[3], usage.m_oom_threshold);
+    send(m_component_state.m_capacity_metrics.m_memory[0], usage.m_capacity);
+    send(m_component_state.m_capacity_metrics.m_memory[1], usage.m_allocated);
+    send(m_component_state.m_capacity_metrics.m_memory[2], usage.m_used);
+    send(m_component_state.m_capacity_metrics.m_memory[3], usage.m_oom_threshold);
   }
 
   // These are tracked logical extents, including headers, not RSS or proof of K2 allocation release.
   const size_t current_count{m_confdata_pieces.empty() ? 0U : 1U};
-  send(m_capacity_metrics.m_pieces[0], current_count);
-  send(m_capacity_metrics.m_pieces[1], m_confdata_pieces.size() - current_count);
+  send(m_component_state.m_capacity_metrics.m_pieces[0], current_count);
+  send(m_component_state.m_capacity_metrics.m_pieces[1], m_confdata_pieces.size() - current_count);
 }
 
 auto InstanceState::accept_loop() noexcept -> kphp::coro::task<> {

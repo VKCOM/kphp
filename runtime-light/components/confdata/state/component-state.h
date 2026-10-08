@@ -12,6 +12,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/components/confdata/metrics.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -48,6 +49,12 @@ public:
   kphp::stl::vector<std::string_view, kphp::memory::script_allocator> m_predefined_wildcards;
   size_t m_initial_instance_memory_size{DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE};
   size_t m_min_instance_extra_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE};
+
+  // The metric families are registered and their series are bound here, at component
+  // initialization: the metrics are component-scoped, all instances write the same series.
+  kphp::confdata::metrics::events m_events_metrics;
+  kphp::confdata::metrics::capacity m_capacity_metrics;
+  kphp::confdata::metrics::update_failures m_update_failure_metrics;
 
   // === METHODS ==================================================================================
   ComponentState() noexcept;
