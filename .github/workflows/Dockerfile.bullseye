@@ -3,12 +3,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 COPY tests/python/requirements.txt /tmp/
 
-RUN apt-get update && \
+RUN echo "deb [check-valid-until=no] http://archive.debian.org/debian bullseye main" >> /etc/apt/sources.list && \
+    echo "deb [check-valid-until=no] http://archive.debian.org/debian-security bullseye-security main" >> /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
-    echo "deb https://archive.debian.org/debian bullseye-backports main" >> /etc/apt/sources.list && \
+    echo "deb [check-valid-until=no] https://archive.debian.org/debian bullseye-backports main" >> /etc/apt/sources.list && \
     wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
     echo "deb https://packages.sury.org/php/ bullseye main" >> /etc/apt/sources.list && \
-    echo "deb https://apt-archive.postgresql.org/pub/repos/apt bullseye-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
+    echo "deb [check-valid-until=no] https://apt-archive.postgresql.org/pub/repos/apt bullseye-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
     wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     wget -qO - https://repo.mysql.com/RPM-GPG-KEY-mysql-2025 | apt-key add - && \
     echo "deb http://repo.mysql.com/apt/debian bullseye mysql-8.0" > /etc/apt/sources.list.d/mysql.list && \
