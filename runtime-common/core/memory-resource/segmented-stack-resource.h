@@ -43,13 +43,8 @@ class segmented_stack_resource : private vk::not_copyable {
     m_head = m_head->m_next;
     m_segment_pool.deallocate(top_segment);
 
-    if (m_head != nullptr) {
-      m_segment_begin = reinterpret_cast<std::byte*>(m_head) + segment_header_size();
-      m_segment_curr = m_head->m_curr;
-    } else {
-      m_segment_begin = nullptr;
-      m_segment_curr = nullptr;
-    }
+    m_segment_begin = reinterpret_cast<std::byte*>(m_head) + segment_header_size();
+    m_segment_curr = m_head->m_curr;
   }
 
 public:
@@ -58,6 +53,13 @@ public:
 
     m_segment_size = segment_size;
     m_segment_pool.init(buffer, buffer_size, m_segment_size + segment_header_size());
+
+    void* segment{m_segment_pool.allocate()};
+    if (unlikely(segment == nullptr)) {
+      return;
+    }
+
+    switch_to_new_segment(segment);
   }
 
   auto allocate(size_t size) noexcept -> void* {
@@ -65,7 +67,7 @@ public:
       return nullptr;
     }
 
-    if (m_head == nullptr || size > m_segment_size - static_cast<size_t>(m_segment_curr - m_segment_begin)) {
+    if (unlikely(m_head == nullptr || size > m_segment_size - static_cast<size_t>(m_segment_curr - m_segment_begin))) {
       void* new_segment{m_segment_pool.allocate()};
       if (unlikely(new_segment == nullptr)) {
         return nullptr;
@@ -94,7 +96,7 @@ public:
 
     php_assert(static_cast<std::byte*>(mem) == m_segment_curr);
 
-    if (m_segment_curr == m_segment_begin) {
+    if (m_segment_curr == m_segment_begin && m_head->m_next != nullptr) {
       switch_to_old_segment();
     }
   }
