@@ -37,29 +37,33 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
         return std::nullopt;
       })};
 
-  const size_t tagged_entries_size{
-      static_cast<size_t>((trace.has_value() ? 1 : 0) + opt_tags.transform([](contextual_tags& tags) noexcept { return tags.size(); }).value_or(0))};
-  kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
-  tagged_entries.reserve(tagged_entries_size);
+  size_t tagged_entries_size{};
+  static constexpr size_t TAGGED_ENTRIES_BUFFER_SIZE = 8UZ;
+  std::array<k2::LogTaggedEntry, TAGGED_ENTRIES_BUFFER_SIZE> tagged_entries_buffer; // NOLINT
 
-  opt_tags.transform([&tagged_entries](contextual_tags& tags) noexcept {
+  opt_tags.transform([&tagged_entries_buffer, &tagged_entries_size](contextual_tags& tags) noexcept {
     for (const auto& [key, value] : tags.values()) {
-      tagged_entries.push_back(k2::LogTaggedEntry{.key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()});
+      if (tagged_entries_size == TAGGED_ENTRIES_BUFFER_SIZE) {
+        break;
+      }
+
+      tagged_entries_buffer[tagged_entries_size++] =
+          k2::LogTaggedEntry{.key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()};
     }
     return 0;
   });
-  if (trace.has_value()) {
+  if (trace.has_value() && tagged_entries_size != TAGGED_ENTRIES_BUFFER_SIZE) {
     static constexpr std::string_view BACKTRACE_KEY = "trace";
     static constexpr size_t BACKTRACE_BUFFER_SIZE = 1024UZ * 4UZ;
     std::array<char, BACKTRACE_BUFFER_SIZE> backtrace_buffer; // NOLINT
     size_t backtrace_size{impl::resolve_log_trace(backtrace_buffer, *trace)};
-    tagged_entries.push_back(
-        k2::LogTaggedEntry{.key = BACKTRACE_KEY.data(), .value = backtrace_buffer.data(), .key_len = BACKTRACE_KEY.size(), .value_len = backtrace_size});
-    k2::log(std::to_underlying(level), message, tagged_entries);
+    tagged_entries_buffer[tagged_entries_size++] =
+        k2::LogTaggedEntry{.key = BACKTRACE_KEY.data(), .value = backtrace_buffer.data(), .key_len = BACKTRACE_KEY.size(), .value_len = backtrace_size};
+    k2::log(std::to_underlying(level), message, {tagged_entries_buffer.data(), tagged_entries_size});
     return;
   }
 
-  k2::log(std::to_underlying(level), message, tagged_entries);
+  k2::log(std::to_underlying(level), message, {tagged_entries_buffer.data(), tagged_entries_size});
 }
 
 } // namespace impl
