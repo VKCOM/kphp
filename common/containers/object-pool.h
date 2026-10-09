@@ -19,33 +19,33 @@ class object_pool : private vk::not_copyable, private std::allocator_traits<Allo
   using byte_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<std::byte>;
   using byte_allocator_traits = std::allocator_traits<byte_allocator>;
 
-  union object_pool_slot {
-    object_pool_slot* m_next;
+  union obj_slot {
+    obj_slot* m_next;
     T m_obj;
   };
 
-  struct alignas(alignof(object_pool_slot)) object_pool_chunk_header {
-    object_pool_chunk_header* m_next{nullptr};
+  struct alignas(alignof(obj_slot)) chunk_header {
+    chunk_header* m_next{nullptr};
   };
 
   std::size_t m_chunk_size{0};
   std::size_t m_chunk_byte_size{0};
-  object_pool_chunk_header* m_head_chunk{nullptr};
-  object_pool_slot* m_head_free_slot{nullptr};
+  chunk_header* m_head_chunk{nullptr};
+  obj_slot* m_head_free_slot{nullptr};
 
   auto get_byte_allocator_ref() noexcept -> byte_allocator& {
     return *this;
   }
 
-  static auto slots_of(object_pool_chunk_header* chunk) noexcept -> object_pool_slot* {
-    return reinterpret_cast<object_pool_slot*>(reinterpret_cast<std::byte*>(chunk) + sizeof(object_pool_chunk_header));
+  static auto slots_of(chunk_header* chunk) noexcept -> obj_slot* {
+    return reinterpret_cast<obj_slot*>(reinterpret_cast<std::byte*>(chunk) + sizeof(chunk_header));
   }
 
   auto link_new_chunk() noexcept -> void {
     std::byte* mem{byte_allocator_traits::allocate(get_byte_allocator_ref(), m_chunk_byte_size)};
-    m_head_chunk = new (mem) object_pool_chunk_header{m_head_chunk};
+    m_head_chunk = new (mem) chunk_header{m_head_chunk};
 
-    object_pool_slot* slots{slots_of(m_head_chunk)};
+    obj_slot* slots{slots_of(m_head_chunk)};
     slots[0].m_next = nullptr;
     for (size_t i = 1; i < m_chunk_size; ++i) {
       slots[i].m_next = std::addressof(slots[i - 1]);
@@ -57,7 +57,7 @@ class object_pool : private vk::not_copyable, private std::allocator_traits<Allo
 public:
   explicit object_pool(std::size_t chunk_size) noexcept
       : m_chunk_size{chunk_size},
-        m_chunk_byte_size{sizeof(object_pool_chunk_header) + chunk_size * sizeof(object_pool_slot)} {
+        m_chunk_byte_size{sizeof(chunk_header) + chunk_size * sizeof(obj_slot)} {
     assert(chunk_size > 0);
 
     link_new_chunk();
@@ -66,7 +66,7 @@ public:
   explicit object_pool(std::size_t chunk_size, const Allocator& allocator) noexcept
       : byte_allocator(allocator),
         m_chunk_size{chunk_size},
-        m_chunk_byte_size{sizeof(object_pool_chunk_header) + chunk_size * sizeof(object_pool_slot)} {
+        m_chunk_byte_size{sizeof(chunk_header) + chunk_size * sizeof(obj_slot)} {
     assert(chunk_size > 0);
 
     link_new_chunk();
@@ -89,7 +89,7 @@ public:
       link_new_chunk();
     }
 
-    object_pool_slot* free_slot{m_head_free_slot};
+    obj_slot* free_slot{m_head_free_slot};
     m_head_free_slot = m_head_free_slot->m_next;
 
     byte_allocator_traits::construct(get_byte_allocator_ref(), std::addressof(free_slot->m_obj), std::forward<Args>(args)...);
@@ -100,7 +100,7 @@ public:
   auto release(T& obj) noexcept -> void {
     byte_allocator_traits::destroy(get_byte_allocator_ref(), std::addressof(obj));
 
-    auto* slot{reinterpret_cast<object_pool_slot*>(std::addressof(obj))};
+    auto* slot{reinterpret_cast<obj_slot*>(std::addressof(obj))};
     slot->m_next = m_head_free_slot;
     m_head_free_slot = slot;
   }
