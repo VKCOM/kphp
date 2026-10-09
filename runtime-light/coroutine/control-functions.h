@@ -9,7 +9,6 @@
 
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
-#include "runtime-light/coroutine/task-allocator-guard.h"
 
 namespace kphp::coro {
 
