@@ -322,21 +322,22 @@ inline std::expected<void, int32_t> madvise(void* addr, size_t length, int32_t a
   return {};
 }
 
-using StringView = K2StringView;
-using LabelPair = K2LabelPair;
+using MetricLabelName = MetricLabelName;
+using MetricLabelValue = MetricLabelValue;
+using MetricLabel = MetricLabel;
 
-inline std::expected<k2::descriptor, int32_t> metrics_register_counter(std::string_view name, std::span<const StringView> label_keys) noexcept {
+inline std::expected<k2::descriptor, int32_t> metrics_register_counter(std::string_view name, std::span<const MetricLabelName> label_names) noexcept {
   k2::descriptor md{k2::INVALID_PLATFORM_DESCRIPTOR};
-  if (auto error_code{k2_metrics_register_counter(&md, name.data(), name.size(), label_keys.data(), label_keys.size())}; error_code != k2::errno_ok)
+  if (auto error_code{k2_metrics_register_counter(&md, name.data(), name.size(), label_names.data(), label_names.size())}; error_code != k2::errno_ok)
       [[unlikely]] {
     return std::unexpected{error_code};
   }
   return md;
 }
 
-inline std::expected<k2::descriptor, int32_t> metrics_register_gauge(std::string_view name, std::span<const StringView> label_keys) noexcept {
+inline std::expected<k2::descriptor, int32_t> metrics_register_gauge(std::string_view name, std::span<const MetricLabelName> label_names) noexcept {
   k2::descriptor md{k2::INVALID_PLATFORM_DESCRIPTOR};
-  if (auto error_code{k2_metrics_register_gauge(&md, name.data(), name.size(), label_keys.data(), label_keys.size())}; error_code != k2::errno_ok)
+  if (auto error_code{k2_metrics_register_gauge(&md, name.data(), name.size(), label_names.data(), label_names.size())}; error_code != k2::errno_ok)
       [[unlikely]] {
     return std::unexpected{error_code};
   }
@@ -344,18 +345,18 @@ inline std::expected<k2::descriptor, int32_t> metrics_register_gauge(std::string
 }
 
 inline std::expected<k2::descriptor, int32_t> metrics_register_histogram(std::string_view name, std::span<const double> buckets,
-                                                                         std::span<const StringView> label_keys) noexcept {
+                                                                         std::span<const MetricLabelName> label_names) noexcept {
   k2::descriptor md{k2::INVALID_PLATFORM_DESCRIPTOR};
-  if (auto error_code{k2_metrics_register_histogram(&md, name.data(), name.size(), buckets.data(), buckets.size(), label_keys.data(), label_keys.size())};
+  if (auto error_code{k2_metrics_register_histogram(&md, name.data(), name.size(), buckets.data(), buckets.size(), label_names.data(), label_names.size())};
       error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return md;
 }
 
-inline std::expected<k2::descriptor, int32_t> metrics_bind(k2::descriptor md, std::span<const LabelPair> label_pairs) noexcept {
+inline std::expected<k2::descriptor, int32_t> metrics_bind(k2::descriptor md, std::span<const MetricLabel> labels) noexcept {
   k2::descriptor sd{k2::INVALID_PLATFORM_DESCRIPTOR};
-  if (auto error_code{k2_metrics_bind(&sd, md, label_pairs.data(), label_pairs.size())}; error_code != k2::errno_ok) [[unlikely]] {
+  if (auto error_code{k2_metrics_bind(&sd, md, labels.data(), labels.size())}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return sd;
@@ -382,27 +383,25 @@ inline std::expected<void, int32_t> metrics_histogram_observe(k2::descriptor sd,
   return {};
 }
 
-inline std::expected<void, int32_t> metrics_counter_add_with_labels(k2::descriptor md, double value, std::span<const LabelPair> label_pairs,
+inline std::expected<void, int32_t> metrics_counter_add_with_labels(k2::descriptor md, double value, std::span<const MetricLabel> labels,
                                                                     uint64_t timestamp_ns) noexcept {
-  if (auto error_code{k2_metrics_counter_add_with_labels(md, value, label_pairs.data(), label_pairs.size(), timestamp_ns)}; error_code != k2::errno_ok)
-      [[unlikely]] {
+  if (auto error_code{k2_metrics_counter_add_with_labels(md, value, labels.data(), labels.size(), timestamp_ns)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};
 }
 
-inline std::expected<void, int32_t> metrics_gauge_set_with_labels(k2::descriptor md, double value, std::span<const LabelPair> label_pairs,
+inline std::expected<void, int32_t> metrics_gauge_set_with_labels(k2::descriptor md, double value, std::span<const MetricLabel> labels,
                                                                   uint64_t timestamp_ns) noexcept {
-  if (auto error_code{k2_metrics_gauge_set_with_labels(md, value, label_pairs.data(), label_pairs.size(), timestamp_ns)}; error_code != k2::errno_ok)
-      [[unlikely]] {
+  if (auto error_code{k2_metrics_gauge_set_with_labels(md, value, labels.data(), labels.size(), timestamp_ns)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   return {};
 }
 
-inline std::expected<void, int32_t> metrics_histogram_observe_with_labels(k2::descriptor md, double value, std::span<const LabelPair> label_pairs,
+inline std::expected<void, int32_t> metrics_histogram_observe_with_labels(k2::descriptor md, double value, std::span<const MetricLabel> labels,
                                                                           uint64_t timestamp_ns) noexcept {
-  if (auto error_code{k2_metrics_histogram_observe_with_labels(md, value, label_pairs.data(), label_pairs.size(), timestamp_ns)}; error_code != k2::errno_ok)
+  if (auto error_code{k2_metrics_histogram_observe_with_labels(md, value, labels.data(), labels.size(), timestamp_ns)}; error_code != k2::errno_ok)
       [[unlikely]] {
     return std::unexpected{error_code};
   }
