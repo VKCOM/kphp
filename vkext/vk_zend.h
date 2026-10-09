@@ -232,16 +232,18 @@ static zend_always_inline void vk_zend_call_known_instance_method(zval *object,
   zend_object* zobj = Z_OBJ_P(object);
   zend_string* method_name = zend_string_init(name, name_len, 0);
   zend_function* fun = Z_OBJ_HANDLER_P(object, get_method)(&zobj, method_name, 0);
-  zend_string_release(method_name);
   if (!fun) {
+    zend_string_release(method_name);
     return; // retval stays UNDEF
   }
 #if PHP_MAJOR_VERSION >= 8
+  zend_string_release(method_name);
   zend_call_known_instance_method(fun, zobj, retval_ptr, param_count, params);
 #else
   zval method_name_zval;
   ZVAL_STR(&method_name_zval, method_name);
   call_user_function(NULL, object, &method_name_zval, retval_ptr, param_count, params);
+  zend_string_release(method_name);
 #endif
 }
 
