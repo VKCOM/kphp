@@ -15,6 +15,7 @@
 #include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -169,7 +170,7 @@ struct task {
 
   ~task() {
     if (m_coro) {
-      kphp::coro::destroy(m_coro, kphp::coro::detail::memory::task_allocator::get());
+      m_coro.destroy();
     }
   }
 

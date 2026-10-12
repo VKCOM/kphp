@@ -123,7 +123,8 @@ public:
 
   ~detached_task() {
     if (m_coro) {
-      kphp::coro::destroy_with_stack(m_coro, m_task_allocator, m_stack);
+      m_task_allocator.set_stack(m_stack);
+      m_coro.destroy();
     }
   }
 
