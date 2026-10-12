@@ -10,8 +10,9 @@
 #include <utility>
 
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
-#include "runtime-light/coroutine/task-allocator-guard.h"
+#include "runtime-light/coroutine/task-allocator-scope.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -88,7 +89,7 @@ public:
 
 template<typename F, typename... Args>
 auto detach_task(F&& f, Args&&... args) noexcept {
-  auto guard{kphp::coro::task_allocator_guard{}};
+  auto scope{kphp::coro::task_allocator_scope{nullptr}};
   return kphp::coro::detached_task<typename kphp::coro::detail::async_function_return_type<F, Args...>::type>{
       std::invoke(std::forward<F>(f), std::forward<Args>(args)...)};
 }
@@ -122,19 +123,17 @@ public:
 
   ~detached_task() {
     if (m_coro) {
-      auto* prev_stack{m_task_allocator.exchange_stack(m_stack)};
-      m_coro.destroy();
-      m_task_allocator.set_stack(prev_stack);
+      kphp::coro::destroy_with_stack(m_coro, m_task_allocator, m_stack);
     }
   }
 
   constexpr auto operator co_await() noexcept {
     using awaiter_base = detail::awaiter_base<task_promise_type>;
-    struct awaiter final : public awaiter_base, private kphp::coro::task_allocator_guard {
+    struct awaiter final : public awaiter_base, private kphp::coro::task_allocator_scope {
       awaiter(std::coroutine_handle<task_promise_type> coro, kphp::coro::detail::memory::task_allocator& task_allocator,
               memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack) noexcept
           : awaiter_base(coro),
-            kphp::coro::task_allocator_guard(task_allocator, stack) {}
+            kphp::coro::task_allocator_scope(task_allocator, stack) {}
 
       auto await_resume() noexcept -> T {
         awaiter_base::await_resume();
