@@ -16,13 +16,13 @@ private:
   memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_stack{nullptr};
 
 public:
-  explicit task_allocator_scope(memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* new_stack) noexcept
-      : m_stack{m_task_allocator.exchange_stack(new_stack)} {}
+  explicit task_allocator_scope(memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack) noexcept
+      : m_stack{m_task_allocator.exchange_stack(stack)} {}
 
   explicit task_allocator_scope(kphp::coro::detail::memory::task_allocator& task_allocator,
-                                memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* new_stack) noexcept
+                                memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack) noexcept
       : m_task_allocator{task_allocator},
-        m_stack{m_task_allocator.exchange_stack(new_stack)} {}
+        m_stack{m_task_allocator.exchange_stack(stack)} {}
 
   ~task_allocator_scope() {
     m_task_allocator.set_stack(m_stack);

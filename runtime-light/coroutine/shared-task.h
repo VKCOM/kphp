@@ -106,7 +106,7 @@ public:
       m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      kphp::coro::resume_with_stack(handle, async_stack_root, m_task_allocator, nullptr);
+      kphp::coro::resume(handle, async_stack_root, m_task_allocator);
     }
 
     // coroutine already completed, don't suspend
