@@ -10,12 +10,13 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
-#include <ranges>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 
 #include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
+#include "runtime-common/core/allocator/platform-allocator.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
@@ -188,19 +189,28 @@ std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) 
 }
 
 std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorithm) noexcept {
-  using namespace std::string_view_literals;
-  std::string_view algorithm_sv{algorithm.c_str(), algorithm.size()};
+  static constexpr size_t MAX_ALGO_NAME_LEN = 32;
+  const size_t size{algorithm.size()};
+  if (size > MAX_ALGO_NAME_LEN || size == 0) [[unlikely]] {
+    return std::nullopt;
+  }
 
-  const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+  std::array<char, MAX_ALGO_NAME_LEN> lowered;
+  std::transform(algorithm.c_str(), algorithm.c_str() + size, lowered.begin(), [](char c) noexcept -> char {
+    if (c >= 'A' && c <= 'Z') {
+      return c + ('a' - 'A');
+    }
+    return c;
+  });
 
-  if (std::ranges::equal(algorithm_sv, AES_128_CBC, ichar_equals)) {
-    return AES128_CBC;
-  } else if (std::ranges::equal(algorithm_sv, AES_256_CBC, ichar_equals)) {
-    return AES256_CBC;
-  } else if (std::ranges::equal(algorithm_sv, AES_128_GCM, ichar_equals)) {
-    return AES128_GCM;
-  } else if (std::ranges::equal(algorithm_sv, AES_256_GCM, ichar_equals)) {
-    return AES256_GCM;
+  std::string_view lowered_view{lowered.data(), size};
+
+  static const auto ALGORITHMS = kphp::stl::unordered_map<std::string_view, CipherAlgorithm, kphp::memory::platform_allocator>{
+      {AES_128_CBC, AES128_CBC}, {AES_256_CBC, AES256_CBC}, {AES_128_GCM, AES128_GCM}, {AES_256_GCM, AES256_GCM}};
+
+  auto it{ALGORITHMS.find(lowered_view)};
+  if (it != ALGORITHMS.end()) [[likely]] {
+    return it->second;
   }
 
   return std::nullopt;
@@ -387,8 +397,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-Optional<string> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv,
-                                   std::optional<std::reference_wrapper<string>> tag, string aad, [[maybe_unused]] int64_t tag_length) noexcept {
+Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& source_key, int64_t options, const string& source_iv,
+                                   std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
   auto algorithm{parse_cipher_algorithm_test(method)};
   if (!algorithm) {
     kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
