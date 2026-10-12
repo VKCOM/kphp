@@ -21,7 +21,6 @@
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
-#include "runtime-light/coroutine/task-allocator-scope.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
