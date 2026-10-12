@@ -38,7 +38,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
       })};
 
   size_t tagged_entries_size{};
-  static constexpr size_t TAGGED_ENTRIES_BUFFER_SIZE = 8UZ;
+  static constexpr size_t TAGGED_ENTRIES_BUFFER_SIZE = 24UZ;
   std::array<k2::LogTaggedEntry, TAGGED_ENTRIES_BUFFER_SIZE> tagged_entries_buffer; // NOLINT
 
   opt_tags.transform([&tagged_entries_buffer, &tagged_entries_size](contextual_tags& tags) noexcept {
