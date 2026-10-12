@@ -98,7 +98,7 @@ enum UpdateStatus {
   NewDescriptor = 2,
 };
 
-enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3 };
+enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3, COUNT = 4 };
 
 enum BlockPadding : uint32_t { PKCS7 = 0, NO_PADDING = 1 };
 
