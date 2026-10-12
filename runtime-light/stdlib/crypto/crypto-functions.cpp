@@ -217,17 +217,25 @@ std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorit
 }
 
 bool is_gcm_algorithm_test(CipherAlgorithm algorithm) noexcept {
-  static constexpr std::array IS_GCM_ALGO = {/*AES128_GCM*/ true, /*AES256_GCM*/ true, /*AES128_CBC*/ false, /*AES256_CBC*/ false};
-  static_assert(IS_GCM_ALGO.size() == CipherAlgorithm::COUNT,
-                "IS_GCM_ALGO must have exactly CipherAlgorithm::COUNT entries - update it when adding a new cipher algorithm");
-  return IS_GCM_ALGO[algorithm];
+  switch (algorithm) {
+  case AES128_GCM:
+  case AES256_GCM:
+    return true;
+  case AES128_CBC:
+  case AES256_CBC:
+    return false;
+  }
 }
 
 bool is_aead_algorithm_test(CipherAlgorithm algorithm) noexcept {
-  static constexpr std::array IS_AEAD_ALGO = {/*AES128_GCM*/ true, /*AES256_GCM*/ true, /*AES128_CBC*/ false, /*AES256_CBC*/ false};
-  static_assert(IS_AEAD_ALGO.size() == CipherAlgorithm::COUNT,
-                "IS_AEAD_ALGO must have exactly CipherAlgorithm::COUNT entries - update it when adding a new cipher algorithm");
-  return IS_AEAD_ALGO[algorithm];
+  switch (algorithm) {
+  case AES128_GCM:
+  case AES256_GCM:
+    return true;
+  case AES128_CBC:
+  case AES256_CBC:
+    return false;
+  }
 }
 
 bool is_gcm_algorithm(tl::CipherAlgorithm algorithm) {
