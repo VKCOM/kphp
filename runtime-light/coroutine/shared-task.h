@@ -21,6 +21,7 @@
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/task-allocator-guard.h"
+#include "runtime-light/coroutine/task-allocator-scope.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -106,7 +107,7 @@ public:
       m_state = vk::intrusive::list<vk::intrusive::list_node<std::coroutine_handle<>>>{};
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      kphp::coro::resume(handle, async_stack_root, m_task_allocator);
+      kphp::coro::resume_with_stack(handle, async_stack_root, m_task_allocator, nullptr);
     }
 
     // coroutine already completed, don't suspend
