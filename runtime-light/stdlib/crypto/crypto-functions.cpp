@@ -216,12 +216,18 @@ std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorit
   return std::nullopt;
 }
 
-bool is_gcm_algorithm_test(CipherAlgorithm algorithm) {
-  return algorithm == AES128_GCM || algorithm == AES256_GCM;
+bool is_gcm_algorithm_test(CipherAlgorithm algorithm) noexcept {
+  static constexpr std::array IS_GCM_ALGO{true, true, false, false};
+  static_assert(IS_GCM_ALGO.size() == CipherAlgorithm::COUNT,
+                "IS_GCM_ALGO must have exactly CipherAlgorithm::COUNT entries - update it when adding a new cipher algorithm");
+  return IS_GCM_ALGO[algorithm];
 }
 
-bool is_aead_algorithm_test(CipherAlgorithm algorithm) {
-  return is_gcm_algorithm_test(algorithm);
+bool is_aead_algorithm_test(CipherAlgorithm algorithm) noexcept {
+  static constexpr std::array IS_AEAD_ALGO{true, true, false, false};
+  static_assert(IS_AEAD_ALGO.size() == CipherAlgorithm::COUNT,
+                "IS_AEAD_ALGO must have exactly CipherAlgorithm::COUNT entries - update it when adding a new cipher algorithm");
+  return IS_AEAD_ALGO[algorithm];
 }
 
 bool is_gcm_algorithm(tl::CipherAlgorithm algorithm) {
