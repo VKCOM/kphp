@@ -50,7 +50,9 @@ auto pool_allocator::alloc_script_memory(size_t size) noexcept -> void* {
     request_extra_memory(size);
     mem = memory_resource.allocate(size);
 
-    kphp::log::assertion(mem != nullptr);
+    if (mem == nullptr) [[unlikely]] {
+      raise_out_of_memory(size);
+    }
   }
 
   return mem;
@@ -64,7 +66,9 @@ auto pool_allocator::calloc_script_memory(size_t size) noexcept -> void* {
     request_extra_memory(size);
     mem = memory_resource.allocate0(size);
 
-    kphp::log::assertion(mem != nullptr);
+    if (mem == nullptr) [[unlikely]] {
+      raise_out_of_memory(size);
+    }
   }
 
   return mem;
@@ -78,7 +82,9 @@ auto pool_allocator::realloc_script_memory(void* old_mem, size_t new_size, size_
     request_extra_memory(new_size * 2);
     new_mem = memory_resource.reallocate(old_mem, new_size, old_size);
 
-    kphp::log::assertion(new_mem != nullptr);
+    if (new_mem == nullptr) [[unlikely]] {
+      raise_out_of_memory(new_size);
+    }
   }
 
   return new_mem;
@@ -105,9 +111,27 @@ auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> voi
 
   auto* extra_mem{kphp::memory::platform::alloc(extra_mem_size)};
   if (extra_mem == nullptr) [[unlikely]] {
-    kphp::log::error("pool_allocator: failed to get extra memory from platform");
+    const auto& stats{memory_resource.get_memory_stats()};
+    kphp::log::error("pool_allocator: failed to get extra memory from platform: requested {} bytes ({} with layout overhead), "
+                     "memory usage: {} of {} bytes (max {}), real usage: {} bytes (max {}), "
+                     "total allocations: {}, total memory allocated: {} bytes, "
+                     "defragmentation calls: {}, huge memory pieces: {}, small memory pieces: {}",
+                     requested_size, extra_mem_size, stats.memory_used, stats.memory_limit, stats.max_memory_used, stats.real_memory_used,
+                     stats.max_real_memory_used, stats.total_allocations, stats.total_memory_allocated, stats.defragmentation_calls,
+                     stats.huge_memory_pieces, stats.small_memory_pieces);
   }
   memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
+}
+
+auto pool_allocator::raise_out_of_memory(size_t requested_size) const noexcept -> void {
+  const auto& stats{memory_resource.get_memory_stats()};
+  kphp::log::error("pool_allocator: out of memory: failed to allocate {} bytes even after requesting extra memory, "
+                   "memory usage: {} of {} bytes (max {}), real usage: {} bytes (max {}), "
+                   "total allocations: {}, total memory allocated: {} bytes, "
+                   "defragmentation calls: {}, huge memory pieces: {}, small memory pieces: {}",
+                   requested_size, stats.memory_used, stats.memory_limit, stats.max_memory_used, stats.real_memory_used,
+                   stats.max_real_memory_used, stats.total_allocations, stats.total_memory_allocated, stats.defragmentation_calls,
+                   stats.huge_memory_pieces, stats.small_memory_pieces);
 }
 
 } // namespace kphp::memory
