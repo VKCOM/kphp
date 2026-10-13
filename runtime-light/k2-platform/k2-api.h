@@ -261,11 +261,11 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
-inline std::expected<void, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view passphrase, std::string_view iv,
-                                                    int64_t tag_size, std::string_view aad, std::string_view data, std::span<char> encrypted_data,
+inline std::expected<void, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
+                                                    std::string_view aad, std::string_view data, std::span<char> encrypted_data,
                                                     std::span<char> received_tag) noexcept {
-  if (auto error_code{k2_openssl_encrypt(algorithm, padding, passphrase.data(), passphrase.size(), iv.data(), iv.size(), tag_size, aad.data(), aad.size(),
-                                         data.data(), data.size(), encrypted_data.data(), encrypted_data.size(), received_tag.data(), received_tag.size())};
+  if (auto error_code{k2_openssl_encrypt(algorithm, padding, key.data(), key.size(), iv.data(), iv.size(), aad.data(), aad.size(), data.data(), data.size(),
+                                         encrypted_data.data(), encrypted_data.size(), received_tag.data(), received_tag.size())};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }

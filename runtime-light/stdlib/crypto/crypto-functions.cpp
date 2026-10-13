@@ -430,7 +430,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
   string encrypted_data{static_cast<string::size_type>(encrypted_size.encrypted_size), false};
   string received_tag{static_cast<string::size_type>(encrypted_size.tag_size), false};
   auto res{k2::openssl_encrypt(*algorithm, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
-                               tag_length, {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
+                               {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
                                {received_tag.buffer(), received_tag.size()})};
   if (!res) [[unlikely]] {
     return false;
