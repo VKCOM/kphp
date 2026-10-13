@@ -246,7 +246,7 @@ bool is_aead_algorithm(tl::CipherAlgorithm algorithm) {
   return is_gcm_algorithm(algorithm);
 }
 
-auto calc_encrypted_size(cipher_algorithm_traits algorithm_traits, BlockPadding padding, int64_t tag_size, int64_t data_len) noexcept {
+auto calc_encrypted_size(const cipher_algorithm_traits& algorithm_traits, BlockPadding padding, int64_t tag_size, int64_t data_len) noexcept {
   struct encrypted_data_size_info {
     int64_t encrypted_size;
     int64_t tag_size;
