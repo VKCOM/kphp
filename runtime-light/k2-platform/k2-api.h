@@ -269,6 +269,7 @@ inline std::expected<void, int32_t> openssl_encrypt(CipherAlgorithm algorithm, B
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
+
   return {};
 }
 
