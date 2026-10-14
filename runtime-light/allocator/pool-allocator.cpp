@@ -122,9 +122,8 @@ auto pool_allocator::raise_out_of_memory(std::string_view context, size_t reques
                    "memory usage: {} of {} bytes (max {}), real usage: {} bytes (max {}), "
                    "total allocations: {}, total memory allocated: {} bytes, "
                    "defragmentation calls: {}, huge memory pieces: {}, small memory pieces: {}",
-                   context, requested_size, stats.memory_used, stats.memory_limit, stats.max_memory_used, stats.real_memory_used,
-                   stats.max_real_memory_used, stats.total_allocations, stats.total_memory_allocated, stats.defragmentation_calls,
-                   stats.huge_memory_pieces, stats.small_memory_pieces);
+                   context, requested_size, stats.memory_used, stats.memory_limit, stats.max_memory_used, stats.real_memory_used, stats.max_real_memory_used,
+                   stats.total_allocations, stats.total_memory_allocated, stats.defragmentation_calls, stats.huge_memory_pieces, stats.small_memory_pieces);
 }
 
 } // namespace kphp::memory
