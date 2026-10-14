@@ -38,12 +38,15 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
       })};
 
   size_t tagged_entries_size{};
-  static constexpr size_t TAGGED_ENTRIES_BUFFER_SIZE = 24UZ;
+  static constexpr size_t TAGGED_ENTRIES_BUFFER_SIZE{24UZ};
   std::array<k2::LogTaggedEntry, TAGGED_ENTRIES_BUFFER_SIZE> tagged_entries_buffer; // NOLINT
 
-  opt_tags.transform([&tagged_entries_buffer, &tagged_entries_size](contextual_tags& tags) noexcept {
+  // Reserve one slot for the trace when it's present
+  const size_t tagged_entries_capacity{trace.has_value() ? TAGGED_ENTRIES_BUFFER_SIZE - 1 : TAGGED_ENTRIES_BUFFER_SIZE};
+
+  opt_tags.transform([&tagged_entries_buffer, &tagged_entries_size, tagged_entries_capacity](contextual_tags& tags) noexcept {
     for (const auto& [key, value] : tags.values()) {
-      if (tagged_entries_size == TAGGED_ENTRIES_BUFFER_SIZE) {
+      if (tagged_entries_size == tagged_entries_capacity) {
         break;
       }
 
@@ -52,9 +55,9 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
     }
     return 0;
   });
-  if (trace.has_value() && tagged_entries_size != TAGGED_ENTRIES_BUFFER_SIZE) {
+  if (trace.has_value()) {
     static constexpr std::string_view BACKTRACE_KEY = "trace";
-    static constexpr size_t BACKTRACE_BUFFER_SIZE = 1024UZ * 4UZ;
+    static constexpr size_t BACKTRACE_BUFFER_SIZE{1024UZ * 4UZ};
     std::array<char, BACKTRACE_BUFFER_SIZE> backtrace_buffer; // NOLINT
     size_t backtrace_size{impl::resolve_log_trace(backtrace_buffer, *trace)};
     tagged_entries_buffer[tagged_entries_size++] =
