@@ -56,7 +56,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
     return 0;
   });
   if (trace.has_value()) {
-    static constexpr std::string_view BACKTRACE_KEY = "trace";
+    static constexpr std::string_view BACKTRACE_KEY{"trace"};
     static constexpr size_t BACKTRACE_BUFFER_SIZE{1024UZ * 4UZ};
     std::array<char, BACKTRACE_BUFFER_SIZE> backtrace_buffer; // NOLINT
     size_t backtrace_size{impl::resolve_log_trace(backtrace_buffer, *trace)};
