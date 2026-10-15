@@ -186,7 +186,7 @@ std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) 
   return std::nullopt;
 }
 
-std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorithm) noexcept {
+std::optional<CipherAlgorithm> parse_cipher_algorithm_test(std::string_view algorithm) noexcept {
   static constexpr auto ALGORITHMS = [] {
     auto arr{std::array{std::pair{AES_128_CBC, AES128_CBC}, std::pair{AES_256_CBC, AES256_CBC}, std::pair{AES_128_GCM, AES128_GCM},
                         std::pair{AES_256_GCM, AES256_GCM}}};
@@ -206,7 +206,7 @@ std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorit
   }
 
   std::array<char, MAX_ALGO_NAME_LEN> lowered;
-  std::transform(algorithm.c_str(), algorithm.c_str() + size, lowered.begin(), [](char c) noexcept -> char {
+  std::ranges::transform(algorithm, lowered.begin(), [](char c) noexcept -> char {
     if (c >= 'A' && c <= 'Z') {
       return c + ('a' - 'A');
     }
@@ -393,7 +393,7 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
 
 Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& source_key, int64_t options, const string& source_iv,
                                    std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
-  auto algorithm{parse_cipher_algorithm_test(method)};
+  auto algorithm{parse_cipher_algorithm_test({method.c_str(), method.size()})};
   if (!algorithm) [[unlikely]] {
     kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
     return false;
