@@ -10,6 +10,7 @@
 #include <optional>
 #include <source_location>
 #include <span>
+#include <string_view>
 
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
