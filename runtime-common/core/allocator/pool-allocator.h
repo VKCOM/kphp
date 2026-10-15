@@ -26,7 +26,7 @@ private:
   size_t m_min_extra_mem_size{0};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void;
-  [[noreturn]] auto raise_out_of_memory(std::string_view context, size_t requested_size) const noexcept -> void;
+  [[noreturn]] auto raise_out_of_memory(size_t requested_size) const noexcept -> void;
 
 public:
   pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
