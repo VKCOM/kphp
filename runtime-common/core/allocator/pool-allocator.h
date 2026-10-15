@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstddef>
-#include <string_view>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
