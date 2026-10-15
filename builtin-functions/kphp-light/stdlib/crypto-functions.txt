@@ -54,12 +54,9 @@ function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key :::
 function hash_algos () ::: string[];
 function hash_hmac_algos () ::: string[];
 
-/** @kphp-extern-func-info interruptible */
 function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
-/** @kphp-extern-func-info interruptible */
 function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
 
-/** @kphp-extern-func-info interruptible */
 function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
 function md5 ($s ::: string, $raw_output ::: bool = false): string;
 
