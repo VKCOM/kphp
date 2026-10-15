@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <utility>
 
@@ -186,35 +187,24 @@ std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) 
   return std::nullopt;
 }
 
+constexpr auto CIPHER_ALGORITHMS = [] {
+  auto arr{std::array{std::pair{AES_128_CBC, AES128_CBC}, std::pair{AES_256_CBC, AES256_CBC}, std::pair{AES_128_GCM, AES128_GCM},
+                      std::pair{AES_256_GCM, AES256_GCM}}};
+  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first);
+  return arr;
+}();
+
+static_assert(CIPHER_ALGORITHMS.size() == CipherAlgorithm::COUNT_CIPHER);
+
 std::optional<CipherAlgorithm> parse_cipher_algorithm_test(std::string_view algorithm) noexcept {
-  static constexpr auto ALGORITHMS = [] {
-    auto arr{std::array{std::pair{AES_128_CBC, AES128_CBC}, std::pair{AES_256_CBC, AES256_CBC}, std::pair{AES_128_GCM, AES128_GCM},
-                        std::pair{AES_256_GCM, AES256_GCM}}};
-    std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first);
-    return arr;
-  }();
+  auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
+                                             if (c >= 'A' && c <= 'Z') {
+                                               return c + ('a' - 'A');
+                                             }
+                                             return c;
+                                           }}};
 
-  static_assert(ALGORITHMS.size() == CipherAlgorithm::COUNT);
-
-  static constexpr size_t MAX_ALGO_NAME_LEN =
-      std::ranges::max(
-          ALGORITHMS, [](const auto& l, const auto& r) noexcept { return l.length() < r.length(); }, &std::pair<std::string_view, CipherAlgorithm>::first)
-          .first.length();
-  const size_t size{algorithm.size()};
-  if (size > MAX_ALGO_NAME_LEN || size == 0) [[unlikely]] {
-    return std::nullopt;
-  }
-
-  std::array<char, MAX_ALGO_NAME_LEN> lowered;
-  std::ranges::transform(algorithm, lowered.begin(), [](char c) noexcept -> char {
-    if (c >= 'A' && c <= 'Z') {
-      return c + ('a' - 'A');
-    }
-    return c;
-  });
-
-  std::string_view lowered_view{lowered.data(), size};
-  auto rng{std::ranges::equal_range(ALGORITHMS, lowered_view, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first)};
+  auto rng{std::ranges::equal_range(CIPHER_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, CipherAlgorithm>::first)};
   if (!rng.empty()) [[likely]] {
     return rng.front().second;
   }
@@ -239,7 +229,7 @@ constexpr const cipher_algorithm_traits& get_cipher_algorithm_traits(CipherAlgor
       cipher_algorithm_traits{32, 16, 16, encryption_mode::BLOCK}  // AES256_CBC
   };
 
-  static_assert(traits.size() == CipherAlgorithm::COUNT, "Update traits when adding a cipher algorithm");
+  static_assert(traits.size() == CipherAlgorithm::COUNT_CIPHER);
 
   return traits[algorithm];
 }
@@ -376,30 +366,33 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_
 } // namespace
 
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
-  array<string> return_value{
-      {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()}),
-       std::make_pair(2, string{AES_128_GCM.data(), AES_128_GCM.size()}), std::make_pair(3, string{AES_256_GCM.data(), AES_256_GCM.size()})}};
-  return return_value;
+  array<string> res{array_size{CIPHER_ALGORITHMS.size(), true}};
+  for (auto [algo, _] : CIPHER_ALGORITHMS) {
+    res.push_back(string{algo.data(), static_cast<string::size_type>(algo.size())});
+  }
+
+  return res;
 }
 
-Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
-  auto algorithm{parse_cipher_algorithm(method)};
-  if (!algorithm) {
-    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
+Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
+  auto algo{parse_cipher_algorithm_test({algorithm.c_str(), algorithm.size()})};
+  if (!algo) {
+    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
     return false;
   }
-  return algorithm_iv_len(*algorithm);
+
+  return get_cipher_algorithm_traits(*algo).iv_len;
 }
 
-Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& source_key, int64_t options, const string& source_iv,
+Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& source_key, int64_t options, const string& source_iv,
                                    std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
-  auto algorithm{parse_cipher_algorithm_test({method.c_str(), method.size()})};
-  if (!algorithm) [[unlikely]] {
-    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
+  auto algo{parse_cipher_algorithm_test({algorithm.c_str(), algorithm.size()})};
+  if (!algo) [[unlikely]] {
+    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
     return false;
   }
 
-  const auto& algorithm_traits{get_cipher_algorithm_traits(*algorithm)};
+  const auto& algorithm_traits{get_cipher_algorithm_traits(*algo)};
 
   bool is_aead{algorithm_traits.mode == encryption_mode::AEAD};
   if (is_aead && (!tag || tag_length == 0)) [[unlikely]] {
@@ -434,7 +427,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
   auto encrypted_size{calc_encrypted_size(algorithm_traits, tag_length, data.size())};
   string encrypted_data{static_cast<string::size_type>(encrypted_size.encrypted_size), false};
   string received_tag{static_cast<string::size_type>(encrypted_size.tag_size), false};
-  auto res{k2::openssl_encrypt(*algorithm, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
+  auto res{k2::openssl_encrypt(*algo, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
                                {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
                                {received_tag.buffer(), received_tag.size()})};
   if (!res) [[unlikely]] {
@@ -652,91 +645,115 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, str
 
 namespace {
 
-constexpr std::array<std::pair<std::string_view, tl::HashAlgorithm>, 6> HASH_ALGOS = {{{"md5", tl::HashAlgorithm::MD5},
-                                                                                       {"sha1", tl::HashAlgorithm::SHA1},
-                                                                                       {"sha224", tl::HashAlgorithm::SHA224},
-                                                                                       {"sha256", tl::HashAlgorithm::SHA256},
-                                                                                       {"sha384", tl::HashAlgorithm::SHA384},
-                                                                                       {"sha512", tl::HashAlgorithm::SHA512}}};
+constexpr std::string_view DSS1 = "dss1";
+constexpr std::string_view SHA1 = "sha1";
+constexpr std::string_view SHA224 = "sha224";
+constexpr std::string_view SHA256 = "sha256";
+constexpr std::string_view SHA384 = "sha384";
+constexpr std::string_view SHA512 = "sha512";
+constexpr std::string_view RMD160 = "rmd160";
+constexpr std::string_view MD2 = "md2";
+constexpr std::string_view MD4 = "md4";
+constexpr std::string_view MD5 = "md5";
 
-std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo) noexcept {
-  const auto* it{std::ranges::find_if(
-      HASH_ALGOS,
-      [user_algo = std::ranges::transform_view(user_algo, [](auto c) { return std::tolower(c); })](auto hash_algo) noexcept {
-        return std::ranges::equal(user_algo, hash_algo);
-      },
-      [](const auto& hash_algo) noexcept { return hash_algo.first; })};
+constexpr auto HASH_ALGORITHMS = []() noexcept {
+  auto arr{std::array{std::pair{DSS1, HashAlgorithm::DSS1}, std::pair{SHA1, HashAlgorithm::SHA1}, std::pair{SHA224, HashAlgorithm::SHA224},
+                      std::pair{SHA256, HashAlgorithm::SHA256}, std::pair{SHA384, HashAlgorithm::SHA384}, std::pair{SHA512, HashAlgorithm::SHA512},
+                      std::pair{RMD160, HashAlgorithm::RMD160}, std::pair{MD2, HashAlgorithm::MD2}, std::pair{MD4, HashAlgorithm::MD4},
+                      std::pair{MD5, HashAlgorithm::MD5}}};
 
-  return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
+  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, HashAlgorithm>::first);
+  return arr;
+}();
+
+static_assert(HASH_ALGORITHMS.size() == HashAlgorithm::COUNT_HASH);
+
+std::optional<HashAlgorithm> parse_hash_algorithm(std::string_view algorithm) noexcept {
+  auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
+                                             if (c >= 'A' && c <= 'Z') {
+                                               return c + ('a' - 'A');
+                                             }
+                                             return c;
+                                           }}};
+
+  auto rng{std::ranges::equal_range(HASH_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, HashAlgorithm>::first)};
+  if (!rng.empty()) [[likely]] {
+    return rng.front().second;
+  }
+
+  return std::nullopt;
 }
 
-kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output) noexcept {
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
-  }
+auto calc_hashed_size(HashAlgorithm algorithm) noexcept -> size_t {
+  static constexpr std::array sizes{
+      20, // DSS1
+      20, // SHA1
+      28, // SHA224
+      32, // SHA256
+      48, // SHA384
+      64, // SHA512
+      20, // RMD160
+      16, // MD2
+      16, // MD4
+      16  //MD5
+  };
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+  static_assert(sizes.size() == HashAlgorithm::COUNT_HASH);
 
-  tl::fetcher tlf{response_bytes};
-  tl::String response{};
-  kphp::log::assertion(response.fetch(tlf));
-
-  if (!raw_output) {
-    co_return kphp::strings::bin2hex(response.inner.value);
-  }
-  // Important to pass size because response.inner.value is binary so
-  // it may contain zero in any position, not only in the end
-  co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  return sizes[algorithm];
 }
 
-kphp::coro::task<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
-  tl::Hash hash{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
-  tl::storer tls{hash.footprint()};
-  hash.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output);
+string hash_impl(HashAlgorithm algorithm, const string& data, bool binary) noexcept {
+  string hashed_data{static_cast<string::size_type>(calc_hashed_size(algorithm)), false};
+  auto res{k2::hash(algorithm, {data.c_str(), data.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  if (!res) [[unlikely]] {
+    return string{false};
+  }
+
+  return binary ? std::move(hashed_data) : kphp::strings::bin2hex({hashed_data.c_str(), hashed_data.size()});
 }
 
 } // namespace
 
 array<string> f$hash_algos() noexcept {
-  array<string> response{array_size{HASH_ALGOS.size(), true}};
-  for (auto [algo_name, _] : HASH_ALGOS) {
-    response.push_back(string{algo_name.data(), static_cast<string::size_type>(algo_name.size())});
+  array<string> res{array_size{HASH_ALGORITHMS.size(), true}};
+  for (auto [algo, _] : HASH_ALGORITHMS) {
+    res.push_back(string{algo.data(), static_cast<string::size_type>(algo.size())});
   }
-  return response;
+
+  return res;
 }
 
 array<string> f$hash_hmac_algos() noexcept {
   return f$hash_algos();
 }
 
-kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
-  const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
+string f$hash(const string& algorithm, const string& data, bool binary) noexcept {
+  const auto algo{parse_hash_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
-    kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
-  }
-  co_return co_await hash_impl(*algo, s, raw_output);
-}
-
-kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
-  const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
-  if (!algo) [[unlikely]] {
-    kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
+    kphp::log::error("algorithm {} not supported in function hash", algorithm.c_str());
   }
 
-  tl::HashHmac hash_hmac{.algorithm = *algo, .data = {.value = {s.c_str(), s.size()}}, .secret_key = {.value = {key.c_str(), key.size()}}};
-  tl::storer tls{hash_hmac.footprint()};
-  hash_hmac.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output);
+  return hash_impl(*algo, data, binary);
 }
 
-kphp::coro::task<string> f$sha1(string s, bool raw_output) noexcept {
-  co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
+string f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary) noexcept {
+  const auto algo{parse_hash_algorithm({algorithm.c_str(), algorithm.size()})};
+  if (!algo) [[unlikely]] {
+    kphp::log::error("algorithm {} not supported in function hash_hmac", algorithm.c_str());
+  }
+
+  string hashed_data{static_cast<string::size_type>(calc_hashed_size(*algo)), false};
+  auto res{k2::hash_hmac(*algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  if (!res) [[unlikely]] {
+    return string{false};
+  }
+
+  return binary ? std::move(hashed_data) : kphp::strings::bin2hex({hashed_data.c_str(), hashed_data.size()});
+}
+
+string f$sha1(const string& data, bool binary) noexcept {
+  return hash_impl(HashAlgorithm::SHA1, data, binary);
 }
 
 int64_t f$crc32(const string& s) noexcept {

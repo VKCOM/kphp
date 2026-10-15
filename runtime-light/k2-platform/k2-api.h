@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <__expected/expected.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -273,6 +274,23 @@ inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm,
   }
 
   return {encrypted_data_written};
+}
+
+inline std::expected<void, int32_t> hash(HashAlgorithm algorithm, std::string_view data, std::span<char> hashed_data) noexcept {
+  if (auto error_code{k2_hash(algorithm, data.data(), data.size(), hashed_data.data(), hashed_data.size())}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
+}
+
+inline std::expected<void, int32_t> hash_hmac(HashAlgorithm algorithm, std::string_view data, std::string_view key, std::span<char> hashed_data) noexcept {
+  if (auto error_code{k2_hash_hmac(algorithm, data.data(), data.size(), key.data(), key.size(), hashed_data.data(), hashed_data.size())};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
 }
 
 inline std::expected<k2::descriptor, int32_t> rpc_send_request(std::string_view actor_name, std::span<const std::byte> request_buffer,

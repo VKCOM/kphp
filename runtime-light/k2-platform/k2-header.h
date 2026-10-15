@@ -98,9 +98,11 @@ enum UpdateStatus {
   NewDescriptor = 2,
 };
 
-enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3, COUNT };
+enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3, COUNT_CIPHER };
 
 enum BlockPadding : uint32_t { PKCS7 = 0, NO_PADDING = 1 };
+
+enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, RMD160 = 6, MD2 = 7, MD4 = 8, MD5 = 9, COUNT_HASH };
 
 enum RpcKind {
   TL_RPC = 0,
@@ -521,6 +523,11 @@ int32_t k2_component_access(size_t name_len, const char* name);
 int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* key, size_t key_len, const char* iv, size_t iv_len,
                            const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data, size_t encrypted_data_len,
                            size_t* encrypted_data_written, char* received_tag, size_t received_tag_len);
+
+int32_t k2_hash(enum HashAlgorithm algorithm, const char* data, size_t data_len, char* hashed_data, size_t hashed_data_len);
+
+int32_t k2_hash_hmac(enum HashAlgorithm algorithm, const char* data, size_t data_len, const char* key, size_t key_len, char* hashed_data,
+                     size_t hashed_data_len);
 
 /**
  * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.
