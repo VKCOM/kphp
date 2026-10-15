@@ -24,9 +24,9 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
 array<string> f$openssl_get_cipher_methods(bool aliases = false) noexcept;
 
-Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept;
+Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept;
 
-Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& key, int64_t options = 0, const string& iv = string{},
+Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
                                    std::optional<std::reference_wrapper<string>> tag = {}, const string& aad = string{}, int64_t tag_length = 16) noexcept;
 
 kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string key, int64_t options = 0, string iv = string{}, string tag = string{},
@@ -44,11 +44,11 @@ array<string> f$hash_algos() noexcept;
 
 array<string> f$hash_hmac_algos() noexcept;
 
-kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output = false) noexcept;
+string f$hash(const string& algorithm, const string& data, bool binary = false) noexcept;
 
-kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output = false) noexcept;
+string f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary = false) noexcept;
 
-kphp::coro::task<string> f$sha1(string s, bool raw_output = false) noexcept;
+string f$sha1(const string& data, bool binary = false) noexcept;
 
 inline string f$md5(const string& str, bool binary = false) noexcept {
   constexpr auto MD5_HASH_LEN = 16;
