@@ -645,22 +645,16 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, str
 
 namespace {
 
-constexpr std::string_view DSS1 = "dss1";
 constexpr std::string_view SHA1 = "sha1";
 constexpr std::string_view SHA224 = "sha224";
 constexpr std::string_view SHA256 = "sha256";
 constexpr std::string_view SHA384 = "sha384";
 constexpr std::string_view SHA512 = "sha512";
-constexpr std::string_view RMD160 = "rmd160";
-constexpr std::string_view MD2 = "md2";
-constexpr std::string_view MD4 = "md4";
 constexpr std::string_view MD5 = "md5";
 
 constexpr auto HASH_ALGORITHMS = []() noexcept {
-  auto arr{std::array{std::pair{DSS1, HashAlgorithm::DSS1}, std::pair{SHA1, HashAlgorithm::SHA1}, std::pair{SHA224, HashAlgorithm::SHA224},
-                      std::pair{SHA256, HashAlgorithm::SHA256}, std::pair{SHA384, HashAlgorithm::SHA384}, std::pair{SHA512, HashAlgorithm::SHA512},
-                      std::pair{RMD160, HashAlgorithm::RMD160}, std::pair{MD2, HashAlgorithm::MD2}, std::pair{MD4, HashAlgorithm::MD4},
-                      std::pair{MD5, HashAlgorithm::MD5}}};
+  auto arr{std::array{std::pair{SHA1, HashAlgorithm::SHA1}, std::pair{SHA224, HashAlgorithm::SHA224}, std::pair{SHA256, HashAlgorithm::SHA256},
+                      std::pair{SHA384, HashAlgorithm::SHA384}, std::pair{SHA512, HashAlgorithm::SHA512}, std::pair{MD5, HashAlgorithm::MD5}}};
 
   std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, HashAlgorithm>::first);
   return arr;
@@ -686,15 +680,11 @@ std::optional<HashAlgorithm> parse_hash_algorithm(std::string_view algorithm) no
 
 auto calc_hashed_size(HashAlgorithm algorithm) noexcept -> size_t {
   static constexpr std::array sizes{
-      20, // DSS1
       20, // SHA1
       28, // SHA224
       32, // SHA256
       48, // SHA384
       64, // SHA512
-      20, // RMD160
-      16, // MD2
-      16, // MD4
       16  //MD5
   };
 
