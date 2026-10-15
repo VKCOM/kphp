@@ -81,7 +81,7 @@ private:
       : m_metric{metric} {}
 
 public:
-  static gauge_metric metric(std::string_view metric_name, std::initializer_list<std::string_view> label_names = {}) noexcept {
+  static gauge_metric metric(std::string_view metric_name, std::initializer_list<std::string_view> label_names) noexcept {
     auto k2_label_names{impl::make_k2_metric_label_names(label_names)};
     auto registered{k2::metrics_register_gauge(metric_name, k2_label_names)};
     if (!registered) [[unlikely]] {
@@ -91,7 +91,7 @@ public:
     return gauge_metric{*registered};
   }
 
-  gauge_sender series(std::initializer_list<std::pair<std::string_view, std::string_view>> labels = {}) const noexcept {
+  gauge_sender series(std::initializer_list<std::pair<std::string_view, std::string_view>> labels) const noexcept {
     if (m_metric == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
       return gauge_sender{k2::INVALID_PLATFORM_DESCRIPTOR};
     }
@@ -144,7 +144,7 @@ private:
       : m_metric{metric} {}
 
 public:
-  static counter_metric metric(std::string_view metric_name, std::initializer_list<std::string_view> label_names = {}) noexcept {
+  static counter_metric metric(std::string_view metric_name, std::initializer_list<std::string_view> label_names) noexcept {
     auto k2_label_names{impl::make_k2_metric_label_names(label_names)};
     auto registered{k2::metrics_register_counter(metric_name, k2_label_names)};
     if (!registered) [[unlikely]] {
@@ -154,7 +154,7 @@ public:
     return counter_metric{*registered};
   }
 
-  counter_sender series(std::initializer_list<std::pair<std::string_view, std::string_view>> labels = {}) const noexcept {
+  counter_sender series(std::initializer_list<std::pair<std::string_view, std::string_view>> labels) const noexcept {
     if (m_metric == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
       return counter_sender{k2::INVALID_PLATFORM_DESCRIPTOR};
     }
@@ -210,8 +210,7 @@ private:
 public:
   // `buckets` are the explicit upper (`le`) bucket boundaries (finite, strictly ascending);
   // empty registers a histogram without an explicit layout (the monitoring system assigns a default one).
-  static histogram_metric metric(std::string_view metric_name, std::span<const double> buckets,
-                                 std::initializer_list<std::string_view> label_names = {}) noexcept {
+  static histogram_metric metric(std::string_view metric_name, std::span<const double> buckets, std::initializer_list<std::string_view> label_names) noexcept {
     auto k2_label_names{impl::make_k2_metric_label_names(label_names)};
     auto registered{k2::metrics_register_histogram(metric_name, buckets, k2_label_names)};
     if (!registered) [[unlikely]] {
@@ -221,7 +220,7 @@ public:
     return histogram_metric{*registered};
   }
 
-  histogram_sender series(std::initializer_list<std::pair<std::string_view, std::string_view>> labels = {}) const noexcept {
+  histogram_sender series(std::initializer_list<std::pair<std::string_view, std::string_view>> labels) const noexcept {
     if (m_metric == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
       return histogram_sender{k2::INVALID_PLATFORM_DESCRIPTOR};
     }

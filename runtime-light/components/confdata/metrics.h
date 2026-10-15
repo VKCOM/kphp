@@ -42,7 +42,7 @@ struct events final {
 
 struct update_failures final {
   kphp::diagnostics::counter_metric m_failures_metric{kphp::diagnostics::counter_metric::metric("k2_kphp_confdata_update_fails", {"error"})};
-  kphp::diagnostics::gauge_metric m_old_offset_metric{kphp::diagnostics::gauge_metric::metric("k2_kphp_confdata_update_fails_old_offset")};
+  kphp::diagnostics::gauge_metric m_old_offset_metric{kphp::diagnostics::gauge_metric::metric("k2_kphp_confdata_update_fails_old_offset", {})};
 
   std::array<kphp::diagnostics::counter_sender, 5> m_failures{
       m_failures_metric.series({{"error", "transport"}}),          m_failures_metric.series({{"error", "old_offset"}}),
