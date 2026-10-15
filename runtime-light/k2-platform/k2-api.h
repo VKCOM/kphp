@@ -261,16 +261,18 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
-inline std::expected<void, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
-                                                    std::string_view aad, std::string_view data, std::span<char> encrypted_data,
-                                                    std::span<char> received_tag) noexcept {
+inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
+                                                      std::string_view aad, std::string_view data, std::span<char> encrypted_data,
+                                                      std::span<char> received_tag) noexcept {
+  size_t encrypted_data_written{0};
   if (auto error_code{k2_openssl_encrypt(algorithm, padding, key.data(), key.size(), iv.data(), iv.size(), aad.data(), aad.size(), data.data(), data.size(),
-                                         encrypted_data.data(), encrypted_data.size(), received_tag.data(), received_tag.size())};
+                                         encrypted_data.data(), encrypted_data.size(), std::addressof(encrypted_data_written), received_tag.data(),
+                                         received_tag.size())};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {};
+  return {encrypted_data_written};
 }
 
 inline std::expected<k2::descriptor, int32_t> rpc_send_request(std::string_view actor_name, std::span<const std::byte> request_buffer,

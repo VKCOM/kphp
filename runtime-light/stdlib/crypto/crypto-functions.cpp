@@ -11,12 +11,10 @@
 #include <functional>
 #include <optional>
 #include <string_view>
-#include <unordered_map>
 #include <utility>
 
 #include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
-#include "runtime-common/core/allocator/platform-allocator.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
@@ -189,7 +187,19 @@ std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) 
 }
 
 std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorithm) noexcept {
-  static constexpr size_t MAX_ALGO_NAME_LEN = 32;
+  static constexpr auto ALGORITHMS = [] {
+    auto arr{std::array{std::pair{AES_128_CBC, AES128_CBC}, std::pair{AES_256_CBC, AES256_CBC}, std::pair{AES_128_GCM, AES128_GCM},
+                        std::pair{AES_256_GCM, AES256_GCM}}};
+    std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first);
+    return arr;
+  }();
+
+  static_assert(ALGORITHMS.size() == CipherAlgorithm::COUNT);
+
+  static constexpr size_t MAX_ALGO_NAME_LEN =
+      std::ranges::max(
+          ALGORITHMS, [](const auto& l, const auto& r) noexcept { return l.length() < r.length(); }, &std::pair<std::string_view, CipherAlgorithm>::first)
+          .first.length();
   const size_t size{algorithm.size()};
   if (size > MAX_ALGO_NAME_LEN || size == 0) [[unlikely]] {
     return std::nullopt;
@@ -204,13 +214,9 @@ std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorit
   });
 
   std::string_view lowered_view{lowered.data(), size};
-
-  static const auto ALGORITHMS = kphp::stl::unordered_map<std::string_view, CipherAlgorithm, kphp::memory::platform_allocator>{
-      {AES_128_CBC, AES128_CBC}, {AES_256_CBC, AES256_CBC}, {AES_128_GCM, AES128_GCM}, {AES_256_GCM, AES256_GCM}};
-
-  auto it{ALGORITHMS.find(lowered_view)};
-  if (it != ALGORITHMS.end()) [[likely]] {
-    return it->second;
+  auto rng{std::ranges::equal_range(ALGORITHMS, lowered_view, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first)};
+  if (!rng.empty()) [[likely]] {
+    return rng.front().second;
   }
 
   return std::nullopt;
@@ -246,7 +252,7 @@ bool is_aead_algorithm(tl::CipherAlgorithm algorithm) {
   return is_gcm_algorithm(algorithm);
 }
 
-auto calc_encrypted_size(const cipher_algorithm_traits& algorithm_traits, BlockPadding padding, int64_t tag_size, int64_t data_len) noexcept {
+auto calc_encrypted_size(const cipher_algorithm_traits& algorithm_traits, int64_t tag_size, int64_t data_len) noexcept {
   struct encrypted_data_size_info {
     int64_t encrypted_size;
     int64_t tag_size;
@@ -254,8 +260,7 @@ auto calc_encrypted_size(const cipher_algorithm_traits& algorithm_traits, BlockP
 
   switch (algorithm_traits.mode) {
   case encryption_mode::BLOCK:
-    return padding == PKCS7 ? encrypted_data_size_info{(data_len + algorithm_traits.block_size) & ~(algorithm_traits.block_size - 1), 0}
-                            : encrypted_data_size_info{data_len, 0};
+    return encrypted_data_size_info{data_len + algorithm_traits.block_size, 0};
   case encryption_mode::STREAM:
     return encrypted_data_size_info{data_len, 0};
   case encryption_mode::AEAD:
@@ -341,10 +346,10 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_
     }
   } else {
     int64_t iv_required_len{algorithm_traits.iv_len};
-    if (iv.size() < iv_required_len) [[unlikely]] {
+    if (iv.size() < iv_required_len) {
       kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), iv_required_len);
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
-    } else if (iv.size() > iv_required_len) [[unlikely]] {
+    } else if (iv.size() > iv_required_len) {
       kphp::log::warning("IV passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", iv.size(), iv_required_len);
       iv.shrink(static_cast<string::size_type>(iv_required_len));
     }
@@ -352,7 +357,7 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_
 
   auto key = source_key;
   int64_t key_required_len{algorithm_traits.key_len};
-  if (key.size() < key_required_len) [[unlikely]] {
+  if (key.size() < key_required_len) {
     if (options & static_cast<int64_t>(cipher_opts::OPENSSL_DONT_ZERO_PAD_KEY)) [[unlikely]] {
       kphp::log::warning("Key length should be {} bytes long:\n", key_required_len);
       return std::nullopt;
@@ -360,7 +365,7 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_
     kphp::log::warning("passphrase passed is only {} bytes long, cipher expects an passphrase of precisely {} bytes, padding with \\0", key.size(),
                        key_required_len);
     key.append(key_required_len - key.size(), '\0');
-  } else if (key.size() > key_required_len) [[unlikely]] {
+  } else if (key.size() > key_required_len) {
     kphp::log::warning("passphrase passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", key.size(), key_required_len);
     key.shrink(static_cast<string::size_type>(key_required_len));
   }
@@ -403,16 +408,16 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
   }
 
   if (!is_aead) {
-    if (tag) [[unlikely]] {
+    if (tag) {
       kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
     }
 
-    if (!aad.empty()) [[unlikely]] {
+    if (!aad.empty()) {
       kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
     }
   }
 
-  if (source_iv.empty()) [[unlikely]] {
+  if (source_iv.empty()) {
     kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
   }
 
@@ -426,7 +431,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
     padding = NO_PADDING;
   }
 
-  auto encrypted_size{calc_encrypted_size(algorithm_traits, padding, tag_length, data.size())};
+  auto encrypted_size{calc_encrypted_size(algorithm_traits, tag_length, data.size())};
   string encrypted_data{static_cast<string::size_type>(encrypted_size.encrypted_size), false};
   string received_tag{static_cast<string::size_type>(encrypted_size.tag_size), false};
   auto res{k2::openssl_encrypt(*algorithm, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
@@ -435,6 +440,8 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
   if (!res) [[unlikely]] {
     return false;
   }
+
+  encrypted_data.shrink(static_cast<string::size_type>(*res));
 
   if (tag) {
     (*tag).get() = std::move(received_tag);

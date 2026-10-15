@@ -520,7 +520,7 @@ int32_t k2_component_access(size_t name_len, const char* name);
 
 int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* key, size_t key_len, const char* iv, size_t iv_len,
                            const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data, size_t encrypted_data_len,
-                           char* received_tag, size_t received_tag_len);
+                           size_t* encrypted_data_written, char* received_tag, size_t received_tag_len);
 
 /**
  * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.
