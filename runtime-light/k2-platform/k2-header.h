@@ -102,7 +102,7 @@ enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2
 
 enum BlockPadding : uint32_t { PKCS7 = 0, NO_PADDING = 1 };
 
-enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, RMD160 = 6, MD2 = 7, MD4 = 8, MD5 = 9, COUNT_HASH };
+enum HashAlgorithm : uint32_t { SHA1 = 0, SHA224 = 1, SHA256 = 2, SHA384 = 3, SHA512 = 4, MD5 = 5, COUNT_HASH };
 
 enum RpcKind {
   TL_RPC = 0,
