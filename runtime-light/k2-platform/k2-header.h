@@ -649,8 +649,8 @@ struct MetricLabel {
 };
 
 /**
- * Metrics: a component registers each metric once and then updates it
- * through descriptors.
+ * Metrics: a component registers each metric once at component
+ * initialization and then updates it through descriptors.
  *
  * The registration fixes the metric name, its kind and its label schema
  * (the set of label names; values are supplied per series or per update).
@@ -668,11 +668,14 @@ struct MetricLabel {
  *     cases where the set of series is not known in advance.
  *
  * Contract (shared by all kinds):
- *   - the metrics API is available from `k2_create_component` onwards —
- *     at component initialization, at instance initialization and while
- *     serving requests; calls from image-level entry points
+ *   - registration and binding are available only during component
+ *     initialization (`k2_create_component`/`k2_init_component`); the
+ *     update functions are available from `k2_create_component`
+ *     onwards — at component initialization, at instance initialization
+ *     and while serving requests; calls from image-level entry points
  *     (`k2_describe`, `k2_create_image`/`k2_init_image`) fail with
- *     `EINVAL`;
+ *     `EINVAL`, as do registration and binding outside component
+ *     initialization;
  *   - buckets are explicit upper boundaries; `buckets_size == 0`
  *     registers a histogram with a default bucket layout;
  *   - descriptors are valid for the component's whole lifetime; there
