@@ -649,8 +649,8 @@ struct MetricLabel {
 };
 
 /**
- * Metrics: a component registers each metric once (at initialization) and
- * then updates it through descriptors.
+ * Metrics: a component registers each metric once and then updates it
+ * through descriptors.
  *
  * The registration fixes the metric name, its kind and its label schema
  * (the set of label names; values are supplied per series or per update).
@@ -668,20 +668,25 @@ struct MetricLabel {
  *     cases where the set of series is not known in advance.
  *
  * Contract (shared by all kinds):
- *   - the metrics API is available from `k2_create_component` onwards;
- *     calls from image-level entry points (`k2_describe`,
- *     `k2_create_image`/`k2_init_image`) fail with `EINVAL`;
+ *   - the metrics API is available from `k2_create_component` onwards —
+ *     at component initialization, at instance initialization and while
+ *     serving requests; calls from image-level entry points
+ *     (`k2_describe`, `k2_create_image`/`k2_init_image`) fail with
+ *     `EINVAL`;
  *   - buckets are explicit upper boundaries; `buckets_size == 0`
  *     registers a histogram with a default bucket layout;
- *   - descriptors are valid until the component exits; there is no
- *     unregistration; registering the same name twice within one
+ *   - descriptors are valid for the component's whole lifetime; there
+ *     is no unregistration; registering the same name twice within one
  *     component is an error;
  *   - `timestamp_ns` is nanoseconds since epoch; `0` means "now" (the
  *     k2-node substitutes the current time);
  *   - a kind mismatch (e.g. `k2_metrics_gauge_set` on a counter series)
  *     is rejected with `EINVAL`, as is an unknown descriptor.
  *
- * @param `md`/`sd` Out-pointers receiving the descriptor (0 on failure).
+ * @param `md`/`sd` The metric/series descriptor: the registration
+ * functions and `k2_metrics_bind` take an out-pointer receiving the
+ * descriptor (0 on failure); `k2_metrics_bind` and the update functions
+ * take the descriptor itself.
  * @param `name_ptr` A pointer to the metric name (valid UTF-8).
  * @param `name_size` The size of the metric name.
  * @param `labels_ptr` (registration) A pointer to an array of label
