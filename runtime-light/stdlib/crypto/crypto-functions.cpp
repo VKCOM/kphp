@@ -193,49 +193,51 @@ std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) 
   return std::nullopt;
 }
 
-std::optional<CipherAlgorithm> parse_cipher_algorithm_test(const string& algorithm) noexcept {
-  using namespace std::string_view_literals;
-  std::string_view algorithm_sv{algorithm.c_str(), algorithm.size()};
+constexpr auto CIPHER_ALGORITHMS = [] {
+  auto arr{std::array{std::pair{AES_128_CBC, AES128_CBC}, std::pair{AES_256_CBC, AES256_CBC}, std::pair{AES_128_GCM, AES128_GCM},
+                      std::pair{AES_256_GCM, AES256_GCM}}};
+  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first);
+  return arr;
+}();
 
-  const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+static_assert(CIPHER_ALGORITHMS.size() == CipherAlgorithm::COUNT_CIPHER);
 
-  if (std::ranges::equal(algorithm_sv, AES_128_CBC, ichar_equals)) {
-    return AES128_CBC;
-  } else if (std::ranges::equal(algorithm_sv, AES_256_CBC, ichar_equals)) {
-    return AES256_CBC;
-  } else if (std::ranges::equal(algorithm_sv, AES_128_GCM, ichar_equals)) {
-    return AES128_GCM;
-  } else if (std::ranges::equal(algorithm_sv, AES_256_GCM, ichar_equals)) {
-    return AES256_GCM;
+std::optional<CipherAlgorithm> parse_cipher_algorithm_test(std::string_view algorithm) noexcept {
+  auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
+                                             if (c >= 'A' && c <= 'Z') {
+                                               return c + ('a' - 'A');
+                                             }
+                                             return c;
+                                           }}};
+
+  auto rng{std::ranges::equal_range(CIPHER_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, CipherAlgorithm>::first)};
+  if (!rng.empty()) [[likely]] {
+    return rng.front().second;
   }
 
   return std::nullopt;
 }
 
-bool is_gcm_algorithm_test(CipherAlgorithm algorithm) {
-  return algorithm == AES128_GCM || algorithm == AES256_GCM;
-}
+enum class encryption_mode { BLOCK, STREAM, AEAD };
 
-bool is_aead_algorithm_test(CipherAlgorithm algorithm) {
-  return is_gcm_algorithm_test(algorithm);
-}
-
-struct CipherSizeInfo {
-  int64_t cipher_text_size;
-  int64_t tag_size;
+struct cipher_algorithm_traits {
+  int64_t key_len;
+  int64_t iv_len;
+  int64_t block_size;
+  encryption_mode mode;
 };
 
-CipherSizeInfo calc_encrypted_size(CipherAlgorithm algorithm, BlockPadding padding, int64_t tag_size, int64_t data_len) noexcept {
-  if (is_aead_algorithm_test(algorithm)) {
-    return {data_len, tag_size};
-  }
+constexpr const cipher_algorithm_traits& get_cipher_algorithm_traits(CipherAlgorithm algorithm) noexcept {
+  static constexpr std::array traits{
+      cipher_algorithm_traits{16, 12, 0, encryption_mode::AEAD},   // AES128_GCM
+      cipher_algorithm_traits{32, 12, 0, encryption_mode::AEAD},   // AES256_GCM
+      cipher_algorithm_traits{16, 16, 16, encryption_mode::BLOCK}, // AES128_CBC
+      cipher_algorithm_traits{32, 16, 16, encryption_mode::BLOCK}  // AES256_CBC
+  };
 
-  if (padding == PKCS7) {
-    static constexpr int64_t BLOCK_SIZE{16};
-    return {(data_len + BLOCK_SIZE) & ~(BLOCK_SIZE - 1), 0};
-  }
+  static_assert(traits.size() == CipherAlgorithm::COUNT_CIPHER);
 
-  return {data_len, 0};
+  return traits[algorithm];
 }
 
 bool is_gcm_algorithm(tl::CipherAlgorithm algorithm) {
@@ -244,6 +246,22 @@ bool is_gcm_algorithm(tl::CipherAlgorithm algorithm) {
 
 bool is_aead_algorithm(tl::CipherAlgorithm algorithm) {
   return is_gcm_algorithm(algorithm);
+}
+
+auto calc_encrypted_size(const cipher_algorithm_traits& algorithm_traits, int64_t tag_size, int64_t data_len) noexcept {
+  struct encrypted_data_size_info {
+    int64_t encrypted_size;
+    int64_t tag_size;
+  };
+
+  switch (algorithm_traits.mode) {
+  case encryption_mode::BLOCK:
+    return encrypted_data_size_info{data_len + algorithm_traits.block_size, 0};
+  case encryption_mode::STREAM:
+    return encrypted_data_size_info{data_len, 0};
+  case encryption_mode::AEAD:
+    return encrypted_data_size_info{data_len, tag_size};
+  }
 }
 
 constexpr size_t GCM_NONCE_LEN = 12;
@@ -266,30 +284,6 @@ int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) noexcept {
   }
   case tl::CipherAlgorithm::AES256_GCM:
   case tl::CipherAlgorithm::AES256_CBC: {
-    return AES_256_KEY_LEN;
-  }
-  default: {
-    kphp::log::warning("unexpected cipher algorithm");
-    return 0;
-  }
-  }
-}
-
-int64_t algorithm_iv_len_test([[maybe_unused]] CipherAlgorithm algorithm) noexcept {
-  if (is_gcm_algorithm_test(algorithm)) {
-    return GCM_NONCE_LEN;
-  }
-  return AES_BLOCK_LEN;
-}
-
-int64_t algorithm_key_len_test(CipherAlgorithm algorithm) noexcept {
-  switch (algorithm) {
-  case AES128_GCM:
-  case AES128_CBC: {
-    return AES_128_KEY_LEN;
-  }
-  case AES256_GCM:
-  case AES256_CBC: {
     return AES_256_KEY_LEN;
   }
   default: {
@@ -338,38 +332,16 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
   return std::make_pair(key, iv);
 }
 
-} // namespace
-
-array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
-  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_get_cipher_methods)};
-  array<string> return_value{
-      {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()}),
-       std::make_pair(2, string{AES_128_GCM.data(), AES_128_GCM.size()}), std::make_pair(3, string{AES_256_GCM.data(), AES_256_GCM.size()})}};
-  return return_value;
-}
-
-Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
-  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_cipher_iv_length)};
-  auto algorithm{parse_cipher_algorithm(method)};
-  if (!algorithm) {
-    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
-    return false;
-  }
-  return algorithm_iv_len(*algorithm);
-}
-
-Optional<std::pair<string, string>> algorithm_pad_key_iv_test(CipherAlgorithm algorithm, const string& source_key, const string& source_iv,
-                                                              int64_t options) noexcept {
-  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_encrypt)};
-  const size_t iv_required_len = algorithm_iv_len_test(algorithm);
-  const size_t key_required_len = algorithm_key_len_test(algorithm);
+std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_algorithm_traits& algorithm_traits, const string& source_key,
+                                                                   const string& source_iv, int64_t options) noexcept {
   auto iv = source_iv;
-  if (is_aead_algorithm_test(algorithm)) {
-    if (source_iv.empty()) {
+  if (algorithm_traits.mode == encryption_mode::AEAD) {
+    if (source_iv.empty()) [[unlikely]] {
       kphp::log::warning("Setting of IV length for AEAD mode failed");
-      return false;
+      return std::nullopt;
     }
   } else {
+    int64_t iv_required_len{algorithm_traits.iv_len};
     if (iv.size() < iv_required_len) {
       kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), iv_required_len);
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
@@ -380,10 +352,11 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv_test(CipherAlgorithm al
   }
 
   auto key = source_key;
+  int64_t key_required_len{algorithm_traits.key_len};
   if (key.size() < key_required_len) {
-    if (options & static_cast<int64_t>(cipher_opts::OPENSSL_DONT_ZERO_PAD_KEY)) {
+    if (options & static_cast<int64_t>(cipher_opts::OPENSSL_DONT_ZERO_PAD_KEY)) [[unlikely]] {
       kphp::log::warning("Key length should be {} bytes long:\n", key_required_len);
-      return false;
+      return std::nullopt;
     }
     kphp::log::warning("passphrase passed is only {} bytes long, cipher expects an passphrase of precisely {} bytes, padding with \\0", key.size(),
                        key_required_len);
@@ -393,36 +366,65 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv_test(CipherAlgorithm al
     key.shrink(static_cast<string::size_type>(key_required_len));
   }
 
-  return std::make_pair(key, iv);
+  return std::make_pair(std::move(key), std::move(iv));
 }
 
-Optional<string> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv,
-                                   std::optional<std::reference_wrapper<string>> tag, string aad, [[maybe_unused]] int64_t tag_length) noexcept {
-  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_encrypt)};
-  auto algorithm{parse_cipher_algorithm_test(method)};
-  if (!algorithm) {
-    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
+} // namespace
+
+array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_get_cipher_methods)};
+  array<string> res{array_size{CIPHER_ALGORITHMS.size(), true}};
+  for (auto [algo, _] : CIPHER_ALGORITHMS) {
+    res.push_back(string{algo.data(), static_cast<string::size_type>(algo.size())});
+  }
+
+  return res;
+}
+
+Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_cipher_iv_length)};
+  auto algo{parse_cipher_algorithm_test({algorithm.c_str(), algorithm.size()})};
+  if (!algo) {
+    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
     return false;
   }
 
-  bool aead{is_aead_algorithm_test(*algorithm)};
-  if (aead && (!tag.has_value() || tag_length == 0)) {
+  return get_cipher_algorithm_traits(*algo).iv_len;
+}
+
+Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& source_key, int64_t options, const string& source_iv,
+                                   std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_encrypt)};
+  auto algo{parse_cipher_algorithm_test({algorithm.c_str(), algorithm.size()})};
+  if (!algo) [[unlikely]] {
+    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
+    return false;
+  }
+
+  const auto& algorithm_traits{get_cipher_algorithm_traits(*algo)};
+
+  bool is_aead{algorithm_traits.mode == encryption_mode::AEAD};
+  if (is_aead && (!tag || tag_length == 0)) [[unlikely]] {
     kphp::log::warning("A tag must be provided when using AEAD mode");
     return false;
   }
 
-  if (tag.has_value() && !aead) {
-    kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
+  if (!is_aead) {
+    if (tag) {
+      kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
+    }
+
+    if (!aad.empty()) {
+      kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
+    }
   }
-  if (!aad.empty() && !aead) {
-    kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
-  }
+
   if (source_iv.empty()) {
     kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
   }
 
-  auto key_iv{algorithm_pad_key_iv_test(*algorithm, source_key, source_iv, options)};
-  if (!key_iv.has_value()) {
+  auto key_iv{algorithm_pad_key_iv_test(algorithm_traits, source_key, source_iv, options)};
+  if (!key_iv) [[unlikely]] {
     return false;
   }
 
@@ -431,18 +433,20 @@ Optional<string> f$openssl_encrypt(string data, string method, string source_key
     padding = NO_PADDING;
   }
 
-  auto encrypted_size{calc_encrypted_size(*algorithm, padding, tag_length, data.size())};
-  string encrypted_data{static_cast<string::size_type>(encrypted_size.cipher_text_size), false};
+  auto encrypted_size{calc_encrypted_size(algorithm_traits, tag_length, data.size())};
+  string encrypted_data{static_cast<string::size_type>(encrypted_size.encrypted_size), false};
   string received_tag{static_cast<string::size_type>(encrypted_size.tag_size), false};
-  auto res{k2::openssl_encrypt(*algorithm, padding, {key_iv.val().first.c_str(), key_iv.val().first.size()},
-                               {key_iv.val().second.c_str(), key_iv.val().second.size()}, tag_length, {aad.c_str(), aad.size()}, {data.c_str(), data.size()},
-                               {encrypted_data.buffer(), encrypted_data.size()}, {received_tag.buffer(), received_tag.size()})};
-  if (!res.has_value()) {
+  auto res{k2::openssl_encrypt(*algo, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
+                               {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
+                               {received_tag.buffer(), received_tag.size()})};
+  if (!res) [[unlikely]] {
     return false;
   }
 
-  if (tag.has_value()) {
-    tag.value().get() = std::move(received_tag);
+  encrypted_data.shrink(static_cast<string::size_type>(*res));
+
+  if (tag) {
+    (*tag).get() = std::move(received_tag);
   }
 
   return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(encrypted_data) : f$base64_encode(encrypted_data);
@@ -655,100 +659,110 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, str
 
 namespace {
 
-constexpr std::array<std::pair<std::string_view, tl::HashAlgorithm>, 6> HASH_ALGOS = {{{"md5", tl::HashAlgorithm::MD5},
-                                                                                       {"sha1", tl::HashAlgorithm::SHA1},
-                                                                                       {"sha224", tl::HashAlgorithm::SHA224},
-                                                                                       {"sha256", tl::HashAlgorithm::SHA256},
-                                                                                       {"sha384", tl::HashAlgorithm::SHA384},
-                                                                                       {"sha512", tl::HashAlgorithm::SHA512}}};
+constexpr std::string_view SHA1 = "sha1";
+constexpr std::string_view SHA224 = "sha224";
+constexpr std::string_view SHA256 = "sha256";
+constexpr std::string_view SHA384 = "sha384";
+constexpr std::string_view SHA512 = "sha512";
+constexpr std::string_view MD5 = "md5";
 
-std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo) noexcept {
-  const auto* it{std::ranges::find_if(
-      HASH_ALGOS,
-      [user_algo = std::ranges::transform_view(user_algo, [](auto c) { return std::tolower(c); })](auto hash_algo) noexcept {
-        return std::ranges::equal(user_algo, hash_algo);
-      },
-      [](const auto& hash_algo) noexcept { return hash_algo.first; })};
+constexpr auto HASH_ALGORITHMS = []() noexcept {
+  auto arr{std::array{std::pair{SHA1, HashAlgorithm::SHA1}, std::pair{SHA224, HashAlgorithm::SHA224}, std::pair{SHA256, HashAlgorithm::SHA256},
+                      std::pair{SHA384, HashAlgorithm::SHA384}, std::pair{SHA512, HashAlgorithm::SHA512}, std::pair{MD5, HashAlgorithm::MD5}}};
 
-  return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
+  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, HashAlgorithm>::first);
+  return arr;
+}();
+
+static_assert(HASH_ALGORITHMS.size() == HashAlgorithm::COUNT_HASH);
+
+std::optional<HashAlgorithm> parse_hash_algorithm(std::string_view algorithm) noexcept {
+  auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
+                                             if (c >= 'A' && c <= 'Z') {
+                                               return c + ('a' - 'A');
+                                             }
+                                             return c;
+                                           }}};
+
+  auto rng{std::ranges::equal_range(HASH_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, HashAlgorithm>::first)};
+  if (!rng.empty()) [[likely]] {
+    return rng.front().second;
+  }
+
+  return std::nullopt;
 }
 
-kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output) noexcept {
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
-  }
+auto calc_hashed_size(HashAlgorithm algorithm) noexcept -> size_t {
+  static constexpr std::array sizes{
+      20, // SHA1
+      28, // SHA224
+      32, // SHA256
+      48, // SHA384
+      64, // SHA512
+      16  //MD5
+  };
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+  static_assert(sizes.size() == HashAlgorithm::COUNT_HASH);
 
-  tl::fetcher tlf{response_bytes};
-  tl::String response{};
-  kphp::log::assertion(response.fetch(tlf));
-
-  if (!raw_output) {
-    co_return kphp::strings::bin2hex(response.inner.value);
-  }
-  // Important to pass size because response.inner.value is binary so
-  // it may contain zero in any position, not only in the end
-  co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  return sizes[algorithm];
 }
 
-kphp::coro::task<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
-  tl::Hash hash{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
-  tl::storer tls{hash.footprint()};
-  hash.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output);
-}
-
-array<string> hash_algos_impl() noexcept {
-  array<string> response{array_size{HASH_ALGOS.size(), true}};
-  for (auto [algo_name, _] : HASH_ALGOS) {
-    response.push_back(string{algo_name.data(), static_cast<string::size_type>(algo_name.size())});
+string hash_impl(HashAlgorithm algorithm, const string& data, bool binary) noexcept {
+  string hashed_data{static_cast<string::size_type>(calc_hashed_size(algorithm)), false};
+  auto res{k2::hash(algorithm, {data.c_str(), data.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  if (!res) [[unlikely]] {
+    return string{false};
   }
-  return response;
+
+  return binary ? std::move(hashed_data) : kphp::strings::bin2hex({hashed_data.c_str(), hashed_data.size()});
 }
 
 } // namespace
 
 array<string> f$hash_algos() noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash_algos)};
-  return hash_algos_impl();
+  array<string> res{array_size{HASH_ALGORITHMS.size(), true}};
+  for (auto [algo, _] : HASH_ALGORITHMS) {
+    res.push_back(string{algo.data(), static_cast<string::size_type>(algo.size())});
+  }
+
+  return res;
 }
 
 array<string> f$hash_hmac_algos() noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash_hmac_algos)};
-  return hash_algos_impl();
+  return f$hash_algos();
 }
 
-kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
+string f$hash(const string& algorithm, const string& data, bool binary) noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash)};
-  const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
+  const auto algo{parse_hash_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
-    kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
+    kphp::log::error("algorithm {} not supported in function hash", algorithm.c_str());
   }
-  co_return co_await hash_impl(*algo, s, raw_output);
+
+  return hash_impl(*algo, data, binary);
 }
 
-kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
+string f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary) noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash_hmac)};
-  const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
+  const auto algo{parse_hash_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
-    kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
+    kphp::log::error("algorithm {} not supported in function hash_hmac", algorithm.c_str());
   }
 
-  tl::HashHmac hash_hmac{.algorithm = *algo, .data = {.value = {s.c_str(), s.size()}}, .secret_key = {.value = {key.c_str(), key.size()}}};
-  tl::storer tls{hash_hmac.footprint()};
-  hash_hmac.store(tls);
-  co_return co_await send_and_get_string(std::move(tls), raw_output);
+  string hashed_data{static_cast<string::size_type>(calc_hashed_size(*algo)), false};
+  auto res{k2::hash_hmac(*algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  if (!res) [[unlikely]] {
+    return string{false};
+  }
+
+  return binary ? std::move(hashed_data) : kphp::strings::bin2hex({hashed_data.c_str(), hashed_data.size()});
 }
 
-kphp::coro::task<string> f$sha1(string s, bool raw_output) noexcept {
+string f$sha1(const string& data, bool binary) noexcept {
   auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::sha1)};
-  co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
+  return hash_impl(HashAlgorithm::SHA1, data, binary);
 }
 
 int64_t f$crc32(const string& s) noexcept {

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <__expected/expected.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -261,14 +262,34 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
-inline std::expected<void, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view passphrase, std::string_view iv,
-                                                    int64_t tag_size, std::string_view aad, std::string_view data, std::span<char> encrypted_data,
-                                                    std::span<char> received_tag) noexcept {
-  if (auto error_code{k2_openssl_encrypt(algorithm, padding, passphrase.data(), passphrase.size(), iv.data(), iv.size(), tag_size, aad.data(), aad.size(),
-                                         data.data(), data.size(), encrypted_data.data(), encrypted_data.size(), received_tag.data(), received_tag.size())};
+inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
+                                                      std::string_view aad, std::string_view data, std::span<char> encrypted_data,
+                                                      std::span<char> received_tag) noexcept {
+  size_t encrypted_data_written{0};
+  if (auto error_code{k2_openssl_encrypt(algorithm, padding, key.data(), key.size(), iv.data(), iv.size(), aad.data(), aad.size(), data.data(), data.size(),
+                                         encrypted_data.data(), encrypted_data.size(), std::addressof(encrypted_data_written), received_tag.data(),
+                                         received_tag.size())};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
+
+  return {encrypted_data_written};
+}
+
+inline std::expected<void, int32_t> hash(HashAlgorithm algorithm, std::string_view data, std::span<char> hashed_data) noexcept {
+  if (auto error_code{k2_hash(algorithm, data.data(), data.size(), hashed_data.data(), hashed_data.size())}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
+}
+
+inline std::expected<void, int32_t> hash_hmac(HashAlgorithm algorithm, std::string_view data, std::string_view key, std::span<char> hashed_data) noexcept {
+  if (auto error_code{k2_hash_hmac(algorithm, data.data(), data.size(), key.data(), key.size(), hashed_data.data(), hashed_data.size())};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
   return {};
 }
 
