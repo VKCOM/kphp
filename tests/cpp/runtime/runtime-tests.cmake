@@ -20,6 +20,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         memory_resource/details/memory_ordered_chunk_list-test.cpp
         memory_resource/extra-memory-pool-test.cpp
         memory_resource/segmented-stack-resource-test.cpp
+        memory_resource/stack-resource-test.cpp
         memory_resource/unsynchronized_pool_resource-test.cpp
         string-list-test.cpp
         string-test.cpp

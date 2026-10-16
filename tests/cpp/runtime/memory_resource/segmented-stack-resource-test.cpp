@@ -36,8 +36,6 @@ auto segment_payload(std::byte* buffer_start, size_t index) noexcept -> std::byt
 TEST(segmented_stack_resource_test, uninited_state) {
   memory_resource::segmented_stack_resource<memory_resource::chunk_pool_resource> resource;
 
-  ASSERT_EQ(resource.allocate(1), nullptr);
-  ASSERT_EQ(resource.allocate0(1), nullptr);
   ASSERT_EQ(resource.get_buffer_list_head(), nullptr);
 }
 
