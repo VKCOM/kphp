@@ -346,6 +346,10 @@ static void header(const char* str, int str_len, bool replace = true, int http_r
   }
 }
 
+int& get_http_return_code() noexcept {
+  return http_return_code;
+}
+
 void f$header(const string& str, bool replace, int64_t http_response_code) {
   header(str.c_str(), (int)str.size(), replace, static_cast<int32_t>(http_response_code));
 }
