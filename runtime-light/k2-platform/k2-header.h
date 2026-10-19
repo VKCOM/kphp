@@ -679,8 +679,11 @@ struct MetricLabel {
  *   - buckets are explicit upper boundaries; `buckets_size == 0`
  *     registers a histogram with a default bucket layout;
  *   - descriptors are valid for the component's whole lifetime; there
- *     is no unregistration; registering the same name twice within one
- *     component is an error;
+ *     is no unregistration; a component is expected to register each
+ *     metric once — a duplicate registration is not rejected by
+ *     itself, but one conflicting with the existing metric (a
+ *     different kind, label schema or buckets) may fail with
+ *     `EINVAL`, depending on the monitoring system;
  *   - `timestamp_ns` is nanoseconds since epoch; `0` means "now" (the
  *     k2-node substitutes the current time);
  *   - a kind mismatch (e.g. `k2_metrics_gauge_set` on a counter series)
