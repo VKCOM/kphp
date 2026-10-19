@@ -238,6 +238,7 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
   state = run_state_t::ready;
 
   error_message = "??? error";
+  error_type = script_error_t::no_error;
 
   script_time = 0;
   net_time = 0;
