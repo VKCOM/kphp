@@ -22,10 +22,15 @@ class TestErrors(WebServerAutoTestCase):
                 "Critical error during script execution: php assert error"
             ])
 
+            response = self.web_server.http_get("/pid")
+            self.assertEqual(200, response.status_code)
+
         self.web_server.assert_stats(
             timeout=5,
             initial_stats=stats_before,
             expected_added_stats={
+                # Successful requests must not inherit the preceding script error.
+                "kphp_server.workers_general_errors_php_assert": 5,
                 # ensure shared data is not leaked
                 "kphp_server.server_workers_strange_dead": 0,
                 "kphp_server.server_workers_killed": 0,
