@@ -19,15 +19,24 @@
 namespace kphp {
 namespace strings {
 
+inline void bin2hex(const char* src, size_t src_len, char* dst, size_t dst_len) noexcept {
+  php_assert(dst_len >= 2 * src_len);
+  const auto& string_lib_constants{StringLibConstants::get()};
+  for (size_t i = src_len; i-- > 0;) {
+    dst[2 * i + 1] = string_lib_constants.lhex_digits[src[i] & 15];
+    dst[2 * i] = string_lib_constants.lhex_digits[(src[i] >> 4) & 15];
+  }
+}
+
+inline void bin2hex(char* buf, size_t src_len, size_t buf_len) noexcept {
+  bin2hex(buf, src_len, buf, buf_len);
+}
+
 inline string bin2hex(std::string_view str) noexcept {
   int len = str.size();
   string result(2 * len, false);
 
-  const auto& string_lib_constants{StringLibConstants::get()};
-  for (int i = 0; i < len; i++) {
-    result[2 * i] = string_lib_constants.lhex_digits[(str[i] >> 4) & 15];
-    result[2 * i + 1] = string_lib_constants.lhex_digits[str[i] & 15];
-  }
+  bin2hex(str.data(), str.size(), result.buffer(), result.size());
 
   return result;
 }

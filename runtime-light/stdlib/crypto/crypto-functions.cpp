@@ -686,13 +686,17 @@ std::optional<hash_algorithm_traits> parse_hash_algorithm(std::string_view algor
 }
 
 string hash_impl(hash_algorithm_traits traits, const string& data, bool binary) noexcept {
-  string hashed_data{static_cast<string::size_type>(traits.hashed_size), false};
-  auto res{k2::hash(traits.algo, {data.c_str(), data.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  string hashed_data{binary ? static_cast<string::size_type>(traits.hashed_size) : static_cast<string::size_type>(traits.hashed_size * 2), false};
+  auto res{k2::hash(traits.algo, {data.c_str(), data.size()}, {hashed_data.buffer(), static_cast<size_t>(traits.hashed_size)})};
   if (!res) [[unlikely]] {
-    return string{false};
+    return {};
   }
 
-  return binary ? std::move(hashed_data) : kphp::strings::bin2hex({hashed_data.c_str(), hashed_data.size()});
+  if (!binary) {
+    kphp::strings::bin2hex(hashed_data.buffer(), traits.hashed_size, hashed_data.size());
+  }
+
+  return hashed_data;
 }
 
 } // namespace
@@ -725,13 +729,17 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
     kphp::log::error("algorithm {} not supported in function hash_hmac", algorithm.c_str());
   }
 
-  string hashed_data{static_cast<string::size_type>(algo->hashed_size), false};
-  auto res{k2::hash_hmac(algo->algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  string hashed_data{binary ? static_cast<string::size_type>(algo->hashed_size) : static_cast<string::size_type>(algo->hashed_size * 2), false};
+  auto res{k2::hash_hmac(algo->algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), static_cast<size_t>(algo->hashed_size)})};
   if (!res) [[unlikely]] {
-    return string{false};
+    return {};
   }
 
-  return binary ? std::move(hashed_data) : kphp::strings::bin2hex({hashed_data.c_str(), hashed_data.size()});
+  if (!binary) {
+    kphp::strings::bin2hex(hashed_data.buffer(), algo->hashed_size, hashed_data.size());
+  }
+
+  return hashed_data;
 }
 
 string f$sha1(const string& data, bool binary) noexcept {
