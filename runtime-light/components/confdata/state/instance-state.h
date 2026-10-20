@@ -65,7 +65,7 @@ public:
                                                         m_component_state.m_min_instance_extra_coroutine_memory_size,
                                                         0,
                                                         m_component_state.m_initial_instance_task_memory_size,
-                                                        m_component_state.m_instance_task_allocator_segment_size,
+                                                        m_component_state.m_instance_task_allocator_stack_size,
                                                         m_component_state.m_instance_task_allocator_stack_pool_chunk_size,
                                                         m_component_state.m_min_instance_extra_task_memory_size,
                                                         0};

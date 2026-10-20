@@ -28,8 +28,8 @@ class object_pool : private vk::not_copyable, private std::allocator_traits<Allo
     chunk_header* m_next{nullptr};
   };
 
-  std::size_t m_chunk_size{0};
-  std::size_t m_chunk_byte_size{0};
+  size_t m_chunk_size{0};
+  size_t m_chunk_byte_size{0};
   chunk_header* m_head_chunk{nullptr};
   obj_slot* m_head_free_slot{nullptr};
 
@@ -55,20 +55,20 @@ class object_pool : private vk::not_copyable, private std::allocator_traits<Allo
   }
 
 public:
-  explicit object_pool(std::size_t chunk_size) noexcept
+  // If chunk_size == 0, it is UB
+  explicit object_pool(size_t chunk_size) noexcept
       : m_chunk_size{chunk_size},
         m_chunk_byte_size{sizeof(chunk_header) + chunk_size * sizeof(obj_slot)} {
     assert(chunk_size > 0);
-
     link_new_chunk();
   }
 
-  explicit object_pool(std::size_t chunk_size, const Allocator& allocator) noexcept
+  // If chunk_size == 0, it is UB
+  explicit object_pool(size_t chunk_size, const Allocator& allocator) noexcept
       : byte_allocator(allocator),
         m_chunk_size{chunk_size},
         m_chunk_byte_size{sizeof(chunk_header) + chunk_size * sizeof(obj_slot)} {
     assert(chunk_size > 0);
-
     link_new_chunk();
   }
 

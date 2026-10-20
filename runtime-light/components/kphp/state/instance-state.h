@@ -96,7 +96,7 @@ struct InstanceState final : vk::not_copyable {
                                                       component_state.min_instance_extra_coroutine_memory_size,
                                                       0,
                                                       component_state.initial_instance_task_memory_size,
-                                                      component_state.instance_task_allocator_segment_size,
+                                                      component_state.instance_task_allocator_stack_size,
                                                       component_state.instance_task_allocator_stack_pool_chunk_size,
                                                       component_state.min_instance_extra_task_memory_size,
                                                       0};

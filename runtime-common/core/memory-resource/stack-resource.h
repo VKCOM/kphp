@@ -55,6 +55,10 @@ public:
   auto memory_begin() noexcept -> void* {
     return m_begin;
   }
+
+  auto free_memory_size() noexcept -> size_t {
+    return m_end - m_curr;
+  }
 };
 
 } // namespace memory_resource

@@ -34,7 +34,7 @@ struct ComponentState final : private vk::not_copyable {
   uint64_t initial_instance_coroutine_memory_size{DEFAULT_INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE};
   uint64_t min_instance_extra_coroutine_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE};
   uint64_t initial_instance_task_memory_size{DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE};
-  uint64_t instance_task_allocator_segment_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE};
+  uint64_t instance_task_allocator_stack_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_SIZE};
   uint64_t instance_task_allocator_stack_pool_chunk_size{DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE};
   uint64_t min_instance_extra_task_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE};
 
@@ -82,7 +82,7 @@ private:
   static constexpr auto DEFAULT_INIT_INSTANCE_COROUTINE_ALLOCATOR_SIZE = static_cast<size_t>(8U * 1024U * 1024U);        // 8MiB
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_COROUTINE_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
   static constexpr auto DEFAULT_INIT_INSTANCE_TASK_ALLOCATOR_SIZE = static_cast<size_t>(4U * 1024U * 1024U);             // 4MiB
-  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_SEGMENT_SIZE = static_cast<size_t>(32U * 1024U);                 // 32KiB
+  static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_SIZE = static_cast<size_t>(32U * 1024U);                   // 32KiB
   static constexpr auto DEFAULT_INSTANCE_TASK_ALLOCATOR_STACK_POOL_CHUNK_SIZE = static_cast<size_t>(80U);
   static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_TASK_MEMORY_POOL_SIZE = static_cast<size_t>(4U * 1024U * 1024U); // 4MiB
 
@@ -110,7 +110,7 @@ private:
 
   void parse_initial_instance_task_memory_size_arg(std::string_view) noexcept;
 
-  void parse_instance_task_allocator_segment_size_arg(std::string_view) noexcept;
+  void parse_instance_task_allocator_stack_size_arg(std::string_view) noexcept;
 
   void parse_instance_task_allocator_stack_pool_chunk_size_arg(std::string_view) noexcept;
 

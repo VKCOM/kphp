@@ -11,8 +11,7 @@
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/memory-resource/chunk-pool-resource.h"
-#include "runtime-common/core/memory-resource/segmented-stack-resource.h"
-#include "runtime-common/core/std/containers.h"
+#include "runtime-common/core/memory-resource/stack-resource.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::memory {
@@ -25,43 +24,11 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
 } // namespace task
 
 struct task_allocator final : private vk::not_copyable {
-  struct shared_chunk_pool {
-    memory_resource::chunk_pool_resource& m_chunk_pool;
-
-    shared_chunk_pool() noexcept
-        : m_chunk_pool{task_allocator::get().m_chunk_pool} {}
-
-    auto init(void* /*unused*/, size_t /*unused*/, size_t /*unused*/) noexcept -> void {}
-
-    auto allocate() noexcept -> void* {
-      return m_chunk_pool.allocate();
-    }
-
-    auto allocate0() noexcept -> void* {
-      return m_chunk_pool.allocate0();
-    }
-
-    auto deallocate(void* mem) noexcept -> void {
-      m_chunk_pool.deallocate(mem);
-    }
-
-    auto add_extra_memory(void* buffer, size_t buffer_size) noexcept -> void {
-      m_chunk_pool.add_extra_memory(buffer, buffer_size);
-    }
-
-    auto get_buffer_list_head() const noexcept -> auto* {
-      return m_chunk_pool.get_buffer_list_head();
-    }
-  };
-
 private:
-  vk::object_pool<memory_resource::segmented_stack_resource<shared_chunk_pool>,
-                  kphp::memory::script_allocator<memory_resource::segmented_stack_resource<shared_chunk_pool>>>
-      m_stack_pool;
+  vk::object_pool<memory_resource::stack_resource, kphp::memory::script_allocator<memory_resource::stack_resource>> m_stack_pool;
   memory_resource::chunk_pool_resource m_chunk_pool;
-  kphp::stl::vector<memory_resource::segmented_stack_resource<shared_chunk_pool>*, kphp::memory::script_allocator> m_free_stacks;
-  memory_resource::segmented_stack_resource<shared_chunk_pool>* m_curr_stack{nullptr};
-  size_t m_segment_size{0};
+  memory_resource::stack_resource* m_curr_stack{nullptr};
+  size_t m_stack_size{0};
   size_t m_min_extra_mem_size{0};
 
   auto request_extra_memory(size_t requested_size) noexcept -> void {
@@ -81,23 +48,18 @@ private:
 public:
   static auto get() noexcept -> task_allocator&;
 
-  task_allocator(size_t script_mem_size, size_t segment_size, size_t stack_pool_chunk_size, size_t min_extra_mem_size, size_t /*unused*/) noexcept
+  task_allocator(size_t script_mem_size, size_t stack_size, size_t stack_pool_chunk_size, size_t min_extra_mem_size, size_t /*unused*/) noexcept
       : m_stack_pool{stack_pool_chunk_size},
-        m_segment_size{segment_size},
+        m_stack_size{stack_size},
         m_min_extra_mem_size{min_extra_mem_size} {
     void* buffer{kphp::memory::platform::alloc(script_mem_size)};
 
     kphp::log::assertion(buffer != nullptr);
 
-    m_chunk_pool.init(buffer, script_mem_size, m_segment_size + memory_resource::segmented_stack_resource<shared_chunk_pool>::segment_header_size());
-    m_free_stacks.reserve(stack_pool_chunk_size);
+    m_chunk_pool.init(buffer, script_mem_size, m_stack_size);
   }
 
   auto free() noexcept -> void {
-    for (auto* stack : m_free_stacks) {
-      m_stack_pool.release(*stack);
-    }
-
     auto* curr_buffer{m_chunk_pool.get_buffer_list_head()};
     while (curr_buffer != nullptr) {
       auto* next_buffer = curr_buffer->next;
@@ -106,39 +68,15 @@ public:
     }
   }
 
-  auto acquire_stack() noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>& {
-    if (m_free_stacks.empty()) {
-      auto& stack{m_stack_pool.acquire()};
-      // We can pass nullptr as buffer and 0 as buffer_size, because init in shared_chunk_pool is noop
-      stack.init(nullptr, 0, m_segment_size);
-
-      return stack;
-    }
-
-    auto* stack{m_free_stacks.back()};
-    m_free_stacks.pop_back();
-
-    return *stack;
-  }
-
-  auto release_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>& stack) noexcept -> void {
-    m_free_stacks.push_back(std::addressof(stack));
-  }
-
-  auto segment_size() const noexcept -> size_t {
-    return m_segment_size;
-  }
-
-  auto current_stack() const noexcept -> memory_resource::segmented_stack_resource<shared_chunk_pool>* {
+  auto current_stack() const noexcept -> memory_resource::stack_resource* {
     return m_curr_stack;
   }
 
-  auto set_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>* stack) noexcept -> void {
+  auto set_stack(memory_resource::stack_resource* stack) noexcept -> void {
     m_curr_stack = stack;
   }
 
-  auto exchange_stack(memory_resource::segmented_stack_resource<shared_chunk_pool>* stack) noexcept
-      -> memory_resource::segmented_stack_resource<shared_chunk_pool>* {
+  auto exchange_stack(memory_resource::stack_resource* stack) noexcept -> memory_resource::stack_resource* {
     auto* prev{m_curr_stack};
     set_stack(stack);
 
@@ -146,16 +84,32 @@ public:
   }
 
 private:
-  auto alloc_script_memory(size_t size) noexcept -> void* {
-    void* mem{m_curr_stack->allocate(size)};
-    if (mem == nullptr) [[unlikely]] {
-      request_extra_memory(size);
-      mem = m_curr_stack->allocate(size);
+  auto stack_size() const noexcept -> size_t {
+    return m_stack_size;
+  }
 
-      kphp::log::assertion(mem != nullptr);
+  auto acquire_stack() noexcept -> memory_resource::stack_resource& {
+    auto& stack{m_stack_pool.acquire()};
+    auto* chunk{m_chunk_pool.allocate()};
+    if (chunk == nullptr) [[unlikely]] {
+      request_extra_memory(m_stack_size);
+      chunk = m_chunk_pool.allocate();
+
+      kphp::log::assertion(chunk != nullptr);
     }
 
-    return mem;
+    stack.init(chunk, m_stack_size);
+
+    return stack;
+  }
+
+  auto release_stack(memory_resource::stack_resource& stack) noexcept -> void {
+    m_chunk_pool.deallocate(stack.memory_begin());
+    m_stack_pool.release(stack);
+  }
+
+  auto alloc_script_memory(size_t size) noexcept -> void* {
+    return m_curr_stack->allocate(size);
   }
 
   auto free_script_memory(void* mem, size_t size) noexcept -> void {
