@@ -29,8 +29,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept;
 Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
                                    std::optional<std::reference_wrapper<string>> tag = {}, const string& aad = string{}, int64_t tag_length = 16) noexcept;
 
-kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string key, int64_t options = 0, string iv = string{}, string tag = string{},
-                                                     string aad = string{}) noexcept;
+Optional<string> f$openssl_decrypt(string data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
+                                   const string& tag = string{}, const string& aad = string{}) noexcept;
 
 kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept;
 
