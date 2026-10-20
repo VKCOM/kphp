@@ -187,31 +187,6 @@ std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) 
   return std::nullopt;
 }
 
-constexpr auto CIPHER_ALGORITHMS = [] {
-  auto arr{std::array{std::pair{AES_128_CBC, AES128_CBC}, std::pair{AES_256_CBC, AES256_CBC}, std::pair{AES_128_GCM, AES128_GCM},
-                      std::pair{AES_256_GCM, AES256_GCM}}};
-  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, CipherAlgorithm>::first);
-  return arr;
-}();
-
-static_assert(CIPHER_ALGORITHMS.size() == CipherAlgorithm::COUNT_CIPHER);
-
-std::optional<CipherAlgorithm> parse_cipher_algorithm_test(std::string_view algorithm) noexcept {
-  auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
-                                             if (c >= 'A' && c <= 'Z') {
-                                               return c + ('a' - 'A');
-                                             }
-                                             return c;
-                                           }}};
-
-  auto rng{std::ranges::equal_range(CIPHER_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, CipherAlgorithm>::first)};
-  if (!rng.empty()) [[likely]] {
-    return rng.front().second;
-  }
-
-  return std::nullopt;
-}
-
 enum class encryption_mode { BLOCK, STREAM, AEAD };
 
 struct cipher_algorithm_traits {
@@ -219,19 +194,35 @@ struct cipher_algorithm_traits {
   int64_t iv_len;
   int64_t block_size;
   encryption_mode mode;
+  CipherAlgorithm algo;
 };
 
-constexpr const cipher_algorithm_traits& get_cipher_algorithm_traits(CipherAlgorithm algorithm) noexcept {
-  static constexpr std::array traits{
-      cipher_algorithm_traits{16, 12, 0, encryption_mode::AEAD},   // AES128_GCM
-      cipher_algorithm_traits{32, 12, 0, encryption_mode::AEAD},   // AES256_GCM
-      cipher_algorithm_traits{16, 16, 16, encryption_mode::BLOCK}, // AES128_CBC
-      cipher_algorithm_traits{32, 16, 16, encryption_mode::BLOCK}  // AES256_CBC
-  };
+constexpr auto CIPHER_ALGORITHMS = [] {
+  auto arr{std::array{std::pair{AES_128_CBC, cipher_algorithm_traits{16, 16, 16, encryption_mode::BLOCK, AES128_CBC}},
+                      std::pair{AES_256_CBC, cipher_algorithm_traits{32, 16, 16, encryption_mode::BLOCK, AES256_CBC}},
+                      std::pair{AES_128_GCM, cipher_algorithm_traits{16, 12, 0, encryption_mode::AEAD, AES128_GCM}},
+                      std::pair{AES_256_GCM, cipher_algorithm_traits{32, 12, 0, encryption_mode::AEAD, AES256_GCM}}}};
+  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, cipher_algorithm_traits>::first);
+  return arr;
+}();
 
-  static_assert(traits.size() == CipherAlgorithm::COUNT_CIPHER);
+static_assert(CIPHER_ALGORITHMS.size() == CipherAlgorithm::COUNT_CIPHER);
 
-  return traits[algorithm];
+std::optional<std::reference_wrapper<const cipher_algorithm_traits>> parse_cipher_algorithm_test(std::string_view algorithm) noexcept {
+  auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
+                                             if (c >= 'A' && c <= 'Z') {
+                                               return c + ('a' - 'A');
+                                             }
+                                             return c;
+                                           }}};
+
+  auto rng{
+      std::ranges::equal_range(CIPHER_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, cipher_algorithm_traits>::first)};
+  if (!rng.empty()) [[likely]] {
+    return rng.front().second;
+  }
+
+  return std::nullopt;
 }
 
 bool is_gcm_algorithm(tl::CipherAlgorithm algorithm) {
@@ -242,15 +233,15 @@ bool is_aead_algorithm(tl::CipherAlgorithm algorithm) {
   return is_gcm_algorithm(algorithm);
 }
 
-auto calc_encrypted_size(const cipher_algorithm_traits& algorithm_traits, int64_t tag_size, int64_t data_len) noexcept {
+auto calc_encrypted_size(const cipher_algorithm_traits& traits, int64_t tag_size, int64_t data_len) noexcept {
   struct encrypted_data_size_info {
     int64_t encrypted_size;
     int64_t tag_size;
   };
 
-  switch (algorithm_traits.mode) {
+  switch (traits.mode) {
   case encryption_mode::BLOCK:
-    return encrypted_data_size_info{data_len + algorithm_traits.block_size, 0};
+    return encrypted_data_size_info{data_len + traits.block_size, 0};
   case encryption_mode::STREAM:
     return encrypted_data_size_info{data_len, 0};
   case encryption_mode::AEAD:
@@ -326,16 +317,16 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
   return std::make_pair(key, iv);
 }
 
-std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_algorithm_traits& algorithm_traits, const string& source_key,
-                                                                   const string& source_iv, int64_t options) noexcept {
+std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_algorithm_traits& traits, const string& source_key, const string& source_iv,
+                                                                   int64_t options) noexcept {
   auto iv = source_iv;
-  if (algorithm_traits.mode == encryption_mode::AEAD) {
+  if (traits.mode == encryption_mode::AEAD) {
     if (source_iv.empty()) [[unlikely]] {
       kphp::log::warning("Setting of IV length for AEAD mode failed");
       return std::nullopt;
     }
   } else {
-    int64_t iv_required_len{algorithm_traits.iv_len};
+    int64_t iv_required_len{traits.iv_len};
     if (iv.size() < iv_required_len) {
       kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), iv_required_len);
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
@@ -346,7 +337,7 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_
   }
 
   auto key = source_key;
-  int64_t key_required_len{algorithm_traits.key_len};
+  int64_t key_required_len{traits.key_len};
   if (key.size() < key_required_len) {
     if (options & static_cast<int64_t>(cipher_opts::OPENSSL_DONT_ZERO_PAD_KEY)) [[unlikely]] {
       kphp::log::warning("Key length should be {} bytes long:\n", key_required_len);
@@ -367,7 +358,7 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_
 
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
   array<string> res{array_size{CIPHER_ALGORITHMS.size(), true}};
-  for (auto [algo, _] : CIPHER_ALGORITHMS) {
+  for (const auto& [algo, _] : CIPHER_ALGORITHMS) {
     res.push_back(string{algo.data(), static_cast<string::size_type>(algo.size())});
   }
 
@@ -381,7 +372,7 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
     return false;
   }
 
-  return get_cipher_algorithm_traits(*algo).iv_len;
+  return algo->get().iv_len;
 }
 
 Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& source_key, int64_t options, const string& source_iv,
@@ -392,9 +383,8 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
     return false;
   }
 
-  const auto& algorithm_traits{get_cipher_algorithm_traits(*algo)};
-
-  bool is_aead{algorithm_traits.mode == encryption_mode::AEAD};
+  const auto& traits{algo->get()};
+  bool is_aead{traits.mode == encryption_mode::AEAD};
   if (is_aead && (!tag || tag_length == 0)) [[unlikely]] {
     kphp::log::warning("A tag must be provided when using AEAD mode");
     return false;
@@ -414,7 +404,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
     kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
   }
 
-  auto key_iv{algorithm_pad_key_iv_test(algorithm_traits, source_key, source_iv, options)};
+  auto key_iv{algorithm_pad_key_iv_test(traits, source_key, source_iv, options)};
   if (!key_iv) [[unlikely]] {
     return false;
   }
@@ -424,10 +414,10 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
     padding = NO_PADDING;
   }
 
-  auto encrypted_size{calc_encrypted_size(algorithm_traits, tag_length, data.size())};
+  auto encrypted_size{calc_encrypted_size(traits, tag_length, data.size())};
   string encrypted_data{static_cast<string::size_type>(encrypted_size.encrypted_size), false};
   string received_tag{static_cast<string::size_type>(encrypted_size.tag_size), false};
-  auto res{k2::openssl_encrypt(*algo, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
+  auto res{k2::openssl_encrypt(traits.algo, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
                                {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
                                {received_tag.buffer(), received_tag.size()})};
   if (!res) [[unlikely]] {
@@ -652,17 +642,33 @@ constexpr std::string_view SHA384 = "sha384";
 constexpr std::string_view SHA512 = "sha512";
 constexpr std::string_view MD5 = "md5";
 
-constexpr auto HASH_ALGORITHMS = []() noexcept {
-  auto arr{std::array{std::pair{SHA1, HashAlgorithm::SHA1}, std::pair{SHA224, HashAlgorithm::SHA224}, std::pair{SHA256, HashAlgorithm::SHA256},
-                      std::pair{SHA384, HashAlgorithm::SHA384}, std::pair{SHA512, HashAlgorithm::SHA512}, std::pair{MD5, HashAlgorithm::MD5}}};
+constexpr size_t SHA1_HASHED_SIZE = 20;
+constexpr size_t SHA224_HASHED_SIZE = 28;
+constexpr size_t SHA256_HASHED_SIZE = 32;
+constexpr size_t SHA384_HASHED_SIZE = 48;
+constexpr size_t SHA512_HASHED_SIZE = 64;
+constexpr size_t MD5_HASHED_SIZE = 16;
 
-  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, HashAlgorithm>::first);
+struct hash_algorithm_traits {
+  int64_t hashed_size;
+  HashAlgorithm algo;
+};
+
+constexpr auto HASH_ALGORITHMS = []() noexcept {
+  auto arr{std::array{std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}},
+                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, HashAlgorithm::SHA224}},
+                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
+                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
+                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
+                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}}}};
+
+  std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, hash_algorithm_traits>::first);
   return arr;
 }();
 
 static_assert(HASH_ALGORITHMS.size() == HashAlgorithm::COUNT_HASH);
 
-std::optional<HashAlgorithm> parse_hash_algorithm(std::string_view algorithm) noexcept {
+std::optional<hash_algorithm_traits> parse_hash_algorithm(std::string_view algorithm) noexcept {
   auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
                                              if (c >= 'A' && c <= 'Z') {
                                                return c + ('a' - 'A');
@@ -670,7 +676,8 @@ std::optional<HashAlgorithm> parse_hash_algorithm(std::string_view algorithm) no
                                              return c;
                                            }}};
 
-  auto rng{std::ranges::equal_range(HASH_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, HashAlgorithm>::first)};
+  auto rng{
+      std::ranges::equal_range(HASH_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, hash_algorithm_traits>::first)};
   if (!rng.empty()) [[likely]] {
     return rng.front().second;
   }
@@ -678,24 +685,9 @@ std::optional<HashAlgorithm> parse_hash_algorithm(std::string_view algorithm) no
   return std::nullopt;
 }
 
-auto calc_hashed_size(HashAlgorithm algorithm) noexcept -> size_t {
-  static constexpr std::array sizes{
-      20, // SHA1
-      28, // SHA224
-      32, // SHA256
-      48, // SHA384
-      64, // SHA512
-      16  //MD5
-  };
-
-  static_assert(sizes.size() == HashAlgorithm::COUNT_HASH);
-
-  return sizes[algorithm];
-}
-
-string hash_impl(HashAlgorithm algorithm, const string& data, bool binary) noexcept {
-  string hashed_data{static_cast<string::size_type>(calc_hashed_size(algorithm)), false};
-  auto res{k2::hash(algorithm, {data.c_str(), data.size()}, {hashed_data.buffer(), hashed_data.size()})};
+string hash_impl(hash_algorithm_traits traits, const string& data, bool binary) noexcept {
+  string hashed_data{static_cast<string::size_type>(traits.hashed_size), false};
+  auto res{k2::hash(traits.algo, {data.c_str(), data.size()}, {hashed_data.buffer(), hashed_data.size()})};
   if (!res) [[unlikely]] {
     return string{false};
   }
@@ -733,8 +725,8 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
     kphp::log::error("algorithm {} not supported in function hash_hmac", algorithm.c_str());
   }
 
-  string hashed_data{static_cast<string::size_type>(calc_hashed_size(*algo)), false};
-  auto res{k2::hash_hmac(*algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), hashed_data.size()})};
+  string hashed_data{static_cast<string::size_type>(algo->hashed_size), false};
+  auto res{k2::hash_hmac(algo->algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), hashed_data.size()})};
   if (!res) [[unlikely]] {
     return string{false};
   }
@@ -743,7 +735,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
 }
 
 string f$sha1(const string& data, bool binary) noexcept {
-  return hash_impl(HashAlgorithm::SHA1, data, binary);
+  return hash_impl(hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}, data, binary);
 }
 
 int64_t f$crc32(const string& s) noexcept {
