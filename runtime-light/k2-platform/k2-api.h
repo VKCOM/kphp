@@ -383,31 +383,6 @@ inline std::expected<void, int32_t> metrics_histogram_observe(k2::descriptor sd,
   return {};
 }
 
-inline std::expected<void, int32_t> metrics_counter_add_with_labels(k2::descriptor md, double value, std::span<const MetricLabel> labels,
-                                                                    uint64_t timestamp_ns) noexcept {
-  if (auto error_code{k2_metrics_counter_add_with_labels(md, value, labels.data(), labels.size(), timestamp_ns)}; error_code != k2::errno_ok) [[unlikely]] {
-    return std::unexpected{error_code};
-  }
-  return {};
-}
-
-inline std::expected<void, int32_t> metrics_gauge_set_with_labels(k2::descriptor md, double value, std::span<const MetricLabel> labels,
-                                                                  uint64_t timestamp_ns) noexcept {
-  if (auto error_code{k2_metrics_gauge_set_with_labels(md, value, labels.data(), labels.size(), timestamp_ns)}; error_code != k2::errno_ok) [[unlikely]] {
-    return std::unexpected{error_code};
-  }
-  return {};
-}
-
-inline std::expected<void, int32_t> metrics_histogram_observe_with_labels(k2::descriptor md, double value, std::span<const MetricLabel> labels,
-                                                                          uint64_t timestamp_ns) noexcept {
-  if (auto error_code{k2_metrics_histogram_observe_with_labels(md, value, labels.data(), labels.size(), timestamp_ns)}; error_code != k2::errno_ok)
-      [[unlikely]] {
-    return std::unexpected{error_code};
-  }
-  return {};
-}
-
 inline void please_shutdown(k2::descriptor descriptor) noexcept {
   k2_please_shutdown(descriptor);
 }

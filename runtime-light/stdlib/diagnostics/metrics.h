@@ -50,8 +50,8 @@ make_k2_metric_labels(std::initializer_list<std::pair<std::string_view, std::str
 // becomes invalid — all its senders are no-ops.
 //
 // The senders write through a pre-bound series descriptor, so a send is a single FFI call
-// without any string work. For series not known in advance the families also offer dynamic
-// `send_*` overloads taking the label pairs per call (prefer bound senders on hot paths).
+// without any string work. Every series is bound at component initialization, so the set
+// of series of a metric is fixed after initialization.
 // `timestamp` is the wall-clock time of the sample; the default `k2::SystemTime{}` means "now"
 // (the k2-node substitutes the current time).
 
@@ -102,15 +102,6 @@ public:
       return gauge_sender{k2::INVALID_PLATFORM_DESCRIPTOR};
     }
     return gauge_sender{*bound};
-  }
-
-  std::expected<void, int32_t> send_value(double value, std::initializer_list<std::pair<std::string_view, std::string_view>> labels,
-                                          k2::SystemTime timestamp = {}) const noexcept {
-    if (m_metric == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-      return {};
-    }
-    auto k2_labels{impl::make_k2_metric_labels(labels)};
-    return k2::metrics_gauge_set_with_labels(m_metric, value, k2_labels, timestamp.since_epoch_ns);
   }
 };
 
@@ -166,20 +157,6 @@ public:
     }
     return counter_sender{*bound};
   }
-
-  std::expected<void, int32_t> send_count(uint32_t count, std::initializer_list<std::pair<std::string_view, std::string_view>> labels,
-                                          k2::SystemTime timestamp = {}) const noexcept {
-    if (m_metric == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-      return {};
-    }
-    auto k2_labels{impl::make_k2_metric_labels(labels)};
-    return k2::metrics_counter_add_with_labels(m_metric, static_cast<double>(count), k2_labels, timestamp.since_epoch_ns);
-  }
-
-  std::expected<void, int32_t> send_increment(std::initializer_list<std::pair<std::string_view, std::string_view>> labels,
-                                              k2::SystemTime timestamp = {}) const noexcept {
-    return send_count(1, labels, timestamp);
-  }
 };
 
 struct histogram_sender final {
@@ -231,15 +208,6 @@ public:
       return histogram_sender{k2::INVALID_PLATFORM_DESCRIPTOR};
     }
     return histogram_sender{*bound};
-  }
-
-  std::expected<void, int32_t> send_observation(double value, std::initializer_list<std::pair<std::string_view, std::string_view>> labels,
-                                                k2::SystemTime timestamp = {}) const noexcept {
-    if (m_metric == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-      return {};
-    }
-    auto k2_labels{impl::make_k2_metric_labels(labels)};
-    return k2::metrics_histogram_observe_with_labels(m_metric, value, k2_labels, timestamp.since_epoch_ns);
   }
 };
 

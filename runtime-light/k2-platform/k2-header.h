@@ -653,19 +653,17 @@ struct MetricLabel {
  * initialization and then updates it through descriptors.
  *
  * The registration fixes the metric name, its kind and its label schema
- * (the set of label names; values are supplied per series or per update).
- * There is one registration function per kind; only the histogram
- * registration carries kind options (explicit bucket boundaries).
+ * (the set of label names; values are supplied per series). There is one
+ * registration function per kind; only the histogram registration
+ * carries kind options (explicit bucket boundaries).
  *
- * Two update styles:
- *   - bound: `k2_metrics_bind` fixes a series (a set of `(name, value)`
- *     label pairs) and returns a series descriptor; the
- *     `k2_metrics_<kind>_*` functions then take just the series
- *     descriptor, the value and a timestamp — the hot path without any
- *     per-write string work;
- *   - dynamic: the `k2_metrics_<kind>_*_with_labels` functions take the
- *     metric descriptor plus the `(name, value)` pairs of the series, for
- *     cases where the set of series is not known in advance.
+ * Updates go through bound series: `k2_metrics_bind` fixes a series (a
+ * set of `(name, value)` label pairs) and returns a series descriptor;
+ * the `k2_metrics_<kind>_*` functions then take just the series
+ * descriptor, the value and a timestamp — the hot path without any
+ * per-write string work. Every series is bound at component
+ * initialization, so the set of series of a metric is fixed after
+ * initialization; there is no per-update label path.
  *
  * Contract (shared by all kinds):
  *   - registration and binding are available only during component
@@ -696,8 +694,8 @@ struct MetricLabel {
  * @param `name_ptr` A pointer to the metric name (valid UTF-8).
  * @param `name_size` The size of the metric name.
  * @param `labels_ptr` (registration) A pointer to an array of label
- * names (the metric's label schema); (bind/updates) a pointer to an
- * array of the `(name, value)` label pairs of the series.
+ * names (the metric's label schema); (bind) a pointer to an array of
+ * the `(name, value)` label pairs of the series.
  * @param `labels_size` The size of the `labels_ptr` array.
  * @param `buckets_ptr` A pointer to an array of buckets.
  * @param `buckets_size` The size of the array of buckets.
@@ -711,9 +709,6 @@ int32_t k2_metrics_bind(uint64_t* sd, uint64_t md, const struct MetricLabel* lab
 int32_t k2_metrics_counter_add(uint64_t sd, double value, uint64_t timestamp_ns);
 int32_t k2_metrics_gauge_set(uint64_t sd, double value, uint64_t timestamp_ns);
 int32_t k2_metrics_histogram_observe(uint64_t sd, double value, uint64_t timestamp_ns);
-int32_t k2_metrics_counter_add_with_labels(uint64_t md, double value, const struct MetricLabel* labels_ptr, size_t labels_size, uint64_t timestamp_ns);
-int32_t k2_metrics_gauge_set_with_labels(uint64_t md, double value, const struct MetricLabel* labels_ptr, size_t labels_size, uint64_t timestamp_ns);
-int32_t k2_metrics_histogram_observe_with_labels(uint64_t md, double value, const struct MetricLabel* labels_ptr, size_t labels_size, uint64_t timestamp_ns);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
