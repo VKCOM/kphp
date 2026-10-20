@@ -169,24 +169,6 @@ constexpr std::string_view AES_256_CBC = "aes-256-cbc";
 constexpr std::string_view AES_128_GCM = "aes-128-gcm";
 constexpr std::string_view AES_256_GCM = "aes-256-gcm";
 
-std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) noexcept {
-  using namespace std::string_view_literals;
-  std::string_view method_sv{method.c_str(), method.size()};
-
-  const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
-
-  if (std::ranges::equal(method_sv, AES_128_CBC, ichar_equals)) {
-    return tl::CipherAlgorithm::AES128_CBC;
-  } else if (std::ranges::equal(method_sv, AES_256_CBC, ichar_equals)) {
-    return tl::CipherAlgorithm::AES256_CBC;
-  } else if (std::ranges::equal(method_sv, AES_128_GCM, ichar_equals)) {
-    return tl::CipherAlgorithm::AES128_GCM;
-  } else if (std::ranges::equal(method_sv, AES_256_GCM, ichar_equals)) {
-    return tl::CipherAlgorithm::AES256_GCM;
-  }
-  return std::nullopt;
-}
-
 enum class encryption_mode { BLOCK, STREAM, AEAD };
 
 struct cipher_algorithm_traits {
@@ -208,7 +190,7 @@ constexpr auto CIPHER_ALGORITHMS = [] {
 
 static_assert(CIPHER_ALGORITHMS.size() == CipherAlgorithm::COUNT_CIPHER);
 
-std::optional<std::reference_wrapper<const cipher_algorithm_traits>> parse_cipher_algorithm_test(std::string_view algorithm) noexcept {
+std::optional<std::reference_wrapper<const cipher_algorithm_traits>> parse_cipher_algorithm(std::string_view algorithm) noexcept {
   auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
                                              if (c >= 'A' && c <= 'Z') {
                                                return c + ('a' - 'A');
@@ -223,14 +205,6 @@ std::optional<std::reference_wrapper<const cipher_algorithm_traits>> parse_ciphe
   }
 
   return std::nullopt;
-}
-
-bool is_gcm_algorithm(tl::CipherAlgorithm algorithm) {
-  return algorithm == tl::AES128_GCM || algorithm == tl::AES256_GCM;
-}
-
-bool is_aead_algorithm(tl::CipherAlgorithm algorithm) {
-  return is_gcm_algorithm(algorithm);
 }
 
 auto calc_encrypted_size(const cipher_algorithm_traits& traits, int64_t tag_size, int64_t data_len) noexcept {
@@ -249,76 +223,20 @@ auto calc_encrypted_size(const cipher_algorithm_traits& traits, int64_t tag_size
   }
 }
 
-constexpr size_t GCM_NONCE_LEN = 12;
-constexpr size_t AES_BLOCK_LEN = 16;
-constexpr size_t AES_128_KEY_LEN = 16;
-constexpr size_t AES_256_KEY_LEN = 32;
-
-int64_t algorithm_iv_len([[maybe_unused]] tl::CipherAlgorithm algorithm) noexcept {
-  if (is_gcm_algorithm(algorithm)) {
-    return GCM_NONCE_LEN;
-  }
-  return AES_BLOCK_LEN;
-}
-
-int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) noexcept {
-  switch (algorithm) {
-  case tl::CipherAlgorithm::AES128_GCM:
-  case tl::CipherAlgorithm::AES128_CBC: {
-    return AES_128_KEY_LEN;
-  }
-  case tl::CipherAlgorithm::AES256_GCM:
-  case tl::CipherAlgorithm::AES256_CBC: {
-    return AES_256_KEY_LEN;
-  }
-  default: {
-    kphp::log::warning("unexpected cipher algorithm");
-    return 0;
-  }
+auto calc_decrypted_size(const cipher_algorithm_traits& traits, int64_t data_len) noexcept {
+  switch (traits.mode) {
+  case encryption_mode::BLOCK:
+    return data_len + traits.block_size;
+  case encryption_mode::STREAM:
+  case encryption_mode::AEAD:
+    return data_len;
   }
 }
 
 enum class cipher_opts : int64_t { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2, OPENSSL_DONT_ZERO_PAD_KEY = 4 };
 
-Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm algorithm, const string& source_key, const string& source_iv,
-                                                         int64_t options) noexcept {
-  const size_t iv_required_len = algorithm_iv_len(algorithm);
-  const size_t key_required_len = algorithm_key_len(algorithm);
-  auto iv = source_iv;
-  if (is_aead_algorithm(algorithm)) {
-    if (source_iv.empty()) {
-      kphp::log::warning("Setting of IV length for AEAD mode failed");
-      return false;
-    }
-  } else {
-    if (iv.size() < iv_required_len) {
-      kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), iv_required_len);
-      iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
-    } else if (iv.size() > iv_required_len) {
-      kphp::log::warning("IV passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", iv.size(), iv_required_len);
-      iv.shrink(static_cast<string::size_type>(iv_required_len));
-    }
-  }
-
-  auto key = source_key;
-  if (key.size() < key_required_len) {
-    if (options & static_cast<int64_t>(cipher_opts::OPENSSL_DONT_ZERO_PAD_KEY)) {
-      kphp::log::warning("Key length should be {} bytes long:\n", key_required_len);
-      return false;
-    }
-    kphp::log::warning("passphrase passed is only {} bytes long, cipher expects an passphrase of precisely {} bytes, padding with \\0", key.size(),
-                       key_required_len);
-    key.append(key_required_len - key.size(), '\0');
-  } else if (key.size() > key_required_len) {
-    kphp::log::warning("passphrase passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", key.size(), key_required_len);
-    key.shrink(static_cast<string::size_type>(key_required_len));
-  }
-
-  return std::make_pair(key, iv);
-}
-
-std::optional<std::pair<string, string>> algorithm_pad_key_iv_test(const cipher_algorithm_traits& traits, const string& source_key, const string& source_iv,
-                                                                   int64_t options) noexcept {
+std::optional<std::pair<string, string>> algorithm_pad_key_iv(const cipher_algorithm_traits& traits, const string& source_key, const string& source_iv,
+                                                              int64_t options) noexcept {
   auto iv = source_iv;
   if (traits.mode == encryption_mode::AEAD) {
     if (source_iv.empty()) [[unlikely]] {
@@ -366,7 +284,7 @@ array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexce
 }
 
 Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
-  auto algo{parse_cipher_algorithm_test({algorithm.c_str(), algorithm.size()})};
+  auto algo{parse_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) {
     kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
     return false;
@@ -375,9 +293,9 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
   return algo->get().iv_len;
 }
 
-Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& source_key, int64_t options, const string& source_iv,
+Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv,
                                    std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
-  auto algo{parse_cipher_algorithm_test({algorithm.c_str(), algorithm.size()})};
+  auto algo{parse_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
     kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
     return false;
@@ -400,11 +318,11 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
     }
   }
 
-  if (source_iv.empty()) {
+  if (iv.empty()) {
     kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
   }
 
-  auto key_iv{algorithm_pad_key_iv_test(traits, source_key, source_iv, options)};
+  auto key_iv{algorithm_pad_key_iv(traits, key, iv, options)};
   if (!key_iv) [[unlikely]] {
     return false;
   }
@@ -433,69 +351,63 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
   return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(encrypted_data) : f$base64_encode(encrypted_data);
 }
 
-kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag,
-                                                     string aad) noexcept {
+Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv, const string& tag,
+                                   const string& aad) noexcept {
+  auto algo{parse_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
+  if (!algo) [[unlikely]] {
+    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
+    return false;
+  }
+
+  const auto& traits{algo->get()};
+  bool is_aead{traits.mode == encryption_mode::AEAD};
+  if (is_aead && tag.empty()) [[unlikely]] {
+    kphp::log::warning("A tag must be provided when using AEAD mode");
+    return false;
+  }
+
+  if (!is_aead) {
+    if (!tag.empty()) {
+      kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
+    }
+
+    if (!aad.empty()) {
+      kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
+    }
+  }
+
+  string input_data{data};
   if (!(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA))) {
     Optional<string> decoding_data{f$base64_decode(data, true)};
-    if (!decoding_data.has_value()) {
+    if (!decoding_data.has_value()) [[unlikely]] {
       kphp::log::warning("Failed to base64 decode the input");
-      co_return false;
+      return false;
     }
-    data = std::move(decoding_data.val());
+
+    input_data = std::move(decoding_data.val());
   }
 
-  auto algorithm{parse_cipher_algorithm(method)};
-  if (!algorithm.has_value()) {
-    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
-    co_return false;
+  auto key_iv{algorithm_pad_key_iv(traits, key, iv, options)};
+  if (!key_iv) [[unlikely]] {
+    return false;
   }
 
-  bool aead{is_aead_algorithm(*algorithm)};
-  if (!tag.empty() && !aead) {
-    kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
-  }
-  if (!aad.empty() && !aead) {
-    kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
-  }
-
-  auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
-  if (!key_iv.has_value()) {
-    co_return false;
-  }
-
-  tl::BlockPadding padding{tl::BlockPadding::PKCS7};
+  BlockPadding padding{BlockPadding::PKCS7};
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
-    padding = tl::BlockPadding::NO_PADDING;
-  }
-  tl::Decrypt decrypt{.algorithm = *algorithm,
-                      .padding = padding,
-                      .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
-                      .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
-                      .tag = {.value = {tag.c_str(), tag.size()}},
-                      .aad = {.value = {aad.c_str(), aad.size()}},
-                      .data = {.value = {data.c_str(), data.size()}}};
-  tl::storer tls{decrypt.footprint()};
-  decrypt.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+    padding = BlockPadding::NO_PADDING;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
+  string decrypted_data{static_cast<string::size_type>(calc_decrypted_size(traits, input_data.size())), false};
+  auto res{k2::openssl_decrypt(traits.algo, padding, {(*key_iv).first.c_str(), (*key_iv).first.size()}, {(*key_iv).second.c_str(), (*key_iv).second.size()},
+                               {aad.c_str(), aad.size()}, {tag.c_str(), tag.size()}, {input_data.c_str(), input_data.size()},
+                               {decrypted_data.buffer(), decrypted_data.size()})};
+  if (!res) [[unlikely]] {
+    return false;
   }
 
-  tl::fetcher tlf{response_bytes};
-  tl::Maybe<tl::string> response{};
-  kphp::log::assertion(response.fetch(tlf));
-  if (!response.opt_value) {
-    co_return false;
-  }
+  decrypted_data.shrink(static_cast<string::size_type>(*res));
 
-  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
+  return std::move(decrypted_data);
 }
 
 kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept {

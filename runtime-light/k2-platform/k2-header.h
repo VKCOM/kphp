@@ -524,6 +524,10 @@ int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding pad
                            const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data, size_t encrypted_data_len,
                            size_t* encrypted_data_written, char* received_tag, size_t received_tag_len);
 
+int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* key, size_t key_len, const char* iv, size_t iv_len,
+                           const char* aad, size_t aad_len, const char* tag, size_t tag_len, const char* data, size_t data_len, char* decrypted_data,
+                           size_t decrypted_data_len, size_t* decrypted_data_written);
+
 int32_t k2_hash(enum HashAlgorithm algorithm, const char* data, size_t data_len, char* hashed_data, size_t hashed_data_len);
 
 int32_t k2_hash_hmac(enum HashAlgorithm algorithm, const char* data, size_t data_len, const char* key, size_t key_len, char* hashed_data,
