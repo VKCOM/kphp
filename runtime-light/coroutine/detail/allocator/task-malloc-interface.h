@@ -10,6 +10,7 @@
 #include <memory>
 #include <new>
 
+#include "runtime-common/core/memory-resource/stack-resource.h"
 #include "runtime-light/coroutine/detail/allocator/runtime-coroutine-allocator.h"
 #include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -20,7 +21,7 @@ struct control_block {
 public:
   enum class backend_type : uint8_t { stack, stack_owner, coroutine_pool };
 
-  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack{nullptr};
+  memory_resource::stack_resource* stack{nullptr};
   uint16_t base_offset{};
   backend_type backend{};
 
@@ -42,7 +43,7 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   void* base{nullptr};
   kphp::coro::detail::memory::task::control_block::backend_type backend{};
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  if (total_size <= task_allocator.segment_size()) [[likely]] {
+  if (total_size <= task_allocator.stack_size()) [[likely]] {
     if (task_allocator.current_stack() == nullptr) {
       auto& stack{task_allocator.acquire_stack()};
       task_allocator.set_stack(std::addressof(stack));
@@ -52,7 +53,9 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
     }
 
     base = task_allocator.alloc_script_memory(total_size);
-  } else {
+  }
+
+  if (base == nullptr) {
     base = kphp::coro::detail::memory::runtime_coroutine_allocator::get().alloc_script_memory(total_size);
     backend = kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool;
   }
@@ -88,8 +91,7 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
     task_allocator.release_stack(*cb->stack);
     break;
   case kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool:
-    [[unlikely]] kphp::coro::detail::memory::runtime_coroutine_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset,
-                                                                                                   total_size);
+    kphp::coro::detail::memory::runtime_coroutine_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
     break;
   }
 }

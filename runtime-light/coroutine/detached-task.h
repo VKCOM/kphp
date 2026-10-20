@@ -132,7 +132,7 @@ public:
     using awaiter_base = detail::awaiter_base<task_promise_type>;
     struct awaiter final : public awaiter_base, private kphp::coro::task_allocator_scope {
       awaiter(std::coroutine_handle<task_promise_type> coro, kphp::coro::detail::memory::task_allocator& task_allocator,
-              memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* stack) noexcept
+              memory_resource::stack_resource* stack) noexcept
           : awaiter_base(coro),
             kphp::coro::task_allocator_scope(task_allocator, stack) {}
 
@@ -166,7 +166,7 @@ public:
 private:
   std::coroutine_handle<task_promise_type> m_coro;
   kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
-  memory_resource::segmented_stack_resource<kphp::coro::detail::memory::task_allocator::shared_chunk_pool>* m_stack{nullptr};
+  memory_resource::stack_resource* m_stack{nullptr};
 
   template<typename F, typename... Args>
   friend auto kphp::coro::detach_task(F&& f, Args&&... args) noexcept;
