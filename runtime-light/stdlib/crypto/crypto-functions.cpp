@@ -164,8 +164,6 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
 namespace {
 
-constexpr size_t RSA_MAX_ENCRYPTED_SIZE = 1024;
-
 constexpr std::string_view AES_128_CBC = "aes-128-cbc";
 constexpr std::string_view AES_256_CBC = "aes-256-cbc";
 constexpr std::string_view AES_128_GCM = "aes-128-gcm";
@@ -414,71 +412,53 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
   return std::move(decrypted_data);
 }
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept {
-  tl::GetPublicKey get_public_key{.key = {.value = {key.c_str(), key.size()}}};
-  tl::storer tls{get_public_key.footprint()};
-  get_public_key.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
+  auto size{k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {})};
+  if (!size) [[unlikely]] {
+    kphp::log::warning("Failed to get public key");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
+  string buffer{static_cast<string::size_type>(*size), false};
+  if (!k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {buffer.buffer(), buffer.size()})) [[unlikely]] {
+    kphp::log::warning("Failed to get public key");
+    return false;
   }
 
-  tl::fetcher tlf{response_bytes};
-  tl::Maybe<tl::string> response;
-  kphp::log::assertion(response.fetch(tlf));
-  if (!response.opt_value) {
-    co_return false;
-  }
-
-  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
+  return buffer;
 }
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string passphrase) noexcept {
-  tl::GetPrivateKey get_private_key{
-      .key = {.value = {key.c_str(), key.size()}},
-      .passphrase = {.value = {passphrase.c_str(), passphrase.size()}},
-  };
-  tl::storer tls{get_private_key.footprint()};
-  get_private_key.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept {
+  auto size{k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {})};
+  if (!size) [[unlikely]] {
+    kphp::log::warning("Failed to get private key");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
+  string buffer{static_cast<string::size_type>(*size), false};
+  if (!k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()}))
+      [[unlikely]] {
+    kphp::log::warning("Failed to get private key");
+    return false;
   }
 
-  tl::fetcher tlf{response_bytes};
-  tl::Maybe<tl::string> response;
-  kphp::log::assertion(response.fetch(tlf));
-  if (!response.opt_value) {
-    co_return false;
-  }
-
-  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
+  return buffer;
 }
 
 bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept {
-  string buffer{RSA_MAX_ENCRYPTED_SIZE, false};
-  auto res{
-      k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1)};
-  if (!res) [[unlikely]] {
+  auto size{k2::openssl_public_encrypt({data.c_str(), data.size()}, {}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1)};
+  if (!size) [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
   }
 
-  buffer.shrink(static_cast<string::size_type>(*res));
+  string buffer{static_cast<string::size_type>(*size), false};
+  if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1))
+      [[unlikely]] {
+    kphp::log::warning("Failed to encrypt data with the given public key");
+    return false;
+  }
+
   encrypted_data = std::move(buffer);
 
   return true;

@@ -32,9 +32,9 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
 Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
                                    const string& tag = string{}, const string& aad = string{}) noexcept;
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept;
+Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept;
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string passphrase = string{}) noexcept;
+Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase = string{}) noexcept;
 
 bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept;
 
@@ -61,6 +61,7 @@ inline string f$md5(const string& str, bool binary = false) noexcept {
       output[2 * i] = lhex_digits[(output[i] >> 4) & 0x0F];
     }
   }
+
   return output;
 }
 
