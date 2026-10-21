@@ -14,7 +14,7 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/tl/tl-types.h"
 
-kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
+Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
 
 kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames = true) noexcept;
 

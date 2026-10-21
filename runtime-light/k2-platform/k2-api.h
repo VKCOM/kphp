@@ -262,6 +262,14 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
+inline std::expected<void, int32_t> openssl_random_pseudo_bytes(std::span<char> bytes) noexcept {
+  if (auto ret{k2_openssl_random_pseudo_bytes(bytes.data(), bytes.size())}; ret != 0) {
+    return std::unexpected(ret);
+  }
+
+  return {};
+}
+
 inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view public_key, std::span<char> result) noexcept {
   size_t result_written{0};
   if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), result.data(), result.size(), std::addressof(result_written))};

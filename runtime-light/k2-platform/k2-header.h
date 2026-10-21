@@ -522,6 +522,8 @@ int32_t k2_unlink(const char* path, size_t path_len);
  */
 int32_t k2_component_access(size_t name_len, const char* name);
 
+int32_t k2_openssl_random_pseudo_bytes(char* bytes, size_t length);
+
 int32_t k2_openssl_pkey_get_public(const char* public_key, size_t public_key_len, char* result, size_t result_len, size_t* result_written);
 
 int32_t k2_openssl_pkey_get_private(const char* private_key, size_t private_key_len, const char* passphrase, size_t passphrase_len, char* result,
