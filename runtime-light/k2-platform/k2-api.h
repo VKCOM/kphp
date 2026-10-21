@@ -262,6 +262,27 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
+inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view public_key, std::span<char> result) noexcept {
+  size_t result_written{0};
+  if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), result.data(), result.size(), std::addressof(result_written))};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {result_written};
+}
+
+inline std::expected<size_t, int32_t> openssl_pkey_get_private(std::string_view private_key, std::string_view passphrase, std::span<char> result) noexcept {
+  size_t result_written{0};
+  if (auto error_code{k2_openssl_pkey_get_private(private_key.data(), private_key.size(), passphrase.data(), passphrase.size(), result.data(), result.size(),
+                                                  std::addressof(result_written))};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {result_written};
+}
+
 inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
                                                       std::string_view aad, std::string_view data, std::span<char> encrypted_data,
                                                       std::span<char> received_tag) noexcept {
