@@ -29,16 +29,16 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept;
 Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
                                    std::optional<std::reference_wrapper<string>> tag = {}, const string& aad = string{}, int64_t tag_length = 16) noexcept;
 
-Optional<string> f$openssl_decrypt(string data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
+Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
                                    const string& tag = string{}, const string& aad = string{}) noexcept;
 
 kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept;
 
 kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string passphrase = string{}) noexcept;
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string data, mixed& result, string key) noexcept;
+bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept;
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, string key) noexcept;
+bool f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const string& private_key) noexcept;
 
 array<string> f$hash_algos() noexcept;
 

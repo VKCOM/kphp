@@ -289,6 +289,30 @@ inline std::expected<size_t, int32_t> openssl_decrypt(CipherAlgorithm algorithm,
   return {decrypted_data_written};
 }
 
+inline std::expected<size_t, int32_t> openssl_public_encrypt(std::string_view data, std::span<char> encrypted_data, std::string_view public_key,
+                                                             AsymmPadding padding) noexcept {
+  size_t encrypted_data_written{0};
+  if (auto error_code{k2_openssl_public_encrypt(padding, public_key.data(), public_key.size(), data.data(), data.size(), encrypted_data.data(),
+                                                encrypted_data.size(), std::addressof(encrypted_data_written))};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {encrypted_data_written};
+}
+
+inline std::expected<size_t, int32_t> openssl_private_decrypt(std::string_view data, std::span<char> decrypted_data, std::string_view private_key,
+                                                              AsymmPadding padding) noexcept {
+  size_t decrypted_data_written{0};
+  if (auto error_code{k2_openssl_private_decrypt(padding, private_key.data(), private_key.size(), data.data(), data.size(), decrypted_data.data(),
+                                                 decrypted_data.size(), std::addressof(decrypted_data_written))};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {decrypted_data_written};
+}
+
 inline std::expected<void, int32_t> hash(HashAlgorithm algorithm, std::string_view data, std::span<char> hashed_data) noexcept {
   if (auto error_code{k2_hash(algorithm, data.data(), data.size(), hashed_data.data(), hashed_data.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};

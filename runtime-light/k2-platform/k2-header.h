@@ -100,7 +100,9 @@ enum UpdateStatus {
 
 enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3, COUNT_CIPHER };
 
-enum BlockPadding : uint32_t { PKCS7 = 0, NO_PADDING = 1 };
+enum BlockPadding : uint32_t { PKCS7 = 0, BLOCK_NO_PADDING = 1 };
+
+enum AsymmPadding : uint32_t { PKCS1 = 1, SSLV23 = 3, ASYMM_NO_PADDING = 3, PKCS1_OAEP = 4, PKCS1_PSS = 5 };
 
 enum HashAlgorithm : uint32_t { SHA1 = 0, SHA224 = 1, SHA256 = 2, SHA384 = 3, SHA512 = 4, MD5 = 5, COUNT_HASH };
 
@@ -527,6 +529,12 @@ int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding pad
 int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* key, size_t key_len, const char* iv, size_t iv_len,
                            const char* aad, size_t aad_len, const char* tag, size_t tag_len, const char* data, size_t data_len, char* decrypted_data,
                            size_t decrypted_data_len, size_t* decrypted_data_written);
+
+int32_t k2_openssl_public_encrypt(enum AsymmPadding padding, const char* public_key, size_t public_key_len, const char* data, size_t data_len,
+                                  char* encrypted_data, size_t encrypted_data_len, size_t* encrypted_data_written);
+
+int32_t k2_openssl_private_decrypt(enum AsymmPadding padding, const char* private_key, size_t private_key_len, const char* data, size_t data_len,
+                                   char* decrypted_data, size_t decrypted_data_len, size_t* decrypted_data_written);
 
 int32_t k2_hash(enum HashAlgorithm algorithm, const char* data, size_t data_len, char* hashed_data, size_t hashed_data_len);
 
