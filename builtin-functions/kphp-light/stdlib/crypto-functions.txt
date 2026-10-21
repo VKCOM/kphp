@@ -44,9 +44,7 @@ function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '')
 /** @kphp-extern-func-info interruptible */
 function openssl_pkey_get_public ($key ::: string) ::: string | false;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
-/** @kphp-extern-func-info interruptible */
 function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
 
 function hash_algos () ::: string[];

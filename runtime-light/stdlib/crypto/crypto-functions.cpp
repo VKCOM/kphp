@@ -164,6 +164,8 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
 namespace {
 
+constexpr size_t RSA_MAX_ENCRYPTED_SIZE = 1024;
+
 constexpr std::string_view AES_128_CBC = "aes-128-cbc";
 constexpr std::string_view AES_256_CBC = "aes-256-cbc";
 constexpr std::string_view AES_128_GCM = "aes-128-gcm";
@@ -327,9 +329,9 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
     return false;
   }
 
-  BlockPadding padding{PKCS7};
+  BlockPadding padding{BlockPadding::PKCS7};
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
-    padding = NO_PADDING;
+    padding = BlockPadding::BLOCK_NO_PADDING;
   }
 
   auto encrypted_size{calc_encrypted_size(traits, tag_length, data.size())};
@@ -339,6 +341,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
                                {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
                                {received_tag.buffer(), received_tag.size()})};
   if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to encrypt data");
     return false;
   }
 
@@ -394,7 +397,7 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
 
   BlockPadding padding{BlockPadding::PKCS7};
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
-    padding = BlockPadding::NO_PADDING;
+    padding = BlockPadding::BLOCK_NO_PADDING;
   }
 
   string decrypted_data{static_cast<string::size_type>(calc_decrypted_size(traits, input_data.size())), false};
@@ -402,6 +405,7 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
                                {aad.c_str(), aad.size()}, {tag.c_str(), tag.size()}, {input_data.c_str(), input_data.size()},
                                {decrypted_data.buffer(), decrypted_data.size()})};
   if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to decrypt data");
     return false;
   }
 
@@ -465,84 +469,58 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string
   co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_data, string public_key) noexcept {
-  tl::PublicEncrypt public_encrypt{
-      .key = {.value = {public_key.c_str(), public_key.size()}},
-      .data = {.value = {data.c_str(), data.size()}},
-  };
-  tl::storer tls{public_encrypt.footprint()};
-  public_encrypt.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept {
+  string buffer{RSA_MAX_ENCRYPTED_SIZE, false};
+  auto res{
+      k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1)};
+  if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to encrypt data with the given public key");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+  buffer.shrink(static_cast<string::size_type>(*res));
+  encrypted_data = std::move(buffer);
 
-  tl::fetcher tlf{response_bytes};
-  tl::Maybe<tl::string> response{};
-  kphp::log::assertion(response.fetch(tlf));
-  if (!response.opt_value) {
-    co_return false;
-  }
-
-  encrypted_data = {(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
-  co_return true;
+  return true;
 }
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string data, mixed& result, string key) noexcept {
-  string result_string;
-  if (co_await f$openssl_public_encrypt(data, result_string, key)) {
-    result = std::move(result_string);
-    co_return true;
+bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept {
+  string result;
+  if (f$openssl_public_encrypt(data, result, public_key)) {
+    encrypted_data = std::move(result);
+    return true;
   }
-  result = mixed{};
-  co_return false;
+
+  encrypted_data = mixed{};
+
+  return false;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_data, string private_key) noexcept {
-  tl::PrivateDecrypt private_decrypt{
-      .key = {.value = {private_key.c_str(), private_key.size()}},
-      .data = {.value = {data.c_str(), data.size()}},
-  };
-  tl::storer tls{private_decrypt.footprint()};
-  private_decrypt.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const string& private_key) noexcept {
+  string buffer{static_cast<string::size_type>(data.size()), false};
+  auto res{k2::openssl_private_decrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {private_key.c_str(), private_key.size()},
+                                       AsymmPadding::PKCS1)};
+  if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to decrypt data with the given private key");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
-  }
+  buffer.shrink(static_cast<string::size_type>(*res));
+  decrypted_data = std::move(buffer);
 
-  tl::fetcher tlf{response_bytes};
-  tl::Maybe<tl::string> response{};
-  kphp::log::assertion(response.fetch(tlf));
-  if (!response.opt_value) {
-    co_return false;
-  }
-
-  decrypted_data = {(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
-  co_return true;
+  return true;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
-  string result_string;
-  if (co_await f$openssl_private_decrypt(data, result_string, key)) {
-    result = std::move(result_string);
-    co_return true;
+bool f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const string& private_key) noexcept {
+  string result;
+  if (f$openssl_private_decrypt(data, result, private_key)) {
+    decrypted_data = std::move(result);
+    return true;
   }
-  result = mixed{};
-  co_return false;
+
+  decrypted_data = mixed{};
+
+  return false;
 }
 
 namespace {
@@ -601,6 +579,7 @@ string hash_impl(hash_algorithm_traits traits, const string& data, bool binary) 
   string hashed_data{binary ? static_cast<string::size_type>(traits.hashed_size) : static_cast<string::size_type>(traits.hashed_size * 2), false};
   auto res{k2::hash(traits.algo, {data.c_str(), data.size()}, {hashed_data.buffer(), static_cast<size_t>(traits.hashed_size)})};
   if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to generate hash");
     return {};
   }
 
@@ -644,6 +623,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
   string hashed_data{binary ? static_cast<string::size_type>(algo->hashed_size) : static_cast<string::size_type>(algo->hashed_size * 2), false};
   auto res{k2::hash_hmac(algo->algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), static_cast<size_t>(algo->hashed_size)})};
   if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to generate HMAC hash");
     return {};
   }
 
