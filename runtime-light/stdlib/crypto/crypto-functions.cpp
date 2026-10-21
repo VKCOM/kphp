@@ -36,31 +36,18 @@ constexpr std::string_view CRYPTO_COMPONENT_NAME = "crypto";
 
 } // namespace
 
-kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
+Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) [[unlikely]] {
-    co_return false;
+    return false;
   }
 
-  tl::GetCryptosecurePseudorandomBytes get_pseudorandom_bytes{.size = {.value = static_cast<int32_t>(length)}};
-  tl::storer tls{get_pseudorandom_bytes.footprint()};
-  get_pseudorandom_bytes.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+  string buffer{static_cast<string::size_type>(length), false};
+  if (!k2::openssl_random_pseudo_bytes({buffer.buffer(), buffer.size()})) [[unlikely]] {
+    kphp::log::warning("Failed to generate pseudo-random bytes");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
-    co_return false;
-  }
-
-  tl::fetcher tlf{response};
-  tl::magic magic{};
-  tl::string str{};
-  kphp::log::assertion(magic.fetch(tlf) && magic.expect(TL_MAYBE_TRUE) && str.fetch(tlf));
-  co_return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
+  return buffer;
 }
 
 kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
