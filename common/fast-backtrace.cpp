@@ -47,10 +47,10 @@ int fast_backtrace_by_bp(void* bp, void* stack_end_, void** buffer, int size) {
   if (stack_end_ == nullptr) {
     return 0;
   }
-  const auto last_frame_addr = reinterpret_cast<uintptr_t>(stack_end_) - sizeof(stack_frame);
+  const auto last_frame_addr = reinterpret_cast<std::uintptr_t>(stack_end_) - sizeof(stack_frame);
   auto* current_bp = static_cast<stack_frame*>(bp);
   int i = 0;
-  while (i < size && reinterpret_cast<uintptr_t>(current_bp) <= last_frame_addr && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
+  while (i < size && reinterpret_cast<std::uintptr_t>(current_bp) <= last_frame_addr && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
     void* ip = current_bp->ip;
     buffer[i++] = ip;
     stack_frame* p = current_bp->bp;
@@ -75,10 +75,10 @@ int fast_backtrace_without_recursions_by_bp(void* bp, void* stack_end_, void** b
   if (stack_end_ == nullptr) {
     return 0;
   }
-  const auto last_frame_addr = reinterpret_cast<uintptr_t>(stack_end_) - sizeof(stack_frame);
+  const auto last_frame_addr = reinterpret_cast<std::uintptr_t>(stack_end_) - sizeof(stack_frame);
   auto* current_bp = static_cast<stack_frame*>(bp);
   int i = 0;
-  while (i < size && reinterpret_cast<uintptr_t>(current_bp) <= last_frame_addr && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
+  while (i < size && reinterpret_cast<std::uintptr_t>(current_bp) <= last_frame_addr && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
     buffer[i++] = current_bp->ip;
     for (int possible_recursion_len = 1; i >= 2 * possible_recursion_len; ++possible_recursion_len) {
       if (std::equal(buffer + i - possible_recursion_len, buffer + i, buffer + i - possible_recursion_len * 2)) {
