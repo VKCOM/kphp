@@ -423,8 +423,7 @@ Optional<string> f$openssl_pkey_get_private(const string& private_key, const str
   }
 
   string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()},
-                                    true))
+  if (!k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()}, true))
       [[unlikely]] {
     kphp::log::warning("Failed to get private key");
     return false;
@@ -442,8 +441,7 @@ bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
 
   string buffer{static_cast<string::size_type>(*size), false};
   if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1,
-                                  true))
-      [[unlikely]] {
+                                  true)) [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
   }
@@ -494,19 +492,27 @@ bool f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const 
 
 namespace {
 
+constexpr std::string_view DSS1 = "dss1";
 constexpr std::string_view SHA1 = "sha1";
 constexpr std::string_view SHA224 = "sha224";
 constexpr std::string_view SHA256 = "sha256";
 constexpr std::string_view SHA384 = "sha384";
 constexpr std::string_view SHA512 = "sha512";
+constexpr std::string_view MD2 = "md2";
+constexpr std::string_view MD4 = "md4";
 constexpr std::string_view MD5 = "md5";
+constexpr std::string_view RMD160 = "rmd160";
 
+constexpr size_t DSS1_HASHED_SIZE = 20;
 constexpr size_t SHA1_HASHED_SIZE = 20;
 constexpr size_t SHA224_HASHED_SIZE = 28;
 constexpr size_t SHA256_HASHED_SIZE = 32;
 constexpr size_t SHA384_HASHED_SIZE = 48;
 constexpr size_t SHA512_HASHED_SIZE = 64;
+constexpr size_t MD2_HASHED_SIZE = 16;
+constexpr size_t MD4_HASHED_SIZE = 16;
 constexpr size_t MD5_HASHED_SIZE = 16;
+constexpr size_t RMD160_HASHED_SIZE = 20;
 
 struct hash_algorithm_traits {
   int64_t hashed_size;
@@ -514,12 +520,18 @@ struct hash_algorithm_traits {
 };
 
 constexpr auto HASH_ALGORITHMS = []() noexcept {
-  auto arr{std::array{std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}},
-                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, HashAlgorithm::SHA224}},
-                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
-                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
-                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
-                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}}}};
+  auto arr{std::array{
+      std::pair{DSS1, hash_algorithm_traits{DSS1_HASHED_SIZE, HashAlgorithm::DSS1}},
+      std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}},
+      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, HashAlgorithm::SHA224}},
+      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
+      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
+      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
+      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, HashAlgorithm::MD2}},
+      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, HashAlgorithm::MD4}},
+      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}},
+      std::pair{RMD160, hash_algorithm_traits{RMD160_HASHED_SIZE, HashAlgorithm::RMD160}},
+  }};
 
   std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, hash_algorithm_traits>::first);
   return arr;
