@@ -407,7 +407,7 @@ Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
   }
 
   string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {buffer.buffer(), buffer.size()})) [[unlikely]] {
+  if (!k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {buffer.buffer(), buffer.size()}, true)) [[unlikely]] {
     kphp::log::warning("Failed to get public key");
     return false;
   }
@@ -423,7 +423,8 @@ Optional<string> f$openssl_pkey_get_private(const string& private_key, const str
   }
 
   string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()}))
+  if (!k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()},
+                                    true))
       [[unlikely]] {
     kphp::log::warning("Failed to get private key");
     return false;
@@ -440,7 +441,8 @@ bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
   }
 
   string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1))
+  if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1,
+                                  true))
       [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
