@@ -270,9 +270,9 @@ inline std::expected<void, int32_t> openssl_random_pseudo_bytes(std::span<char> 
   return {};
 }
 
-inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view public_key, std::span<char> result) noexcept {
+inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view public_key, std::span<char> result, bool retry = false) noexcept {
   size_t result_written{0};
-  if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), result.data(), result.size(), std::addressof(result_written))};
+  if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), result.data(), result.size(), std::addressof(result_written), retry)};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
@@ -280,10 +280,11 @@ inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view p
   return {result_written};
 }
 
-inline std::expected<size_t, int32_t> openssl_pkey_get_private(std::string_view private_key, std::string_view passphrase, std::span<char> result) noexcept {
+inline std::expected<size_t, int32_t> openssl_pkey_get_private(std::string_view private_key, std::string_view passphrase, std::span<char> result,
+                                                                bool retry = false) noexcept {
   size_t result_written{0};
   if (auto error_code{k2_openssl_pkey_get_private(private_key.data(), private_key.size(), passphrase.data(), passphrase.size(), result.data(), result.size(),
-                                                  std::addressof(result_written))};
+                                                  std::addressof(result_written), retry)};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
@@ -319,10 +320,10 @@ inline std::expected<size_t, int32_t> openssl_decrypt(CipherAlgorithm algorithm,
 }
 
 inline std::expected<size_t, int32_t> openssl_public_encrypt(std::string_view data, std::span<char> encrypted_data, std::string_view public_key,
-                                                             AsymmPadding padding) noexcept {
+                                                             AsymmPadding padding, bool retry = false) noexcept {
   size_t encrypted_data_written{0};
   if (auto error_code{k2_openssl_public_encrypt(data.data(), data.size(), encrypted_data.data(), encrypted_data.size(), public_key.data(), public_key.size(),
-                                                padding, std::addressof(encrypted_data_written))};
+                                                padding, std::addressof(encrypted_data_written), retry)};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
