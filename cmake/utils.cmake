@@ -285,6 +285,8 @@ function(make_third_party_configuration PIC_ENABLED PROJECT_GENERIC_NAME PROJECT
         set(${OUT_LIB_SPECIFIER} ${NO_PIC_LIBRARY_SPECIFIER} PARENT_SCOPE)
     endif()
 
+    set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fno-omit-frame-pointer")
+
     if(COMPILE_RUNTIME_LIGHT)
         set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} ${RUNTIME_LIGHT_VISIBILITY}")
     endif()

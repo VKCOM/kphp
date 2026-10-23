@@ -3,6 +3,7 @@
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <span>
 
@@ -14,14 +15,24 @@
 
 namespace {
 
+bool is_aligned(const void* ptr, std::size_t alignment) noexcept {
+  return (reinterpret_cast<std::uintptr_t>(ptr) & (alignment - 1)) == 0;
+}
+
 size_t sync_frames(std::span<void*> addresses, kphp::coro::stack_frame* start_frame, kphp::coro::stack_frame* stop_frame) noexcept {
   kphp::log::assertion(start_frame != nullptr && stop_frame != nullptr);
 
   auto address{addresses.begin()};
-  for (auto* current_stack_frame{start_frame}; current_stack_frame != stop_frame && address != addresses.end();
+  for (auto* current_stack_frame{start_frame};
+       address != addresses.end() && reinterpret_cast<std::uintptr_t>(current_stack_frame) < reinterpret_cast<std::uintptr_t>(stop_frame) &&
+       is_aligned(current_stack_frame, alignof(void*));
        current_stack_frame = current_stack_frame->caller_stack_frame) {
     *address = current_stack_frame->return_address;
     address = std::next(address);
+    auto* next{current_stack_frame->caller_stack_frame};
+    if (reinterpret_cast<std::uintptr_t>(next) <= reinterpret_cast<std::uintptr_t>(current_stack_frame)) {
+      break;
+    }
   }
   return std::distance(addresses.begin(), address);
 }
