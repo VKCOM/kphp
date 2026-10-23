@@ -12,15 +12,14 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/string/string-state.h"
-#include "runtime-light/tl/tl-types.h"
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
 
 kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames = true) noexcept;
 
-kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string private_key, int64_t algo = tl::HashAlgorithm::SHA1) noexcept;
+bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm = HashAlgorithm::SHA1) noexcept;
 
-kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string pub_key_id, int64_t algo = tl::HashAlgorithm::SHA1) noexcept;
+int64_t f$openssl_verify(const string& data, const string& signature, const string& public_key, int64_t algorithm = HashAlgorithm::SHA1) noexcept;
 
 array<string> f$openssl_get_cipher_methods(bool aliases = false) noexcept;
 
