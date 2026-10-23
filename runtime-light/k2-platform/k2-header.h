@@ -102,9 +102,9 @@ enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2
 
 enum BlockPadding : uint32_t { PKCS7 = 0, BLOCK_NO_PADDING = 1 };
 
-enum AsymmPadding : uint32_t { PKCS1 = 0, PKCS1_OAEP = 1, ASYMM_NO_PADDING = 2 };
+enum RsaPadding : uint32_t { PKCS1 = 0, PKCS1_OAEP = 1, ASYMM_NO_PADDING = 2 };
 
-enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, MD2 = 6, MD4 = 7, MD5 = 8, RMD160 = 9, COUNT_HASH };
+enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, MD5 = 6, RMD160 = 7, COUNT_HASH };
 
 enum RpcKind {
   TL_RPC = 0,
@@ -524,6 +524,12 @@ int32_t k2_component_access(size_t name_len, const char* name);
 
 int32_t k2_openssl_random_pseudo_bytes(char* bytes, size_t length);
 
+int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const char* data, size_t data_len, const char* private_key, size_t private_key_len, char* result,
+                        size_t result_len, size_t* result_written, bool retry);
+
+int32_t k2_openssl_verify(enum HashAlgorithm algorithm, const char* data, size_t data_len, const char* public_key, size_t public_key_len, const char* signature,
+                          size_t signature_len, int32_t* is_valid);
+
 int32_t k2_openssl_pkey_get_public(const char* public_key, size_t public_key_len, char* result, size_t result_len, size_t* result_written, bool retry);
 
 int32_t k2_openssl_pkey_get_private(const char* private_key, size_t private_key_len, const char* passphrase, size_t passphrase_len, char* result,
@@ -538,10 +544,10 @@ int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding pad
                            size_t decrypted_data_len, size_t* decrypted_data_written);
 
 int32_t k2_openssl_public_encrypt(const char* data, size_t data_len, char* encrypted_data, size_t encrypted_data_len, const char* public_key,
-                                  size_t public_key_len, enum AsymmPadding padding, size_t* encrypted_data_written, bool retry);
+                                  size_t public_key_len, enum RsaPadding padding, size_t* encrypted_data_written, bool retry);
 
 int32_t k2_openssl_private_decrypt(const char* data, size_t data_len, char* decrypted_data, size_t decrypted_data_len, const char* private_key,
-                                   size_t private_key_len, enum AsymmPadding padding, size_t* decrypted_data_written);
+                                   size_t private_key_len, enum RsaPadding padding, size_t* decrypted_data_written);
 
 int32_t k2_hash(enum HashAlgorithm algorithm, const char* data, size_t data_len, char* hashed_data, size_t hashed_data_len);
 

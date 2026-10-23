@@ -15,7 +15,6 @@
 #include <utility>
 
 #include "common/crc32_generic.h"
-#include "common/tl/constants/common.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
@@ -94,59 +93,36 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   co_return std::move(response);
 }
 
-// FIXME it isn't safe to accept signature by reference
-kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string private_key, int64_t algo) noexcept {
-  tl::DigestSign digest_sign{.data = {.value = {data.c_str(), data.size()}},
-                             .private_key = {.value = {private_key.c_str(), private_key.size()}},
-                             .algorithm = static_cast<tl::HashAlgorithm>(algo)};
-  tl::storer tls{digest_sign.footprint()};
-  digest_sign.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm) noexcept {
+  auto size{k2::openssl_sign(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, {private_key.c_str(), private_key.size()}, {})};
+  if (!size) [[unlikely]] {
+    kphp::log::warning("Failed to sign data");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
+  string buffer{static_cast<string::size_type>(*size), false};
+  auto written{k2::openssl_sign(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, {private_key.c_str(), private_key.size()},
+                                {buffer.buffer(), buffer.size()}, true)};
+  if (!written) [[unlikely]] {
+    kphp::log::warning("Failed to sign data");
+    return false;
   }
 
-  tl::fetcher tlf{response_bytes};
-  tl::magic magic{};
-  tl::string str{};
-  kphp::log::assertion(magic.fetch(tlf) && magic.expect(TL_MAYBE_TRUE) && str.fetch(tlf));
-  signature = string{str.value.data(), static_cast<string::size_type>(str.value.size())};
-  co_return true;
+  buffer.shrink(static_cast<string::size_type>(*written));
+  signature = std::move(buffer);
+
+  return true;
 }
 
-kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string pub_key, int64_t algo) noexcept {
-  tl::DigestVerify digest_verify{.data = {.value = {data.c_str(), data.size()}},
-                                 .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
-                                 .algorithm = static_cast<tl::HashAlgorithm>(algo),
-                                 .signature = {.value = {signature.c_str(), signature.size()}}};
-  tl::storer tls{digest_verify.footprint()};
-  digest_verify.store(tls);
-
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return 0;
+int64_t f$openssl_verify(const string& data, const string& signature, const string& public_key, int64_t algorithm) noexcept {
+  auto res{k2::openssl_verify(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, {public_key.c_str(), public_key.size()},
+                              {signature.c_str(), signature.size()})};
+  if (!res) [[unlikely]] {
+    kphp::log::warning("Failed to verify signature");
+    return -1;
   }
 
-  auto stream{*std::move(expected_stream)};
-  std::array<std::byte, tl::magic{}.footprint()> response{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
-    co_return 0;
-  }
-
-  tl::fetcher tlf{response};
-  // For now returns only 1 or 0, -1 is never returned
-  // Because it's currently impossible to distiguish error from negative verification
-  if (tl::magic magic{}; !magic.fetch(tlf) || !magic.expect(TL_BOOL_TRUE)) {
-    co_return 0;
-  }
-  co_return 1;
+  return *res ? 1 : 0;
 }
 
 namespace {
@@ -433,14 +409,14 @@ Optional<string> f$openssl_pkey_get_private(const string& private_key, const str
 }
 
 bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept {
-  auto size{k2::openssl_public_encrypt({data.c_str(), data.size()}, {}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1)};
+  auto size{k2::openssl_public_encrypt({data.c_str(), data.size()}, {}, {public_key.c_str(), public_key.size()}, RsaPadding::PKCS1)};
   if (!size) [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
   }
 
   string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, AsymmPadding::PKCS1,
+  if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, RsaPadding::PKCS1,
                                   true)) [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
@@ -465,8 +441,8 @@ bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const s
 
 bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const string& private_key) noexcept {
   string buffer{static_cast<string::size_type>(data.size()), false};
-  auto res{k2::openssl_private_decrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {private_key.c_str(), private_key.size()},
-                                       AsymmPadding::PKCS1)};
+  auto res{
+      k2::openssl_private_decrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {private_key.c_str(), private_key.size()}, RsaPadding::PKCS1)};
   if (!res) [[unlikely]] {
     kphp::log::warning("Failed to decrypt data with the given private key");
     return false;
@@ -498,8 +474,6 @@ constexpr std::string_view SHA224 = "sha224";
 constexpr std::string_view SHA256 = "sha256";
 constexpr std::string_view SHA384 = "sha384";
 constexpr std::string_view SHA512 = "sha512";
-constexpr std::string_view MD2 = "md2";
-constexpr std::string_view MD4 = "md4";
 constexpr std::string_view MD5 = "md5";
 constexpr std::string_view RMD160 = "rmd160";
 
@@ -509,8 +483,6 @@ constexpr size_t SHA224_HASHED_SIZE = 28;
 constexpr size_t SHA256_HASHED_SIZE = 32;
 constexpr size_t SHA384_HASHED_SIZE = 48;
 constexpr size_t SHA512_HASHED_SIZE = 64;
-constexpr size_t MD2_HASHED_SIZE = 16;
-constexpr size_t MD4_HASHED_SIZE = 16;
 constexpr size_t MD5_HASHED_SIZE = 16;
 constexpr size_t RMD160_HASHED_SIZE = 20;
 
@@ -527,8 +499,6 @@ constexpr auto HASH_ALGORITHMS = []() noexcept {
       std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
       std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
       std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
-      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, HashAlgorithm::MD2}},
-      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, HashAlgorithm::MD4}},
       std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}},
       std::pair{RMD160, hash_algorithm_traits{RMD160_HASHED_SIZE, HashAlgorithm::RMD160}},
   }};
