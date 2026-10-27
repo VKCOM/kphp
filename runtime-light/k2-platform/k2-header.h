@@ -28,7 +28,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 16
+#define K2_PLATFORM_HEADER_H_VERSION 17
 
 // Always check that enum value is a valid value!
 
@@ -124,6 +124,18 @@ struct ImageInfo {
   const struct KeyValuePair* extra_info;
 };
 
+// `stored_at` (the moment of the last publish/republish) is always treated as time origin 0,
+// so both `now` and `expires_at` are nanosecond offsets from it, not wall-clock timestamps.
+struct SharedMemoryInfo {
+  // Nanoseconds elapsed since `stored_at`.
+  uint64_t now;
+  // Nanoseconds from `stored_at` to the expiration moment. `0` means the memory is immortal
+  // (it was published/republished with a zero TTL) and never expires.
+  uint64_t expires_at;
+  // `true` if the memory was last published by this instance.
+  bool is_own;
+};
+
 /**
  * Symbols provided by component image
  * Every image should provide these symbols
@@ -199,21 +211,21 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
 
 /**
  * Shared memory provides a mechanism for instances to share data.
- * To use it, first allocate memory with `k2_alloc_shared_memory`, then publish
- * it with a unique name using `k2_publish_shared_memory`. Other instances can
- * then retrieve the memory by name with `k2_get_shared_memory`.
+ * To use it, first allocate memory with `k2_shared_memory_alloc`, then publish
+ * it with a unique name using `k2_shared_memory_publish`. Other instances can
+ * then retrieve the memory by name with `k2_shared_memory_get`.
  *
  * Lifecycle:
  * - TTL defines when memory becomes eligible for reclamation
  * - Memory is reclaimed lazily after TTL expires AND no references remain
  *
  * Reference counting:
- * - Calling `k2_publish_shared_memory` sets the reference count to one
- * - Calling `k2_get_shared_memory` increments the reference count by one if
+ * - Calling `k2_shared_memory_publish` sets the reference count to one
+ * - Calling `k2_shared_memory_get` increments the reference count by one if
  *   this instance does not already hold a reference; repeated calls for the
  *   same underlying pointer while already held do not increment it further
- * - Calling `k2_release_shared_memory` clears the held reference, if `pointer`
- *   is currently held; unpublished memory from `k2_alloc_shared_memory` is
+ * - Calling `k2_shared_memory_release` clears the held reference, if `pointer`
+ *   is currently held; unpublished memory from `k2_shared_memory_alloc` is
  *   just freed
  */
 
@@ -235,7 +247,7 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  * `ENOMEM` => Not enough memory to allocate the requested region.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
+int32_t k2_shared_memory_alloc(size_t size, size_t align, void** pointer);
 
 /**
  * Publishes shared memory with a name and TTL, making it discoverable by other instances.
@@ -243,13 +255,13 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
  * @param `name` Name to associate with the memory region. Must be unique.
  *               Should be valid UTF-8 and not contain null bytes.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
- * @param `memory` Pointer to memory previously allocated via `k2_alloc_shared_memory`.
+ * @param `memory` Pointer to memory previously allocated via `k2_shared_memory_alloc`.
  * @param `ttl` Time-to-live in milliseconds. Memory becomes eligible for
  *              reclamation after this duration, but only when the reference
  *              count reaches zero. Zero TTL means infinite life.
  * @param `as_mut` Controls whether write protection is disabled. If true, the memory is made writable.
  * @param `ignore_if_exist` If true, allows re-publishing memory previously allocated via
- *              `k2_alloc_shared_memory` even if a live published memory with the same name already exists.
+ *              `k2_shared_memory_alloc` even if a live published memory with the same name already exists.
  *
  * @return `0` on success. libc-like `errno` on error.
  *
@@ -257,11 +269,11 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
  * `EINVAL` => `name` is NULL, `name_len` is 0, `memory` is NULL, `name` is
  *             not valid UTF-8, or `ttl` is too small (non-zero and less than
  *             100 ms).
- * `ENOENT` => `memory` was not allocated by `k2_alloc_shared_memory`.
+ * `ENOENT` => `memory` was not allocated by `k2_shared_memory_alloc`.
  * `EEXIST` => Memory with this name already exists.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* memory, uint64_t ttl, bool as_mut, bool ignore_if_exist);
+int32_t k2_shared_memory_publish(const char* name, size_t name_len, const void* memory, uint64_t ttl, bool as_mut, bool ignore_if_exist);
 
 /**
  * Retrieves shared memory by name and, unless already held by this
@@ -278,10 +290,11 @@ int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* 
  * Possible `errno`:
  * `EINVAL` => `name` is NULL, `name_len` is 0, `pointer` is NULL, or `name`
  *             is not valid UTF-8.
- * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOENT` => No memory found with the given name (memory was freed).
+ * `EKEYEXPIRED` => TTL for this name has already expired.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size);
+int32_t k2_shared_memory_get(const char* name, size_t name_len, const void** pointer, size_t* size);
 
 /**
  * Republishes shared memory, resetting its TTL and restarting the age counter from this call.
@@ -299,7 +312,7 @@ int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** poi
  * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_republish_shared_memory(const char* name, size_t name_len, uint64_t ttl);
+int32_t k2_shared_memory_republish(const char* name, size_t name_len, uint64_t ttl);
 
 /**
  * Fast-forwards the expiration of published shared memory ahead of its TTL, by name.
@@ -334,21 +347,21 @@ int32_t k2_republish_shared_memory(const char* name, size_t name_len, uint64_t t
  * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
-int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, uint8_t percentile, uint64_t remaining_lifetime_limit);
+int32_t k2_shared_memory_seek_ttl_to(const char* name, size_t name_len, uint8_t percentile, uint64_t remaining_lifetime_limit);
 
 /**
- * Frees shared memory allocated via `k2_alloc_shared_memory` that was never
+ * Frees shared memory allocated via `k2_shared_memory_alloc` that was never
  * published, or releases the reference to shared memory held by this
- * instance, acquired via `k2_publish_shared_memory` or
- * `k2_get_shared_memory` (see the reference counting notes above).
+ * instance, acquired via `k2_shared_memory_publish` or
+ * `k2_shared_memory_get` (see the reference counting notes above).
  *
  * Releasing a reference does not free the underlying memory immediately: the
  * memory is only physically reclaimed once its TTL has expired AND the
  * reference count has reached zero (see the lifecycle notes above).
  *
  * @param `pointer` Pointer to shared memory, as returned by
- *                  `k2_alloc_shared_memory` or `k2_get_shared_memory`, or
- *                  passed as the `memory` argument to `k2_publish_shared_memory`.
+ *                  `k2_shared_memory_alloc` or `k2_shared_memory_get`, or
+ *                  passed as the `memory` argument to `k2_shared_memory_publish`.
  *
  * @return `0` on success: either the unpublished allocation was freed, or the
  *         reference held by this instance was released. libc-like `errno`
@@ -357,10 +370,31 @@ int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, uint8_t 
  * Possible `errno`:
  * `EINVAL` => `pointer` is NULL.
  * `ENOENT` => `pointer` does not correspond to memory allocated by this
- *             instance via `k2_alloc_shared_memory`, nor to a reference
+ *             instance via `k2_shared_memory_alloc`, nor to a reference
  *             currently held by this instance.
  */
-int32_t k2_release_shared_memory(const void* pointer);
+int32_t k2_shared_memory_release(const void* pointer);
+
+/**
+ * Retrieves timing and ownership info about published shared memory, by name, without
+ * taking a reference to it.
+ *
+ * @param `name` Name of the shared memory to query.
+ * @param `name_len` Length of the name in bytes. Must be greater than 0.
+ * @param `info` Out parameter, filled with the current info on success. `stored_at` (the
+ *               moment of the last publish/republish) is always treated as time origin 0, so
+ *               `info->now` and `info->expires_at` are nanosecond offsets from it, not
+ *               wall-clock timestamps. `info->expires_at == 0` means the memory is immortal
+ *               (published/republished with a zero TTL) and never expires.
+ *
+ * @return `0` on success. libc-like `errno` on error.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `name` is NULL, `name_len` is 0, `info` is NULL, or `name` is not valid UTF-8.
+ * `ENOENT` => No memory found with the given name (memory was freed).
+ * `EKEYEXPIRED` => TTL for this name has already expired.
+ */
+int32_t k2_shared_memory_info(const char* name, size_t name_len, struct SharedMemoryInfo* info);
 
 /**
  * Immediately abort component execution.
