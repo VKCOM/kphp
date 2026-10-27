@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <__expected/expected.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
