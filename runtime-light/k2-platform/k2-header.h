@@ -524,6 +524,32 @@ int32_t k2_component_access(size_t name_len, const char* name);
 
 int32_t k2_openssl_random_pseudo_bytes(char* bytes, size_t length);
 
+int32_t k2_openssl_x509_open(const char* data, size_t data_len);
+
+int32_t k2_openssl_x509_get_subject_name(char* result, size_t result_len, size_t* result_written, bool retry);
+
+int32_t k2_openssl_x509_name_entry_count(bool is_issuer, size_t* result);
+
+int32_t k2_openssl_x509_name_entry_key(bool is_issuer, bool shortnames, size_t index, char* result, size_t result_len, size_t* result_written);
+
+int32_t k2_openssl_x509_name_entry_value(bool is_issuer, size_t index, char* result, size_t result_len, size_t* result_written);
+
+int32_t k2_openssl_x509_get_hash(char* result, size_t result_len);
+
+int32_t k2_openssl_x509_get_version(int64_t* result);
+
+int32_t k2_openssl_x509_get_valid_from(int64_t* result);
+
+int32_t k2_openssl_x509_get_valid_to(int64_t* result);
+
+int32_t k2_openssl_x509_purpose_count(size_t* result);
+
+int32_t k2_openssl_x509_purpose_id(size_t index, int64_t* result);
+
+int32_t k2_openssl_x509_purpose_check(size_t index, bool ca, bool* result);
+
+int32_t k2_openssl_x509_purpose_name(size_t index, bool shortnames, char* result, size_t result_len, size_t* result_written);
+
 int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const char* data, size_t data_len, const char* private_key, size_t private_key_len, char* result,
                         size_t result_len, size_t* result_written, bool retry);
 

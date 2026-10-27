@@ -9,31 +9,18 @@
 #include <cctype>
 #include <cstddef>
 #include <functional>
+#include <initializer_list>
 #include <optional>
 #include <ranges>
 #include <string_view>
 #include <utility>
 
 #include "common/crc32_generic.h"
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/streams/read-ext.h"
-#include "runtime-light/streams/stream.h"
-#include "runtime-light/tl/tl-core.h"
-#include "runtime-light/tl/tl-functions.h"
-#include "runtime-light/tl/tl-types.h"
-
-namespace {
-
-constexpr std::string_view CRYPTO_COMPONENT_NAME = "crypto";
-
-} // namespace
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) [[unlikely]] {
@@ -49,48 +36,168 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   return buffer;
 }
 
-kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
-  tl::GetPemCertInfo get_perm_cert_info{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}};
-  tl::storer tls{get_perm_cert_info.footprint()};
-  get_perm_cert_info.store(tls);
+namespace {
 
-  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
-  if (!expected_stream) [[unlikely]] {
-    co_return false;
+Optional<array<mixed>> x509_get_name_entries(bool is_issuer, bool shortnames) noexcept {
+  auto count{k2::openssl_x509_name_entry_count(is_issuer)};
+  if (!count) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 name entry count");
+    return false;
   }
 
-  auto stream{*std::move(expected_stream)};
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-    co_return false;
+  array<mixed> res;
+  for (size_t i = 0; i < *count; ++i) {
+    auto key_size{k2::openssl_x509_name_entry_key(is_issuer, shortnames, i, {})};
+    if (!key_size) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 name entry key");
+      return false;
+    }
+
+    string key{static_cast<string::size_type>(*key_size), false};
+    auto key_written{k2::openssl_x509_name_entry_key(is_issuer, shortnames, i, {key.buffer(), key.size()})};
+    if (!key_written) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 name entry key");
+      return false;
+    }
+
+    key.shrink(static_cast<string::size_type>(*key_written));
+
+    auto value_size{k2::openssl_x509_name_entry_value(is_issuer, i, {})};
+    if (!value_size) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 name entry value");
+      return false;
+    }
+
+    string value{static_cast<string::size_type>(*value_size), false};
+    auto value_written{k2::openssl_x509_name_entry_value(is_issuer, i, {value.buffer(), value.size()})};
+    if (!value_written) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 name entry value");
+      return false;
+    }
+
+    value.shrink(static_cast<string::size_type>(*value_written));
+
+    res.set_value(key, value);
   }
 
-  tl::fetcher tlf{response_bytes};
-  tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items{};
-  kphp::log::assertion(cert_items.fetch(tlf));
-  if (!cert_items.opt_value) {
-    co_return false;
+  return res;
+}
+
+Optional<array<mixed>> x509_get_purposes(bool shortnames) noexcept {
+  auto count{k2::openssl_x509_purpose_count()};
+  if (!count) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 purpose count");
+    return false;
   }
 
-  array<mixed> response{array_size{static_cast<int64_t>((*cert_items.opt_value).size()), false}};
-  auto item_to_mixed{tl::CertInfoItem::MakeVisitor{
-      [](tl::i64 val) noexcept -> mixed { return val.value; }, [](tl::string val) noexcept -> mixed { return string(val.value.data(), val.value.size()); },
-      [](const tl::dictionary<tl::string>& sub_dict) noexcept -> mixed {
-        array<mixed> resp{array_size{static_cast<int64_t>(sub_dict.size()), false}};
-        for (auto sub_item : sub_dict) {
-          auto key{string{sub_item.key.value.data(), static_cast<string::size_type>(sub_item.key.value.size())}};
-          auto value{string{sub_item.value.value.data(), static_cast<string::size_type>(sub_item.value.value.size())}};
-          resp[key] = std::move(value);
-        }
-        return resp;
-      }}};
+  array<mixed> res;
+  for (size_t i = 0; i < *count; ++i) {
+    auto id{k2::openssl_x509_purpose_id(i)};
+    if (!id) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 purpose id");
+      return false;
+    }
 
-  for (auto cert_kv : std::move(*cert_items.opt_value)) {
-    auto key{string{cert_kv.key.value.data(), static_cast<string::size_type>(cert_kv.key.value.size())}};
-    tl::CertInfoItem val{std::move(cert_kv.value)};
-    response[string{cert_kv.key.value.data(), static_cast<string::size_type>(cert_kv.key.value.size())}] = std::visit(item_to_mixed, val.data);
+    auto purpset_0{k2::openssl_x509_purpose_check(i, false)};
+    auto purpset_1{k2::openssl_x509_purpose_check(i, true)};
+    if (!purpset_0 || !purpset_1) [[unlikely]] {
+      kphp::log::warning("Failed to check X509 purpose");
+      return false;
+    }
+
+    auto name_size{k2::openssl_x509_purpose_name(i, shortnames, {})};
+    if (!name_size) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 purpose name");
+      return false;
+    }
+
+    string name{static_cast<string::size_type>(*name_size), false};
+    auto name_written{k2::openssl_x509_purpose_name(i, shortnames, {name.buffer(), name.size()})};
+    if (!name_written) [[unlikely]] {
+      kphp::log::warning("Failed to get X509 purpose name");
+      return false;
+    }
+
+    name.shrink(static_cast<string::size_type>(*name_written));
+
+    res.set_value(*id, array<mixed>::create(*purpset_0, *purpset_1, name));
   }
-  co_return std::move(response);
+
+  return res;
+}
+
+} // namespace
+
+Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames) noexcept {
+  static constexpr size_t SUBJECT_NAME_HASH_SIZE{8};
+
+  if (!k2::openssl_x509_open({data.c_str(), data.size()})) [[unlikely]] {
+    kphp::log::warning("Failed to parse X509 certificate");
+    return false;
+  }
+
+  auto name_size{k2::openssl_x509_get_subject_name({})};
+  if (!name_size) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 subject name");
+    return false;
+  }
+
+  string name{static_cast<string::size_type>(*name_size), false};
+  auto name_written{k2::openssl_x509_get_subject_name({name.buffer(), name.size()}, true)};
+  if (!name_written) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 subject name");
+    return false;
+  }
+
+  name.shrink(static_cast<string::size_type>(*name_written));
+
+  auto subject{x509_get_name_entries(false, shortnames)};
+  if (!subject.has_value()) [[unlikely]] {
+    return false;
+  }
+
+  string hash{SUBJECT_NAME_HASH_SIZE, false};
+  if (!k2::openssl_x509_get_hash({hash.buffer(), hash.size()})) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 hash");
+    return false;
+  }
+
+  auto issuer{x509_get_name_entries(true, shortnames)};
+  if (!issuer.has_value()) [[unlikely]] {
+    return false;
+  }
+
+  auto version{k2::openssl_x509_get_version()};
+  if (!version) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 version");
+    return false;
+  }
+
+  auto valid_from{k2::openssl_x509_get_valid_from()};
+  if (!valid_from) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 validFrom time");
+    return false;
+  }
+
+  auto valid_to{k2::openssl_x509_get_valid_to()};
+  if (!valid_to) [[unlikely]] {
+    kphp::log::warning("Failed to get X509 validTo time");
+    return false;
+  }
+
+  auto purposes{x509_get_purposes(shortnames)};
+  if (!purposes.has_value()) [[unlikely]] {
+    return false;
+  }
+
+  return std::initializer_list<std::pair<string, mixed>>{{string{"name", 4}, name},
+                                                         {string{"subject", 7}, subject.val()},
+                                                         {string{"hash", 4}, hash},
+                                                         {string{"issuer", 6}, issuer.val()},
+                                                         {string{"version", 7}, *version},
+                                                         {string{"validFrom_time_t", 16}, *valid_from},
+                                                         {string{"validTo_time_t", 14}, *valid_to},
+                                                         {string{"purposes", 8}, purposes.val()}};
 }
 
 bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm) noexcept {
