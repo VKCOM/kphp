@@ -15,12 +15,8 @@ function print_cert_info(string $certificate) {
   var_dump($res["version"]);
   var_dump($res["validFrom_time_t"]);
   var_dump($res["validTo_time_t"]);
-
-  // Currently not supported in K2
-  // var_dump($res["hash"]);
-
-  // Currently not supported in K2
-  // var_dump($res["purposes"]);
+  var_dump($res["hash"]);
+  var_dump($res["purposes"]);
 }
 
 $certificate = <<<EOF

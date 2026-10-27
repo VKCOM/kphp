@@ -10,12 +10,12 @@
 
 #include "common/md5.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/string/string-state.h"
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
 
-kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames = true) noexcept;
+Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames = true) noexcept;
 
 bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm = HashAlgorithm::SHA1) noexcept;
 
