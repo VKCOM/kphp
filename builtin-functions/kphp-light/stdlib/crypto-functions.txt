@@ -2,32 +2,25 @@
 
 // ===== SUPPORTED =====
 
-define('OPENSSL_ALGO_SHA1'  ,  0x215fb97d);
-define('OPENSSL_ALGO_MD5'   ,  0x257ddf13);
-define('OPENSSL_ALGO_MD4'   ,  0x317fe3d1);
-define('OPENSSL_ALGO_MD2'   ,  0x5aca6998);
-define('OPENSSL_ALGO_DSS1'  ,  0xf572d6b6);
-define('OPENSSL_ALGO_SHA224',  0x8bce55e9);
-define('OPENSSL_ALGO_SHA256',  0x6c977f8c);
-define('OPENSSL_ALGO_SHA384',  0xf54c2608);
-define('OPENSSL_ALGO_SHA512',  0x225df2b6);
-define('OPENSSL_ALGO_RMD160',  0x1887e6b4);
+define('OPENSSL_ALGO_DSS1'  ,  0);
+define('OPENSSL_ALGO_SHA1'  ,  1);
+define('OPENSSL_ALGO_SHA224',  2);
+define('OPENSSL_ALGO_SHA256',  3);
+define('OPENSSL_ALGO_SHA384',  4);
+define('OPENSSL_ALGO_SHA512',  5);
+define('OPENSSL_ALGO_MD5'   ,  6);
+define('OPENSSL_ALGO_RMD160',  7);
 
 define('OPENSSL_RAW_DATA', 1);
 define('OPENSSL_ZERO_PADDING', 2);
 define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
 
-
-/** @kphp-extern-func-info interruptible */
 function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
 
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
@@ -36,19 +29,13 @@ function openssl_cipher_iv_length($method ::: string) ::: int | false;
 
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
                          string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
-
-/** @kphp-extern-func-info interruptible */
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
-/** @kphp-extern-func-info interruptible */
 function openssl_pkey_get_public ($key ::: string) ::: string | false;
 
-/** @kphp-extern-func-info interruptible */
 function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
-/** @kphp-extern-func-info interruptible */
 function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
 
 function hash_algos () ::: string[];
@@ -65,6 +52,9 @@ function hash_equals(string $known_string, string $user_string) ::: bool;
 function crc32 ($s ::: string) ::: int;
 
 // ===== UNSUPPORTED =====
+
+define('OPENSSL_ALGO_MD2',  8);
+define('OPENSSL_ALGO_MD4',  9);
 
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);
 define('X509_PURPOSE_SSL_SERVER'    ,     2);
@@ -89,9 +79,7 @@ define('PKCS7_NOATTR', 0x100);
 /** @kphp-extern-func-info stub generation-required */
 function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;
 
-
 /** @kphp-extern-func-info stub generation-required */
 function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
                             $sign_cert ::: string, $priv_key ::: string,
                             string[] $headers, $flags ::: int = PKCS7_DETACHED, $extra_certs ::: string = "") ::: bool;
-
