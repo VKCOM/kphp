@@ -53,9 +53,6 @@ function crc32 ($s ::: string) ::: int;
 
 // ===== UNSUPPORTED =====
 
-define('OPENSSL_ALGO_MD2',  8);
-define('OPENSSL_ALGO_MD4',  9);
-
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);
 define('X509_PURPOSE_SSL_SERVER'    ,     2);
 define('X509_PURPOSE_NS_SSL_SERVER' ,     3);
