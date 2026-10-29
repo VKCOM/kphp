@@ -56,12 +56,8 @@ private:
 
   uint64_t m_update_events_count{};
   uint64_t m_delete_events_count{};
-  kphp::confdata::metrics::events m_events_metrics;
 
-  kphp::confdata::metrics::capacity m_capacity_metrics;
-
-  kphp::confdata::metrics::update_failures m_update_failure_metrics;
-  std::array<uint64_t, std::tuple_size_v<decltype(m_update_failure_metrics.m_failures)>> m_update_failure_counts{};
+  std::array<uint64_t, std::tuple_size_v<decltype(kphp::confdata::metrics::update_failures::m_failures)>> m_update_failure_counts{};
   std::optional<int64_t> m_update_failure_old_offset; // We only report the last old offset
 
 public:
@@ -82,9 +78,9 @@ private:
   auto service_loop() noexcept -> kphp::coro::task<>;
   auto metrics_loop() noexcept -> kphp::coro::task<>;
 
-  auto report_events_metrics(uint64_t timestamp) noexcept -> void;
-  auto report_capacity_metrics(uint64_t timestamp) noexcept -> void;
-  auto report_update_failure_metrics(uint64_t timestamp) noexcept -> void;
+  auto report_events_metrics(k2::SystemTime timestamp) noexcept -> void;
+  auto report_capacity_metrics(k2::SystemTime timestamp) noexcept -> void;
+  auto report_update_failure_metrics(k2::SystemTime timestamp) noexcept -> void;
 
   auto release_reader(confdata_piece_list::iterator piece_it, kphp::confdata::storage::sample_id sample_id) noexcept -> void;
   auto serve_reader_lease(kphp::component::stream reader_stream) noexcept -> kphp::coro::task<>;
