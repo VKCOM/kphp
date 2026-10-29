@@ -23,6 +23,28 @@ foreach ($operations as $op) {
           critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
         }
         break;
+      case 'fetch_lookup_int':
+        $pos_before = fetch_get_pos();
+        $res = fetch_lookup_int();
+        $pos_after = fetch_get_pos();
+        if ($pos_after !== $pos_before) {
+          critical_error('fetch_lookup_int changed fetch position from ' . $pos_before . ' to ' . $pos_after);
+        }
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
+        }
+        break;
+      case 'fetch_lookup_data':
+        $pos_before = fetch_get_pos();
+        $res = fetch_lookup_data($op['x4_bytes_length']);
+        $pos_after = fetch_get_pos();
+        if ($pos_after !== $pos_before) {
+          critical_error('fetch_lookup_data changed fetch position from ' . $pos_before . ' to ' . $pos_after);
+        }
+        if ($res != $op['expected']) {
+          critical_error('expected ' . $op['expected'] . ' but ' . $res . '  found');
+        }
+        break;
       case 'fetch_long':
         $res = fetch_long();
         if ($res != $op['expected']) {
