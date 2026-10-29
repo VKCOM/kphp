@@ -10,6 +10,8 @@ define('OPENSSL_ALGO_SHA384',  4);
 define('OPENSSL_ALGO_SHA512',  5);
 define('OPENSSL_ALGO_MD5'   ,  6);
 define('OPENSSL_ALGO_RMD160',  7);
+define('OPENSSL_ALGO_MD2',  8);
+define('OPENSSL_ALGO_MD4',  9);
 
 define('OPENSSL_RAW_DATA', 1);
 define('OPENSSL_ZERO_PADDING', 2);
