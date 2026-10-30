@@ -143,6 +143,29 @@ inline int64_t f$fetch_int() noexcept {
   return DEFAULT_VALUE;
 }
 
+inline int64_t f$fetch_lookup_int() noexcept {
+  static constexpr int64_t DEFAULT_VALUE{0};
+  auto tl_fetcher{RpcServerInstanceState::get().tl_fetcher}; // copy
+  if (tl::i32 val{}; val.fetch(tl_fetcher)) [[likely]] {
+    return static_cast<int64_t>(val.value);
+  }
+  THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+  return DEFAULT_VALUE;
+}
+
+inline string f$fetch_lookup_data(int64_t x4_bytes_length) noexcept {
+  static constexpr size_t BYTES_PER_WORD{sizeof(int32_t)};
+  const auto& tl_fetcher{RpcServerInstanceState::get().tl_fetcher};
+  if (x4_bytes_length < 0 || static_cast<uint64_t>(x4_bytes_length) > (tl_fetcher.remaining() / BYTES_PER_WORD)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return {};
+  }
+
+  const auto bytes_length{static_cast<size_t>(x4_bytes_length) * BYTES_PER_WORD};
+  const auto bytes{tl_fetcher.view().subspan(tl_fetcher.pos(), bytes_length)};
+  return string{reinterpret_cast<const char*>(bytes.data()), static_cast<string::size_type>(bytes.size())};
+}
+
 inline int64_t f$fetch_long() noexcept {
   static constexpr int64_t DEFAULT_VALUE = 0;
   if (tl::i64 val{}; val.fetch(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {

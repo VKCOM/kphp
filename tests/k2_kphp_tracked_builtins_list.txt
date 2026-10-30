@@ -176,6 +176,8 @@ extract_kphp_rpc_response_extra_info
 fclose
 fetch_double
 fetch_int
+fetch_lookup_int
+fetch_lookup_data
 fetch_long
 fetch_string
 fflush
@@ -491,7 +493,6 @@ openssl_x509_verify
 preg_last_error
 new_rpc_connection
 store_finish
-fetch_lookup_int
 gethostbynamel
 localtime
 system

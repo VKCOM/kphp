@@ -30,6 +30,17 @@ def _assert_fetch_int(expected_result: int, expected_exception: bool = False):
     return _operation('fetch_int', dict(), expected_result, expected_exception=expected_exception)
 
 
+def _assert_fetch_lookup_int(expected_result: int, expected_exception: bool = False):
+    return _operation('fetch_lookup_int', dict(), expected_result, expected_exception=expected_exception)
+
+
+def _assert_fetch_lookup_data(x4_bytes_length: int, expected_result: str, expected_exception: bool = False):
+    return _operation(
+        'fetch_lookup_data', dict(x4_bytes_length=x4_bytes_length), expected_result,
+        expected_exception=expected_exception
+    )
+
+
 def _assert_fetch_long(expected_result: int, expected_exception: bool = False):
     return _operation('fetch_long', dict(), expected_result, expected_exception=expected_exception)
 
@@ -53,6 +64,8 @@ class TestTlPrimitives(WebServerAutoTestCase):
             _assert_rpc_parse(
                 '\x12\x34\x56\x78\x42\x00\x00\x00\x00\x00\x00\x00\x68\x56\x5b\x56\x06\x22\x09\x40\x03abc', True
             ),
+            _assert_fetch_lookup_int(0x78563412),
+            _assert_fetch_lookup_data(1, '\x12\x34\x56\x78'),
             _assert_fetch_int(0x78563412),
             _assert_fetch_long(0x42),
             _assert_fetch_double(3.14161365),

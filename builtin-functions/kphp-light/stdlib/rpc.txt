@@ -70,6 +70,12 @@ function rpc_fetch_typed_responses_synchronously(int[] $query_ids) ::: @tl\RpcRe
 function fetch_int () ::: int;
 
 /** @kphp-extern-func-info can_throw */
+function fetch_lookup_int () ::: int;
+
+/** @kphp-extern-func-info can_throw */
+function fetch_lookup_data ($x4_bytes_length ::: int) ::: string;
+
+/** @kphp-extern-func-info can_throw */
 function fetch_byte () ::: int;
 
 /** @kphp-extern-func-info can_throw */
@@ -138,9 +144,6 @@ function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed
 
 /** @kphp-extern-func-info interruptible stub generation-required */
 function store_finish() ::: bool;
-
-/** @kphp-extern-func-info interruptible stub generation-required can_throw */
-function fetch_lookup_int () ::: int;
 
 /** @kphp-generate-stub-class */
 final class RpcConnection {
