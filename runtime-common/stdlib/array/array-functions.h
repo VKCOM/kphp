@@ -1160,8 +1160,8 @@ inline Optional<array<mixed>> f$array_column(const array<mixed>& a, const mixed&
 }
 
 template<class T>
-auto f$array_column(const Optional<T>& a, const mixed& column_key,
-                    const mixed& index_key = {}) noexcept -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+auto f$array_column(const Optional<T>& a, const mixed& column_key, const mixed& index_key = {}) noexcept
+    -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   if (!a.has_value()) {
     php_warning("first parameter of array_column must be array");
     return false;

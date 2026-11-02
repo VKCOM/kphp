@@ -141,7 +141,7 @@ private:
     reader(const shared_ctx_type& _ctx, shared_transport_type _t) noexcept
         : ctx(_ctx),
           interrupter(reader::wait_until_interrupt(_ctx)),
-          runner(reader::run(_ctx, std::move(_t), interrupter)){};
+          runner(reader::run(_ctx, std::move(_t), interrupter)) {}
 
     static auto run(shared_ctx_type ctx, shared_transport_type t, kphp::coro::shared_task<void> interrupter) noexcept -> kphp::coro::shared_task<void> {
       // Allocate buffer for header
@@ -281,7 +281,7 @@ public:
 
   template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
   requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
-               std::same_as<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
+           std::same_as<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
   auto query(std::span<const std::byte> request, B response_buffer_provider, R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
 
   template<std::invocable<size_t> B>
@@ -300,9 +300,9 @@ inline auto client::create(std::string_view component_name) noexcept -> std::exp
 
 template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
-             std::same_as<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
-auto client::query(std::span<const std::byte> request, B response_buffer_provider,
-                   R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+         std::same_as<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
+auto client::query(std::span<const std::byte> request, B response_buffer_provider, R response_handler) noexcept
+    -> kphp::coro::task<std::expected<void, int32_t>> {
   // If any reader error has previously occurred
   if (reader.ctx.get() == nullptr) [[unlikely]] {
     co_return std::unexpected(k2::errno_eshutdown);
