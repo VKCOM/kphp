@@ -104,7 +104,7 @@ enum BlockPadding : uint32_t { PKCS7 = 0, BLOCK_NO_PADDING = 1 };
 
 enum RsaPadding : uint32_t { PKCS1 = 0, PKCS1_OAEP = 1, ASYMM_NO_PADDING = 2 };
 
-enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, MD5 = 6, RMD160 = 7, COUNT_HASH };
+enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, MD5 = 6, RMD160 = 7, MD2 = 8, MD4 = 9, COUNT_HASH };
 
 enum RpcKind {
   TL_RPC = 0,

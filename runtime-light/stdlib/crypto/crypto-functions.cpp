@@ -583,6 +583,8 @@ constexpr std::string_view SHA384 = "sha384";
 constexpr std::string_view SHA512 = "sha512";
 constexpr std::string_view MD5 = "md5";
 constexpr std::string_view RMD160 = "rmd160";
+constexpr std::string_view MD2 = "md2";
+constexpr std::string_view MD4 = "md4";
 
 constexpr size_t DSS1_HASHED_SIZE = 20;
 constexpr size_t SHA1_HASHED_SIZE = 20;
@@ -592,6 +594,8 @@ constexpr size_t SHA384_HASHED_SIZE = 48;
 constexpr size_t SHA512_HASHED_SIZE = 64;
 constexpr size_t MD5_HASHED_SIZE = 16;
 constexpr size_t RMD160_HASHED_SIZE = 20;
+constexpr size_t MD2_HASHED_SIZE = 16;
+constexpr size_t MD4_HASHED_SIZE = 16;
 
 struct hash_algorithm_traits {
   int64_t hashed_size;
@@ -599,16 +603,16 @@ struct hash_algorithm_traits {
 };
 
 constexpr auto HASH_ALGORITHMS = []() noexcept {
-  auto arr{std::array{
-      std::pair{DSS1, hash_algorithm_traits{DSS1_HASHED_SIZE, HashAlgorithm::DSS1}},
-      std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}},
-      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, HashAlgorithm::SHA224}},
-      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
-      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
-      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
-      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}},
-      std::pair{RMD160, hash_algorithm_traits{RMD160_HASHED_SIZE, HashAlgorithm::RMD160}},
-  }};
+  auto arr{std::array{std::pair{DSS1, hash_algorithm_traits{DSS1_HASHED_SIZE, HashAlgorithm::DSS1}},
+                      std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}},
+                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, HashAlgorithm::SHA224}},
+                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
+                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
+                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
+                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}},
+                      std::pair{RMD160, hash_algorithm_traits{RMD160_HASHED_SIZE, HashAlgorithm::RMD160}},
+                      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, HashAlgorithm::MD2}},
+                      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, HashAlgorithm::MD4}}}};
 
   std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, hash_algorithm_traits>::first);
   return arr;
