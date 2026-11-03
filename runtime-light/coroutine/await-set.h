@@ -46,7 +46,8 @@ public:
   await_set& operator=(const await_set&) = delete;
 
   template<typename awaitable_type>
-  requires kphp::coro::concepts::awaitable<awaitable_type> && std::is_same_v<typename awaitable_traits<awaitable_type>::awaiter_return_type, return_type>
+  requires kphp::coro::concepts::detached_awaitable<awaitable_type> &&
+           std::is_same_v<typename awaitable_traits<awaitable_type>::awaiter_return_type, return_type>
   void push(awaitable_type awaitable) noexcept {
     kphp::log::assertion(m_await_broker != nullptr);
     m_await_broker->start_task(detail::await_set::make_await_set_task(std::move(awaitable)), m_coroutine_stack_root, STACK_RETURN_ADDRESS);

@@ -26,11 +26,14 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/control-functions.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/detail/poll-info.h"
 #include "runtime-light/coroutine/detail/task-self-deleting.h"
 #include "runtime-light/coroutine/detail/timer-handle.h"
 #include "runtime-light/coroutine/poll.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/when-any.h"
@@ -96,7 +99,7 @@ public:
    * @param coroutine The coroutine to spawn.
    * @return True if the coroutine was successfully spawned, false otherwise.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type>
   auto spawn(coroutine_type coroutine) noexcept -> bool;
 
   /**
@@ -104,7 +107,7 @@ public:
    * @param corotuine The coroutine to start.
    * @return True if the coroutine was successfully started, false otherwise.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type>
   auto start(coroutine_type coroutine) noexcept -> bool;
 
   /**
@@ -126,7 +129,7 @@ public:
    * @param coroutine The coroutine to schedule.
    * @return A task that will yield the coroutine's return value when completed.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type>;
   /**
    * @brief Schedules a coroutine with a timeout.
@@ -136,7 +139,7 @@ public:
    *        - Positive: rounded up to the next whole millisecond.
    * @return A task that yields either the coroutine's result or kphp::coro::timeout_status::timeout.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
+  template<kphp::coro::concepts::detached_coroutine coroutine_type, kphp::concepts::duration duration_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine, duration_type timeout) noexcept
       -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>>;
 
@@ -436,14 +439,14 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
        */
       scheduled_coroutines.pop_front();
       kphp::log::assertion(static_cast<bool>(coroutine));
-      kphp::coro::resume(coroutine, m_coro_instance_state.coroutine_stack_root);
+      kphp::coro::resume(coroutine, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
     }
   }
 
   return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollReschedule;
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type>
 auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
   auto& coroutine_node{owned_task.get_coroutine_node()};
@@ -454,14 +457,14 @@ auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
   return true;
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type>
 auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
   auto handle{owned_task.get_handle()};
   if (!handle || handle.done()) [[unlikely]] {
     return false;
   }
-  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root);
+  kphp::coro::resume(handle, m_coro_instance_state.coroutine_stack_root, m_coro_instance_state.task_allocator);
   return true;
 }
 
@@ -505,21 +508,36 @@ inline auto io_scheduler::schedule() noexcept {
                  m_schedule_pos);
     }
 
-    constexpr auto await_ready() const noexcept -> bool {
-      return false;
-    }
+    auto operator co_await() noexcept {
+      struct awaiter : private kphp::coro::task_allocator_guard {
+      private:
+        schedule_operation& m_schedule_operation;
 
-    auto await_suspend(std::coroutine_handle<> coroutine) noexcept -> void {
-      m_awaiting_coroutine_node.value() = coroutine;
-      m_scheduler.m_scheduled_coroutines.push_back(m_awaiting_coroutine_node);
-      m_schedule_pos = std::prev(m_scheduler.m_scheduled_coroutines.end());
-    }
+      public:
+        explicit awaiter(schedule_operation& schedule_operation, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
+            : kphp::coro::task_allocator_guard{task_allocator},
+              m_schedule_operation{schedule_operation} {}
 
-    auto await_resume() noexcept -> void {
-      m_schedule_pos = std::monostate{};
-      m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
+        constexpr auto await_ready() const noexcept -> bool {
+          return false;
+        }
+
+        auto await_suspend(std::coroutine_handle<> coroutine) noexcept -> void {
+          m_schedule_operation.m_awaiting_coroutine_node.value() = coroutine;
+          m_schedule_operation.m_scheduler.m_scheduled_coroutines.push_back(m_schedule_operation.m_awaiting_coroutine_node);
+          m_schedule_operation.m_schedule_pos = std::prev(m_schedule_operation.m_scheduler.m_scheduled_coroutines.end());
+        }
+
+        auto await_resume() noexcept -> void {
+          m_schedule_operation.m_schedule_pos = std::monostate{};
+          m_schedule_operation.m_scheduler.m_coro_instance_state.coroutine_stack_root.top_async_stack_frame = m_schedule_operation.m_async_stack_frame;
+        }
+      };
+
+      return awaiter{*this, m_scheduler.m_coro_instance_state.task_allocator};
     }
   };
+
   return schedule_operation{*this};
 }
 
@@ -530,19 +548,19 @@ auto io_scheduler::schedule(duration_type timeout) noexcept -> kphp::coro::task<
   }
 
   // poll_op is not actually used here
-  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read, m_coro_instance_state.task_allocator};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
   poll_info.m_schedule_position = add_timer_token(std::chrono::ceil<std::chrono::milliseconds>(timeout), poll_info);
   co_await poll_info;
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type>
 auto io_scheduler::schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type> {
   co_await schedule();
   co_return co_await std::move(coroutine);
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
+template<kphp::coro::concepts::detached_coroutine coroutine_type, kphp::concepts::duration duration_type>
 auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noexcept
     -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>> {
   using expected_return_type = typename kphp::coro::coroutine_traits<coroutine_type>::return_type;
@@ -556,7 +574,8 @@ auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noe
     }
   }
 
-  auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(std::chrono::ceil<std::chrono::milliseconds>(timeout)))};
+  auto result{co_await kphp::coro::when_any(
+      std::move(coroutine), kphp::coro::detach_task(&io_scheduler::make_timeout_task, this, std::chrono::ceil<std::chrono::milliseconds>(timeout)))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }
@@ -609,7 +628,7 @@ auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, 
     break;
   }
 
-  kphp::coro::detail::poll_info poll_info{descriptor, poll_op};
+  kphp::coro::detail::poll_info poll_info{descriptor, poll_op, m_coro_instance_state.task_allocator};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
   if (timeout <= duration_type::zero()) {
     poll_info.m_schedule_position = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);
@@ -629,7 +648,7 @@ auto io_scheduler::accept(duration_type timeout) noexcept -> kphp::coro::task<k2
   }
 
   // poll_op is not actually used here
-  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read, m_coro_instance_state.task_allocator};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
   if (timeout <= duration_type::zero()) {
     poll_info.m_schedule_position = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);

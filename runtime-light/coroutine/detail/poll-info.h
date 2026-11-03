@@ -11,7 +11,9 @@
 #include "common/containers/intrusive-list.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
 #include "runtime-light/coroutine/poll.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace kphp::coro::detail {
@@ -39,9 +41,12 @@ struct poll_info {
   kphp::coro::poll_status m_poll_status{kphp::coro::poll_status::error};
   kphp::coro::poll_op m_poll_op;
 
-  poll_info(k2::descriptor descriptor, kphp::coro::poll_op poll_op) noexcept
+  kphp::coro::detail::memory::task_allocator& m_task_allocator;
+
+  poll_info(k2::descriptor descriptor, kphp::coro::poll_op poll_op, kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
       : m_descriptor(descriptor),
-        m_poll_op(poll_op) {}
+        m_poll_op(poll_op),
+        m_task_allocator(task_allocator) {}
 
   ~poll_info() = default;
 
@@ -51,11 +56,12 @@ struct poll_info {
   poll_info& operator=(detail::poll_info&&) = delete;
 
   auto operator co_await() noexcept {
-    struct poll_awaiter {
+    struct poll_awaiter : private kphp::coro::task_allocator_guard {
       detail::poll_info& m_poll_info;
 
       explicit poll_awaiter(detail::poll_info& poll_info) noexcept
-          : m_poll_info(poll_info) {}
+          : kphp::coro::task_allocator_guard(poll_info.m_task_allocator),
+            m_poll_info(poll_info) {}
 
       constexpr auto await_ready() const noexcept -> bool {
         return false;

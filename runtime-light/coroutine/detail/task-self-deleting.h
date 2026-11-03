@@ -107,7 +107,7 @@ inline auto promise_self_deleting::get_return_object_on_allocation_failure() noe
 
 } // namespace task_self_deleting
 
-template<kphp::coro::concepts::awaitable awaitable_type>
+template<kphp::coro::concepts::detached_awaitable awaitable_type>
 auto make_task_self_deleting(awaitable_type awaitable) noexcept -> task_self_deleting::task_self_deleting {
   co_await std::move(awaitable);
   co_return;

@@ -16,6 +16,7 @@
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/detached-task.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
@@ -44,7 +45,7 @@ public:
   scoped_id_managed& operator=(scoped_id_managed&&) = delete;
 };
 
-template<kphp::coro::concepts::awaitable awaitable_type>
+template<kphp::coro::concepts::detached_awaitable awaitable_type>
 auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   auto& fork_instance_st{ForkInstanceState::get()};
   const auto saved_fork_id{fork_instance_st.current_id};
@@ -59,8 +60,24 @@ auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename 
   }
 }
 
+template<typename F, typename... Args>
+requires(kphp::coro::is_task_function_v<F, Args...>)
+auto id_managed(F f, Args... args) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type> {
+  auto& fork_instance_st{ForkInstanceState::get()};
+  const auto saved_fork_id{fork_instance_st.current_id};
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<std::invoke_result_t<F, Args...>>::awaiter_return_type>) {
+    co_await std::invoke(std::move(f), std::move(args)...);
+    fork_instance_st.current_id = saved_fork_id;
+    co_return;
+  } else {
+    auto value{co_await std::invoke(std::move(f), std::move(args)...)};
+    fork_instance_st.current_id = saved_fork_id;
+    co_return std::move(value);
+  }
+}
+
 template<typename return_type>
-auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
+auto start(kphp::coro::detached_task<return_type> task) noexcept -> int64_t {
   auto& fork_instance_st{ForkInstanceState::get()};
   auto [fork_id, fork_task]{fork_instance_st.create_fork(std::move(task))};
   auto saved_fork_id{fork_instance_st.current_id};
@@ -127,7 +144,8 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
 template<std::default_initializable return_type>
 requires(is_optional<return_type>::value || std::same_as<return_type, mixed> || is_class_instance<return_type>::value)
 kphp::coro::task<return_type> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto opt_result{co_await kphp::forks::id_managed(kphp::forks::wait<return_type>(fork_id, std::chrono::duration<double>{timeout}))};
+  auto opt_result{
+      co_await kphp::forks::id_managed(kphp::forks::wait<return_type, std::chrono::duration<double>>, fork_id, std::chrono::duration<double>{timeout})};
   co_return opt_result ? return_type{*std::move(opt_result)} : return_type{};
 }
 
@@ -196,7 +214,8 @@ inline kphp::coro::task<> f$sched_yield() noexcept {
 }
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(std::chrono::duration<double>{duration}));
+  co_await kphp::forks::id_managed([](std::chrono::duration<double> duration) noexcept { return kphp::coro::io_scheduler::get().schedule(duration); },
+                                   std::chrono::duration<double>{duration});
 }
 
 // ================================================================================================

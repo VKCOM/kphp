@@ -43,7 +43,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   }
 
   auto& await_set{(*opt_await_set).get()};
-  await_set.push(rpc_queue_wrapper_task(static_cast<kphp::coro::shared_task<>>(it_awaiter_task->second), request_id));
+  await_set.push(kphp::coro::detach_task(rpc_queue_wrapper_task, static_cast<kphp::coro::shared_task<>>(it_awaiter_task->second), request_id));
 }
 
 inline int64_t rpc_queue_create(std::span<int64_t> request_ids) noexcept {
@@ -83,7 +83,7 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
-  const auto expected_next{co_await kphp::coro::io_scheduler::get().schedule(rpc_queue_next_task(await_set.next()), timeout)};
+  const auto expected_next{co_await kphp::coro::io_scheduler::get().schedule(kphp::coro::detach_task(rpc_queue_next_task, await_set.next()), timeout)};
   if (!expected_next) {
     co_return std::nullopt;
   }
@@ -136,7 +136,7 @@ inline bool f$rpc_queue_empty(int64_t queue_id) noexcept {
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$rpc_queue_next(int64_t queue_id, double timeout = -1) noexcept {
-  auto opt_result{co_await kphp::forks::id_managed(
-      kphp::rpc::rpc_queue_next(queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
+  auto opt_result{co_await kphp::forks::id_managed(kphp::rpc::rpc_queue_next<std::chrono::nanoseconds>, queue_id,
+                                                   std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout}))};
   co_return opt_result ? *opt_result : Optional<int64_t>{false};
 }

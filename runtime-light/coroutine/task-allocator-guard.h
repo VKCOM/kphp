@@ -1,0 +1,31 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2026 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include "common/mixin/not_copyable.h"
+#include "runtime-common/core/memory-resource/stack-resource.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+
+namespace kphp::coro {
+
+class task_allocator_guard : private vk::not_copyable {
+private:
+  kphp::coro::detail::memory::task_allocator& m_task_allocator{kphp::coro::detail::memory::task_allocator::get()};
+  memory_resource::stack_resource* m_stack{nullptr};
+
+public:
+  explicit task_allocator_guard() noexcept
+      : m_stack{m_task_allocator.current_stack()} {}
+
+  explicit task_allocator_guard(kphp::coro::detail::memory::task_allocator& task_allocator) noexcept
+      : m_task_allocator{task_allocator},
+        m_stack{m_task_allocator.current_stack()} {}
+
+  ~task_allocator_guard() {
+    m_task_allocator.set_stack(m_stack);
+  }
+};
+
+} // namespace kphp::coro

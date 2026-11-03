@@ -932,7 +932,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(kphp::forks::start(" << FunctionName(func);
+        W << "(kphp::forks::start(kphp::coro::detach_task([](auto&&... args) noexcept { return " << FunctionName(func);
       } else {
         W << FunctionForkName(func);
       }
@@ -947,7 +947,12 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
     const TypeData* tp = tinf::get_type(root);
     W << "< " << TypeName(tp) << " >";
   }
-  W << "(";
+
+  if (func->is_interruptible && mode == func_call_mode::fork_call) {
+    W << "(std::forward<decltype(args)>(args)...); }";
+  } else {
+    W << "(";
+  }
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
     root = patch_compiling_json_impl_call(W, root);
@@ -960,6 +965,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator& W, func_
         args = array->args();
       }
     }
+  }
+
+  if (!args.empty() && func->is_interruptible && mode == func_call_mode::fork_call) {
+    W << ", ";
   }
 
   W << JoinValues(args, ", ");
@@ -2428,8 +2437,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
   }
   case op_arr_acc_set_return: {
     auto v = root.as<op_arr_acc_set_return>();
-    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", "
-      << "f$" << v->set_method->name << MacroEnd{};
+    W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", " << "f$" << v->set_method->name << MacroEnd{};
     break;
   }
   case op_arr_acc_check_and_get: {
@@ -2441,9 +2449,7 @@ void compile_common_op(VertexPtr root, CodeGenerator& W) {
       W << "ARR_ACC_GET_IF_ISSET";
     }
 
-    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", "
-      << "f$" << v->check_method->name << ", "
-      << "f$" << v->get_method->name << MacroEnd{};
+    W << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << "f$" << v->check_method->name << ", " << "f$" << v->get_method->name << MacroEnd{};
     break;
   }
   default:

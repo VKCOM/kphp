@@ -12,10 +12,16 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
+#include "runtime-light/coroutine/control-functions.h"
+#include "runtime-light/coroutine/detail/allocator/task-allocator.h"
+#include "runtime-light/coroutine/detail/allocator/task-malloc-interface.h"
+#include "runtime-light/coroutine/task-allocator-guard.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
+
+template<typename T>
+struct detached_task;
 
 namespace task_impl {
 
@@ -65,17 +71,12 @@ struct promise_base : kphp::coro::async_stack_element {
   }
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::alloc(n);
-  }
-
-  template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    return kphp::coro::detail::memory::alloc_aligned(n, al);
+    return kphp::coro::detail::memory::task::alloc_aligned(n, al);
   }
 
-  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    kphp::coro::detail::memory::free(ptr);
+  auto operator delete(void* ptr, size_t n, std::align_val_t al) noexcept -> void {
+    kphp::coro::detail::memory::task::free_aligned(ptr, n, al);
   }
 
   void* m_next{};
@@ -163,16 +164,9 @@ struct task {
       : m_coro(coro) {}
 
   task(const task& other) noexcept = delete;
-
-  task(task&& other) noexcept
-      : m_coro(std::exchange(other.m_coro, {})) {}
-
+  task(task&& other) noexcept = delete;
   task& operator=(const task& other) noexcept = delete;
-
-  task& operator=(task&& other) noexcept {
-    std::swap(m_coro, other.m_coro);
-    return *this;
-  }
+  task& operator=(task&& other) noexcept = delete;
 
   ~task() {
     if (m_coro) {
@@ -229,21 +223,10 @@ struct task {
     return m_coro;
   }
 
-  // conversion functions
-  //
-  // erase type
-  explicit operator task<>() && noexcept {
-    return task<>{std::exchange(m_coro, {})};
-  }
-  // restore erased type
-  template<typename U>
-  requires(std::same_as<void, T>)
-  explicit operator task<U>() && noexcept {
-    return task<U>{std::exchange(m_coro, {})};
-  }
-
 private:
   std::coroutine_handle<promise_type> m_coro{};
+
+  friend struct kphp::coro::detached_task<T>;
 };
 
 } // namespace kphp::coro
