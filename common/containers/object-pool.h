@@ -55,20 +55,24 @@ class object_pool : private vk::not_copyable, private std::allocator_traits<Allo
   }
 
 public:
-  // If chunk_size == 0, it is UB
   explicit object_pool(size_t chunk_size) noexcept
       : m_chunk_size{chunk_size},
         m_chunk_byte_size{sizeof(chunk_header) + chunk_size * sizeof(obj_slot)} {
-    assert(chunk_size > 0);
+    if (unlikely(m_chunk_size == 0)) {
+      return;
+    }
+
     link_new_chunk();
   }
 
-  // If chunk_size == 0, it is UB
   explicit object_pool(size_t chunk_size, const Allocator& allocator) noexcept
       : byte_allocator(allocator),
         m_chunk_size{chunk_size},
         m_chunk_byte_size{sizeof(chunk_header) + chunk_size * sizeof(obj_slot)} {
-    assert(chunk_size > 0);
+    if (unlikely(m_chunk_size == 0)) {
+      return;
+    }
+
     link_new_chunk();
   }
 
@@ -82,9 +86,13 @@ public:
     }
   }
 
-  // All acquired objects must be released
+  // Returns nullptr only if size of chunk is 0
   template<typename... Args>
-  auto acquire(Args&&... args) noexcept -> T& {
+  auto acquire(Args&&... args) noexcept -> T* {
+    if (unlikely(m_chunk_size == 0)) {
+      return nullptr;
+    }
+
     if (unlikely(m_head_free_slot == nullptr)) {
       link_new_chunk();
     }
@@ -94,13 +102,13 @@ public:
 
     byte_allocator_traits::construct(get_byte_allocator_ref(), std::addressof(free_slot->m_obj), std::forward<Args>(args)...);
 
-    return free_slot->m_obj;
+    return std::addressof(free_slot->m_obj);
   }
 
-  auto release(T& obj) noexcept -> void {
-    byte_allocator_traits::destroy(get_byte_allocator_ref(), std::addressof(obj));
+  auto release(T* obj) noexcept -> void {
+    byte_allocator_traits::destroy(get_byte_allocator_ref(), obj);
 
-    auto* slot{reinterpret_cast<obj_slot*>(std::addressof(obj))};
+    auto* slot{reinterpret_cast<obj_slot*>(obj)};
     slot->m_next = m_head_free_slot;
     m_head_free_slot = slot;
   }

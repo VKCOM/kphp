@@ -52,6 +52,9 @@ public:
       : m_stack_pool{stack_pool_chunk_size},
         m_stack_size{stack_size},
         m_min_extra_mem_size{min_extra_mem_size} {
+    // `acquire_stack` relies on the pool never returning nullptr
+    kphp::log::assertion(stack_pool_chunk_size > 0);
+
     void* buffer{kphp::memory::platform::alloc(script_mem_size)};
 
     kphp::log::assertion(buffer != nullptr);
@@ -88,8 +91,8 @@ private:
     return m_stack_size;
   }
 
-  auto acquire_stack() noexcept -> memory_resource::stack_resource& {
-    auto& stack{m_stack_pool.acquire()};
+  auto acquire_stack() noexcept -> memory_resource::stack_resource* {
+    auto* stack{m_stack_pool.acquire()};
     auto* chunk{m_chunk_pool.allocate()};
     if (chunk == nullptr) [[unlikely]] {
       request_extra_memory(m_stack_size);
@@ -98,13 +101,13 @@ private:
       kphp::log::assertion(chunk != nullptr);
     }
 
-    stack.init(chunk, m_stack_size);
+    stack->init(chunk, m_stack_size);
 
     return stack;
   }
 
-  auto release_stack(memory_resource::stack_resource& stack) noexcept -> void {
-    m_chunk_pool.deallocate(stack.memory_begin());
+  auto release_stack(memory_resource::stack_resource* stack) noexcept -> void {
+    m_chunk_pool.deallocate(stack->memory_begin());
     m_stack_pool.release(stack);
   }
 

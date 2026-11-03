@@ -45,8 +45,7 @@ inline auto alloc_aligned(size_t size, std::align_val_t al) noexcept -> void* {
   auto& task_allocator{kphp::coro::detail::memory::task_allocator::get()};
   if (total_size <= task_allocator.stack_size()) [[likely]] {
     if (task_allocator.current_stack() == nullptr) {
-      auto& stack{task_allocator.acquire_stack()};
-      task_allocator.set_stack(std::addressof(stack));
+      task_allocator.set_stack(task_allocator.acquire_stack());
       backend = kphp::coro::detail::memory::task::control_block::backend_type::stack_owner;
     } else {
       backend = kphp::coro::detail::memory::task::control_block::backend_type::stack;
@@ -88,7 +87,7 @@ inline auto free_aligned(void* ptr, size_t size, std::align_val_t al) noexcept -
 
     task_allocator.free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);
     task_allocator.set_stack(nullptr);
-    task_allocator.release_stack(*cb->stack);
+    task_allocator.release_stack(cb->stack);
     break;
   case kphp::coro::detail::memory::task::control_block::backend_type::coroutine_pool:
     kphp::coro::detail::memory::runtime_coroutine_allocator::get().free_script_memory(reinterpret_cast<std::byte*>(ptr) - cb->base_offset, total_size);

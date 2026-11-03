@@ -173,6 +173,9 @@ void ComponentState::parse_instance_task_allocator_stack_pool_chunk_size_arg(std
   if (!parsed) {
     kphp::log::error("couldn't parse instance task allocator stack pool chunk size, got {}", value_view);
   }
+  if (*parsed == 0) {
+    kphp::log::error("instance task allocator stack pool chunk size must be greater than 0");
+  }
   instance_task_allocator_stack_pool_chunk_size = *parsed;
   kphp::log::info("set instance task allocator stack pool chunk size to {} objects", instance_task_allocator_stack_pool_chunk_size);
 }
