@@ -482,35 +482,35 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
   return std::move(decrypted_data);
 }
 
+namespace {
+
+constexpr size_t PKEY_HANDLE_MAX_SIZE = 32;
+
+} // namespace
+
 Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
-  auto size{k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {})};
-  if (!size) [[unlikely]] {
+  string buffer{static_cast<string::size_type>(PKEY_HANDLE_MAX_SIZE), false};
+  auto written{k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {buffer.buffer(), buffer.size()})};
+  if (!written) [[unlikely]] {
     kphp::log::warning("Failed to get public key");
     return false;
   }
 
-  string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {buffer.buffer(), buffer.size()}, true)) [[unlikely]] {
-    kphp::log::warning("Failed to get public key");
-    return false;
-  }
+  buffer.shrink(static_cast<string::size_type>(*written));
 
   return buffer;
 }
 
 Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept {
-  auto size{k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {})};
-  if (!size) [[unlikely]] {
+  string buffer{static_cast<string::size_type>(PKEY_HANDLE_MAX_SIZE), false};
+  auto written{
+      k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()})};
+  if (!written) [[unlikely]] {
     kphp::log::warning("Failed to get private key");
     return false;
   }
 
-  string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()}, true))
-      [[unlikely]] {
-    kphp::log::warning("Failed to get private key");
-    return false;
-  }
+  buffer.shrink(static_cast<string::size_type>(*written));
 
   return buffer;
 }
