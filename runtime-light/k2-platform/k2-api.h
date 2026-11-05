@@ -411,9 +411,9 @@ inline std::expected<bool, int32_t> openssl_verify(HashAlgorithm algorithm, std:
   return {is_valid != 0};
 }
 
-inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view public_key, std::span<char> result, bool retry = false) noexcept {
+inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view public_key, std::span<char> result) noexcept {
   size_t result_written{0};
-  if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), result.data(), result.size(), std::addressof(result_written), retry)};
+  if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), result.data(), result.size(), std::addressof(result_written))};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
@@ -421,11 +421,10 @@ inline std::expected<size_t, int32_t> openssl_pkey_get_public(std::string_view p
   return {result_written};
 }
 
-inline std::expected<size_t, int32_t> openssl_pkey_get_private(std::string_view private_key, std::string_view passphrase, std::span<char> result,
-                                                               bool retry = false) noexcept {
+inline std::expected<size_t, int32_t> openssl_pkey_get_private(std::string_view private_key, std::string_view passphrase, std::span<char> result) noexcept {
   size_t result_written{0};
   if (auto error_code{k2_openssl_pkey_get_private(private_key.data(), private_key.size(), passphrase.data(), passphrase.size(), result.data(), result.size(),
-                                                  std::addressof(result_written), retry)};
+                                                  std::addressof(result_written))};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
