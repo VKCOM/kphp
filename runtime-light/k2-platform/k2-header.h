@@ -801,6 +801,32 @@ int32_t k2_openssl_pkey_get_private(const char* private_key, size_t private_key_
 int32_t k2_openssl_pkey_size(uint64_t pkey_d, size_t* size);
 
 /**
+ * Checks whether the descriptor is a public key descriptor.
+ *
+ * @param `pkey_d` The descriptor to check.
+ * @param `is_public` A pointer where `1` will be stored if the key is public, `0` if it is private.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `is_public` is `NULL`, or `pkey_d` is not a key descriptor.
+ */
+int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, int32_t* is_public);
+
+/**
+ * Checks whether the descriptor is a private key descriptor.
+ *
+ * @param `pkey_d` The descriptor to check.
+ * @param `is_private` A pointer where `1` will be stored if the key is private, `0` if it is public.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `is_private` is `NULL`, or `pkey_d` is not a key descriptor.
+ */
+int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, int32_t* is_private);
+
+/**
  * Signs `data` with a private key using the given hash algorithm.
  *
  * @param `algorithm` The hash algorithm.

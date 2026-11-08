@@ -428,6 +428,24 @@ inline std::expected<size_t, int32_t> openssl_pkey_size(k2::descriptor pkey_d) n
   return {size};
 }
 
+inline std::expected<bool, int32_t> openssl_pkey_is_public(k2::descriptor pkey_d) noexcept {
+  int32_t is_public{0};
+  if (auto error_code{k2_openssl_pkey_is_public(pkey_d, std::addressof(is_public))}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {is_public != 0};
+}
+
+inline std::expected<bool, int32_t> openssl_pkey_is_private(k2::descriptor pkey_d) noexcept {
+  int32_t is_private{0};
+  if (auto error_code{k2_openssl_pkey_is_private(pkey_d, std::addressof(is_private))}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {is_private != 0};
+}
+
 inline std::expected<size_t, int32_t> openssl_sign(HashAlgorithm algorithm, std::string_view data, k2::descriptor pkey_d, std::span<char> result) noexcept {
   size_t result_written{0};
   if (auto error_code{k2_openssl_sign(algorithm, data.data(), data.size(), pkey_d, result.data(), result.size(), std::addressof(result_written))};
