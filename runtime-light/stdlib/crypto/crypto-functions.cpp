@@ -179,12 +179,8 @@ namespace {
 // A key argument is either a handle returned by openssl_pkey_get_{public,private} or a PEM string.
 // A handle is the raw bytes of a platform descriptor that lives until the end of the instance.
 // No valid PEM is that short, so the size alone tells them apart.
-bool is_pkey_handle(const string& key) noexcept {
-  return key.size() == sizeof(k2::descriptor);
-}
-
 std::optional<k2::descriptor> get_pkey_handle(const string& key) noexcept {
-  if (!is_pkey_handle(key)) {
+  if (key.size() != sizeof(k2::descriptor)) {
     return std::nullopt;
   }
 
@@ -535,7 +531,12 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
 }
 
 Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
-  if (is_pkey_handle(public_key)) {
+  if (const auto handle{get_pkey_handle(public_key)}; handle) {
+    if (!k2::openssl_pkey_is_public(handle.value()).value_or(false)) [[unlikely]] {
+      kphp::log::warning("Failed to get public key");
+      return false;
+    }
+
     return public_key;
   }
 
@@ -549,7 +550,12 @@ Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
 }
 
 Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept {
-  if (is_pkey_handle(private_key)) {
+  if (const auto handle{get_pkey_handle(private_key)}; handle) {
+    if (!k2::openssl_pkey_is_private(handle.value()).value_or(false)) [[unlikely]] {
+      kphp::log::warning("Failed to get private key");
+      return false;
+    }
+
     return private_key;
   }
 
