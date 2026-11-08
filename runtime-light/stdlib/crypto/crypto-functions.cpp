@@ -8,13 +8,17 @@
 #include <array>
 #include <cctype>
 #include <cstddef>
+#include <cstring>
 #include <functional>
 #include <initializer_list>
+#include <memory>
 #include <optional>
 #include <ranges>
+#include <string>
 #include <string_view>
 #include <utility>
 
+#include "common/containers/final_action.h"
 #include "common/crc32_generic.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -38,89 +42,64 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
 
 namespace {
 
-Optional<array<mixed>> x509_get_name_entries(bool is_issuer, bool shortnames) noexcept {
-  auto count{k2::openssl_x509_name_entry_count(is_issuer)};
+Optional<array<mixed>> x509_get_name_entries(k2::descriptor x509_d, bool is_issuer, bool shortnames) noexcept {
+  auto count{k2::openssl_x509_name_entry_count(x509_d, is_issuer)};
   if (!count) [[unlikely]] {
     kphp::log::warning("Failed to get X509 name entry count");
     return false;
   }
 
-  array<mixed> res;
-  for (size_t i = 0; i < *count; ++i) {
-    auto key_size{k2::openssl_x509_name_entry_key(is_issuer, shortnames, i, {})};
-    if (!key_size) [[unlikely]] {
+  array<mixed> res{array_size{static_cast<int64_t>(count.value()), false}};
+  for (size_t i = 0; i < count.value(); ++i) {
+    auto key{k2::openssl_x509_name_entry_key(x509_d, is_issuer, shortnames, i)};
+    if (!key) [[unlikely]] {
       kphp::log::warning("Failed to get X509 name entry key");
       return false;
     }
 
-    string key{static_cast<string::size_type>(*key_size), false};
-    auto key_written{k2::openssl_x509_name_entry_key(is_issuer, shortnames, i, {key.buffer(), key.size()})};
-    if (!key_written) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 name entry key");
-      return false;
-    }
-
-    key.shrink(static_cast<string::size_type>(*key_written));
-
-    auto value_size{k2::openssl_x509_name_entry_value(is_issuer, i, {})};
-    if (!value_size) [[unlikely]] {
+    auto value{k2::openssl_x509_name_entry_value(x509_d, is_issuer, i)};
+    if (!value) [[unlikely]] {
       kphp::log::warning("Failed to get X509 name entry value");
       return false;
     }
 
-    string value{static_cast<string::size_type>(*value_size), false};
-    auto value_written{k2::openssl_x509_name_entry_value(is_issuer, i, {value.buffer(), value.size()})};
-    if (!value_written) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 name entry value");
-      return false;
-    }
-
-    value.shrink(static_cast<string::size_type>(*value_written));
-
-    res.set_value(key, value);
+    res.set_value(string{key.value().data(), static_cast<string::size_type>(key.value().size())},
+                  string{value.value().data(), static_cast<string::size_type>(value.value().size())});
   }
 
   return res;
 }
 
-Optional<array<mixed>> x509_get_purposes(bool shortnames) noexcept {
+Optional<array<mixed>> x509_get_purposes(k2::descriptor x509_d, bool shortnames) noexcept {
   auto count{k2::openssl_x509_purpose_count()};
   if (!count) [[unlikely]] {
     kphp::log::warning("Failed to get X509 purpose count");
     return false;
   }
 
-  array<mixed> res;
-  for (size_t i = 0; i < *count; ++i) {
+  array<mixed> res{array_size{static_cast<int64_t>(count.value()), false}};
+  for (size_t i = 0; i < count.value(); ++i) {
     auto id{k2::openssl_x509_purpose_id(i)};
     if (!id) [[unlikely]] {
       kphp::log::warning("Failed to get X509 purpose id");
       return false;
     }
 
-    auto purpset_0{k2::openssl_x509_purpose_check(i, false)};
-    auto purpset_1{k2::openssl_x509_purpose_check(i, true)};
+    auto purpset_0{k2::openssl_x509_purpose_check(x509_d, i, false)};
+    auto purpset_1{k2::openssl_x509_purpose_check(x509_d, i, true)};
     if (!purpset_0 || !purpset_1) [[unlikely]] {
       kphp::log::warning("Failed to check X509 purpose");
       return false;
     }
 
-    auto name_size{k2::openssl_x509_purpose_name(i, shortnames, {})};
-    if (!name_size) [[unlikely]] {
+    auto name{k2::openssl_x509_purpose_name(i, shortnames)};
+    if (!name) [[unlikely]] {
       kphp::log::warning("Failed to get X509 purpose name");
       return false;
     }
 
-    string name{static_cast<string::size_type>(*name_size), false};
-    auto name_written{k2::openssl_x509_purpose_name(i, shortnames, {name.buffer(), name.size()})};
-    if (!name_written) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 purpose name");
-      return false;
-    }
-
-    name.shrink(static_cast<string::size_type>(*name_written));
-
-    res.set_value(*id, array<mixed>::create(*purpset_0, *purpset_1, name));
+    res.set_value(id.value(),
+                  array<mixed>::create(purpset_0.value(), purpset_1.value(), string{name.value().data(), static_cast<string::size_type>(name.value().size())}));
   }
 
   return res;
@@ -131,105 +110,178 @@ Optional<array<mixed>> x509_get_purposes(bool shortnames) noexcept {
 Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames) noexcept {
   static constexpr size_t SUBJECT_NAME_HASH_SIZE{8};
 
-  if (!k2::openssl_x509_open({data.c_str(), data.size()})) [[unlikely]] {
+  auto parsed{k2::openssl_x509_parse({data.c_str(), data.size()})};
+  if (!parsed) [[unlikely]] {
     kphp::log::warning("Failed to parse X509 certificate");
     return false;
   }
 
-  auto name_size{k2::openssl_x509_get_subject_name({})};
-  if (!name_size) [[unlikely]] {
+  const k2::descriptor x509_d{parsed.value()};
+  const auto x509_finalizer{vk::finally([x509_d]() noexcept { k2::free_descriptor(x509_d); })};
+
+  auto name{k2::openssl_x509_get_subject_name(x509_d)};
+  if (!name) [[unlikely]] {
     kphp::log::warning("Failed to get X509 subject name");
     return false;
   }
 
-  string name{static_cast<string::size_type>(*name_size), false};
-  auto name_written{k2::openssl_x509_get_subject_name({name.buffer(), name.size()}, true)};
-  if (!name_written) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 subject name");
-    return false;
-  }
-
-  name.shrink(static_cast<string::size_type>(*name_written));
-
-  auto subject{x509_get_name_entries(false, shortnames)};
+  auto subject{x509_get_name_entries(x509_d, false, shortnames)};
   if (!subject.has_value()) [[unlikely]] {
     return false;
   }
 
   string hash{SUBJECT_NAME_HASH_SIZE, false};
-  if (!k2::openssl_x509_get_hash({hash.buffer(), hash.size()})) [[unlikely]] {
+  if (!k2::openssl_x509_get_hash(x509_d, {hash.buffer(), hash.size()})) [[unlikely]] {
     kphp::log::warning("Failed to get X509 hash");
     return false;
   }
 
-  auto issuer{x509_get_name_entries(true, shortnames)};
+  auto issuer{x509_get_name_entries(x509_d, true, shortnames)};
   if (!issuer.has_value()) [[unlikely]] {
     return false;
   }
 
-  auto version{k2::openssl_x509_get_version()};
+  auto version{k2::openssl_x509_get_version(x509_d)};
   if (!version) [[unlikely]] {
     kphp::log::warning("Failed to get X509 version");
     return false;
   }
 
-  auto valid_from{k2::openssl_x509_get_valid_from()};
+  auto valid_from{k2::openssl_x509_get_valid_from(x509_d)};
   if (!valid_from) [[unlikely]] {
     kphp::log::warning("Failed to get X509 validFrom time");
     return false;
   }
 
-  auto valid_to{k2::openssl_x509_get_valid_to()};
+  auto valid_to{k2::openssl_x509_get_valid_to(x509_d)};
   if (!valid_to) [[unlikely]] {
     kphp::log::warning("Failed to get X509 validTo time");
     return false;
   }
 
-  auto purposes{x509_get_purposes(shortnames)};
+  auto purposes{x509_get_purposes(x509_d, shortnames)};
   if (!purposes.has_value()) [[unlikely]] {
     return false;
   }
 
-  return std::initializer_list<std::pair<string, mixed>>{{string{"name", 4}, name},
+  return std::initializer_list<std::pair<string, mixed>>{{string{"name", 4}, string{name.value().data(), static_cast<string::size_type>(name.value().size())}},
                                                          {string{"subject", 7}, subject.val()},
                                                          {string{"hash", 4}, hash},
                                                          {string{"issuer", 6}, issuer.val()},
-                                                         {string{"version", 7}, *version},
-                                                         {string{"validFrom_time_t", 16}, *valid_from},
-                                                         {string{"validTo_time_t", 14}, *valid_to},
+                                                         {string{"version", 7}, version.value()},
+                                                         {string{"validFrom_time_t", 16}, valid_from.value()},
+                                                         {string{"validTo_time_t", 14}, valid_to.value()},
                                                          {string{"purposes", 8}, purposes.val()}};
 }
 
+namespace {
+
+// A key argument is either a handle returned by openssl_pkey_get_{public,private} or a PEM string.
+// A handle is the raw bytes of a platform descriptor that lives until the end of the instance.
+// No valid PEM is that short, so the size alone tells them apart.
+bool is_pkey_handle(const string& key) noexcept {
+  return key.size() == sizeof(k2::descriptor);
+}
+
+std::optional<k2::descriptor> get_pkey_handle(const string& key) noexcept {
+  if (!is_pkey_handle(key)) {
+    return std::nullopt;
+  }
+
+  k2::descriptor descriptor{};
+  std::memcpy(std::addressof(descriptor), key.c_str(), sizeof(descriptor));
+
+  return descriptor;
+}
+
+string make_pkey_handle(k2::descriptor descriptor) noexcept {
+  return {reinterpret_cast<const char*>(std::addressof(descriptor)), static_cast<string::size_type>(sizeof(descriptor))};
+}
+
+std::optional<k2::descriptor> parse_public_key(const string& key) noexcept {
+  const std::string_view pem{key.c_str(), key.size()};
+  if (auto pkey_d{k2::openssl_pkey_get_public(pem)}; pkey_d) {
+    return pkey_d.value();
+  }
+
+  auto x509_d{k2::openssl_x509_parse(pem)};
+  if (!x509_d) {
+    return std::nullopt;
+  }
+
+  const auto x509_finalizer{vk::finally([x509_d = x509_d.value()]() noexcept { k2::free_descriptor(x509_d); })};
+
+  auto pkey_d{k2::openssl_x509_get_pubkey(x509_d.value())};
+  if (!pkey_d) {
+    return std::nullopt;
+  }
+
+  return pkey_d.value();
+}
+
+std::optional<k2::descriptor> parse_private_key(const string& key, const string& passphrase) noexcept {
+  auto pkey_d{k2::openssl_pkey_get_private({key.c_str(), key.size()}, {passphrase.c_str(), passphrase.size()})};
+  if (!pkey_d) {
+    return std::nullopt;
+  }
+
+  return pkey_d.value();
+}
+
+} // namespace
+
 bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm) noexcept {
-  auto size{k2::openssl_sign(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, {private_key.c_str(), private_key.size()}, {})};
+  const auto handle{get_pkey_handle(private_key)};
+  const auto key_d{handle ? handle : parse_private_key(private_key, {})};
+  const auto key_finalizer{vk::finally([&]() noexcept {
+    if (!handle && key_d) {
+      k2::free_descriptor(key_d.value());
+    }
+  })};
+  if (!key_d) [[unlikely]] {
+    kphp::log::warning("Failed to sign data");
+    return false;
+  }
+
+  auto size{k2::openssl_pkey_size(key_d.value())};
   if (!size) [[unlikely]] {
     kphp::log::warning("Failed to sign data");
     return false;
   }
 
-  string buffer{static_cast<string::size_type>(*size), false};
-  auto written{k2::openssl_sign(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, {private_key.c_str(), private_key.size()},
-                                {buffer.buffer(), buffer.size()}, true)};
+  string buffer{static_cast<string::size_type>(size.value()), false};
+  auto written{k2::openssl_sign(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, key_d.value(), {buffer.buffer(), buffer.size()})};
   if (!written) [[unlikely]] {
     kphp::log::warning("Failed to sign data");
     return false;
   }
 
-  buffer.shrink(static_cast<string::size_type>(*written));
+  buffer.shrink(static_cast<string::size_type>(written.value()));
   signature = std::move(buffer);
 
   return true;
 }
 
 int64_t f$openssl_verify(const string& data, const string& signature, const string& public_key, int64_t algorithm) noexcept {
-  auto res{k2::openssl_verify(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, {public_key.c_str(), public_key.size()},
-                              {signature.c_str(), signature.size()})};
+  const auto handle{get_pkey_handle(public_key)};
+  const auto key_d{handle ? handle : parse_public_key(public_key)};
+  const auto key_finalizer{vk::finally([&]() noexcept {
+    if (!handle && key_d) {
+      k2::free_descriptor(key_d.value());
+    }
+  })};
+  if (!key_d) [[unlikely]] {
+    kphp::log::warning("Failed to verify signature");
+    return -1;
+  }
+
+  auto res{k2::openssl_verify(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, key_d.value(), {signature.c_str(), signature.size()})};
   if (!res) [[unlikely]] {
     kphp::log::warning("Failed to verify signature");
     return -1;
   }
 
-  return *res ? 1 : 0;
+  return res.value() ? 1 : 0;
 }
 
 namespace {
@@ -482,53 +534,61 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
   return std::move(decrypted_data);
 }
 
-namespace {
-
-constexpr size_t PKEY_HANDLE_MAX_SIZE = 32;
-
-} // namespace
-
 Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
-  string buffer{static_cast<string::size_type>(PKEY_HANDLE_MAX_SIZE), false};
-  auto written{k2::openssl_pkey_get_public({public_key.c_str(), public_key.size()}, {buffer.buffer(), buffer.size()})};
-  if (!written) [[unlikely]] {
+  if (is_pkey_handle(public_key)) {
+    return public_key;
+  }
+
+  auto key_d{parse_public_key(public_key)};
+  if (!key_d) [[unlikely]] {
     kphp::log::warning("Failed to get public key");
     return false;
   }
 
-  buffer.shrink(static_cast<string::size_type>(*written));
-
-  return buffer;
+  return make_pkey_handle(key_d.value());
 }
 
 Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept {
-  string buffer{static_cast<string::size_type>(PKEY_HANDLE_MAX_SIZE), false};
-  auto written{
-      k2::openssl_pkey_get_private({private_key.c_str(), private_key.size()}, {passphrase.c_str(), passphrase.size()}, {buffer.buffer(), buffer.size()})};
-  if (!written) [[unlikely]] {
+  if (is_pkey_handle(private_key)) {
+    return private_key;
+  }
+
+  auto key_d{parse_private_key(private_key, passphrase)};
+  if (!key_d) [[unlikely]] {
     kphp::log::warning("Failed to get private key");
     return false;
   }
 
-  buffer.shrink(static_cast<string::size_type>(*written));
-
-  return buffer;
+  return make_pkey_handle(key_d.value());
 }
 
 bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept {
-  auto size{k2::openssl_public_encrypt({data.c_str(), data.size()}, {}, {public_key.c_str(), public_key.size()}, RsaPadding::PKCS1)};
+  const auto handle{get_pkey_handle(public_key)};
+  const auto key_d{handle ? handle : parse_public_key(public_key)};
+  const auto key_finalizer{vk::finally([&]() noexcept {
+    if (!handle && key_d) {
+      k2::free_descriptor(key_d.value());
+    }
+  })};
+  if (!key_d) [[unlikely]] {
+    kphp::log::warning("Failed to encrypt data with the given public key");
+    return false;
+  }
+
+  auto size{k2::openssl_pkey_size(key_d.value())};
   if (!size) [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
   }
 
-  string buffer{static_cast<string::size_type>(*size), false};
-  if (!k2::openssl_public_encrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {public_key.c_str(), public_key.size()}, RsaPadding::PKCS1,
-                                  true)) [[unlikely]] {
+  string buffer{static_cast<string::size_type>(size.value()), false};
+  auto written{k2::openssl_public_encrypt({data.c_str(), data.size()}, key_d.value(), RsaPadding::PKCS1, {buffer.buffer(), buffer.size()})};
+  if (!written) [[unlikely]] {
     kphp::log::warning("Failed to encrypt data with the given public key");
     return false;
   }
 
+  buffer.shrink(static_cast<string::size_type>(written.value()));
   encrypted_data = std::move(buffer);
 
   return true;
@@ -547,15 +607,32 @@ bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const s
 }
 
 bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const string& private_key) noexcept {
-  string buffer{static_cast<string::size_type>(data.size()), false};
-  auto res{
-      k2::openssl_private_decrypt({data.c_str(), data.size()}, {buffer.buffer(), buffer.size()}, {private_key.c_str(), private_key.size()}, RsaPadding::PKCS1)};
-  if (!res) [[unlikely]] {
+  const auto handle{get_pkey_handle(private_key)};
+  const auto key_d{handle ? handle : parse_private_key(private_key, {})};
+  const auto key_finalizer{vk::finally([&]() noexcept {
+    if (!handle && key_d) {
+      k2::free_descriptor(key_d.value());
+    }
+  })};
+  if (!key_d) [[unlikely]] {
     kphp::log::warning("Failed to decrypt data with the given private key");
     return false;
   }
 
-  buffer.shrink(static_cast<string::size_type>(*res));
+  auto size{k2::openssl_pkey_size(key_d.value())};
+  if (!size) [[unlikely]] {
+    kphp::log::warning("Failed to decrypt data with the given private key");
+    return false;
+  }
+
+  string buffer{static_cast<string::size_type>(size.value()), false};
+  auto written{k2::openssl_private_decrypt({data.c_str(), data.size()}, key_d.value(), RsaPadding::PKCS1, {buffer.buffer(), buffer.size()})};
+  if (!written) [[unlikely]] {
+    kphp::log::warning("Failed to decrypt data with the given private key");
+    return false;
+  }
+
+  buffer.shrink(static_cast<string::size_type>(written.value()));
   decrypted_data = std::move(buffer);
 
   return true;
