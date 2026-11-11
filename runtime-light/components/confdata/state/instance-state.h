@@ -114,9 +114,9 @@ struct InstanceState::confdata_sync_error final {
   /** Error code produced by that step's underlying API. */
   int32_t m_code;
 
-  /** Whether synchronization failed because a proxy response didn't fit into the instance memory. */
+  /** Whether synchronization or snapshot replay failed because a proxy response didn't fit into the instance memory. */
   auto is_not_enough_memory() const noexcept -> bool {
-    return m_stage == stage::synchronization && m_code == std::to_underlying(kphp::confdata::subscribe_error::not_enough_memory);
+    return (m_stage == stage::synchronization || m_stage == stage::replay) && m_code == std::to_underlying(kphp::confdata::subscribe_error::not_enough_memory);
   }
 };
 
