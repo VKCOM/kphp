@@ -11,6 +11,7 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -46,7 +47,7 @@ private:
   const ComponentState& m_component_state{ComponentState::get()};
 
 public:
-  AllocatorState m_allocator_state{m_component_state.m_initial_instance_memory_size, m_component_state.m_min_instance_extra_memory_size, 0};
+  AllocatorState m_allocator_state{m_component_state.m_initial_instance_memory_size, 0, 0};
   warmup_status m_warmup_status{warmup_status::pending};
   kphp::confdata::pagination m_pagination{};
 
@@ -112,6 +113,11 @@ struct InstanceState::confdata_sync_error final {
   stage m_stage;
   /** Error code produced by that step's underlying API. */
   int32_t m_code;
+
+  /** Whether synchronization failed because a proxy response didn't fit into the instance memory. */
+  auto is_not_enough_memory() const noexcept -> bool {
+    return m_stage == stage::synchronization && m_code == std::to_underlying(kphp::confdata::subscribe_error::not_enough_memory);
+  }
 };
 
 class InstanceState::confdata_piece final {

@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -17,6 +18,7 @@
 #include <variant>
 
 #include "common/wrappers/overloaded.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/components/confdata/confdata-proxy/tl.h"
@@ -44,7 +46,34 @@ struct snapshot final {
   encoded_snapshot_pages m_pages;
 };
 
-enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected };
+enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected, not_enough_memory };
+
+namespace details {
+
+inline auto has_memory_for_response_process(size_t response_size) noexcept -> bool {
+  static constexpr size_t MIN_ENCODED_PAIR_SIZE{tl::confdata::KeyValuePair{}.footprint()};
+  static constexpr size_t MAX_DECODED_BYTES_PER_ENCODED_BYTE{(sizeof(tl::confdata::KeyValuePair) + MIN_ENCODED_PAIR_SIZE - 1) / MIN_ENCODED_PAIR_SIZE};
+
+  // While a response is being processed, two allocations are alive at once:
+  //   1. the encoded response itself, `response_size` bytes in `encoded_snapshot_page`;
+  //   2. the decoded events: `tl::vector<KeyValuePair>` reserves `count * sizeof(KeyValuePair)` bytes. `tl::string` is a
+  //      zero-copy view into (1), so keys and values add nothing to it.
+  //
+  // (2) is the largest relative to (1) when every pair is the smallest possible one. A longer key or value enlarges the
+  // encoded pair but not the decoded one, so (2) never exceeds `MAX_DECODED_BYTES_PER_ENCODED_BYTE * response_size`.
+  static constexpr size_t MEMORY_BYTES_PER_RESPONSE_BYTE{1 + MAX_DECODED_BYTES_PER_ENCODED_BYTE};
+
+  if (response_size > std::numeric_limits<size_t>::max() / MEMORY_BYTES_PER_RESPONSE_BYTE) [[unlikely]] {
+    return false;
+  }
+
+  // `is_enough_memory_for` is a sufficient condition: if a single free block can hold the whole `MEMORY_BYTES_PER_RESPONSE_BYTE * response_size`,
+  // the buffer and then the decoded events are carved out of it one after another. The converse does not hold (the allocator may
+  // still succeed by defragmenting or by combining several blocks), so the check may reject a response that would have fit.
+  return RuntimeAllocator::get().get_memory_resource().is_enough_memory_for(response_size * MEMORY_BYTES_PER_RESPONSE_BYTE);
+}
+
+} // namespace details
 
 // Performs a single confdata.subscribe round-trip.
 // On success, invokes `event_handler(events)` once with the batch of received events and updates `to` pagination.
@@ -81,10 +110,23 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   }
 
   encoded_snapshot_page response_buffer{};
-  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
-    response_buffer.resize(size);
-    return response_buffer;
-  })};
+  std::optional<size_t> rejected_response_size{};
+  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query),
+                                                             [&response_buffer, &rejected_response_size](size_t size) noexcept -> std::span<std::byte> {
+                                                               if (!details::has_memory_for_response_process(size)) [[unlikely]] {
+                                                                 // An empty buffer makes `response` fail with TL_ERROR_RESULT_TOO_LARGE before anything is copied from the platform
+                                                                 rejected_response_size = size;
+                                                                 return {};
+                                                               }
+
+                                                               response_buffer.resize(size);
+                                                               return response_buffer;
+                                                             })};
+  if (rejected_response_size) [[unlikely]] {
+    kphp::log::warning("subscribe response doesn't fit into the instance memory and was rejected: size -> {}", *rejected_response_size);
+    co_return std::unexpected{kphp::confdata::subscribe_error::not_enough_memory};
+  }
+
   if (!expected_response) [[unlikely]] {
     kphp::log::warning("failed to fetch subscribe response: {}", expected_response.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
