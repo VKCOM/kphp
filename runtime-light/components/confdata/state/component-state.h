@@ -29,7 +29,7 @@ private:
   static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE{static_cast<size_t>(64U * 1024U * 1024U)};    // 64MiB
   /** Leaves the same five-percent runway between legacy kPHP's hard OOM threshold and its memory limit. */
   static constexpr size_t DEFAULT_OOM_HANDLING_SIZE_DIVISOR{20};
-  /** Reserves a fifth of the instance memory, i.e. */
+  /** Twenty-percent of the instance memory */
   static constexpr size_t DEFAULT_INSTANCE_OOM_HANDLING_SIZE_DIVISOR{5};
 
 public:
@@ -48,7 +48,7 @@ public:
   kphp::stl::string<kphp::memory::script_allocator> m_confdata_proxy_actor_name;
   kphp::stl::vector<std::string_view, kphp::memory::script_allocator> m_predefined_wildcards;
   size_t m_initial_instance_memory_size{DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE};
-  /** Final part of the instance memory reserved for service allocations made while a response is processed. */
+  /** Final allocatable part of the instance memory reserved for service allocations made while a response is processed. */
   size_t m_instance_oom_handling_size{};
 
   // === METHODS ==================================================================================
