@@ -29,7 +29,7 @@ private:
   static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE{static_cast<size_t>(64U * 1024U * 1024U)};    // 64MiB
   /** Leaves the same five-percent runway between legacy kPHP's hard OOM threshold and its memory limit. */
   static constexpr size_t DEFAULT_OOM_HANDLING_SIZE_DIVISOR{20};
-  /** Twenty-percent of the instance memory */
+  /** Twenty-percent of the instance memory. */
   static constexpr size_t DEFAULT_INSTANCE_OOM_HANDLING_SIZE_DIVISOR{5};
 
 public:
