@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -325,18 +326,22 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
 
   const size_t request_size{request_buffer.size_bytes()};
 
-  // normalize timeout
+  // normalize timeout before converting to an integral duration
   using namespace std::chrono_literals;
   static constexpr auto DEFAULT_TIMEOUT{300ms};
   static constexpr auto MIN_TIMEOUT{1ms};
   static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(24h)};
   static_assert(MIN_TIMEOUT <= MAX_TIMEOUT, "calling std::clamp will lead to undefined behavior");
-  const auto timeout{std::clamp(opt_timeout
-                                    .transform([](const double& timeout) noexcept {
-                                      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>{timeout});
-                                    })
-                                    .value_or(DEFAULT_TIMEOUT),
-                                MIN_TIMEOUT, MAX_TIMEOUT)};
+  const auto timeout{opt_timeout
+                         .transform([](const double& timeout) noexcept {
+                           using duration_type = std::chrono::duration<double>;
+                           if (std::isnan(timeout)) {
+                             return DEFAULT_TIMEOUT;
+                           }
+                           return std::chrono::ceil<std::chrono::milliseconds>(
+                               std::clamp(duration_type{timeout}, duration_type{MIN_TIMEOUT}, duration_type{MAX_TIMEOUT}));
+                         })
+                         .value_or(DEFAULT_TIMEOUT)};
 
   auto query_expected{kphp::rpc::query::send(actor, timeout, request_buffer, k2::RpcKind::TL_RPC)};
   if (!query_expected) {

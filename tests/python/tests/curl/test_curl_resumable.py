@@ -52,6 +52,22 @@ class TestCurlResumable(CurlTestCase):
             "exec_result": False
         })
 
+    def test_curl_resumable_fractional_timeout_success(self):
+        # The echo handler delays its response by 0.5 seconds.
+        self.assertEqual(self._curl_request("/echo/test_get", timeout=0.9), {
+            "exec_result": self._prepare_result("/echo/test_get", "GET")
+        })
+
+    def test_curl_resumable_tiny_negative_timeout_uses_default(self):
+        self.assertEqual(self._curl_request("/echo/test_get", timeout=-0.0005), {
+            "exec_result": self._prepare_result("/echo/test_get", "GET")
+        })
+
+    def test_curl_resumable_zero_timeout(self):
+        self.assertEqual(self._curl_request("/echo/test_get", timeout=0.0), {
+            "exec_result": False
+        })
+
     def test_curl_resumable_nonexistent_url(self):
         self.assertEqual(self._curl_request("inv alid:10", timeout=5), {
             "exec_result": False
