@@ -332,9 +332,9 @@ kphp::rpc::query_info send_request(std::string_view actor, std::optional<double>
   static constexpr auto MIN_TIMEOUT{1ms};
   static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(24h)};
   static_assert(MIN_TIMEOUT <= MAX_TIMEOUT, "calling std::clamp will lead to undefined behavior");
-  using duration_type = std::chrono::duration<double>;
   const auto timeout{opt_timeout
                          .transform([](const double& timeout) noexcept {
+                           using duration_type = std::chrono::duration<double>;
                            if (std::isnan(timeout)) {
                              return DEFAULT_TIMEOUT;
                            }
