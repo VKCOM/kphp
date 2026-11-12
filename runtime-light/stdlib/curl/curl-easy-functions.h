@@ -219,7 +219,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     array<string> arr_of_str{arr.size()};
     auto i{0};
     for (auto p : arr) {
-      arr_of_str[i++] = f$strval(p.get_value());
+      arr_of_str[f$strval(i++)] = f$strval(p.get_value());
     }
     auto res{kphp::web::property::set(st, option, kphp::web::property::value::as_array_of_string(arr_of_str))};
     if (!res.has_value()) [[unlikely]] {
