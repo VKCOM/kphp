@@ -217,7 +217,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
       return true;
     }
     array<string> arr_of_str{arr.size()};
-    auto i{0};
+    int64_t i{0};
     for (auto p : arr) {
       arr_of_str[f$strval(i++)] = f$strval(p.get_value());
     }
