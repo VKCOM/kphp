@@ -454,8 +454,8 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
 }
 
 inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
-  using duration_type = std::chrono::seconds;
-  auto timeout{std::chrono::duration_cast<duration_type>(std::chrono::duration<double>{timeout_sec})};
+  using duration_type = std::chrono::duration<double>;
+  auto timeout{duration_type{timeout_sec}};
   if (timeout == duration_type::zero()) {
     co_return false;
   }
