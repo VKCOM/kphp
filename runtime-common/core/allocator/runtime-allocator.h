@@ -27,6 +27,8 @@ public:
 
 #ifdef RUNTIME_LIGHT
   RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
+  // Such an allocator is limited to `script_mem_size`: it never requests extra memory from the platform.
+  RuntimeAllocator(kphp::memory::fixed_size_tag, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
 #else
   RuntimeAllocator() = default;
   auto init(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept -> void;

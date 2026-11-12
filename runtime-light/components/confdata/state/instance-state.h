@@ -47,7 +47,8 @@ private:
   const ComponentState& m_component_state{ComponentState::get()};
 
 public:
-  AllocatorState m_allocator_state{m_component_state.m_initial_instance_memory_size, 0, 0};
+  // The instance memory is fixed: the component never requests extra memory from the platform.
+  AllocatorState m_allocator_state{kphp::memory::fixed_size_tag{}, m_component_state.m_initial_instance_memory_size, 0};
   warmup_status m_warmup_status{warmup_status::pending};
   kphp::confdata::pagination m_pagination{};
 

@@ -21,6 +21,13 @@ pool_allocator::pool_allocator(size_t script_mem_size, size_t min_extra_mem_size
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
+pool_allocator::pool_allocator(fixed_size_tag /*unused*/, size_t script_mem_size, size_t oom_handling_mem_size) noexcept
+    : m_memory_mode{memory_mode::owned_fixed} {
+  void* buffer{kphp::memory::platform::alloc(script_mem_size)};
+  kphp::log::assertion(buffer != nullptr);
+  memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
+}
+
 pool_allocator::pool_allocator(external_memory /*unused*/, void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept
     : m_memory_mode{memory_mode::external_fixed} {
   kphp::log::assertion(buffer != nullptr);
@@ -32,11 +39,13 @@ auto pool_allocator::free() noexcept -> void {
     return;
   }
 
-  auto* extra_memory{memory_resource.get_extra_memory_head()};
-  while (extra_memory->get_pool_payload_size() != 0) {
-    auto* extra_memory_to_release{extra_memory};
-    extra_memory = extra_memory->next_in_chain;
-    kphp::memory::platform::free(extra_memory_to_release);
+  if (m_memory_mode == memory_mode::owned_growable) {
+    auto* extra_memory{memory_resource.get_extra_memory_head()};
+    while (extra_memory->get_pool_payload_size() != 0) {
+      auto* extra_memory_to_release{extra_memory};
+      extra_memory = extra_memory->next_in_chain;
+      kphp::memory::platform::free(extra_memory_to_release);
+    }
   }
 
   kphp::memory::platform::free(memory_resource.memory_begin());
@@ -98,7 +107,9 @@ auto pool_allocator::free_script_memory(void* mem, size_t size) noexcept -> void
 
 auto pool_allocator::request_extra_memory(size_t requested_size) noexcept -> void {
   // Fixed pools must fail on exhaustion instead of allocating outside their buffer.
-  kphp::log::assertion(m_memory_mode == memory_mode::owned_growable);
+  if (m_memory_mode != memory_mode::owned_growable) [[unlikely]] {
+    raise_out_of_memory(requested_size);
+  }
 
   // Extra mem size have to be greater than max chunk block
   const auto min_size{std::max(m_min_extra_mem_size, memory_resource::unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE)};
