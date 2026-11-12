@@ -454,10 +454,19 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
     if (!m_pagination.m_has_synced) {
       const auto sync_result{co_await perform_sync(confdata_proxy_actor)};
       if (!sync_result) [[unlikely]] {
+        // Before the first successful sync no readers are served yet, so the misconfiguration must be visible immediately.
+        // Afterwards the current piece keeps serving data while the sync is retried.
+        if (sync_result.error().is_not_enough_memory() && m_warmup_status == InstanceState::warmup_status::pending) {
+          kphp::log::error("the instance memory is too small to synchronize confdata for the first time: {}", sync_result.error());
+        }
+
         kphp::log::warning("failed to prepare a synchronized confdata shared-memory piece: {}; retrying", sync_result.error());
+
         co_await m_io_scheduler.schedule(CONFDATA_RETRY_INTERVAL);
+
         continue;
       }
+
       m_warmup_status = InstanceState::warmup_status::done;
     }
 
@@ -487,6 +496,12 @@ auto InstanceState::service_loop() noexcept -> kphp::coro::task<> {
       // sample. Reset pagination so the next iteration takes the clean-sync
       // path while the current piece keeps serving its readers.
       kphp::log::warning("the current confdata shared-memory piece can't accept an update; resyncing");
+      m_pagination = {};
+      break;
+    case kphp::confdata::subscribe_error::not_enough_memory:
+      // The proxy would send the same oversized batch again from the current position, so retrying can't help.
+      // A clean sync fetches the up-to-date state in pages; the current piece keeps serving its readers meanwhile.
+      kphp::log::warning("confdata update doesn't fit into the instance memory; resyncing");
       m_pagination = {};
       break;
     }

@@ -11,12 +11,16 @@
 
 namespace kphp::memory {
 
+// Requests an allocator whose memory is limited to the initially allocated buffer: it never asks the platform for extra memory.
+struct fixed_size_tag {};
+
 struct pool_allocator : private vk::not_copyable {
   struct external_memory {};
 
 private:
   enum class memory_mode {
     owned_growable,
+    owned_fixed,    // Owns a single buffer that is released in free(); never requests extra memory.
     external_fixed, // Never grows or releases the externally owned backing buffer.
   };
 
@@ -29,6 +33,8 @@ private:
 
 public:
   pool_allocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept;
+  // Owns a buffer of `script_mem_size` bytes that never grows: on exhaustion the allocator raises out of memory instead of requesting extra memory.
+  pool_allocator(fixed_size_tag, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
   // Borrows the buffer without growing it or releasing it in free().
   pool_allocator(external_memory, void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
 

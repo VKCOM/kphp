@@ -12,6 +12,9 @@ auto RuntimeAllocator::get() noexcept -> RuntimeAllocator& {
 RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
     : m_allocator{script_mem_size, min_extra_mem_size, oom_handling_mem_size} {}
 
+RuntimeAllocator::RuntimeAllocator(kphp::memory::fixed_size_tag tag, size_t script_mem_size, size_t oom_handling_mem_size) noexcept
+    : m_allocator{tag, script_mem_size, oom_handling_mem_size} {}
+
 auto RuntimeAllocator::free() noexcept -> void {
   m_allocator.free();
 }

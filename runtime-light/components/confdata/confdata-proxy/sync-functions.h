@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -17,9 +18,11 @@
 #include <variant>
 
 #include "common/wrappers/overloaded.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/components/confdata/confdata-proxy/tl.h"
+#include "runtime-light/components/confdata/state/component-state.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -44,7 +47,54 @@ struct snapshot final {
   encoded_snapshot_pages m_pages;
 };
 
-enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected };
+enum class subscribe_error : uint8_t { transport, old_offset, malformed_response, not_synced, batch_rejected, not_enough_memory };
+
+namespace details {
+
+// `tl::vector<KeyValuePair>` reserves `count * sizeof(KeyValuePair)` bytes when a response is decoded; `tl::string` is a zero-copy
+// view into the encoded response, so keys and values add nothing. The decoded part is the largest relative to the encoded one when
+// every pair is the smallest possible one: a longer key or value enlarges the encoded pair but not the decoded one.
+inline constexpr size_t MIN_ENCODED_PAIR_SIZE{tl::confdata::KeyValuePair{}.footprint()};
+inline constexpr size_t MAX_DECODED_BYTES_PER_ENCODED_BYTE{(sizeof(tl::confdata::KeyValuePair) + MIN_ENCODED_PAIR_SIZE - 1) / MIN_ENCODED_PAIR_SIZE};
+
+// Checks that `required_bytes` can be allocated without pushing the instance memory usage into its reserved final part.
+// The reserved part is left for service allocations that happen while a response is processed, which are not accounted for in `required_bytes`.
+inline auto has_memory_below_oom_threshold(size_t required_bytes) noexcept -> bool {
+  auto& memory_resource{RuntimeAllocator::get().get_memory_resource()};
+  const auto& stats{memory_resource.get_memory_stats()};
+  const size_t threshold{stats.memory_limit - ComponentState::get().m_instance_oom_handling_size};
+  if (stats.memory_used >= threshold || required_bytes > threshold - stats.memory_used) {
+    return false;
+  }
+
+  // `is_enough_memory_for` is a sufficient condition for the allocation: if a single free block can hold `required_bytes`, the
+  // allocations are carved out of it one after another. The converse does not hold (the allocator may still succeed by
+  // defragmenting or by combining several blocks), so the check may reject an allocation that would have fit.
+  return memory_resource.is_enough_memory_for(required_bytes);
+}
+
+inline auto has_memory_for_subscribe_response_process(size_t response_size) noexcept -> bool {
+  static constexpr size_t MEMORY_BYTES_PER_RESPONSE_BYTE{1 + MAX_DECODED_BYTES_PER_ENCODED_BYTE};
+
+  // While a response is being received, two allocations are alive at once: the encoded response itself (`response_size` bytes)
+  // and the decoded events (at most `MAX_DECODED_BYTES_PER_ENCODED_BYTE * response_size` bytes).
+  if (response_size > std::numeric_limits<size_t>::max() / MEMORY_BYTES_PER_RESPONSE_BYTE) [[unlikely]] {
+    return false;
+  }
+
+  return has_memory_below_oom_threshold(response_size * MEMORY_BYTES_PER_RESPONSE_BYTE);
+}
+
+inline auto has_memory_for_page_replay(size_t page_size) noexcept -> bool {
+  // While a retained page is being replayed, its encoded bytes are already allocated, so only the decoded events are missing.
+  if (page_size > std::numeric_limits<size_t>::max() / MAX_DECODED_BYTES_PER_ENCODED_BYTE) [[unlikely]] {
+    return false;
+  }
+
+  return has_memory_below_oom_threshold(page_size * MAX_DECODED_BYTES_PER_ENCODED_BYTE);
+}
+
+} // namespace details
 
 // Performs a single confdata.subscribe round-trip.
 // On success, invokes `event_handler(events)` once with the batch of received events and updates `to` pagination.
@@ -81,10 +131,23 @@ auto subscribe(std::string_view confdata_proxy_actor, kphp::confdata::pagination
   }
 
   encoded_snapshot_page response_buffer{};
-  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query), [&response_buffer](size_t size) noexcept -> std::span<std::byte> {
-    response_buffer.resize(size);
-    return response_buffer;
-  })};
+  std::optional<size_t> rejected_response_size{};
+  auto expected_response{co_await kphp::rpc::query::response(std::move(*expected_query),
+                                                             [&response_buffer, &rejected_response_size](size_t size) noexcept -> std::span<std::byte> {
+                                                               if (!details::has_memory_for_subscribe_response_process(size)) [[unlikely]] {
+                                                                 // An empty buffer makes `response` fail with TL_ERROR_RESULT_TOO_LARGE before anything is copied from the platform
+                                                                 rejected_response_size = size;
+                                                                 return {};
+                                                               }
+
+                                                               response_buffer.resize(size);
+                                                               return response_buffer;
+                                                             })};
+  if (rejected_response_size) [[unlikely]] {
+    kphp::log::warning("subscribe response doesn't fit into the instance memory and was rejected: size -> {}", *rejected_response_size);
+    co_return std::unexpected{kphp::confdata::subscribe_error::not_enough_memory};
+  }
+
   if (!expected_response) [[unlikely]] {
     kphp::log::warning("failed to fetch subscribe response: {}", expected_response.error());
     co_return std::unexpected{kphp::confdata::subscribe_error::transport};
@@ -143,6 +206,11 @@ auto sync(std::string_view confdata_proxy_actor,
 template<std::predicate<std::span<const tl::confdata::KeyValuePair>> event_handler_type>
 auto replay(encoded_snapshot_pages pages, const event_handler_type& event_handler) noexcept -> std::expected<void, kphp::confdata::subscribe_error> {
   for (auto& encoded_page : pages) {
+    if (!details::has_memory_for_page_replay(encoded_page.size())) [[unlikely]] {
+      kphp::log::warning("snapshot page doesn't fit into the instance memory and can't be replayed: size -> {}", encoded_page.size());
+      return std::unexpected{kphp::confdata::subscribe_error::not_enough_memory};
+    }
+
     {
       tl::fetcher tlf{std::span<const std::byte>{encoded_page.data(), encoded_page.size()}};
       tl::confdata::SubscribeResponse response{};
