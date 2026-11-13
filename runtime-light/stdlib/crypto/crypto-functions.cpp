@@ -24,6 +24,7 @@
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
@@ -32,8 +33,8 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   }
 
   string buffer{static_cast<string::size_type>(length), false};
-  if (!k2::openssl_random_pseudo_bytes({buffer.buffer(), buffer.size()})) [[unlikely]] {
-    kphp::log::warning("Failed to generate pseudo-random bytes");
+  if (!k2::openssl_rand_bytes({buffer.buffer(), buffer.size()})) [[unlikely]] {
+    kphp::log::warning("failed to generate pseudo-random bytes");
     return false;
   }
 
@@ -45,7 +46,7 @@ namespace {
 Optional<array<mixed>> x509_get_name_entries(k2::descriptor x509_d, bool is_issuer, bool shortnames) noexcept {
   auto count{k2::openssl_x509_name_entry_count(x509_d, is_issuer)};
   if (!count) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 name entry count");
+    kphp::log::warning("failed to get X509 name entry count");
     return false;
   }
 
@@ -53,13 +54,13 @@ Optional<array<mixed>> x509_get_name_entries(k2::descriptor x509_d, bool is_issu
   for (size_t i = 0; i < count.value(); ++i) {
     auto key{k2::openssl_x509_name_entry_key(x509_d, is_issuer, shortnames, i)};
     if (!key) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 name entry key");
+      kphp::log::warning("failed to get X509 name entry key");
       return false;
     }
 
     auto value{k2::openssl_x509_name_entry_value(x509_d, is_issuer, i)};
     if (!value) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 name entry value");
+      kphp::log::warning("failed to get X509 name entry value");
       return false;
     }
 
@@ -73,7 +74,7 @@ Optional<array<mixed>> x509_get_name_entries(k2::descriptor x509_d, bool is_issu
 Optional<array<mixed>> x509_get_purposes(k2::descriptor x509_d, bool shortnames) noexcept {
   auto count{k2::openssl_x509_purpose_count()};
   if (!count) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 purpose count");
+    kphp::log::warning("failed to get X509 purpose count");
     return false;
   }
 
@@ -81,20 +82,20 @@ Optional<array<mixed>> x509_get_purposes(k2::descriptor x509_d, bool shortnames)
   for (size_t i = 0; i < count.value(); ++i) {
     auto id{k2::openssl_x509_purpose_id(i)};
     if (!id) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 purpose id");
+      kphp::log::warning("failed to get X509 purpose id");
       return false;
     }
 
     auto purpset_0{k2::openssl_x509_purpose_check(x509_d, i, false)};
     auto purpset_1{k2::openssl_x509_purpose_check(x509_d, i, true)};
     if (!purpset_0 || !purpset_1) [[unlikely]] {
-      kphp::log::warning("Failed to check X509 purpose");
+      kphp::log::warning("failed to check X509 purpose");
       return false;
     }
 
     auto name{k2::openssl_x509_purpose_name(i, shortnames)};
     if (!name) [[unlikely]] {
-      kphp::log::warning("Failed to get X509 purpose name");
+      kphp::log::warning("failed to get X509 purpose name");
       return false;
     }
 
@@ -112,7 +113,7 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
 
   auto parsed{k2::openssl_x509_parse({data.c_str(), data.size()})};
   if (!parsed) [[unlikely]] {
-    kphp::log::warning("Failed to parse X509 certificate");
+    kphp::log::warning("failed to parse X509 certificate");
     return false;
   }
 
@@ -121,7 +122,7 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
 
   auto name{k2::openssl_x509_get_subject_name(x509_d)};
   if (!name) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 subject name");
+    kphp::log::warning("failed to get X509 subject name");
     return false;
   }
 
@@ -132,7 +133,7 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
 
   string hash{SUBJECT_NAME_HASH_SIZE, false};
   if (!k2::openssl_x509_get_hash(x509_d, {hash.buffer(), hash.size()})) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 hash");
+    kphp::log::warning("failed to get X509 hash");
     return false;
   }
 
@@ -143,19 +144,19 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
 
   auto version{k2::openssl_x509_get_version(x509_d)};
   if (!version) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 version");
+    kphp::log::warning("failed to get X509 version");
     return false;
   }
 
   auto valid_from{k2::openssl_x509_get_valid_from(x509_d)};
   if (!valid_from) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 validFrom time");
+    kphp::log::warning("failed to get X509 validFrom time");
     return false;
   }
 
   auto valid_to{k2::openssl_x509_get_valid_to(x509_d)};
   if (!valid_to) [[unlikely]] {
-    kphp::log::warning("Failed to get X509 validTo time");
+    kphp::log::warning("failed to get X509 validTo time");
     return false;
   }
 
@@ -164,14 +165,17 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
     return false;
   }
 
-  return std::initializer_list<std::pair<string, mixed>>{{string{"name", 4}, string{name.value().data(), static_cast<string::size_type>(name.value().size())}},
-                                                         {string{"subject", 7}, subject.val()},
-                                                         {string{"hash", 4}, hash},
-                                                         {string{"issuer", 6}, issuer.val()},
-                                                         {string{"version", 7}, version.value()},
-                                                         {string{"validFrom_time_t", 16}, valid_from.value()},
-                                                         {string{"validTo_time_t", 14}, valid_to.value()},
-                                                         {string{"purposes", 8}, purposes.val()}};
+  const auto& crypto_state{CryptoImageState::get()};
+
+  return std::initializer_list<std::pair<string, mixed>>{
+      {crypto_state.NAME_STR, string{name.value().data(), static_cast<string::size_type>(name.value().size())}},
+      {crypto_state.SUBJECT_STR, subject.val()},
+      {crypto_state.HASH_STR, hash},
+      {crypto_state.ISSUER_STR, issuer.val()},
+      {crypto_state.VERSION_STR, version.value()},
+      {crypto_state.VALID_FROM_TIME_T_STR, valid_from.value()},
+      {crypto_state.VALID_TO_TIME_T_STR, valid_to.value()},
+      {crypto_state.PURPOSES_STR, purposes.val()}};
 }
 
 namespace {
@@ -235,20 +239,20 @@ bool f$openssl_sign(const string& data, string& signature, const string& private
     }
   })};
   if (!key_d) [[unlikely]] {
-    kphp::log::warning("Failed to sign data");
+    kphp::log::warning("failed to sign data");
     return false;
   }
 
   auto size{k2::openssl_pkey_size(key_d.value())};
   if (!size) [[unlikely]] {
-    kphp::log::warning("Failed to sign data");
+    kphp::log::warning("failed to sign data");
     return false;
   }
 
   string buffer{static_cast<string::size_type>(size.value()), false};
-  auto written{k2::openssl_sign(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, key_d.value(), {buffer.buffer(), buffer.size()})};
+  auto written{k2::openssl_sign(static_cast<k2::HashAlgorithm>(algorithm), {data.c_str(), data.size()}, key_d.value(), {buffer.buffer(), buffer.size()})};
   if (!written) [[unlikely]] {
-    kphp::log::warning("Failed to sign data");
+    kphp::log::warning("failed to sign data");
     return false;
   }
 
@@ -267,13 +271,13 @@ int64_t f$openssl_verify(const string& data, const string& signature, const stri
     }
   })};
   if (!key_d) [[unlikely]] {
-    kphp::log::warning("Failed to verify signature");
+    kphp::log::warning("failed to verify signature");
     return -1;
   }
 
-  auto res{k2::openssl_verify(static_cast<HashAlgorithm>(algorithm), {data.c_str(), data.size()}, key_d.value(), {signature.c_str(), signature.size()})};
+  auto res{k2::openssl_verify(static_cast<k2::HashAlgorithm>(algorithm), {data.c_str(), data.size()}, key_d.value(), {signature.c_str(), signature.size()})};
   if (!res) [[unlikely]] {
-    kphp::log::warning("Failed to verify signature");
+    kphp::log::warning("failed to verify signature");
     return -1;
   }
 
@@ -282,10 +286,10 @@ int64_t f$openssl_verify(const string& data, const string& signature, const stri
 
 namespace {
 
-constexpr std::string_view AES_128_CBC = "aes-128-cbc";
-constexpr std::string_view AES_256_CBC = "aes-256-cbc";
-constexpr std::string_view AES_128_GCM = "aes-128-gcm";
-constexpr std::string_view AES_256_GCM = "aes-256-gcm";
+constexpr std::string_view AES_128_CBC{"aes-128-cbc"};
+constexpr std::string_view AES_256_CBC{"aes-256-cbc"};
+constexpr std::string_view AES_128_GCM{"aes-128-gcm"};
+constexpr std::string_view AES_256_GCM{"aes-256-gcm"};
 
 enum class encryption_mode { BLOCK, STREAM, AEAD };
 
@@ -294,19 +298,19 @@ struct cipher_algorithm_traits {
   int64_t iv_len;
   int64_t block_size;
   encryption_mode mode;
-  CipherAlgorithm algo;
+  k2::CipherAlgorithm algo;
 };
 
-constexpr auto CIPHER_ALGORITHMS = [] {
+constexpr auto CIPHER_ALGORITHMS{[] {
   auto arr{std::array{std::pair{AES_128_CBC, cipher_algorithm_traits{16, 16, 16, encryption_mode::BLOCK, AES128_CBC}},
                       std::pair{AES_256_CBC, cipher_algorithm_traits{32, 16, 16, encryption_mode::BLOCK, AES256_CBC}},
                       std::pair{AES_128_GCM, cipher_algorithm_traits{16, 12, 0, encryption_mode::AEAD, AES128_GCM}},
                       std::pair{AES_256_GCM, cipher_algorithm_traits{32, 12, 0, encryption_mode::AEAD, AES256_GCM}}}};
   std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, cipher_algorithm_traits>::first);
   return arr;
-}();
+}()};
 
-static_assert(CIPHER_ALGORITHMS.size() == CipherAlgorithm::COUNT_CIPHER);
+static_assert(CIPHER_ALGORITHMS.size() == k2::CipherAlgorithm::COUNT_CIPHER);
 
 std::optional<std::reference_wrapper<const cipher_algorithm_traits>> parse_cipher_algorithm(std::string_view algorithm) noexcept {
   auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
@@ -358,16 +362,16 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv(const cipher_algor
   auto iv = source_iv;
   if (traits.mode == encryption_mode::AEAD) {
     if (source_iv.empty()) [[unlikely]] {
-      kphp::log::warning("Setting of IV length for AEAD mode failed");
+      kphp::log::warning("setting of IV length for AEAD mode failed");
       return std::nullopt;
     }
   } else {
     int64_t iv_required_len{traits.iv_len};
     if (iv.size() < iv_required_len) {
-      kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), iv_required_len);
+      kphp::log::warning("iv passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), iv_required_len);
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
     } else if (iv.size() > iv_required_len) {
-      kphp::log::warning("IV passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", iv.size(), iv_required_len);
+      kphp::log::warning("iv passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", iv.size(), iv_required_len);
       iv.shrink(static_cast<string::size_type>(iv_required_len));
     }
   }
@@ -376,7 +380,7 @@ std::optional<std::pair<string, string>> algorithm_pad_key_iv(const cipher_algor
   int64_t key_required_len{traits.key_len};
   if (key.size() < key_required_len) {
     if (options & static_cast<int64_t>(cipher_opts::OPENSSL_DONT_ZERO_PAD_KEY)) [[unlikely]] {
-      kphp::log::warning("Key length should be {} bytes long:\n", key_required_len);
+      kphp::log::warning("key length should be {} bytes long:\n", key_required_len);
       return std::nullopt;
     }
     kphp::log::warning("passphrase passed is only {} bytes long, cipher expects an passphrase of precisely {} bytes, padding with \\0", key.size(),
@@ -404,7 +408,7 @@ array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexce
 Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
   auto algo{parse_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) {
-    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
+    kphp::log::warning("unknown cipher algorithm {}", algorithm.c_str());
     return false;
   }
 
@@ -415,29 +419,29 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
                                    std::optional<std::reference_wrapper<string>> tag, const string& aad, [[maybe_unused]] int64_t tag_length) noexcept {
   auto algo{parse_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
-    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
+    kphp::log::warning("unknown cipher algorithm {}", algorithm.c_str());
     return false;
   }
 
   const auto& traits{algo->get()};
   bool is_aead{traits.mode == encryption_mode::AEAD};
   if (is_aead && (!tag || tag_length == 0)) [[unlikely]] {
-    kphp::log::warning("A tag must be provided when using AEAD mode");
+    kphp::log::warning("a tag must be provided when using AEAD mode");
     return false;
   }
 
   if (!is_aead) {
     if (tag) {
-      kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
+      kphp::log::warning("the authenticated tag cannot be provided for cipher that does not support AEAD");
     }
 
     if (!aad.empty()) {
-      kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
+      kphp::log::warning("the additional authenticated data cannot be provided for cipher that does not support AEAD");
     }
   }
 
   if (iv.empty()) {
-    kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
+    kphp::log::warning("using an empty nitialization vector (iv) is potentially insecure and not recommended");
   }
 
   auto key_iv{algorithm_pad_key_iv(traits, key, iv, options)};
@@ -445,9 +449,9 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
     return false;
   }
 
-  BlockPadding padding{BlockPadding::PKCS7};
+  k2::BlockPadding padding{k2::BlockPadding::PKCS7};
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
-    padding = BlockPadding::BLOCK_NO_PADDING;
+    padding = k2::BlockPadding::BLOCK_NO_PADDING;
   }
 
   auto encrypted_size{calc_encrypted_size(traits, tag_length, data.size())};
@@ -457,7 +461,7 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
                                {aad.c_str(), aad.size()}, {data.c_str(), data.size()}, {encrypted_data.buffer(), encrypted_data.size()},
                                {received_tag.buffer(), received_tag.size()})};
   if (!res) [[unlikely]] {
-    kphp::log::warning("Failed to encrypt data");
+    kphp::log::warning("failed to encrypt data");
     return false;
   }
 
@@ -474,24 +478,24 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
                                    const string& aad) noexcept {
   auto algo{parse_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
-    kphp::log::warning("Unknown cipher algorithm {}", algorithm.c_str());
+    kphp::log::warning("unknown cipher algorithm {}", algorithm.c_str());
     return false;
   }
 
   const auto& traits{algo->get()};
   bool is_aead{traits.mode == encryption_mode::AEAD};
   if (is_aead && tag.empty()) [[unlikely]] {
-    kphp::log::warning("A tag must be provided when using AEAD mode");
+    kphp::log::warning("a tag must be provided when using AEAD mode");
     return false;
   }
 
   if (!is_aead) {
     if (!tag.empty()) {
-      kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
+      kphp::log::warning("the authenticated tag cannot be provided for cipher that does not support AEAD");
     }
 
     if (!aad.empty()) {
-      kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
+      kphp::log::warning("the additional authenticated data cannot be provided for cipher that does not support AEAD");
     }
   }
 
@@ -499,7 +503,7 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
   if (!(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA))) {
     Optional<string> decoding_data{f$base64_decode(data, true)};
     if (!decoding_data.has_value()) [[unlikely]] {
-      kphp::log::warning("Failed to base64 decode the input");
+      kphp::log::warning("failed to base64 decode the input");
       return false;
     }
 
@@ -511,9 +515,9 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
     return false;
   }
 
-  BlockPadding padding{BlockPadding::PKCS7};
+  k2::BlockPadding padding{k2::BlockPadding::PKCS7};
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
-    padding = BlockPadding::BLOCK_NO_PADDING;
+    padding = k2::BlockPadding::BLOCK_NO_PADDING;
   }
 
   string decrypted_data{static_cast<string::size_type>(calc_decrypted_size(traits, input_data.size())), false};
@@ -521,7 +525,7 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
                                {aad.c_str(), aad.size()}, {tag.c_str(), tag.size()}, {input_data.c_str(), input_data.size()},
                                {decrypted_data.buffer(), decrypted_data.size()})};
   if (!res) [[unlikely]] {
-    kphp::log::warning("Failed to decrypt data");
+    kphp::log::warning("failed to decrypt data");
     return false;
   }
 
@@ -533,7 +537,7 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
 Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
   if (const auto handle{get_pkey_handle(public_key)}; handle) {
     if (!k2::openssl_pkey_is_public(handle.value()).value_or(false)) [[unlikely]] {
-      kphp::log::warning("Failed to get public key");
+      kphp::log::warning("failed to get public key");
       return false;
     }
 
@@ -542,7 +546,7 @@ Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
 
   auto key_d{parse_public_key(public_key)};
   if (!key_d) [[unlikely]] {
-    kphp::log::warning("Failed to get public key");
+    kphp::log::warning("failed to get public key");
     return false;
   }
 
@@ -552,7 +556,7 @@ Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
 Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept {
   if (const auto handle{get_pkey_handle(private_key)}; handle) {
     if (!k2::openssl_pkey_is_private(handle.value()).value_or(false)) [[unlikely]] {
-      kphp::log::warning("Failed to get private key");
+      kphp::log::warning("failed to get private key");
       return false;
     }
 
@@ -561,7 +565,7 @@ Optional<string> f$openssl_pkey_get_private(const string& private_key, const str
 
   auto key_d{parse_private_key(private_key, passphrase)};
   if (!key_d) [[unlikely]] {
-    kphp::log::warning("Failed to get private key");
+    kphp::log::warning("failed to get private key");
     return false;
   }
 
@@ -577,20 +581,20 @@ bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
     }
   })};
   if (!key_d) [[unlikely]] {
-    kphp::log::warning("Failed to encrypt data with the given public key");
+    kphp::log::warning("failed to encrypt data with the given public key");
     return false;
   }
 
   auto size{k2::openssl_pkey_size(key_d.value())};
   if (!size) [[unlikely]] {
-    kphp::log::warning("Failed to encrypt data with the given public key");
+    kphp::log::warning("failed to encrypt data with the given public key");
     return false;
   }
 
   string buffer{static_cast<string::size_type>(size.value()), false};
-  auto written{k2::openssl_public_encrypt({data.c_str(), data.size()}, key_d.value(), RsaPadding::PKCS1, {buffer.buffer(), buffer.size()})};
+  auto written{k2::openssl_public_encrypt({data.c_str(), data.size()}, key_d.value(), k2::RsaPadding::PKCS1, {buffer.buffer(), buffer.size()})};
   if (!written) [[unlikely]] {
-    kphp::log::warning("Failed to encrypt data with the given public key");
+    kphp::log::warning("failed to encrypt data with the given public key");
     return false;
   }
 
@@ -621,20 +625,20 @@ bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const
     }
   })};
   if (!key_d) [[unlikely]] {
-    kphp::log::warning("Failed to decrypt data with the given private key");
+    kphp::log::warning("failed to decrypt data with the given private key");
     return false;
   }
 
   auto size{k2::openssl_pkey_size(key_d.value())};
   if (!size) [[unlikely]] {
-    kphp::log::warning("Failed to decrypt data with the given private key");
+    kphp::log::warning("failed to decrypt data with the given private key");
     return false;
   }
 
   string buffer{static_cast<string::size_type>(size.value()), false};
-  auto written{k2::openssl_private_decrypt({data.c_str(), data.size()}, key_d.value(), RsaPadding::PKCS1, {buffer.buffer(), buffer.size()})};
+  auto written{k2::openssl_private_decrypt({data.c_str(), data.size()}, key_d.value(), k2::RsaPadding::PKCS1, {buffer.buffer(), buffer.size()})};
   if (!written) [[unlikely]] {
-    kphp::log::warning("Failed to decrypt data with the given private key");
+    kphp::log::warning("failed to decrypt data with the given private key");
     return false;
   }
 
@@ -658,50 +662,50 @@ bool f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const 
 
 namespace {
 
-constexpr std::string_view DSS1 = "dss1";
-constexpr std::string_view SHA1 = "sha1";
-constexpr std::string_view SHA224 = "sha224";
-constexpr std::string_view SHA256 = "sha256";
-constexpr std::string_view SHA384 = "sha384";
-constexpr std::string_view SHA512 = "sha512";
-constexpr std::string_view MD5 = "md5";
-constexpr std::string_view RMD160 = "rmd160";
-constexpr std::string_view MD2 = "md2";
-constexpr std::string_view MD4 = "md4";
+constexpr std::string_view DSS1{"dss1"};
+constexpr std::string_view SHA1{"sha1"};
+constexpr std::string_view SHA224{"sha224"};
+constexpr std::string_view SHA256{"sha256"};
+constexpr std::string_view SHA384{"sha384"};
+constexpr std::string_view SHA512{"sha512"};
+constexpr std::string_view MD5{"md5"};
+constexpr std::string_view RMD160{"rmd160"};
+constexpr std::string_view MD2{"md2"};
+constexpr std::string_view MD4{"md4"};
 
-constexpr size_t DSS1_HASHED_SIZE = 20;
-constexpr size_t SHA1_HASHED_SIZE = 20;
-constexpr size_t SHA224_HASHED_SIZE = 28;
-constexpr size_t SHA256_HASHED_SIZE = 32;
-constexpr size_t SHA384_HASHED_SIZE = 48;
-constexpr size_t SHA512_HASHED_SIZE = 64;
-constexpr size_t MD5_HASHED_SIZE = 16;
-constexpr size_t RMD160_HASHED_SIZE = 20;
-constexpr size_t MD2_HASHED_SIZE = 16;
-constexpr size_t MD4_HASHED_SIZE = 16;
+constexpr size_t DSS1_HASHED_SIZE{20};
+constexpr size_t SHA1_HASHED_SIZE{20};
+constexpr size_t SHA224_HASHED_SIZE{28};
+constexpr size_t SHA256_HASHED_SIZE{32};
+constexpr size_t SHA384_HASHED_SIZE{48};
+constexpr size_t SHA512_HASHED_SIZE{64};
+constexpr size_t MD5_HASHED_SIZE{16};
+constexpr size_t RMD160_HASHED_SIZE{20};
+constexpr size_t MD2_HASHED_SIZE{16};
+constexpr size_t MD4_HASHED_SIZE{16};
 
 struct hash_algorithm_traits {
   int64_t hashed_size;
-  HashAlgorithm algo;
+  k2::HashAlgorithm algo;
 };
 
-constexpr auto HASH_ALGORITHMS = []() noexcept {
-  auto arr{std::array{std::pair{DSS1, hash_algorithm_traits{DSS1_HASHED_SIZE, HashAlgorithm::DSS1}},
-                      std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}},
-                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, HashAlgorithm::SHA224}},
-                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, HashAlgorithm::SHA256}},
-                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, HashAlgorithm::SHA384}},
-                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, HashAlgorithm::SHA512}},
-                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, HashAlgorithm::MD5}},
-                      std::pair{RMD160, hash_algorithm_traits{RMD160_HASHED_SIZE, HashAlgorithm::RMD160}},
-                      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, HashAlgorithm::MD2}},
-                      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, HashAlgorithm::MD4}}}};
+constexpr auto HASH_ALGORITHMS{[]() noexcept {
+  auto arr{std::array{std::pair{DSS1, hash_algorithm_traits{DSS1_HASHED_SIZE, k2::HashAlgorithm::DSS1}},
+                      std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::SHA1}},
+                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, k2::HashAlgorithm::SHA224}},
+                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, k2::HashAlgorithm::SHA256}},
+                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, k2::HashAlgorithm::SHA384}},
+                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, k2::HashAlgorithm::SHA512}},
+                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, k2::HashAlgorithm::MD5}},
+                      std::pair{RMD160, hash_algorithm_traits{RMD160_HASHED_SIZE, k2::HashAlgorithm::RMD160}},
+                      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, k2::HashAlgorithm::MD2}},
+                      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, k2::HashAlgorithm::MD4}}}};
 
   std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, hash_algorithm_traits>::first);
   return arr;
-}();
+}()};
 
-static_assert(HASH_ALGORITHMS.size() == HashAlgorithm::COUNT_HASH);
+static_assert(HASH_ALGORITHMS.size() == k2::HashAlgorithm::COUNT_HASH);
 
 std::optional<hash_algorithm_traits> parse_hash_algorithm(std::string_view algorithm) noexcept {
   auto lowered{std::ranges::transform_view{algorithm, [](char c) noexcept -> char {
@@ -724,7 +728,7 @@ string hash_impl(hash_algorithm_traits traits, const string& data, bool binary) 
   string hashed_data{binary ? static_cast<string::size_type>(traits.hashed_size) : static_cast<string::size_type>(traits.hashed_size * 2), false};
   auto res{k2::hash(traits.algo, {data.c_str(), data.size()}, {hashed_data.buffer(), static_cast<size_t>(traits.hashed_size)})};
   if (!res) [[unlikely]] {
-    kphp::log::warning("Failed to generate hash");
+    kphp::log::warning("failed to generate hash");
     return {};
   }
 
@@ -768,7 +772,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
   string hashed_data{binary ? static_cast<string::size_type>(algo->hashed_size) : static_cast<string::size_type>(algo->hashed_size * 2), false};
   auto res{k2::hash_hmac(algo->algo, {data.c_str(), data.size()}, {key.c_str(), key.size()}, {hashed_data.buffer(), static_cast<size_t>(algo->hashed_size)})};
   if (!res) [[unlikely]] {
-    kphp::log::warning("Failed to generate HMAC hash");
+    kphp::log::warning("failed to generate HMAC hash");
     return {};
   }
 
@@ -780,7 +784,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
 }
 
 string f$sha1(const string& data, bool binary) noexcept {
-  return hash_impl(hash_algorithm_traits{SHA1_HASHED_SIZE, HashAlgorithm::SHA1}, data, binary);
+  return hash_impl(hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::SHA1}, data, binary);
 }
 
 int64_t f$crc32(const string& s) noexcept {

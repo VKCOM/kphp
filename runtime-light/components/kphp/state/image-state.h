@@ -18,6 +18,7 @@
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
@@ -51,6 +52,7 @@ struct ImageState final : private vk::not_copyable {
   MathImageState math_image_state;
   RpcImageState rpc_image_state;
   CurlImageState curl_image_state;
+  CryptoImageState crypto_image_state;
   RegexImageState regex_image_state;
 
   ImageState() noexcept {

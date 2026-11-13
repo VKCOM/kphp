@@ -85,6 +85,14 @@ using RpcKind = RpcKind;
 
 using ControlFlags = ControlFlags;
 
+using HashAlgorithm = HashAlgorithm;
+
+using CipherAlgorithm = CipherAlgorithm;
+
+using BlockPadding = BlockPadding;
+
+using RsaPadding = RsaPadding;
+
 inline const ImageInfo* describe() noexcept {
   return k2_describe();
 }
@@ -261,15 +269,15 @@ inline int32_t component_access(std::string_view component_name) noexcept {
   return k2_component_access(component_name.size(), component_name.data());
 }
 
-inline std::expected<void, int32_t> openssl_random_pseudo_bytes(std::span<char> bytes) noexcept {
-  if (auto ret{k2_openssl_random_pseudo_bytes(bytes.data(), bytes.size())}; ret != 0) {
+inline std::expected<void, int32_t> openssl_rand_bytes(std::span<std::byte> bytes) noexcept {
+  if (auto ret{k2_openssl_rand_bytes(bytes.data(), bytes.size())}; ret != 0) {
     return std::unexpected(ret);
   }
 
   return {};
 }
 
-inline std::expected<k2::descriptor, int32_t> openssl_x509_parse(std::string_view data) noexcept {
+inline std::expected<k2::descriptor, int32_t> openssl_x509_parse(std::span<const std::byte> data) noexcept {
   k2::descriptor x509_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   if (auto error_code{k2_openssl_x509_parse(data.data(), data.size(), std::addressof(x509_d))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
@@ -328,7 +336,7 @@ inline std::expected<std::string_view, int32_t> openssl_x509_name_entry_value(k2
   return std::string_view{result, result_len};
 }
 
-inline std::expected<void, int32_t> openssl_x509_get_hash(k2::descriptor x509_d, std::span<char> result) noexcept {
+inline std::expected<void, int32_t> openssl_x509_get_hash(k2::descriptor x509_d, std::span<std::byte> result) noexcept {
   if (auto error_code{k2_openssl_x509_get_hash(x509_d, result.data(), result.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
@@ -400,7 +408,7 @@ inline std::expected<std::string_view, int32_t> openssl_x509_purpose_name(size_t
   return std::string_view{result, result_len};
 }
 
-inline std::expected<k2::descriptor, int32_t> openssl_pkey_get_public(std::string_view public_key) noexcept {
+inline std::expected<k2::descriptor, int32_t> openssl_pkey_get_public(std::span<const std::byte> public_key) noexcept {
   k2::descriptor pkey_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   if (auto error_code{k2_openssl_pkey_get_public(public_key.data(), public_key.size(), std::addressof(pkey_d))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
@@ -409,7 +417,7 @@ inline std::expected<k2::descriptor, int32_t> openssl_pkey_get_public(std::strin
   return {pkey_d};
 }
 
-inline std::expected<k2::descriptor, int32_t> openssl_pkey_get_private(std::string_view private_key, std::string_view passphrase) noexcept {
+inline std::expected<k2::descriptor, int32_t> openssl_pkey_get_private(std::span<const std::byte> private_key, std::span<const std::byte> passphrase) noexcept {
   k2::descriptor pkey_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   if (auto error_code{k2_openssl_pkey_get_private(private_key.data(), private_key.size(), passphrase.data(), passphrase.size(), std::addressof(pkey_d))};
       error_code != k2::errno_ok) {
@@ -429,24 +437,25 @@ inline std::expected<size_t, int32_t> openssl_pkey_size(k2::descriptor pkey_d) n
 }
 
 inline std::expected<bool, int32_t> openssl_pkey_is_public(k2::descriptor pkey_d) noexcept {
-  int32_t is_public{0};
+  bool is_public{false};
   if (auto error_code{k2_openssl_pkey_is_public(pkey_d, std::addressof(is_public))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {is_public != 0};
+  return is_public;
 }
 
 inline std::expected<bool, int32_t> openssl_pkey_is_private(k2::descriptor pkey_d) noexcept {
-  int32_t is_private{0};
+  bool is_private{false};
   if (auto error_code{k2_openssl_pkey_is_private(pkey_d, std::addressof(is_private))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {is_private != 0};
+  return is_private;
 }
 
-inline std::expected<size_t, int32_t> openssl_sign(HashAlgorithm algorithm, std::string_view data, k2::descriptor pkey_d, std::span<char> result) noexcept {
+inline std::expected<size_t, int32_t> openssl_sign(HashAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
+                                                   std::span<std::byte> result) noexcept {
   size_t result_written{0};
   if (auto error_code{k2_openssl_sign(algorithm, data.data(), data.size(), pkey_d, result.data(), result.size(), std::addressof(result_written))};
       error_code != k2::errno_ok) {
@@ -456,19 +465,20 @@ inline std::expected<size_t, int32_t> openssl_sign(HashAlgorithm algorithm, std:
   return {result_written};
 }
 
-inline std::expected<bool, int32_t> openssl_verify(HashAlgorithm algorithm, std::string_view data, k2::descriptor pkey_d, std::string_view signature) noexcept {
-  int32_t is_valid{0};
+inline std::expected<bool, int32_t> openssl_verify(HashAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
+                                                   std::span<const std::byte> signature) noexcept {
+  bool is_valid{false};
   if (auto error_code{k2_openssl_verify(algorithm, data.data(), data.size(), pkey_d, signature.data(), signature.size(), std::addressof(is_valid))};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {is_valid != 0};
+  return is_valid;
 }
 
-inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
-                                                      std::string_view aad, std::string_view data, std::span<char> encrypted_data,
-                                                      std::span<char> received_tag) noexcept {
+inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::span<const std::byte> key,
+                                                      std::span<const std::byte> iv, std::span<const std::byte> aad, std::span<const std::byte> data,
+                                                      std::span<std::byte> encrypted_data, std::span<std::byte> received_tag) noexcept {
   size_t encrypted_data_written{0};
   if (auto error_code{k2_openssl_encrypt(algorithm, padding, key.data(), key.size(), iv.data(), iv.size(), aad.data(), aad.size(), data.data(), data.size(),
                                          encrypted_data.data(), encrypted_data.size(), std::addressof(encrypted_data_written), received_tag.data(),
@@ -480,9 +490,9 @@ inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm,
   return {encrypted_data_written};
 }
 
-inline std::expected<size_t, int32_t> openssl_decrypt(CipherAlgorithm algorithm, BlockPadding padding, std::string_view key, std::string_view iv,
-                                                      std::string_view aad, std::string_view tag, std::string_view data,
-                                                      std::span<char> decrypted_data) noexcept {
+inline std::expected<size_t, int32_t> openssl_decrypt(CipherAlgorithm algorithm, BlockPadding padding, std::span<const std::byte> key,
+                                                      std::span<const std::byte> iv, std::span<const std::byte> aad, std::span<const std::byte> tag,
+                                                      std::span<const std::byte> data, std::span<std::byte> decrypted_data) noexcept {
   size_t decrypted_data_written{0};
   if (auto error_code{k2_openssl_decrypt(algorithm, padding, key.data(), key.size(), iv.data(), iv.size(), aad.data(), aad.size(), tag.data(), tag.size(),
                                          data.data(), data.size(), decrypted_data.data(), decrypted_data.size(), std::addressof(decrypted_data_written))};
@@ -493,8 +503,8 @@ inline std::expected<size_t, int32_t> openssl_decrypt(CipherAlgorithm algorithm,
   return {decrypted_data_written};
 }
 
-inline std::expected<size_t, int32_t> openssl_public_encrypt(std::string_view data, k2::descriptor pkey_d, RsaPadding padding,
-                                                             std::span<char> encrypted_data) noexcept {
+inline std::expected<size_t, int32_t> openssl_public_encrypt(std::span<const std::byte> data, k2::descriptor pkey_d, RsaPadding padding,
+                                                             std::span<std::byte> encrypted_data) noexcept {
   size_t encrypted_data_written{0};
   if (auto error_code{k2_openssl_public_encrypt(data.data(), data.size(), pkey_d, padding, encrypted_data.data(), encrypted_data.size(),
                                                 std::addressof(encrypted_data_written))};
@@ -505,8 +515,8 @@ inline std::expected<size_t, int32_t> openssl_public_encrypt(std::string_view da
   return {encrypted_data_written};
 }
 
-inline std::expected<size_t, int32_t> openssl_private_decrypt(std::string_view data, k2::descriptor pkey_d, RsaPadding padding,
-                                                              std::span<char> decrypted_data) noexcept {
+inline std::expected<size_t, int32_t> openssl_private_decrypt(std::span<const std::byte> data, k2::descriptor pkey_d, RsaPadding padding,
+                                                              std::span<std::byte> decrypted_data) noexcept {
   size_t decrypted_data_written{0};
   if (auto error_code{k2_openssl_private_decrypt(data.data(), data.size(), pkey_d, padding, decrypted_data.data(), decrypted_data.size(),
                                                  std::addressof(decrypted_data_written))};
@@ -517,16 +527,17 @@ inline std::expected<size_t, int32_t> openssl_private_decrypt(std::string_view d
   return {decrypted_data_written};
 }
 
-inline std::expected<void, int32_t> hash(HashAlgorithm algorithm, std::string_view data, std::span<char> hashed_data) noexcept {
-  if (auto error_code{k2_hash(algorithm, data.data(), data.size(), hashed_data.data(), hashed_data.size())}; error_code != k2::errno_ok) {
+inline std::expected<void, int32_t> hash(HashAlgorithm algorithm, std::span<const std::byte> data, std::span<std::byte> hashed_data) noexcept {
+  if (auto error_code{k2_openssl_hash(algorithm, data.data(), data.size(), hashed_data.data(), hashed_data.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
   return {};
 }
 
-inline std::expected<void, int32_t> hash_hmac(HashAlgorithm algorithm, std::string_view data, std::string_view key, std::span<char> hashed_data) noexcept {
-  if (auto error_code{k2_hash_hmac(algorithm, data.data(), data.size(), key.data(), key.size(), hashed_data.data(), hashed_data.size())};
+inline std::expected<void, int32_t> hash_hmac(HashAlgorithm algorithm, std::span<const std::byte> data, std::span<const std::byte> key,
+                                              std::span<std::byte> hashed_data) noexcept {
+  if (auto error_code{k2_openssl_hash_hmac(algorithm, data.data(), data.size(), key.data(), key.size(), hashed_data.data(), hashed_data.size())};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
