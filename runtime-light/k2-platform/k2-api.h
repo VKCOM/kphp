@@ -392,12 +392,12 @@ inline std::expected<int64_t, int32_t> openssl_x509_purpose_id(size_t index) noe
 }
 
 inline std::expected<bool, int32_t> openssl_x509_purpose_check(k2::descriptor x509_d, size_t index, bool ca) noexcept {
-  bool result{false};
+  int32_t result{0};
   if (auto error_code{k2_openssl_x509_purpose_check(x509_d, index, ca, std::addressof(result))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return result;
+  return {result == 1};
 }
 
 inline std::expected<std::string_view, int32_t> openssl_x509_purpose_name(size_t index, bool shortnames) noexcept {
@@ -439,21 +439,21 @@ inline std::expected<size_t, int32_t> openssl_pkey_size(k2::descriptor pkey_d) n
 }
 
 inline std::expected<bool, int32_t> openssl_pkey_is_public(k2::descriptor pkey_d) noexcept {
-  bool is_public{false};
+  int32_t is_public{0};
   if (auto error_code{k2_openssl_pkey_is_public(pkey_d, std::addressof(is_public))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return is_public;
+  return {is_public == 1};
 }
 
 inline std::expected<bool, int32_t> openssl_pkey_is_private(k2::descriptor pkey_d) noexcept {
-  bool is_private{false};
+  int32_t is_private{0};
   if (auto error_code{k2_openssl_pkey_is_private(pkey_d, std::addressof(is_private))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return is_private;
+  return {is_private == 1};
 }
 
 inline std::expected<size_t, int32_t> openssl_sign(DigestAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
@@ -469,13 +469,13 @@ inline std::expected<size_t, int32_t> openssl_sign(DigestAlgorithm algorithm, st
 
 inline std::expected<bool, int32_t> openssl_verify(DigestAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
                                                    std::span<const std::byte> signature) noexcept {
-  bool is_valid{false};
+  int32_t is_valid{0};
   if (auto error_code{k2_openssl_verify(algorithm, data.data(), data.size(), pkey_d, signature.data(), signature.size(), std::addressof(is_valid))};
       error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return is_valid;
+  return {is_valid == 1};
 }
 
 inline std::expected<size_t, int32_t> openssl_encrypt(CipherAlgorithm algorithm, BlockPadding padding, std::span<const std::byte> key,
