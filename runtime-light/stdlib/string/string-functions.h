@@ -4,26 +4,12 @@
 
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
-#include <span>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-
-namespace kphp::strings {
-
-inline auto as_bytes(const string& str) noexcept -> std::span<const std::byte> {
-  return std::as_bytes(std::span{str.c_str(), static_cast<size_t>(str.size())});
-}
-
-inline auto as_writable_bytes(string& str) noexcept -> std::span<std::byte> {
-  return std::as_writable_bytes(std::span{str.buffer(), static_cast<size_t>(str.size())});
-}
-
-} // namespace kphp::strings
 
 inline string f$prepare_search_query(const string& query) noexcept {
   return prepare_search_query_impl_::prepare_search_query(query, [](bool condition) noexcept { kphp::log::assertion(condition); });
