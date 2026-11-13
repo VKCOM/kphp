@@ -68,3 +68,14 @@ TEST(string_algorithms_trim, empty_string) {
   TestTrimHelper<vk::string_view>::empty_string();
   TestTrimHelper<std::string>::empty_string();
 }
+
+TEST(string_algorithms, to_lower_ascii) {
+  EXPECT_EQ(vk::to_lower_ascii('A'), 'a');
+  EXPECT_EQ(vk::to_lower_ascii('Z'), 'z');
+  EXPECT_EQ(vk::to_lower_ascii('m'), 'm');
+  EXPECT_EQ(vk::to_lower_ascii('0'), '0');
+  EXPECT_EQ(vk::to_lower_ascii('-'), '-');
+  EXPECT_EQ(vk::to_lower_ascii('@'), '@');
+  EXPECT_EQ(vk::to_lower_ascii('['), '[');
+  EXPECT_EQ(vk::to_lower_ascii(static_cast<char>(0xC4)), static_cast<char>(0xC4));
+}
