@@ -102,11 +102,11 @@ public:
     return k2::openssl_pkey_is_private(m_descriptor);
   }
 
-  auto sign(k2::HashAlgorithm algorithm, std::span<const std::byte> data, std::span<std::byte> result) const noexcept -> std::expected<size_t, int32_t> {
+  auto sign(k2::DigestAlgorithm algorithm, std::span<const std::byte> data, std::span<std::byte> result) const noexcept -> std::expected<size_t, int32_t> {
     return k2::openssl_sign(algorithm, data, m_descriptor, result);
   }
 
-  auto verify(k2::HashAlgorithm algorithm, std::span<const std::byte> data,
+  auto verify(k2::DigestAlgorithm algorithm, std::span<const std::byte> data,
               std::span<const std::byte> signature) const noexcept -> std::expected<bool, int32_t> {
     return k2::openssl_verify(algorithm, data, m_descriptor, signature);
   }

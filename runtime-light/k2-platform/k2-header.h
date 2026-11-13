@@ -104,7 +104,32 @@ enum BlockPadding : uint32_t { PKCS7 = 0, BLOCK_NO_PADDING = 1 };
 
 enum RsaPadding : uint32_t { PKCS1 = 0, PKCS1_OAEP = 1, ASYMM_NO_PADDING = 2 };
 
-enum HashAlgorithm : uint32_t { DSS1 = 0, SHA1 = 1, SHA224 = 2, SHA256 = 3, SHA384 = 4, SHA512 = 5, MD5 = 6, RMD160 = 7, MD2 = 8, MD4 = 9, COUNT_HASH };
+enum HashAlgorithm : uint32_t {
+  HASH_SHA1 = 0,
+  HASH_SHA224 = 1,
+  HASH_SHA256 = 2,
+  HASH_SHA384 = 3,
+  HASH_SHA512 = 4,
+  HASH_MD5 = 5,
+  HASH_RMD160 = 6,
+  HASH_MD2 = 7,
+  HASH_MD4 = 8,
+  COUNT_HASH
+};
+
+enum DigestAlgorithm : uint32_t {
+  DIGEST_DSS1 = 0,
+  DIGEST_SHA1 = 1,
+  DIGEST_SHA224 = 2,
+  DIGEST_SHA256 = 3,
+  DIGEST_SHA384 = 4,
+  DIGEST_SHA512 = 5,
+  DIGEST_MD5 = 6,
+  DIGEST_RMD160 = 7,
+  DIGEST_MD2 = 8,
+  DIGEST_MD4 = 9,
+  COUNT_DIGEST
+};
 
 enum RpcKind {
   TL_RPC = 0,
@@ -829,9 +854,9 @@ int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, bool* is_public);
 int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, bool* is_private);
 
 /**
- * Signs `data` with a private key using the given hash algorithm.
+ * Signs `data` with a private key using the given message digest.
  *
- * @param `algorithm` The hash algorithm.
+ * @param `algorithm` The message digest.
  * @param `data` A pointer to the data to sign.
  * @param `data_len` The length of `data`.
  * @param `pkey_d` The descriptor of a private key.
@@ -846,13 +871,13 @@ int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, bool* is_private);
  * `ERANGE` => `result_len` is not enough.
  * `EIO` => OpenSSL failed to sign the data.
  */
-int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, void* result, size_t result_len,
+int32_t k2_openssl_sign(enum DigestAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, void* result, size_t result_len,
                         size_t* result_written);
 
 /**
- * Verifies the `signature` of `data` with a public key using the given hash algorithm.
+ * Verifies the `signature` of `data` with a public key using the given message digest.
  *
- * @param `algorithm` The hash algorithm.
+ * @param `algorithm` The message digest.
  * @param `data` A pointer to the signed data.
  * @param `data_len` The length of `data`.
  * @param `pkey_d` The descriptor of a public key.
@@ -866,7 +891,7 @@ int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const void* data, size_t d
  * `EINVAL` => a pointer argument is `NULL`, `algorithm` is unknown, or `pkey_d` is not a public key descriptor.
  * `EIO` => OpenSSL failed to perform the check.
  */
-int32_t k2_openssl_verify(enum HashAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, const void* signature, size_t signature_len,
+int32_t k2_openssl_verify(enum DigestAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, const void* signature, size_t signature_len,
                           bool* is_valid);
 
 /**

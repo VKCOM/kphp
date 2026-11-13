@@ -87,6 +87,8 @@ using ControlFlags = ControlFlags;
 
 using HashAlgorithm = HashAlgorithm;
 
+using DigestAlgorithm = DigestAlgorithm;
+
 using CipherAlgorithm = CipherAlgorithm;
 
 using BlockPadding = BlockPadding;
@@ -454,7 +456,7 @@ inline std::expected<bool, int32_t> openssl_pkey_is_private(k2::descriptor pkey_
   return is_private;
 }
 
-inline std::expected<size_t, int32_t> openssl_sign(HashAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
+inline std::expected<size_t, int32_t> openssl_sign(DigestAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
                                                    std::span<std::byte> result) noexcept {
   size_t result_written{0};
   if (auto error_code{k2_openssl_sign(algorithm, data.data(), data.size(), pkey_d, result.data(), result.size(), std::addressof(result_written))};
@@ -465,7 +467,7 @@ inline std::expected<size_t, int32_t> openssl_sign(HashAlgorithm algorithm, std:
   return {result_written};
 }
 
-inline std::expected<bool, int32_t> openssl_verify(HashAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
+inline std::expected<bool, int32_t> openssl_verify(DigestAlgorithm algorithm, std::span<const std::byte> data, k2::descriptor pkey_d,
                                                    std::span<const std::byte> signature) noexcept {
   bool is_valid{false};
   if (auto error_code{k2_openssl_verify(algorithm, data.data(), data.size(), pkey_d, signature.data(), signature.size(), std::addressof(is_valid))};
