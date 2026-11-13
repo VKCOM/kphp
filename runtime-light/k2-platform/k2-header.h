@@ -751,14 +751,14 @@ int32_t k2_openssl_x509_purpose_id(size_t index, int64_t* result);
  * @param `x509_d` The descriptor of the certificate.
  * @param `index` The index of the purpose, must be less than the count from `k2_openssl_x509_purpose_count`.
  * @param `ca` `true` to check the purpose for a CA certificate.
- * @param `result` A pointer where `true` will be stored if the certificate is suitable for the purpose, `false` otherwise.
+ * @param `result` A pointer where `1` will be stored if the certificate is suitable for the purpose, `0` otherwise.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `result` is `NULL`, `x509_d` is not a certificate descriptor, or `index` is out of range.
  */
-int32_t k2_openssl_x509_purpose_check(uint64_t x509_d, size_t index, bool ca, bool* result);
+int32_t k2_openssl_x509_purpose_check(uint64_t x509_d, size_t index, bool ca, int32_t* result);
 
 /**
  * Writes a pointer to the name of the purpose with the given index. The result is not null-terminated.
@@ -831,27 +831,27 @@ int32_t k2_openssl_pkey_size(uint64_t pkey_d, size_t* size);
  * Checks whether the descriptor is a public key descriptor.
  *
  * @param `pkey_d` The descriptor to check.
- * @param `is_public` A pointer where `true` will be stored if the key is public, `false` if it is private.
+ * @param `is_public` A pointer where `1` will be stored if the key is public, `0` if it is private.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `is_public` is `NULL`, or `pkey_d` is not a key descriptor.
  */
-int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, bool* is_public);
+int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, int32_t* is_public);
 
 /**
  * Checks whether the descriptor is a private key descriptor.
  *
  * @param `pkey_d` The descriptor to check.
- * @param `is_private` A pointer where `true` will be stored if the key is private, `false` if it is public.
+ * @param `is_private` A pointer where `1` will be stored if the key is private, `0` if it is public.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `is_private` is `NULL`, or `pkey_d` is not a key descriptor.
  */
-int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, bool* is_private);
+int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, int32_t* is_private);
 
 /**
  * Signs `data` with a private key using the given message digest.
@@ -883,7 +883,7 @@ int32_t k2_openssl_sign(enum DigestAlgorithm algorithm, const void* data, size_t
  * @param `pkey_d` The descriptor of a public key.
  * @param `signature` A pointer to the signature.
  * @param `signature_len` The length of `signature`.
- * @param `is_valid` A pointer where `true` will be stored if the signature is valid, `false` otherwise.
+ * @param `is_valid` A pointer where `1` will be stored if the signature is valid, `0` otherwise.
  *
  * @return Returns `0` on success (the check itself was performed). On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
@@ -892,7 +892,7 @@ int32_t k2_openssl_sign(enum DigestAlgorithm algorithm, const void* data, size_t
  * `EIO` => OpenSSL failed to perform the check.
  */
 int32_t k2_openssl_verify(enum DigestAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, const void* signature, size_t signature_len,
-                          bool* is_valid);
+                          int32_t* is_valid);
 
 /**
  * Encrypts `data` with a symmetric cipher.
