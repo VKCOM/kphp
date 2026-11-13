@@ -534,7 +534,7 @@ int32_t k2_component_access(size_t name_len, const char* name);
  * `EINVAL` => `bytes` is `NULL`.
  * `EIO` => OpenSSL failed to generate random bytes.
  */
-int32_t k2_openssl_random_pseudo_bytes(char* bytes, size_t length);
+int32_t k2_openssl_rand_bytes(void* bytes, size_t length);
 
 /**
  * Parses a PEM-encoded X509 certificate and writes a descriptor of the parsed certificate.
@@ -551,7 +551,7 @@ int32_t k2_openssl_random_pseudo_bytes(char* bytes, size_t length);
  * `ENOMEM` => the descriptor can not be created.
  * `EIO` => OpenSSL failed to parse PEM-encoded X509 certificate.
  */
-int32_t k2_openssl_x509_parse(const char* data, size_t data_len, uint64_t* x509_d);
+int32_t k2_openssl_x509_parse(const void* data, size_t data_len, uint64_t* x509_d);
 
 /**
  * Extracts the public key of the certificate and writes a descriptor of the key.
@@ -572,7 +572,8 @@ int32_t k2_openssl_x509_get_pubkey(uint64_t x509_d, uint64_t* pkey_d);
 
 /**
  * Writes a pointer to the one-line representation of the subject name of the certificate.
- * The result is not null-terminated. The memory is owned by the certificate descriptor: the caller must not free it.
+ * The result is not null-terminated. The memory is owned by the certificate descriptor: the caller must not free it,
+ * and it is valid only while the descriptor is alive, i.e. until it is freed with `k2_free_descriptor`.
  *
  * @param `x509_d` The descriptor of the certificate.
  * @param `result` A pointer where the address of the name will be stored.
@@ -621,7 +622,8 @@ int32_t k2_openssl_x509_name_entry_key(uint64_t x509_d, bool is_issuer, bool sho
 
 /**
  * Writes a pointer to the value of the `index`-th entry of the subject or issuer name.
- * The result is not null-terminated. The memory is owned by the certificate descriptor: the caller must not free it.
+ * The result is not null-terminated. The memory is owned by the certificate descriptor: the caller must not free it,
+ * and it is valid only while the descriptor is alive, i.e. until it is freed with `k2_free_descriptor`.
  *
  * @param `x509_d` The descriptor of the certificate.
  * @param `is_issuer` `true` for the issuer name, `false` for the subject name.
@@ -649,7 +651,7 @@ int32_t k2_openssl_x509_name_entry_value(uint64_t x509_d, bool is_issuer, size_t
  * `EINVAL` => `result` is `NULL` or `x509_d` is not a certificate descriptor.
  * `ERANGE` => `result_len` is less than 8.
  */
-int32_t k2_openssl_x509_get_hash(uint64_t x509_d, char* result, size_t result_len);
+int32_t k2_openssl_x509_get_hash(uint64_t x509_d, void* result, size_t result_len);
 
 /**
  * Writes the version of the certificate as returned by OpenSSL's `X509_get_version`.
@@ -765,7 +767,7 @@ int32_t k2_openssl_x509_purpose_name(size_t index, bool shortnames, const char**
  * `ENOMEM` => the descriptor can not be created.
  * `EIO` => `public_key` is not a valid PEM public key.
  */
-int32_t k2_openssl_pkey_get_public(const char* public_key, size_t public_key_len, uint64_t* pkey_d);
+int32_t k2_openssl_pkey_get_public(const void* public_key, size_t public_key_len, uint64_t* pkey_d);
 
 /**
  * Parses a PEM-encoded private key (decrypting it with `passphrase` if needed)
@@ -785,7 +787,7 @@ int32_t k2_openssl_pkey_get_public(const char* public_key, size_t public_key_len
  * `ENOMEM` => the descriptor can not be created.
  * `EIO` => `private_key` is not a valid PEM private key, or the passphrase is wrong.
  */
-int32_t k2_openssl_pkey_get_private(const char* private_key, size_t private_key_len, const char* passphrase, size_t passphrase_len, uint64_t* pkey_d);
+int32_t k2_openssl_pkey_get_private(const void* private_key, size_t private_key_len, const void* passphrase, size_t passphrase_len, uint64_t* pkey_d);
 
 /**
  * Writes the size in bytes of the signature produced by the key.
@@ -804,27 +806,27 @@ int32_t k2_openssl_pkey_size(uint64_t pkey_d, size_t* size);
  * Checks whether the descriptor is a public key descriptor.
  *
  * @param `pkey_d` The descriptor to check.
- * @param `is_public` A pointer where `1` will be stored if the key is public, `0` if it is private.
+ * @param `is_public` A pointer where `true` will be stored if the key is public, `false` if it is private.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `is_public` is `NULL`, or `pkey_d` is not a key descriptor.
  */
-int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, int32_t* is_public);
+int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, bool* is_public);
 
 /**
  * Checks whether the descriptor is a private key descriptor.
  *
  * @param `pkey_d` The descriptor to check.
- * @param `is_private` A pointer where `1` will be stored if the key is private, `0` if it is public.
+ * @param `is_private` A pointer where `true` will be stored if the key is private, `false` if it is public.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `is_private` is `NULL`, or `pkey_d` is not a key descriptor.
  */
-int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, int32_t* is_private);
+int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, bool* is_private);
 
 /**
  * Signs `data` with a private key using the given hash algorithm.
@@ -844,7 +846,7 @@ int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, int32_t* is_private);
  * `ERANGE` => `result_len` is not enough.
  * `EIO` => OpenSSL failed to sign the data.
  */
-int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const char* data, size_t data_len, uint64_t pkey_d, char* result, size_t result_len,
+int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, void* result, size_t result_len,
                         size_t* result_written);
 
 /**
@@ -856,7 +858,7 @@ int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const char* data, size_t d
  * @param `pkey_d` The descriptor of a public key.
  * @param `signature` A pointer to the signature.
  * @param `signature_len` The length of `signature`.
- * @param `is_valid` A pointer where `1` will be stored if the signature is valid, `0` otherwise.
+ * @param `is_valid` A pointer where `true` will be stored if the signature is valid, `false` otherwise.
  *
  * @return Returns `0` on success (the check itself was performed). On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
@@ -864,8 +866,8 @@ int32_t k2_openssl_sign(enum HashAlgorithm algorithm, const char* data, size_t d
  * `EINVAL` => a pointer argument is `NULL`, `algorithm` is unknown, or `pkey_d` is not a public key descriptor.
  * `EIO` => OpenSSL failed to perform the check.
  */
-int32_t k2_openssl_verify(enum HashAlgorithm algorithm, const char* data, size_t data_len, uint64_t pkey_d, const char* signature, size_t signature_len,
-                          int32_t* is_valid);
+int32_t k2_openssl_verify(enum HashAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, const void* signature, size_t signature_len,
+                          bool* is_valid);
 
 /**
  * Encrypts `data` with a symmetric cipher.
@@ -895,9 +897,9 @@ int32_t k2_openssl_verify(enum HashAlgorithm algorithm, const char* data, size_t
  * `ERANGE` => `encrypted_data_len` is not enough.
  * `EIO` => OpenSSL failed to encrypt the data.
  */
-int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* key, size_t key_len, const char* iv, size_t iv_len,
-                           const char* aad, size_t aad_len, const char* data, size_t data_len, char* encrypted_data, size_t encrypted_data_len,
-                           size_t* encrypted_data_written, char* received_tag, size_t received_tag_len);
+int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const void* key, size_t key_len, const void* iv, size_t iv_len,
+                           const void* aad, size_t aad_len, const void* data, size_t data_len, void* encrypted_data, size_t encrypted_data_len,
+                           size_t* encrypted_data_written, void* received_tag, size_t received_tag_len);
 
 /**
  * Decrypts `data` with a symmetric cipher.
@@ -927,8 +929,8 @@ int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding pad
  * `ERANGE` => `decrypted_data_len` is not enough.
  * `EIO` => OpenSSL failed to decrypt the data.
  */
-int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const char* key, size_t key_len, const char* iv, size_t iv_len,
-                           const char* aad, size_t aad_len, const char* tag, size_t tag_len, const char* data, size_t data_len, char* decrypted_data,
+int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const void* key, size_t key_len, const void* iv, size_t iv_len,
+                           const void* aad, size_t aad_len, const void* tag, size_t tag_len, const void* data, size_t data_len, void* decrypted_data,
                            size_t decrypted_data_len, size_t* decrypted_data_written);
 
 /**
@@ -949,7 +951,7 @@ int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding pad
  * `ERANGE` => `encrypted_data_len` is not enough.
  * `EIO` => OpenSSL failed to encrypt the data.
  */
-int32_t k2_openssl_public_encrypt(const char* data, size_t data_len, uint64_t pkey_d, enum RsaPadding padding, char* encrypted_data, size_t encrypted_data_len,
+int32_t k2_openssl_public_encrypt(const void* data, size_t data_len, uint64_t pkey_d, enum RsaPadding padding, void* encrypted_data, size_t encrypted_data_len,
                                   size_t* encrypted_data_written);
 
 /**
@@ -970,7 +972,7 @@ int32_t k2_openssl_public_encrypt(const char* data, size_t data_len, uint64_t pk
  * `ERANGE` => `decrypted_data_len` is less than the RSA key size.
  * `EIO` => the data does not decrypt with this key and padding, or OpenSSL failed.
  */
-int32_t k2_openssl_private_decrypt(const char* data, size_t data_len, uint64_t pkey_d, enum RsaPadding padding, char* decrypted_data, size_t decrypted_data_len,
+int32_t k2_openssl_private_decrypt(const void* data, size_t data_len, uint64_t pkey_d, enum RsaPadding padding, void* decrypted_data, size_t decrypted_data_len,
                                    size_t* decrypted_data_written);
 
 /**
@@ -990,7 +992,7 @@ int32_t k2_openssl_private_decrypt(const char* data, size_t data_len, uint64_t p
  * `ERANGE` => `hashed_data_len` is less than the digest size.
  * `EIO` => OpenSSL failed to compute the digest.
  */
-int32_t k2_hash(enum HashAlgorithm algorithm, const char* data, size_t data_len, char* hashed_data, size_t hashed_data_len);
+int32_t k2_openssl_hash(enum HashAlgorithm algorithm, const void* data, size_t data_len, void* hashed_data, size_t hashed_data_len);
 
 /**
  * Computes the HMAC of `data` with `key` and the given hash algorithm and writes the raw (binary) result to `hashed_data`.
@@ -1011,8 +1013,8 @@ int32_t k2_hash(enum HashAlgorithm algorithm, const char* data, size_t data_len,
  * `ERANGE` => `hashed_data_len` is less than the digest size.
  * `EIO` => OpenSSL failed to compute the HMAC.
  */
-int32_t k2_hash_hmac(enum HashAlgorithm algorithm, const char* data, size_t data_len, const char* key, size_t key_len, char* hashed_data,
-                     size_t hashed_data_len);
+int32_t k2_openssl_hash_hmac(enum HashAlgorithm algorithm, const void* data, size_t data_len, const void* key, size_t key_len, void* hashed_data,
+                             size_t hashed_data_len);
 
 /**
  * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.
