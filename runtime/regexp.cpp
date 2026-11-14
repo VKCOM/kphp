@@ -18,6 +18,12 @@
 
 int64_t preg_replace_count_dummy;
 
+static RegexTimeStats regex_time_stats;
+
+RegexTimeStats& RegexTimeStats::get() noexcept {
+  return regex_time_stats;
+}
+
 // TODO: remove when/if we migrate to pcre2
 #ifndef PCRE2_ERROR_BADOFFSET
 #define PCRE2_ERROR_BADOFFSET -33

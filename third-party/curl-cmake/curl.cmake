@@ -81,6 +81,23 @@ function(build_curl PIC_ENABLED)
             -DNGHTTP2_INCLUDE_DIR=${NGHTTP2_${pic_lib_specifier}_INCLUDE_DIRS}
     )
 
+    # Redirect only libcurl's blocking OS boundaries, not the whole transfer.
+    # Renaming undefined references leaves libcurl's code/configuration intact
+    # and avoids changing configure feature checks or global libc symbols.
+    if(NOT CMAKE_OBJCOPY)
+        message(FATAL_ERROR "objcopy is required for curl network-wait instrumentation")
+    endif()
+    set(network_wait_symbols poll select getaddrinfo)
+    set(network_wait_rename_args "")
+    set(symbol_prefix "")
+    if(APPLE)
+        set(symbol_prefix "_")
+    endif()
+    foreach(symbol IN LISTS network_wait_symbols)
+        list(APPEND network_wait_rename_args "--redefine-sym"
+                "${symbol_prefix}${symbol}=${symbol_prefix}kphp_curl_${symbol}")
+    endforeach()
+
     ExternalProject_Add(
             ${project_name}
             DEPENDS OpenSSL::${pic_namespace}::Crypto OpenSSL::${pic_namespace}::SSL ZLIB::${pic_namespace}::zlib NGHTTP2::${pic_namespace}::nghttp2
@@ -94,6 +111,7 @@ function(build_curl PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
+                COMMAND ${CMAKE_OBJCOPY} ${network_wait_rename_args} ${libraries}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
     )
@@ -101,6 +119,7 @@ function(build_curl PIC_ENABLED)
     add_library(${target_name} STATIC IMPORTED)
     set_target_properties(${target_name} PROPERTIES
             IMPORTED_LOCATION ${libraries}
+            INTERFACE_LINK_OPTIONS "-Wl,-u,${symbol_prefix}kphp_curl_poll"
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
 

@@ -4,6 +4,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         array-test.cpp
         array-int-string-keys-collision-test.cpp
         common-php-functions-test.cpp
+        curl-active-time-test.cpp
         confdata-functions-test.cpp
         confdata-key-maker-test.cpp
         confdata-predefined-wildcards-test.cpp
@@ -25,3 +26,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/tests/cpp/runtime/inter-process-mutex-test.cpp)
 vk_add_unittest(runtime "${RUNTIME_LIBS};${RUNTIME_LINK_TEST_LIBS}" ${RUNTIME_TESTS_SOURCES})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(unittests-runtime PRIVATE "-Wl,--wrap=getaddrinfo")
+endif()

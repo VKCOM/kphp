@@ -4,11 +4,21 @@
 
 #pragma once
 
+#include <variant>
+
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/builtin-time-stats.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/tl/tl-types.h"
 
 namespace kphp::web::details {
+
+template<typename Result>
+inline void subtract_network_wait(BuiltinTimeGuard* timer, const Result& result) noexcept {
+  if (timer != nullptr) {
+    std::visit([timer](const auto& value) noexcept { timer->subtract_elapsed_ns(value.network_wait_ns.value); }, result);
+  }
+}
 
 inline auto process_error(tl::WebError e) noexcept -> error {
   switch (e.code.value) {

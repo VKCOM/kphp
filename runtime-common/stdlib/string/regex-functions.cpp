@@ -5,8 +5,10 @@
 #include "runtime-common/stdlib/string/regex-functions.h"
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/regex-time-stats.h"
 
 string f$preg_quote(const string& str, const string& delimiter) noexcept {
+  auto timer{RegexTimeStats::get().write(RegexBuiltin::preg_quote)};
   auto& static_SB{RuntimeContext::get().static_SB};
 
   const string::size_type len{str.size()};

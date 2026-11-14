@@ -205,6 +205,18 @@ auto RegexImageState::get_mutable() noexcept -> RegexImageState& {
   return ImageState::get_mutable().regex_image_state;
 }
 
+auto RegexTimeInstanceState::get() noexcept -> RegexTimeInstanceState& {
+  return InstanceState::get().regex_time_instance_state;
+}
+
+auto CryptoTimeInstanceState::get() noexcept -> CryptoTimeInstanceState& {
+  return InstanceState::get().crypto_time_instance_state;
+}
+
+auto CurlTimeInstanceState::get() noexcept -> CurlTimeInstanceState& {
+  return InstanceState::get().curl_time_instance_state;
+}
+
 auto RpcClientInstanceState::get() noexcept -> RpcClientInstanceState& {
   return InstanceState::get().rpc_client_instance_state;
 }

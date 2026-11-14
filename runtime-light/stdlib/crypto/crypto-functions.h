@@ -10,7 +10,9 @@
 
 #include "common/md5.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/crypto-time-stats.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
@@ -50,6 +52,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
 string f$sha1(const string& data, bool binary = false) noexcept;
 
 inline string f$md5(const string& str, bool binary = false) noexcept {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::md5)};
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
   md5(reinterpret_cast<const unsigned char*>(str.c_str()), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char*>(output.buffer()));

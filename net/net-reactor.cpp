@@ -23,6 +23,8 @@
 
 DEFINE_VERBOSITY(net_events);
 
+void (*net_reactor_network_ready_observer)(event_t*) = nullptr;
+
 static int epoll_sleep_time;
 static const double max_time_slice = 0.05;
 
@@ -278,6 +280,9 @@ void net_reactor_fetch_events(net_reactor_ctx_t *ctx, int num_events) {
     event->epoll_ready = ctx->epoll_events[i].events;
     event->ready |= epoll_unconv_flags(event->epoll_ready = ctx->epoll_events[i].events);
     event->timestamp = ctx->timestamp;
+    if (net_reactor_network_ready_observer && !event->in_queue) {
+      net_reactor_network_ready_observer(event);
+    }
     net_reactor_put_event_into_heap(ctx, event);
   }
 
