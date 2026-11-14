@@ -28,6 +28,15 @@ The purpose is to measure the existing implementations, not equalize them.
 Master's RSA blinding, X509 fields, cipher catalogue and other implementation
 differences are deliberately preserved. No adjustment factor is applied.
 
+## Memory
+
+K2 only. Group `memory` measures wall time spent in the coroutine frame allocator
+for `kphp::coro::task`: `task_alloc` is the promise `operator new` (both the plain and
+the aligned overloads), `task_free` is the promise `operator delete`. Both are reported
+as separate methods, `method=total` is their sum. Other coroutine types (`shared_task`,
+await-set, `when_all`/`when_any`) are not measured. The timer itself (two clock reads
+per call) is part of the measured interval.
+
 ## Curl network boundaries
 
 Do not exclude `curl_easy_perform()`, `multi.action()` or other whole

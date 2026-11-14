@@ -28,6 +28,7 @@
 #include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
 #include "runtime-light/stdlib/diagnostics/curl-time-state.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
+#include "runtime-light/stdlib/diagnostics/memory-time-state.h"
 #include "runtime-light/stdlib/diagnostics/regex-time-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
@@ -94,6 +95,9 @@ struct InstanceState final : vk::not_copyable {
   AllocatorState instance_allocator_state{component_state.initial_instance_memory_size, component_state.min_instance_extra_memory_size, 0};
 
   kphp::log::contextual_tags instance_tags;
+
+  // declared before the coroutine state: coroutine frames freed on teardown still update it
+  MemoryTimeInstanceState memory_time_instance_state;
 
   kphp::coro::instance_state coroutine_instance_state{component_state.initial_instance_coroutine_memory_size,
                                                       component_state.min_instance_extra_coroutine_memory_size, 0};

@@ -31,6 +31,7 @@
 #include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
 #include "runtime-light/stdlib/diagnostics/curl-time-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/memory-time-state.h"
 #include "runtime-light/stdlib/diagnostics/metrics.h"
 #include "runtime-light/stdlib/diagnostics/regex-time-state.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
@@ -265,6 +266,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     send_group("regexp", RegexTimeInstanceState::get(), REGEX_BUILTIN_NAMES);
     send_group("crypto", CryptoTimeInstanceState::get(), CRYPTO_BUILTIN_NAMES);
     send_group("curl", CurlTimeInstanceState::get(), CURL_BUILTIN_NAMES);
+    send_group("memory", MemoryTimeInstanceState::get(), MEMORY_BUILTIN_NAMES);
   }
   confdata_instance_state.release();
 }

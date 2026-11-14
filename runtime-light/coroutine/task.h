@@ -11,9 +11,11 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "runtime-common/stdlib/diagnostics/memory-time-stats.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/detail/allocator/coroutine-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/memory-time-state.h"
 
 namespace kphp::coro {
 
@@ -66,15 +68,18 @@ struct promise_base : kphp::coro::async_stack_element {
 
   template<typename... Args>
   auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
+    auto timer{MemoryTimeInstanceState::get().write(MemoryBuiltin::task_alloc)};
     return kphp::coro::detail::memory::alloc(n);
   }
 
   template<typename... Args>
   auto operator new(size_t n, std::align_val_t al, [[maybe_unused]] Args&&... args) noexcept -> void* {
+    auto timer{MemoryTimeInstanceState::get().write(MemoryBuiltin::task_alloc)};
     return kphp::coro::detail::memory::alloc_aligned(n, al);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
+    auto timer{MemoryTimeInstanceState::get().write(MemoryBuiltin::task_free)};
     kphp::coro::detail::memory::free(ptr);
   }
 

@@ -217,6 +217,10 @@ auto CurlTimeInstanceState::get() noexcept -> CurlTimeInstanceState& {
   return InstanceState::get().curl_time_instance_state;
 }
 
+auto MemoryTimeInstanceState::get() noexcept -> MemoryTimeInstanceState& {
+  return InstanceState::get().memory_time_instance_state;
+}
+
 auto RpcClientInstanceState::get() noexcept -> RpcClientInstanceState& {
   return InstanceState::get().rpc_client_instance_state;
 }
