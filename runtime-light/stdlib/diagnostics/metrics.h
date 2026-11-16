@@ -164,7 +164,7 @@ private:
                                 std::optional<uint64_t> timestamp) noexcept {
     self.tls.clear();
 
-    uint64_t ns_timestamp{timestamp.value_or(metric::ns_timestamp_now())};
+    uint64_t ns_timestamp{timestamp.has_value() ? *timestamp : metric::ns_timestamp_now()};
     tl::metric serialized{.timestamp = tl::u64{ns_timestamp},
                           .value = value,
                           .metric_name = tl::string{metric_name},
