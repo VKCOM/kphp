@@ -4,15 +4,22 @@
 
 #pragma once
 
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <optional>
 #include <string_view>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/reference-counter/reference-counter-functions.h"
+#include "runtime-light/stdlib/crypto/openssl.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-struct CryptoImageState final : private vk::not_copyable {
+namespace kphp::openssl {
+struct crypto_image_state final : private vk::not_copyable {
   string NAME_STR{NAME_.data(), static_cast<string::size_type>(NAME_.size())};
   string SUBJECT_STR{SUBJECT_.data(), static_cast<string::size_type>(SUBJECT_.size())};
   string HASH_STR{HASH_.data(), static_cast<string::size_type>(HASH_.size())};
@@ -22,7 +29,7 @@ struct CryptoImageState final : private vk::not_copyable {
   string VALID_TO_TIME_T_STR{VALID_TO_TIME_T_.data(), static_cast<string::size_type>(VALID_TO_TIME_T_.size())};
   string PURPOSES_STR{PURPOSES_.data(), static_cast<string::size_type>(PURPOSES_.size())};
 
-  CryptoImageState() noexcept {
+  crypto_image_state() noexcept {
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(NAME_STR, ExtraRefCnt::for_global_const),
                           kphp::core::is_reference_counter_recursive(NAME_STR, ExtraRefCnt::for_global_const)));
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(SUBJECT_STR, ExtraRefCnt::for_global_const),
@@ -41,7 +48,7 @@ struct CryptoImageState final : private vk::not_copyable {
                           kphp::core::is_reference_counter_recursive(PURPOSES_STR, ExtraRefCnt::for_global_const)));
   }
 
-  static const CryptoImageState& get() noexcept;
+  static const crypto_image_state& get() noexcept;
 
 private:
   static constexpr std::string_view NAME_{"name"};
@@ -53,3 +60,45 @@ private:
   static constexpr std::string_view VALID_TO_TIME_T_{"validTo_time_t"};
   static constexpr std::string_view PURPOSES_{"purposes"};
 };
+
+/**
+ * The contexts that are reused by all hashes, HMACs, signatures and verifications of the instance, so that a context is not created for every call.
+ *
+ * OpenSSL allows to start a new operation on a context after the previous one (see `md_ctx` and `hmac_ctx`). A context is used by one operation at a time,
+ * since the functions that use it do not suspend a coroutine. The contexts are created on the first use and freed together with the instance.
+ */
+class crypto_instance_state final : private vk::not_copyable {
+  std::optional<kphp::openssl::md_ctx> m_md_ctx;
+  std::optional<kphp::openssl::hmac_ctx> m_hmac_ctx;
+
+public:
+  crypto_instance_state() noexcept = default;
+
+  static crypto_instance_state& get() noexcept;
+
+  auto md_ctx() noexcept -> std::expected<const kphp::openssl::md_ctx*, int32_t> {
+    if (!m_md_ctx) {
+      auto created{kphp::openssl::md_ctx::create()};
+      if (!created) [[unlikely]] {
+        return std::unexpected{created.error()};
+      }
+      m_md_ctx.emplace(std::move(*created));
+    }
+
+    return std::addressof(*m_md_ctx);
+  }
+
+  auto hmac_ctx() noexcept -> std::expected<const kphp::openssl::hmac_ctx*, int32_t> {
+    if (!m_hmac_ctx) {
+      auto created{kphp::openssl::hmac_ctx::create()};
+      if (!created) [[unlikely]] {
+        return std::unexpected{created.error()};
+      }
+      m_hmac_ctx.emplace(std::move(*created));
+    }
+
+    return std::addressof(*m_hmac_ctx);
+  }
+};
+
+} // namespace kphp::openssl

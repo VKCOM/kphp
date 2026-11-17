@@ -17,18 +17,15 @@
 namespace kphp::openssl {
 
 /**
- * A private or public key.
+ * Base class of all OpenSSL objects: a move-only holder of a platform descriptor.
  *
- * An owning key frees its platform descriptor on destruction. A borrowing key (see `pkey::borrow`) refers to a descriptor owned by someone else
- * and never frees it.
+ * An owning object frees its descriptor on destruction. A borrowing object (see `borrow` of the derived classes that allow it)
+ * refers to a descriptor owned by someone else and never frees it.
+ * The member functions of the derived classes are thin wrappers of the `k2::openssl_*` functions with the same OpenSSL name.
  */
-class pkey final {
+class object {
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   bool m_owned{false};
-
-  pkey(k2::descriptor descriptor, bool owned) noexcept
-      : m_descriptor(descriptor),
-        m_owned(owned) {}
 
   auto reset() noexcept -> void {
     if (m_owned && m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
@@ -39,16 +36,20 @@ class pkey final {
     m_owned = false;
   }
 
-public:
-  pkey(const pkey&) = delete;
+protected:
+  explicit object(k2::descriptor descriptor, bool owned = true) noexcept
+      : m_descriptor(descriptor),
+        m_owned(owned) {}
 
-  pkey(pkey&& other) noexcept
+  object(const object&) = delete;
+
+  object(object&& other) noexcept
       : m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)),
         m_owned(std::exchange(other.m_owned, false)) {}
 
-  auto operator=(const pkey&) -> pkey& = delete;
+  auto operator=(const object&) -> object& = delete;
 
-  auto operator=(pkey&& other) noexcept -> pkey& {
+  auto operator=(object&& other) noexcept -> object& {
     if (this != std::addressof(other)) {
       reset();
       m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
@@ -58,16 +59,56 @@ public:
     return *this;
   }
 
-  ~pkey() {
+  ~object() {
     reset();
   }
 
-  static auto get_public(std::span<const std::byte> pem) noexcept -> std::expected<pkey, int32_t> {
-    return k2::openssl_pkey_get_public(pem).transform([](k2::descriptor d) noexcept { return pkey{d, true}; });
+public:
+  auto descriptor() const noexcept -> k2::descriptor {
+    return m_descriptor;
   }
 
-  static auto get_private(std::span<const std::byte> pem, std::span<const std::byte> passphrase) noexcept -> std::expected<pkey, int32_t> {
-    return k2::openssl_pkey_get_private(pem, passphrase).transform([](k2::descriptor d) noexcept { return pkey{d, true}; });
+  // gives up the ownership: the caller becomes responsible for freeing the returned descriptor
+  auto release() noexcept -> k2::descriptor {
+    m_owned = false;
+    return std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+  }
+};
+
+class rsa final : public object {
+  explicit rsa(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
+
+public:
+  static auto adopt(k2::descriptor descriptor) noexcept -> rsa {
+    return rsa{descriptor};
+  }
+
+  auto public_encrypt(std::span<const std::byte> from, std::span<std::byte> to, k2::RsaPadding padding,
+                      int32_t* openssl_ret = nullptr) const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_rsa_public_encrypt(from, to, descriptor(), padding, openssl_ret);
+  }
+
+  auto private_decrypt(std::span<const std::byte> from, std::span<std::byte> to, k2::RsaPadding padding,
+                       int32_t* openssl_ret = nullptr) const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_rsa_private_decrypt(from, to, descriptor(), padding, openssl_ret);
+  }
+};
+
+/**
+ * A private or public key.
+ */
+class pkey final : public object {
+  pkey(k2::descriptor descriptor, bool owned) noexcept
+      : object(descriptor, owned) {}
+
+public:
+  static auto read_pem_pubkey(std::span<const std::byte> pem) noexcept -> std::expected<pkey, int32_t> {
+    return k2::openssl_pem_read_bio_pubkey(pem).transform(adopt);
+  }
+
+  static auto read_pem_private_key(std::span<const std::byte> pem, std::span<const std::byte> pass) noexcept -> std::expected<pkey, int32_t> {
+    return k2::openssl_pem_read_bio_private_key(pem, pass).transform(adopt);
   }
 
   // takes ownership of the descriptor
@@ -80,126 +121,269 @@ public:
     return pkey{descriptor, false};
   }
 
-  auto descriptor() const noexcept -> k2::descriptor {
-    return m_descriptor;
+  auto id() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_pkey_id(descriptor());
   }
 
-  // gives up the ownership and returns the descriptor, it is not freed by this key anymore
-  auto release() noexcept -> k2::descriptor {
-    m_owned = false;
-    return std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+  auto size() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_pkey_size(descriptor());
   }
 
-  auto size() const noexcept -> std::expected<size_t, int32_t> {
-    return k2::openssl_pkey_size(m_descriptor);
-  }
-
-  auto is_public() const noexcept -> std::expected<bool, int32_t> {
-    return k2::openssl_pkey_is_public(m_descriptor);
-  }
-
-  auto is_private() const noexcept -> std::expected<bool, int32_t> {
-    return k2::openssl_pkey_is_private(m_descriptor);
-  }
-
-  auto sign(k2::DigestAlgorithm algorithm, std::span<const std::byte> data, std::span<std::byte> result) const noexcept -> std::expected<size_t, int32_t> {
-    return k2::openssl_sign(algorithm, data, m_descriptor, result);
-  }
-
-  auto verify(k2::DigestAlgorithm algorithm, std::span<const std::byte> data,
-              std::span<const std::byte> signature) const noexcept -> std::expected<bool, int32_t> {
-    return k2::openssl_verify(algorithm, data, m_descriptor, signature);
-  }
-
-  auto public_encrypt(std::span<const std::byte> data, k2::RsaPadding padding, std::span<std::byte> result) const noexcept -> std::expected<size_t, int32_t> {
-    return k2::openssl_public_encrypt(data, m_descriptor, padding, result);
-  }
-
-  auto private_decrypt(std::span<const std::byte> data, k2::RsaPadding padding, std::span<std::byte> result) const noexcept -> std::expected<size_t, int32_t> {
-    return k2::openssl_private_decrypt(data, m_descriptor, padding, result);
+  auto get1_rsa() const noexcept -> std::expected<rsa, int32_t> {
+    return k2::openssl_evp_pkey_get1_rsa(descriptor()).transform(rsa::adopt);
   }
 };
 
 /**
- * A parsed X509 certificate that frees its platform descriptor on destruction.
- *
- * All `std::string_view`s returned by the accessors point to memory owned by the certificate and are valid only while the certificate is alive.
- * Keys obtained from the certificate do not depend on it and may outlive it.
+ * A message digest context. It can be reused for any number of operations (hashing, signing, verifying) one after another:
+ * every operation starts with `digest_init_ex`, `sign_init` or `verify_init`, which resets the state left by the previous one.
+ * It must not be used by two operations at the same time, in particular an operation must not be interrupted by a suspension of a coroutine.
  */
-class x509 final {
-  k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-
-  explicit x509(k2::descriptor descriptor) noexcept
-      : m_descriptor(descriptor) {}
-
-  auto reset() noexcept -> void {
-    if (m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
-      k2::free_descriptor(std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
-    }
-  }
+class md_ctx final : public object {
+  explicit md_ctx(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
 
 public:
-  x509(x509&& other) noexcept
-      : m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)) {}
-
-  auto operator=(x509&& other) noexcept -> x509& {
-    if (this != std::addressof(other)) {
-      reset();
-      m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
-    }
-
-    return *this;
+  static auto create() noexcept -> std::expected<md_ctx, int32_t> {
+    return k2::openssl_evp_md_ctx_new().transform([](k2::descriptor d) noexcept { return md_ctx{d}; });
   }
 
-  ~x509() {
-    reset();
+  auto digest_init_ex(k2::HashAlgorithm algorithm, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_digest_init_ex(descriptor(), algorithm, openssl_ret);
   }
 
-  x509(const x509&) = delete;
-  auto operator=(const x509&) -> x509& = delete;
-
-  static auto parse(std::span<const std::byte> pem) noexcept -> std::expected<x509, int32_t> {
-    return k2::openssl_x509_parse(pem).transform([](k2::descriptor d) noexcept { return x509{d}; });
+  auto digest_update(std::span<const std::byte> data, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_digest_update(descriptor(), data, openssl_ret);
   }
 
-  auto pubkey() const noexcept -> std::expected<pkey, int32_t> {
-    return k2::openssl_x509_get_pubkey(m_descriptor).transform(pkey::adopt);
+  // the size of `md` must be at least the size of the digest, the result is the length of the digest
+  auto digest_final_ex(std::span<std::byte> md, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<uint32_t, int32_t> {
+    return k2::openssl_evp_digest_final_ex(descriptor(), md, openssl_ret);
   }
 
-  auto subject_name() const noexcept -> std::expected<std::string_view, int32_t> {
-    return k2::openssl_x509_get_subject_name(m_descriptor);
+  auto sign_init(k2::DigestAlgorithm algorithm, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_sign_init(descriptor(), algorithm, openssl_ret);
   }
 
-  auto name_entry_count(bool is_issuer) const noexcept -> std::expected<size_t, int32_t> {
-    return k2::openssl_x509_name_entry_count(m_descriptor, is_issuer);
+  auto sign_update(std::span<const std::byte> data, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_sign_update(descriptor(), data, openssl_ret);
   }
 
-  auto name_entry_key(bool is_issuer, bool shortnames, size_t index) const noexcept -> std::expected<std::string_view, int32_t> {
-    return k2::openssl_x509_name_entry_key(m_descriptor, is_issuer, shortnames, index);
+  auto sign_final(std::span<std::byte> sig, const pkey& key, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<uint32_t, int32_t> {
+    return k2::openssl_evp_sign_final(descriptor(), sig, key.descriptor(), openssl_ret);
   }
 
-  auto name_entry_value(bool is_issuer, size_t index) const noexcept -> std::expected<std::string_view, int32_t> {
-    return k2::openssl_x509_name_entry_value(m_descriptor, is_issuer, index);
+  auto verify_init(k2::DigestAlgorithm algorithm, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_verify_init(descriptor(), algorithm, openssl_ret);
   }
 
-  auto hash(std::span<std::byte> result) const noexcept -> std::expected<void, int32_t> {
-    return k2::openssl_x509_get_hash(m_descriptor, result);
+  auto verify_update(std::span<const std::byte> data, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_verify_update(descriptor(), data, openssl_ret);
   }
 
-  auto version() const noexcept -> std::expected<int64_t, int32_t> {
-    return k2::openssl_x509_get_version(m_descriptor);
+  auto verify_final(std::span<const std::byte> sig, const pkey& key, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<bool, int32_t> {
+    return k2::openssl_evp_verify_final(descriptor(), sig, key.descriptor(), openssl_ret);
+  }
+};
+
+/**
+ * An HMAC context. It can be reused for any number of HMACs one after another: every one starts with `init_ex`.
+ * The same restrictions as for `md_ctx` apply.
+ */
+class hmac_ctx final : public object {
+  explicit hmac_ctx(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
+
+public:
+  static auto create() noexcept -> std::expected<hmac_ctx, int32_t> {
+    return k2::openssl_hmac_ctx_new().transform([](k2::descriptor d) noexcept { return hmac_ctx{d}; });
   }
 
-  auto valid_from() const noexcept -> std::expected<int64_t, int32_t> {
-    return k2::openssl_x509_get_valid_from(m_descriptor);
+  // an empty `key` is allowed
+  auto init_ex(std::span<const std::byte> key, k2::HashAlgorithm algorithm, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_hmac_init_ex(descriptor(), key, algorithm, openssl_ret);
   }
 
-  auto valid_to() const noexcept -> std::expected<int64_t, int32_t> {
-    return k2::openssl_x509_get_valid_to(m_descriptor);
+  auto update(std::span<const std::byte> data, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_hmac_update(descriptor(), data, openssl_ret);
   }
 
-  auto purpose_check(size_t index, bool ca) const noexcept -> std::expected<bool, int32_t> {
-    return k2::openssl_x509_purpose_check(m_descriptor, index, ca);
+  // the size of `md` must be at least the size of the digest, the result is the length of the HMAC
+  auto final(std::span<std::byte> md, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<uint32_t, int32_t> {
+    return k2::openssl_hmac_final(descriptor(), md, openssl_ret);
+  }
+};
+
+class cipher final : public object {
+  explicit cipher(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
+
+public:
+  // `name` must be NUL-terminated
+  static auto by_name(const char* name) noexcept -> std::expected<cipher, int32_t> {
+    return k2::openssl_evp_get_cipherbyname(name).transform([](k2::descriptor d) noexcept { return cipher{d}; });
+  }
+
+  auto key_length() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_cipher_key_length(descriptor());
+  }
+
+  auto iv_length() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_cipher_iv_length(descriptor());
+  }
+
+  auto block_size() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_cipher_block_size(descriptor());
+  }
+
+  auto mode() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_cipher_mode(descriptor());
+  }
+};
+
+class cipher_ctx final : public object {
+  explicit cipher_ctx(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
+
+public:
+  static auto create() noexcept -> std::expected<cipher_ctx, int32_t> {
+    return k2::openssl_evp_cipher_ctx_new().transform([](k2::descriptor d) noexcept { return cipher_ctx{d}; });
+  }
+
+  // sets the cipher (and the key and the IV if their `data()` is not null), `enc` is `1` to encrypt and `0` to decrypt
+  auto init_ex(const cipher& type, std::span<const std::byte> key, std::span<const std::byte> iv, int32_t enc,
+               int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_cipher_init_ex(descriptor(), type.descriptor(), key, iv, enc, openssl_ret);
+  }
+
+  // sets the key and the IV (if their `data()` is not null) for the cipher that was set earlier, `enc` is `1` to encrypt and `0` to decrypt
+  auto init_ex(std::span<const std::byte> key, std::span<const std::byte> iv, int32_t enc,
+               int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_cipher_init_ex(descriptor(), k2::INVALID_PLATFORM_DESCRIPTOR, key, iv, enc, openssl_ret);
+  }
+
+  auto ctrl(k2::CipherCtrl type, int32_t arg, std::span<std::byte> ptr = {}, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_cipher_ctx_ctrl(descriptor(), type, arg, ptr, openssl_ret);
+  }
+
+  auto set_iv_length(int32_t iv_len, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_SET_IVLEN, iv_len, {}, openssl_ret);
+  }
+
+  // for CCM when encrypting: sets the length of the tag, which is then retrieved with `get_tag`
+  auto set_tag_length(int32_t tag_len, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_SET_TAG, tag_len, {}, openssl_ret);
+  }
+
+  // when decrypting: sets the tag that is checked by `final_ex`
+  auto set_tag(std::span<const std::byte> tag, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    // OpenSSL only reads the tag for `CIPHER_CTRL_AEAD_SET_TAG`
+    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_SET_TAG, static_cast<int32_t>(tag.size()), {const_cast<std::byte*>(tag.data()), tag.size()}, openssl_ret);
+  }
+
+  // when encrypting: retrieves the tag after `final_ex`, the size of `tag` is the length of the tag
+  auto get_tag(std::span<std::byte> tag, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_GET_TAG, static_cast<int32_t>(tag.size()), tag, openssl_ret);
+  }
+
+  auto set_key_length(int32_t key_len, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_cipher_ctx_set_key_length(descriptor(), key_len, openssl_ret);
+  }
+
+  auto set_padding(int32_t pad, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_cipher_ctx_set_padding(descriptor(), pad, openssl_ret);
+  }
+
+  auto update(std::span<std::byte> out, std::span<const std::byte> in, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_cipher_update(descriptor(), out, in, openssl_ret);
+  }
+
+  // for CCM: sets the length of the data that is then passed to `update`
+  auto set_data_length(size_t data_len, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<void, int32_t> {
+    return k2::openssl_evp_cipher_set_data_length(descriptor(), data_len, openssl_ret);
+  }
+
+  auto final_ex(std::span<std::byte> out, int32_t* openssl_ret = nullptr) const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_evp_cipher_final_ex(descriptor(), out, openssl_ret);
+  }
+};
+
+/**
+ * A name (subject or issuer) of a certificate. It does not depend on the certificate that it was received from.
+ * All `std::string_view`s returned by the accessors point to memory owned by the name and are valid only while the name is alive.
+ */
+class x509_name final : public object {
+  explicit x509_name(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
+
+public:
+  static auto adopt(k2::descriptor descriptor) noexcept -> x509_name {
+    return x509_name{descriptor};
+  }
+
+  auto oneline() const noexcept -> std::expected<std::string_view, int32_t> {
+    return k2::openssl_x509_name_oneline(descriptor());
+  }
+
+  auto entry_count() const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_x509_name_entry_count(descriptor());
+  }
+
+  // the NID of the key of the entry
+  auto entry_nid(int32_t loc) const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_x509_name_entry_nid(descriptor(), loc);
+  }
+
+  // the value of the entry
+  auto entry_data(int32_t loc) const noexcept -> std::expected<std::string_view, int32_t> {
+    return k2::openssl_x509_name_entry_data(descriptor(), loc);
+  }
+};
+
+/**
+ * A parsed X509 certificate. Keys and names obtained from the certificate do not depend on it and may outlive it.
+ */
+class x509 final : public object {
+  explicit x509(k2::descriptor descriptor) noexcept
+      : object(descriptor) {}
+
+public:
+  static auto read_pem(std::span<const std::byte> pem) noexcept -> std::expected<x509, int32_t> {
+    return k2::openssl_pem_read_bio_x509(pem).transform([](k2::descriptor d) noexcept { return x509{d}; });
+  }
+
+  auto get_pubkey() const noexcept -> std::expected<pkey, int32_t> {
+    return k2::openssl_x509_get_pubkey(descriptor()).transform(pkey::adopt);
+  }
+
+  auto get_subject_name() const noexcept -> std::expected<x509_name, int32_t> {
+    return k2::openssl_x509_get_subject_name(descriptor()).transform(x509_name::adopt);
+  }
+
+  auto get_issuer_name() const noexcept -> std::expected<x509_name, int32_t> {
+    return k2::openssl_x509_get_issuer_name(descriptor()).transform(x509_name::adopt);
+  }
+
+  auto subject_name_hash() const noexcept -> std::expected<uint64_t, int32_t> {
+    return k2::openssl_x509_subject_name_hash(descriptor());
+  }
+
+  auto get_version() const noexcept -> std::expected<int64_t, int32_t> {
+    return k2::openssl_x509_get_version(descriptor());
+  }
+
+  // `notBefore` as a difference from the Unix epoch
+  auto not_before_diff() const noexcept -> std::expected<k2::asn1_time_diff, int32_t> {
+    return k2::openssl_x509_not_before_diff(descriptor());
+  }
+
+  // `notAfter` as a difference from the Unix epoch
+  auto not_after_diff() const noexcept -> std::expected<k2::asn1_time_diff, int32_t> {
+    return k2::openssl_x509_not_after_diff(descriptor());
+  }
+
+  auto check_purpose(int32_t id, int32_t ca) const noexcept -> std::expected<int32_t, int32_t> {
+    return k2::openssl_x509_check_purpose(descriptor(), id, ca);
   }
 };
 

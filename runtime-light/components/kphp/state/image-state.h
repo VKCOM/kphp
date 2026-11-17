@@ -52,7 +52,7 @@ struct ImageState final : private vk::not_copyable {
   MathImageState math_image_state;
   RpcImageState rpc_image_state;
   CurlImageState curl_image_state;
-  CryptoImageState crypto_image_state;
+  kphp::openssl::crypto_image_state crypto_image_state;
   RegexImageState regex_image_state;
 
   ImageState() noexcept {

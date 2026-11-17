@@ -23,6 +23,7 @@
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
+#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
@@ -111,6 +112,7 @@ struct InstanceState final : vk::not_copyable {
   JobWorkerServerInstanceState job_worker_server_instance_state;
   InstanceCacheInstanceState instance_cache_instance_state;
   kphp::confdata::instance_state confdata_instance_state;
+  kphp::openssl::crypto_instance_state crypto_instance_state;
 
   TimeInstanceState time_instance_state;
   MathInstanceState math_instance_state;
