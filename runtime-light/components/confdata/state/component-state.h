@@ -23,13 +23,14 @@ private:
   static constexpr std::string_view CONFDATA_PROXY_ACTOR_NAME_ARG{"confdata-proxy-actor-name"};
   static constexpr std::string_view PREDEFINED_WILDCARDS_ARG{"predefined-wildcards"};
   static constexpr std::string_view INITIAL_INSTANCE_MEMORY_SIZE_ARG{"initial-instance-memory-size"};
-  static constexpr std::string_view MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG{"min-instance-extra-memory-size"};
+  static constexpr std::string_view INSTANCE_OOM_HANDLING_SIZE_ARG{"instance-oom-handling-size"};
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE{static_cast<size_t>(1024U * 1024U)};                 // 1MiB
   static constexpr auto DEFAULT_MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE = static_cast<size_t>(1024U * 1024U); // 1MiB
   static constexpr auto DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE{static_cast<size_t>(64U * 1024U * 1024U)};    // 64MiB
-  static constexpr auto DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE{64U * 1024U * 1024U};                       // 64MiB
   /** Leaves the same five-percent runway between legacy kPHP's hard OOM threshold and its memory limit. */
   static constexpr size_t DEFAULT_OOM_HANDLING_SIZE_DIVISOR{20};
+  /** Twenty-percent of the instance memory. */
+  static constexpr size_t DEFAULT_INSTANCE_OOM_HANDLING_SIZE_DIVISOR{5};
 
 public:
   AllocatorState m_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, DEFAULT_MIN_COMPONENT_EXTRA_MEMORY_POOL_SIZE, 0};
@@ -47,7 +48,8 @@ public:
   kphp::stl::string<kphp::memory::script_allocator> m_confdata_proxy_actor_name;
   kphp::stl::vector<std::string_view, kphp::memory::script_allocator> m_predefined_wildcards;
   size_t m_initial_instance_memory_size{DEFAULT_INIT_INSTANCE_ALLOCATOR_SIZE};
-  size_t m_min_instance_extra_memory_size{DEFAULT_MIN_INSTANCE_EXTRA_MEMORY_SIZE};
+  /** Final allocatable part of the instance memory reserved for service allocations made while a response is processed. */
+  size_t m_instance_oom_handling_size{};
 
   // === METHODS ==================================================================================
   ComponentState() noexcept;
@@ -60,7 +62,7 @@ private:
   auto parse_confdata_proxy_actor_name_arg(std::string_view) noexcept -> void;
   auto parse_predefined_wildcards_arg(std::string_view) noexcept -> void;
   auto parse_initial_instance_memory_size_arg(std::string_view) noexcept -> void;
-  auto parse_min_instance_extra_memory_size_arg(std::string_view) noexcept -> void;
+  auto parse_instance_oom_handling_size_arg(std::string_view) noexcept -> void;
   auto parse_args() noexcept -> void;
 };
 
@@ -70,6 +72,7 @@ inline ComponentState::ComponentState() noexcept {
   if (m_confdata_piece_memory_size == 0) {
     kphp::log::error("{} argument is required and must be a positive number", CONFDATA_PIECE_MEMORY_SIZE_ARG);
   }
+
   if (m_confdata_oom_handling_size == 0) {
     m_confdata_oom_handling_size = m_confdata_piece_memory_size / DEFAULT_OOM_HANDLING_SIZE_DIVISOR;
     if (m_confdata_oom_handling_size == 0) {
@@ -79,6 +82,17 @@ inline ComponentState::ComponentState() noexcept {
   if (m_confdata_oom_handling_size >= m_confdata_piece_memory_size) {
     kphp::log::error("{} must be smaller than {}", CONFDATA_OOM_HANDLING_SIZE_ARG, CONFDATA_PIECE_MEMORY_SIZE_ARG);
   }
+
+  if (m_instance_oom_handling_size == 0) {
+    m_instance_oom_handling_size = m_initial_instance_memory_size / DEFAULT_INSTANCE_OOM_HANDLING_SIZE_DIVISOR;
+    if (m_instance_oom_handling_size == 0) {
+      m_instance_oom_handling_size = 1;
+    }
+  }
+  if (m_instance_oom_handling_size >= m_initial_instance_memory_size) {
+    kphp::log::error("{} must be smaller than {}", INSTANCE_OOM_HANDLING_SIZE_ARG, INITIAL_INSTANCE_MEMORY_SIZE_ARG);
+  }
+
   if (m_confdata_proxy_actor_name.empty()) {
     kphp::log::error("{} argument is required", CONFDATA_PROXY_ACTOR_NAME_ARG);
   }

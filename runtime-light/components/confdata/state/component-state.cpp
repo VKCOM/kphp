@@ -81,13 +81,13 @@ auto ComponentState::parse_initial_instance_memory_size_arg(std::string_view val
   m_initial_instance_memory_size = parsed;
 }
 
-auto ComponentState::parse_min_instance_extra_memory_size_arg(std::string_view value_view) noexcept -> void {
+auto ComponentState::parse_instance_oom_handling_size_arg(std::string_view value_view) noexcept -> void {
   size_t parsed{};
   const auto [end, error]{std::from_chars(value_view.begin(), value_view.end(), parsed)};
   if (value_view.empty() || error != std::errc{} || end != value_view.end() || parsed == 0) [[unlikely]] {
-    kphp::log::error("{} must be a positive integer, got '{}'", MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG, value_view);
+    kphp::log::error("{} must be a positive integer, got '{}'", INSTANCE_OOM_HANDLING_SIZE_ARG, value_view);
   }
-  m_min_instance_extra_memory_size = parsed;
+  m_instance_oom_handling_size = parsed;
 }
 
 auto ComponentState::parse_args() noexcept -> void {
@@ -106,8 +106,8 @@ auto ComponentState::parse_args() noexcept -> void {
       parse_predefined_wildcards_arg(value_view);
     } else if (key_view == INITIAL_INSTANCE_MEMORY_SIZE_ARG) {
       parse_initial_instance_memory_size_arg(value_view);
-    } else if (key_view == MIN_INSTANCE_EXTRA_MEMORY_SIZE_ARG) {
-      parse_min_instance_extra_memory_size_arg(value_view);
+    } else if (key_view == INSTANCE_OOM_HANDLING_SIZE_ARG) {
+      parse_instance_oom_handling_size_arg(value_view);
     } else {
       kphp::log::error("unexpected argument: {}", key_view);
     }
