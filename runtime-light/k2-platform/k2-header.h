@@ -98,6 +98,39 @@ enum UpdateStatus {
   NewDescriptor = 2,
 };
 
+enum CipherAlgorithm : uint32_t { AES128_GCM = 0, AES256_GCM = 1, AES128_CBC = 2, AES256_CBC = 3, COUNT_CIPHER };
+
+enum BlockPadding : uint32_t { PKCS7 = 0, BLOCK_NO_PADDING = 1 };
+
+enum RsaPadding : uint32_t { PKCS1 = 0, PKCS1_OAEP = 1, ASYMM_NO_PADDING = 2 };
+
+enum HashAlgorithm : uint32_t {
+  HASH_SHA1 = 0,
+  HASH_SHA224 = 1,
+  HASH_SHA256 = 2,
+  HASH_SHA384 = 3,
+  HASH_SHA512 = 4,
+  HASH_MD5 = 5,
+  HASH_RMD160 = 6,
+  HASH_MD2 = 7,
+  HASH_MD4 = 8,
+  COUNT_HASH
+};
+
+enum DigestAlgorithm : uint32_t {
+  DIGEST_DSS1 = 0,
+  DIGEST_SHA1 = 1,
+  DIGEST_SHA224 = 2,
+  DIGEST_SHA256 = 3,
+  DIGEST_SHA384 = 4,
+  DIGEST_SHA512 = 5,
+  DIGEST_MD5 = 6,
+  DIGEST_RMD160 = 7,
+  DIGEST_MD2 = 8,
+  DIGEST_MD4 = 9,
+  COUNT_DIGEST
+};
+
 enum RpcKind {
   TL_RPC = 0,
 };
@@ -513,6 +546,500 @@ int32_t k2_unlink(const char* path, size_t path_len);
  * `EACCES` => permission denied
  */
 int32_t k2_component_access(size_t name_len, const char* name);
+
+/**
+ * Fills `bytes` with `length` cryptographically secure random bytes.
+ *
+ * @param `bytes` A pointer to the buffer to fill.
+ * @param `length` The number of bytes to generate.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `bytes` is `NULL`.
+ * `EIO` => OpenSSL failed to generate random bytes.
+ */
+int32_t k2_openssl_rand_bytes(void* bytes, size_t length);
+
+/**
+ * Parses a PEM-encoded X509 certificate and writes a descriptor of the parsed certificate.
+ * The certificate lives until the descriptor is freed with `k2_free_descriptor`.
+ *
+ * @param `data` A pointer to the PEM-encoded certificate.
+ * @param `data_len` The length of `data`.
+ * @param `x509_d` A pointer where the descriptor of the certificate will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `data` or `x509_d` is `NULL`.
+ * `ENOMEM` => the descriptor can not be created.
+ * `EIO` => OpenSSL failed to parse PEM-encoded X509 certificate.
+ */
+int32_t k2_openssl_x509_parse(const void* data, size_t data_len, uint64_t* x509_d);
+
+/**
+ * Extracts the public key of the certificate and writes a descriptor of the key.
+ * The key does not depend on the certificate: it stays valid after the certificate descriptor is freed.
+ * Free the key descriptor with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `pkey_d` A pointer where the descriptor of the public key will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `pkey_d` is `NULL` or `x509_d` is not a certificate descriptor.
+ * `ENOMEM` => the descriptor can not be created.
+ * `EIO` => OpenSSL failed to extract the key.
+ */
+int32_t k2_openssl_x509_get_pubkey(uint64_t x509_d, uint64_t* pkey_d);
+
+/**
+ * Writes a pointer to the one-line representation of the subject name of the certificate.
+ * The result is not null-terminated. The memory is owned by the certificate descriptor: the caller must not free it,
+ * and it is valid only while the descriptor is alive, i.e. until it is freed with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `result` A pointer where the address of the name will be stored.
+ * @param `result_len` A pointer where the length of the name will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL` or `x509_d` is not a certificate descriptor.
+ * `EIO` => OpenSSL failed to format the name.
+ */
+int32_t k2_openssl_x509_get_subject_name(uint64_t x509_d, const char** result, size_t* result_len);
+
+/**
+ * Writes the number of entries in the subject or issuer name of the certificate.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `is_issuer` `true` for the issuer name, `false` for the subject name.
+ * @param `result` A pointer where the entries count will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL` or `x509_d` is not a certificate descriptor.
+ */
+int32_t k2_openssl_x509_name_entry_count(uint64_t x509_d, bool is_issuer, size_t* result);
+
+/**
+ * Writes a pointer to the key of the `index`-th entry of the subject or issuer name.
+ * The result is not null-terminated. The memory is static: the caller must not free it, and it stays valid forever.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `is_issuer` `true` for the issuer name, `false` for the subject name.
+ * @param `shortnames` `true` for the short name (`CN`), `false` for the long name (`commonName`).
+ * @param `index` The index of the entry, must be less than the count from `k2_openssl_x509_name_entry_count`.
+ * @param `result` A pointer where the address of the key will be stored.
+ * @param `result_len` A pointer where the length of the key will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `x509_d` is not a certificate descriptor, or `index` is out of range.
+ * `EIO` => OpenSSL failed to get the key name.
+ */
+int32_t k2_openssl_x509_name_entry_key(uint64_t x509_d, bool is_issuer, bool shortnames, size_t index, const char** result, size_t* result_len);
+
+/**
+ * Writes a pointer to the value of the `index`-th entry of the subject or issuer name.
+ * The result is not null-terminated. The memory is owned by the certificate descriptor: the caller must not free it,
+ * and it is valid only while the descriptor is alive, i.e. until it is freed with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `is_issuer` `true` for the issuer name, `false` for the subject name.
+ * @param `index` The index of the entry, must be less than the count from `k2_openssl_x509_name_entry_count`.
+ * @param `result` A pointer where the address of the value will be stored.
+ * @param `result_len` A pointer where the length of the value will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `x509_d` is not a certificate descriptor, or `index` is out of range.
+ */
+int32_t k2_openssl_x509_name_entry_value(uint64_t x509_d, bool is_issuer, size_t index, const char** result, size_t* result_len);
+
+/**
+ * Writes the hash of the subject name of the certificate as exactly 8 lowercase hex characters, not null-terminated.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `result` A pointer to the output buffer.
+ * @param `result_len` The size of the output buffer, must be at least 8.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL` or `x509_d` is not a certificate descriptor.
+ * `ERANGE` => `result_len` is less than 8.
+ */
+int32_t k2_openssl_x509_get_hash(uint64_t x509_d, void* result, size_t result_len);
+
+/**
+ * Writes the version of the certificate as returned by OpenSSL's `X509_get_version`.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `result` A pointer where the version will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL` or `x509_d` is not a certificate descriptor.
+ */
+int32_t k2_openssl_x509_get_version(uint64_t x509_d, int64_t* result);
+
+/**
+ * Writes the beginning of the validity period of the certificate as a Unix timestamp in seconds.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `result` A pointer where the timestamp will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL`, `x509_d` is not a certificate descriptor.
+ * `EIO` => OpenSSL failed to convert the time.
+ */
+int32_t k2_openssl_x509_get_valid_from(uint64_t x509_d, int64_t* result);
+
+/**
+ * Writes the end of the validity period of the certificate as a Unix timestamp in seconds.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `result` A pointer where the timestamp will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL`, `x509_d` is not a certificate descriptor.
+ * `EIO` => OpenSSL failed to convert the time.
+ */
+int32_t k2_openssl_x509_get_valid_to(uint64_t x509_d, int64_t* result);
+
+/**
+ * Writes the number of X509 purposes known to OpenSSL.
+ *
+ * @param `result` A pointer where the count will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL`.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_purpose_count(size_t* result);
+
+/**
+ * Writes the OpenSSL purpose identifier of the purpose with the given index.
+ *
+ * @param `index` The index of the purpose, must be less than the count from `k2_openssl_x509_purpose_count`.
+ * @param `result` A pointer where the identifier will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL` or `index` is out of range.
+ */
+int32_t k2_openssl_x509_purpose_id(size_t index, int64_t* result);
+
+/**
+ * Checks whether the certificate can be used for the purpose with the given index.
+ *
+ * @param `x509_d` The descriptor of the certificate.
+ * @param `index` The index of the purpose, must be less than the count from `k2_openssl_x509_purpose_count`.
+ * @param `ca` `true` to check the purpose for a CA certificate.
+ * @param `result` A pointer where `1` will be stored if the certificate is suitable for the purpose, `0` otherwise.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL`, `x509_d` is not a certificate descriptor, or `index` is out of range.
+ */
+int32_t k2_openssl_x509_purpose_check(uint64_t x509_d, size_t index, bool ca, int32_t* result);
+
+/**
+ * Writes a pointer to the name of the purpose with the given index. The result is not null-terminated.
+ * The memory is static: the caller must not free it, and it stays valid forever.
+ *
+ * @param `index` The index of the purpose, must be less than the count from `k2_openssl_x509_purpose_count`.
+ * @param `shortnames` `true` for the short name (e.g. `sslclient`), `false` for the long name (e.g. `SSL client`).
+ * @param `result` A pointer where the address of the name will be stored.
+ * @param `result_len` A pointer where the length of the name will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL` or `index` is out of range.
+ * `EIO` => OpenSSL failed to get the purpose name.
+ */
+int32_t k2_openssl_x509_purpose_name(size_t index, bool shortnames, const char** result, size_t* result_len);
+
+/**
+ * Parses a PEM-encoded public key and writes a descriptor of the parsed key.
+ * The key lives until the descriptor is freed with `k2_free_descriptor`.
+ *
+ * @param `public_key` A pointer to the PEM-encoded public key.
+ * @param `public_key_len` The length of `public_key`.
+ * @param `pkey_d` A pointer where the descriptor of the key will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`.
+ * `ENOMEM` => the descriptor can not be created.
+ * `EIO` => `public_key` is not a valid PEM public key.
+ */
+int32_t k2_openssl_pkey_get_public(const void* public_key, size_t public_key_len, uint64_t* pkey_d);
+
+/**
+ * Parses a PEM-encoded private key (decrypting it with `passphrase` if needed)
+ * and writes a descriptor of the parsed key.
+ * The key lives until the descriptor is freed with `k2_free_descriptor`.
+ *
+ * @param `private_key` A pointer to the PEM-encoded private key.
+ * @param `private_key_len` The length of `private_key`.
+ * @param `passphrase` A pointer to the passphrase of the key (may be `NULL`/empty if the key is not encrypted).
+ * @param `passphrase_len` The length of `passphrase`.
+ * @param `pkey_d` A pointer where the descriptor of the key will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `private_key` or `pkey_d` is `NULL`.
+ * `ENOMEM` => the descriptor can not be created.
+ * `EIO` => `private_key` is not a valid PEM private key, or the passphrase is wrong.
+ */
+int32_t k2_openssl_pkey_get_private(const void* private_key, size_t private_key_len, const void* passphrase, size_t passphrase_len, uint64_t* pkey_d);
+
+/**
+ * Writes the size in bytes of the signature produced by the key.
+ *
+ * @param `pkey_d` The descriptor of the key.
+ * @param `size` A pointer where the size will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `size` is `NULL`, or `pkey_d` is not a key descriptor.
+ */
+int32_t k2_openssl_pkey_size(uint64_t pkey_d, size_t* size);
+
+/**
+ * Checks whether the descriptor is a public key descriptor.
+ *
+ * @param `pkey_d` The descriptor to check.
+ * @param `is_public` A pointer where `1` will be stored if the key is public, `0` if it is private.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `is_public` is `NULL`, or `pkey_d` is not a key descriptor.
+ */
+int32_t k2_openssl_pkey_is_public(uint64_t pkey_d, int32_t* is_public);
+
+/**
+ * Checks whether the descriptor is a private key descriptor.
+ *
+ * @param `pkey_d` The descriptor to check.
+ * @param `is_private` A pointer where `1` will be stored if the key is private, `0` if it is public.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `is_private` is `NULL`, or `pkey_d` is not a key descriptor.
+ */
+int32_t k2_openssl_pkey_is_private(uint64_t pkey_d, int32_t* is_private);
+
+/**
+ * Signs `data` with a private key using the given message digest.
+ *
+ * @param `algorithm` The message digest.
+ * @param `data` A pointer to the data to sign.
+ * @param `data_len` The length of `data`.
+ * @param `pkey_d` The descriptor of a private key.
+ * @param `result` A pointer to the buffer for the signature.
+ * @param `result_len` The size of the output buffer, must be at least `k2_openssl_pkey_size(pkey_d)`.
+ * @param `result_written` A pointer where the number of written bytes will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `algorithm` is unknown, or `pkey_d` is not a private key descriptor.
+ * `ERANGE` => `result_len` is not enough.
+ * `EIO` => OpenSSL failed to sign the data.
+ */
+int32_t k2_openssl_sign(enum DigestAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, void* result, size_t result_len,
+                        size_t* result_written);
+
+/**
+ * Verifies the `signature` of `data` with a public key using the given message digest.
+ *
+ * @param `algorithm` The message digest.
+ * @param `data` A pointer to the signed data.
+ * @param `data_len` The length of `data`.
+ * @param `pkey_d` The descriptor of a public key.
+ * @param `signature` A pointer to the signature.
+ * @param `signature_len` The length of `signature`.
+ * @param `is_valid` A pointer where `1` will be stored if the signature is valid, `0` otherwise.
+ *
+ * @return Returns `0` on success (the check itself was performed). On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `algorithm` is unknown, or `pkey_d` is not a public key descriptor.
+ * `EIO` => OpenSSL failed to perform the check.
+ */
+int32_t k2_openssl_verify(enum DigestAlgorithm algorithm, const void* data, size_t data_len, uint64_t pkey_d, const void* signature, size_t signature_len,
+                          int32_t* is_valid);
+
+/**
+ * Encrypts `data` with a symmetric cipher.
+ * For AEAD ciphers the authentication tag is written to `received_tag` (its size is `received_tag_len`) and `aad` is authenticated.
+ * For block ciphers `padding` is applied; `aad` and `received_tag` are ignored.
+ *
+ * @param `algorithm` The cipher algorithm.
+ * @param `padding` The block padding.
+ * @param `key` A pointer to the key.
+ * @param `key_len` The length of `key`.
+ * @param `iv` A pointer to the initialization vector.
+ * @param `iv_len` The length of `iv`.
+ * @param `aad` A pointer to additional authenticated data.
+ * @param `aad_len` The length of `aad`.
+ * @param `data` A pointer to the data to encrypt.
+ * @param `data_len` The length of `data`.
+ * @param `encrypted_data` A pointer to the output buffer.
+ * @param `encrypted_data_len` The size of the output buffer.
+ * @param `encrypted_data_written` A pointer where the number of written bytes will be stored.
+ * @param `received_tag` A pointer to the buffer for the authentication tag.
+ * @param `received_tag_len` The size of the tag buffer.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a required pointer argument is `NULL`, `algorithm` is unknown, or `key`/`iv` have invalid sizes.
+ * `ERANGE` => `encrypted_data_len` is not enough.
+ * `EIO` => OpenSSL failed to encrypt the data.
+ */
+int32_t k2_openssl_encrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const void* key, size_t key_len, const void* iv, size_t iv_len,
+                           const void* aad, size_t aad_len, const void* data, size_t data_len, void* encrypted_data, size_t encrypted_data_len,
+                           size_t* encrypted_data_written, void* received_tag, size_t received_tag_len);
+
+/**
+ * Decrypts `data` with a symmetric cipher.
+ * For AEAD ciphers `tag` is verified together with `aad`; if the check fails the call fails.
+ * For block ciphers `padding` is applied; `aad` and `tag` are ignored.
+ *
+ * @param `algorithm` The cipher algorithm.
+ * @param `padding` The block padding.
+ * @param `key` A pointer to the key.
+ * @param `key_len` The length of `key`.
+ * @param `iv` A pointer to the initialization vector.
+ * @param `iv_len` The length of `iv`.
+ * @param `aad` A pointer to additional authenticated data.
+ * @param `aad_len` The length of `aad`.
+ * @param `tag` A pointer to the authentication tag.
+ * @param `tag_len` The length of `tag`.
+ * @param `data` A pointer to the data to decrypt.
+ * @param `data_len` The length of `data`.
+ * @param `decrypted_data` A pointer to the output buffer.
+ * @param `decrypted_data_len` The size of the output buffer.
+ * @param `decrypted_data_written` A pointer where the number of written bytes will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a required pointer argument is `NULL`, `algorithm` is unknown, or `key`/`iv` have invalid sizes.
+ * `ERANGE` => `decrypted_data_len` is not enough.
+ * `EIO` => OpenSSL failed to decrypt the data.
+ */
+int32_t k2_openssl_decrypt(enum CipherAlgorithm algorithm, enum BlockPadding padding, const void* key, size_t key_len, const void* iv, size_t iv_len,
+                           const void* aad, size_t aad_len, const void* tag, size_t tag_len, const void* data, size_t data_len, void* decrypted_data,
+                           size_t decrypted_data_len, size_t* decrypted_data_written);
+
+/**
+ * Encrypts `data` with an RSA public key.
+ *
+ * @param `data` A pointer to the data to encrypt.
+ * @param `data_len` The length of `data`.
+ * @param `pkey_d` The descriptor of a public RSA key.
+ * @param `padding` The RSA padding.
+ * @param `encrypted_data` A pointer to the output buffer.
+ * @param `encrypted_data_len` The size of the output buffer, must be at least `k2_openssl_pkey_size(pkey_d)`.
+ * @param `encrypted_data_written` A pointer where the number of written bytes will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `padding` is unknown, or `pkey_d` is not a public RSA key descriptor.
+ * `ERANGE` => `encrypted_data_len` is not enough.
+ * `EIO` => OpenSSL failed to encrypt the data.
+ */
+int32_t k2_openssl_public_encrypt(const void* data, size_t data_len, uint64_t pkey_d, enum RsaPadding padding, void* encrypted_data, size_t encrypted_data_len,
+                                  size_t* encrypted_data_written);
+
+/**
+ * Decrypts `data` with an RSA private key.
+ *
+ * @param `data` A pointer to the data to decrypt.
+ * @param `data_len` The length of `data`.
+ * @param `pkey_d` The descriptor of a private RSA key.
+ * @param `padding` The RSA padding.
+ * @param `decrypted_data` A pointer to the output buffer.
+ * @param `decrypted_data_len` The size of the output buffer, must be at least `k2_openssl_pkey_size(pkey_d)`.
+ * @param `decrypted_data_written` A pointer where the number of written bytes will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `padding` is unknown, or `pkey_d` is not a private RSA key descriptor.
+ * `ERANGE` => `decrypted_data_len` is less than the RSA key size.
+ * `EIO` => the data does not decrypt with this key and padding, or OpenSSL failed.
+ */
+int32_t k2_openssl_private_decrypt(const void* data, size_t data_len, uint64_t pkey_d, enum RsaPadding padding, void* decrypted_data, size_t decrypted_data_len,
+                                   size_t* decrypted_data_written);
+
+/**
+ * Computes the digest of `data` with the given hash algorithm and writes the raw (binary) digest to `hashed_data`.
+ * Exactly the digest size bytes are written.
+ *
+ * @param `algorithm` The hash algorithm.
+ * @param `data` A pointer to the data to hash.
+ * @param `data_len` The length of `data`.
+ * @param `hashed_data` A pointer to the output buffer.
+ * @param `hashed_data_len` The size of the output buffer, must be at least the digest size.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL` or `algorithm` is unknown.
+ * `ERANGE` => `hashed_data_len` is less than the digest size.
+ * `EIO` => OpenSSL failed to compute the digest.
+ */
+int32_t k2_openssl_hash(enum HashAlgorithm algorithm, const void* data, size_t data_len, void* hashed_data, size_t hashed_data_len);
+
+/**
+ * Computes the HMAC of `data` with `key` and the given hash algorithm and writes the raw (binary) result to `hashed_data`.
+ * Exactly the digest size bytes are written.
+ *
+ * @param `algorithm` The hash algorithm.
+ * @param `data` A pointer to the data to authenticate.
+ * @param `data_len` The length of `data`.
+ * @param `key` A pointer to the HMAC key.
+ * @param `key_len` The length of `key`.
+ * @param `hashed_data` A pointer to the output buffer.
+ * @param `hashed_data_len` The size of the output buffer, must be at least the digest size.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => a pointer argument is `NULL`, `algorithm` is unknown, or `key_len` is too big.
+ * `ERANGE` => `hashed_data_len` is less than the digest size.
+ * `EIO` => OpenSSL failed to compute the HMAC.
+ */
+int32_t k2_openssl_hash_hmac(enum HashAlgorithm algorithm, const void* data, size_t data_len, const void* key, size_t key_len, void* hashed_data,
+                             size_t hashed_data_len);
 
 /**
  * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.

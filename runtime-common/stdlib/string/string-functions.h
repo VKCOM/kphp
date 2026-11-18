@@ -19,15 +19,41 @@
 namespace kphp {
 namespace strings {
 
+/**
+ * Writes the lowercase hex representation of `src` to `dst`.
+ *
+ * @param `src` A pointer to the binary data, `src_len` bytes long.
+ * @param `src_len` The size of the input in bytes.
+ * @param `dst` A pointer to the output buffer. The result is not null-terminated.
+ * @param `dst_len` The size of the output buffer, must be at least `2 * src_len`. Violating this fails `php_assert` at run time.
+ *
+ * `src` and `dst` must either not overlap at all or be the same pointer.
+ */
+inline void bin2hex(const char* src, size_t src_len, char* dst, size_t dst_len) noexcept {
+  php_assert(dst_len >= 2 * src_len);
+  const auto& string_lib_constants{StringLibConstants::get()};
+  for (size_t i = src_len; i-- > 0;) {
+    dst[2 * i + 1] = string_lib_constants.lhex_digits[src[i] & 15];
+    dst[2 * i] = string_lib_constants.lhex_digits[(src[i] >> 4) & 15];
+  }
+}
+
+/**
+ * Converts in-place the first `src_len` bytes of `buf` to their lowercase hex representation, which takes `2 * src_len` bytes.
+ *
+ * @param `buf` A pointer to the buffer that holds the binary data and receives the result. The result is not null-terminated.
+ * @param `src_len` The size of the binary data in bytes.
+ * @param `buf_len` The size of the whole buffer, must be at least `2 * src_len`. Violating this fails `php_assert` at run time.
+ */
+inline void bin2hex(char* buf, size_t src_len, size_t buf_len) noexcept {
+  bin2hex(buf, src_len, buf, buf_len);
+}
+
 inline string bin2hex(std::string_view str) noexcept {
   int len = str.size();
   string result(2 * len, false);
 
-  const auto& string_lib_constants{StringLibConstants::get()};
-  for (int i = 0; i < len; i++) {
-    result[2 * i] = string_lib_constants.lhex_digits[(str[i] >> 4) & 15];
-    result[2 * i + 1] = string_lib_constants.lhex_digits[str[i] & 15];
-  }
+  bin2hex(str.data(), str.size(), result.buffer(), result.size());
 
   return result;
 }
