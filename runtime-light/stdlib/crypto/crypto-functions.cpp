@@ -12,6 +12,7 @@
 #include <expected>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -48,18 +49,6 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
 
 namespace {
 
-string to_string(std::string_view sv) noexcept {
-  return {sv.data(), static_cast<string::size_type>(sv.size())};
-}
-
-std::span<const std::byte> bytes_of(const string& s) noexcept {
-  return std::as_bytes(std::span{s.c_str(), s.size()});
-}
-
-std::span<std::byte> writable_bytes_of(string& s) noexcept {
-  return std::as_writable_bytes(std::span{s.buffer(), s.size()});
-}
-
 std::optional<array<mixed>> x509_get_name_entries(const kphp::openssl::x509_name& name, bool shortnames) noexcept {
   const auto count{name.entry_count()};
   if (!count) [[unlikely]] {
@@ -68,52 +57,67 @@ std::optional<array<mixed>> x509_get_name_entries(const kphp::openssl::x509_name
 
   array<mixed> res{array_size{static_cast<int64_t>(*count), false}};
   for (int32_t i = 0; i < *count; ++i) {
-    const auto nid{name.entry_nid(i)};
+    const auto entry{name.entry(i)};
+    if (!entry) [[unlikely]] {
+      return std::nullopt;
+    }
+
+    const auto key_object{entry->object()};
+    const auto value{entry->data()};
+    if (!key_object || !value) [[unlikely]] {
+      return std::nullopt;
+    }
+
+    const auto nid{key_object->obj2nid()};
     if (!nid) [[unlikely]] {
       return std::nullopt;
     }
 
-    const auto key{shortnames ? k2::openssl_obj_nid2sn(*nid) : k2::openssl_obj_nid2ln(*nid)};
-    const auto value{name.entry_data(i)};
-    if (!key || !value) [[unlikely]] {
+    const auto key_str{shortnames ? k2::openssl_obj_nid2sn(*nid) : k2::openssl_obj_nid2ln(*nid)};
+    const auto value_data{value->data()};
+    const auto value_len{value->length()};
+    if (!key_str || !value_data || !value_len) [[unlikely]] {
       return std::nullopt;
     }
 
-    res.set_value(to_string(*key), to_string(*value));
+    res.set_value(string{*key_str}, *value_len == 0 ? string{} : string{static_cast<const char*>(*value_data), static_cast<string::size_type>(*value_len)});
   }
 
   return res;
 }
 
 std::optional<array<mixed>> x509_get_purposes(const kphp::openssl::x509& cert, bool shortnames) noexcept {
-  const auto count{k2::openssl_x509_purpose_get_count()};
+  const auto count{kphp::openssl::x509_purpose::count()};
   if (!count) [[unlikely]] {
     return std::nullopt;
   }
 
   array<mixed> res{array_size{static_cast<int64_t>(*count), false}};
   for (int32_t i = 0; i < *count; ++i) {
-    const auto id{k2::openssl_x509_purpose_get_id(i)};
-    if (!id) [[unlikely]] {
+    const auto purpose{kphp::openssl::x509_purpose::get(i)};
+    if (!purpose) [[unlikely]] {
+      return std::nullopt;
+    }
+
+    const auto id{purpose->id()};
+    const auto name{shortnames ? purpose->sname() : purpose->name()};
+    if (!id || !name) [[unlikely]] {
       return std::nullopt;
     }
 
     const auto purpset_0{cert.check_purpose(*id, 0)};
     const auto purpset_1{cert.check_purpose(*id, 1)};
-    const auto name{k2::openssl_x509_purpose_get0_name(i, shortnames)};
-    if (!purpset_0 || !purpset_1 || !name) [[unlikely]] {
+    if (!purpset_0 || !purpset_1) [[unlikely]] {
       return std::nullopt;
     }
 
-    // the result of `X509_check_purpose` is `-1` for an invalid purpose, which is `true` as a `bool`
-    res.set_value(static_cast<int64_t>(*id), array<mixed>::create(*purpset_0 != 0, *purpset_1 != 0, to_string(*name)));
+    res.set_value(static_cast<int64_t>(*id), array<mixed>::create(*purpset_0 != 0, *purpset_1 != 0, string{*name}));
   }
 
   return res;
 }
 
-// 8 lowercase hexadecimal digits, like `%08lx` of a 32-bit value
-string x509_hash_to_string(uint64_t hash) noexcept {
+string hash_to_hex(uint64_t hash) noexcept {
   constexpr std::string_view hex_digits{"0123456789abcdef"};
   constexpr string::size_type hash_str_size{8};
 
@@ -125,10 +129,10 @@ string x509_hash_to_string(uint64_t hash) noexcept {
   return res;
 }
 
-// `X509_parser::convert_asn1_time` of the legacy runtime: a failed `ASN1_TIME_diff` is not noticed there, so the result is `0`
-int64_t x509_time_to_time_t(const std::expected<k2::asn1_time_diff, int32_t>& diff) noexcept {
+std::optional<int64_t> convert_asn1_time(const kphp::openssl::asn1_time& epoch, const kphp::openssl::asn1_time& time) noexcept {
+  const auto diff{epoch.diff(time)};
   if (!diff) {
-    return 0;
+    return diff.error() == EIO ? std::optional<int64_t>{0} : std::nullopt;
   }
 
   return int64_t{diff->days} * 24 * 60 * 60 + diff->seconds;
@@ -137,15 +141,15 @@ int64_t x509_time_to_time_t(const std::expected<k2::asn1_time_diff, int32_t>& di
 } // namespace
 
 Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames) noexcept {
-  const auto cert{kphp::openssl::x509::read_pem(bytes_of(data))};
+  const auto cert{kphp::openssl::x509::read_bio(std::as_bytes(std::span{data.c_str(), data.size()}))};
   if (!cert) {
     return false;
   }
 
-  const auto subject_name{cert->get_subject_name()};
-  const auto issuer_name{cert->get_issuer_name()};
+  const auto subject_name{cert->subject_name()};
+  const auto issuer_name{cert->issuer_name()};
   const auto hash{cert->subject_name_hash()};
-  const auto version{cert->get_version()};
+  const auto version{cert->version()};
   if (!subject_name || !issuer_name || !hash || !version) [[unlikely]] {
     kphp::log::warning("failed to get X509 certificate fields");
     return false;
@@ -154,22 +158,33 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
   const auto name{subject_name->oneline()};
   auto subject{x509_get_name_entries(*subject_name, shortnames)};
   auto issuer{x509_get_name_entries(*issuer_name, shortnames)};
+  const auto epoch{kphp::openssl::asn1_time::create()};
+  if (!epoch || !epoch->set(0)) [[unlikely]] {
+    kphp::log::warning("failed to get X509 certificate fields");
+    return false;
+  }
+
+  const auto not_before{cert->not_before()};
+  const auto not_after{cert->not_after()};
+  if (!not_before || !not_after) [[unlikely]] {
+    kphp::log::warning("failed to get X509 certificate fields");
+    return false;
+  }
+
+  const auto valid_from{convert_asn1_time(*epoch, *not_before)};
+  const auto valid_to{convert_asn1_time(*epoch, *not_after)};
   auto purposes{x509_get_purposes(*cert, shortnames)};
-  if (!name || !subject || !issuer || !purposes) [[unlikely]] {
+  if (!name || !subject || !issuer || !valid_from || !valid_to || !purposes) [[unlikely]] {
     kphp::log::warning("failed to get X509 certificate fields");
     return false;
   }
 
   const auto& crypto_state{kphp::openssl::crypto_image_state::get()};
 
-  return std::initializer_list<std::pair<string, mixed>>{{crypto_state.NAME_STR, to_string(*name)},
-                                                         {crypto_state.SUBJECT_STR, std::move(*subject)},
-                                                         {crypto_state.HASH_STR, x509_hash_to_string(*hash)},
-                                                         {crypto_state.ISSUER_STR, std::move(*issuer)},
-                                                         {crypto_state.VERSION_STR, *version},
-                                                         {crypto_state.VALID_FROM_TIME_T_STR, x509_time_to_time_t(cert->not_before_diff())},
-                                                         {crypto_state.VALID_TO_TIME_T_STR, x509_time_to_time_t(cert->not_after_diff())},
-                                                         {crypto_state.PURPOSES_STR, std::move(*purposes)}};
+  return std::initializer_list<std::pair<string, mixed>>{{crypto_state.NAME_STR, string{name->c_str()}}, {crypto_state.SUBJECT_STR, std::move(*subject)},
+                                                         {crypto_state.HASH_STR, hash_to_hex(*hash)},    {crypto_state.ISSUER_STR, std::move(*issuer)},
+                                                         {crypto_state.VERSION_STR, *version},           {crypto_state.VALID_FROM_TIME_T_STR, *valid_from},
+                                                         {crypto_state.VALID_TO_TIME_T_STR, *valid_to},  {crypto_state.PURPOSES_STR, std::move(*purposes)}};
 }
 
 namespace {
@@ -211,12 +226,12 @@ string make_pkey_handle(kphp::openssl::pkey key, char tag) noexcept {
 
 // Accepts either a certificate, in which case the key is taken from it, or a public key.
 std::expected<kphp::openssl::pkey, int32_t> parse_public_key(const string& key) noexcept {
-  const auto pem{bytes_of(key)};
-  if (const auto cert{kphp::openssl::x509::read_pem(pem)}; cert) {
-    return cert->get_pubkey();
+  const auto pem{std::as_bytes(std::span{key.c_str(), key.size()})};
+  if (const auto cert{kphp::openssl::x509::read_bio(pem)}; cert) {
+    return cert->pubkey();
   }
 
-  return kphp::openssl::pkey::read_pem_pubkey(pem);
+  return kphp::openssl::pkey::read_bio_pubkey(pem);
 }
 
 std::expected<kphp::openssl::pkey, int32_t> load_public_key(const string& key) noexcept {
@@ -227,12 +242,18 @@ std::expected<kphp::openssl::pkey, int32_t> load_public_key(const string& key) n
   return parse_public_key(key);
 }
 
-std::expected<kphp::openssl::pkey, int32_t> load_private_key(const string& key, std::span<const std::byte> passphrase = {}) noexcept {
+// an empty passphrase is no passphrase at all, as in the legacy runtime
+std::expected<kphp::openssl::pkey, int32_t> read_private_key(const string& key, const string& passphrase) noexcept {
+  return kphp::openssl::pkey::read_bio_private_key(std::as_bytes(std::span{key.c_str(), key.size()}),
+                                                   std::as_bytes(std::span{passphrase.c_str(), passphrase.size()}));
+}
+
+std::expected<kphp::openssl::pkey, int32_t> load_private_key(const string& key) noexcept {
   if (auto handle{borrow_pkey_handle(key, PRIVATE_KEY_HANDLE_TAG)}; handle) {
     return std::move(*handle);
   }
 
-  return kphp::openssl::pkey::read_pem_private_key(bytes_of(key), passphrase);
+  return read_private_key(key, string{});
 }
 
 std::optional<k2::DigestAlgorithm> parse_digest_algorithm(int64_t algorithm) noexcept {
@@ -268,9 +289,10 @@ bool f$openssl_sign(const string& data, string& signature, const string& private
 
   if (const auto size{key->size()}; size) {
     string buffer{static_cast<string::size_type>(*size), false};
-    const auto sig_len{init.and_then([&]() noexcept { return (*ctx)->sign_update(bytes_of(data)); }).and_then([&]() noexcept {
-      return (*ctx)->sign_final(writable_bytes_of(buffer), *key);
-    })};
+    const auto sig_len{
+        init.and_then([&]() noexcept { return (*ctx)->sign_update(std::as_bytes(std::span{data.c_str(), data.size()})); }).and_then([&]() noexcept {
+          return (*ctx)->sign_final(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}), *key);
+        })};
     if (sig_len) {
       buffer.shrink(static_cast<string::size_type>(*sig_len));
       signature = std::move(buffer);
@@ -304,11 +326,12 @@ int64_t f$openssl_verify(const string& data, const string& signature, const stri
   }
 
   // the result of `EVP_VerifyFinal` is returned as is, `0` is the result if the verification did not get to it
-  int32_t openssl_ret{0};
-  const auto verified{init.and_then([&]() noexcept { return (*ctx)->verify_update(bytes_of(data)); }).and_then([&]() noexcept {
-    return (*ctx)->verify_final(bytes_of(signature), *key, std::addressof(openssl_ret));
-  })};
-  return verified ? static_cast<int64_t>(*verified) : openssl_ret;
+  int32_t openssl_err{0};
+  const auto verified{
+      init.and_then([&]() noexcept { return (*ctx)->verify_update(std::as_bytes(std::span{data.c_str(), data.size()})); }).and_then([&]() noexcept {
+        return (*ctx)->verify_final(std::as_bytes(std::span{signature.c_str(), signature.size()}), *key, std::addressof(openssl_err));
+      })};
+  return verified ? static_cast<int64_t>(*verified) : openssl_err;
 }
 
 namespace {
@@ -327,9 +350,9 @@ constexpr auto CIPHER_METHODS{[]() noexcept {
   return arr;
 }()};
 
-// returns the name from `CIPHER_METHODS` that matches `method` ignoring the case, the names are string literals, so they are NUL-terminated
+// returns the name from `CIPHER_METHODS` that matches `method` ignoring the case
 std::optional<std::string_view> find_cipher_method(std::string_view method) noexcept {
-  auto lowered{std::ranges::transform_view{method, vk::to_lower_ascii}};
+  auto lowered{std::ranges::transform_view{method, vk::tolower_ascii}};
 
   auto rng{std::ranges::equal_range(CIPHER_METHODS, lowered, std::ranges::lexicographical_compare)};
   if (!rng.empty()) [[likely]] {
@@ -345,12 +368,13 @@ std::expected<kphp::openssl::cipher, int32_t> cipher_by_method(const string& met
     return std::unexpected{EINVAL};
   }
 
-  return kphp::openssl::cipher::by_name(name->data());
+  return kphp::openssl::cipher::create_by_name(*name);
 }
 
 struct cipher_session {
   kphp::openssl::cipher type;
-  kphp::openssl::cipher_ctx ctx;
+  // the context of the instance: the first `init_ex` with a cipher resets the state left by the previous session
+  const kphp::openssl::cipher_ctx& ctx;
   size_t key_len;
   size_t iv_len;
   size_t block_size;
@@ -375,7 +399,7 @@ std::optional<cipher_session> open_cipher_session(const string& method, bool enc
     return std::nullopt;
   }
 
-  auto ctx{kphp::openssl::cipher_ctx::create()};
+  const auto ctx{kphp::openssl::crypto_instance_state::get().cipher_ctx()};
   if (!ctx) {
     kphp::log::warning("Failed to create cipher context");
     return std::nullopt;
@@ -384,7 +408,7 @@ std::optional<cipher_session> open_cipher_session(const string& method, bool enc
   const bool is_gcm{*mode == k2::CipherMode::CIPHER_MODE_GCM};
   const bool is_ccm{*mode == k2::CipherMode::CIPHER_MODE_CCM};
   return cipher_session{.type = std::move(*type),
-                        .ctx = std::move(*ctx),
+                        .ctx = **ctx,
                         .key_len = static_cast<size_t>(*key_len),
                         .iv_len = static_cast<size_t>(*iv_len),
                         .block_size = static_cast<size_t>(*block_size),
@@ -409,7 +433,7 @@ bool init_cipher(const cipher_session& session, const string& key, const string&
 
   // the IV is the passed one unless it has to be padded or truncated
   std::array<std::byte, MAX_IV_LEN> padded_iv{};
-  std::span<const std::byte> iv_bytes{bytes_of(iv)};
+  std::span<const std::byte> iv_bytes{std::as_bytes(std::span{iv.c_str(), iv.size()})};
   if (iv.size() != session.iv_len) {
     if (session.aead) {
       if (!ctx.set_iv_length(static_cast<int32_t>(iv.size()))) {
@@ -438,7 +462,7 @@ bool init_cipher(const cipher_session& session, const string& key, const string&
   } else if (!session.encrypt && !tag.empty()) {
     if (!session.aead) {
       kphp::log::warning("The tag cannot be used because the cipher method does not support AEAD");
-    } else if (!ctx.set_tag(bytes_of(tag))) {
+    } else if (!ctx.set_tag(std::as_bytes(std::span{tag.c_str(), tag.size()}))) {
       kphp::log::warning("Setting tag for AEAD cipher decryption failed");
       return false;
     }
@@ -446,7 +470,7 @@ bool init_cipher(const cipher_session& session, const string& key, const string&
 
   // a short key is always padded with zeros, `OPENSSL_DONT_ZERO_PAD_KEY` only makes the cipher accept the key of the shorter length as well
   std::array<std::byte, MAX_KEY_LEN> padded_key{};
-  std::span<const std::byte> key_bytes{bytes_of(key)};
+  std::span<const std::byte> key_bytes{std::as_bytes(std::span{key.c_str(), key.size()})};
   if (session.key_len > key.size()) {
     if ((options & OPENSSL_DONT_ZERO_PAD_KEY) && !ctx.set_key_length(static_cast<int32_t>(key.size()))) {
       kphp::log::warning("Key length cannot be set for the cipher method");
@@ -475,19 +499,24 @@ bool init_cipher(const cipher_session& session, const string& key, const string&
 std::optional<string> process_cipher_data(const cipher_session& session, const string& data, const string& aad) noexcept {
   const auto& ctx{session.ctx};
 
-  if (session.single_run_aead && !ctx.set_data_length(data.size())) {
+  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
+    kphp::log::warning("Data is too long for the cipher");
+    return std::nullopt;
+  }
+
+  if (session.single_run_aead && !ctx.set_data_length(static_cast<int32_t>(data.size()))) {
     kphp::log::warning("Setting of data length failed");
     return std::nullopt;
   }
 
-  if (session.aead && !ctx.update({}, bytes_of(aad))) {
+  if (session.aead && !ctx.update({}, std::as_bytes(std::span{aad.c_str(), aad.size()}))) {
     kphp::log::warning("Setting of additional application data failed");
     return std::nullopt;
   }
 
   string out{static_cast<string::size_type>(data.size() + session.block_size), false};
-  const auto out_bytes{writable_bytes_of(out)};
-  const auto out_len{ctx.update(out_bytes, bytes_of(data))};
+  const auto out_bytes{std::as_writable_bytes(std::span{out.buffer(), out.size()})};
+  const auto out_len{ctx.update(out_bytes, std::as_bytes(std::span{data.c_str(), data.size()}))};
   if (!out_len) {
     kphp::log::warning("Cipher update error");
     return std::nullopt;
@@ -506,7 +535,7 @@ std::optional<string> process_cipher_data(const cipher_session& session, const s
 // the tag is received only after the data is processed
 bool make_tag(const cipher_session& session, string& tag) noexcept {
   if (session.aead && !tag.empty()) {
-    if (session.ctx.get_tag(writable_bytes_of(tag))) {
+    if (session.ctx.get_tag(std::as_writable_bytes(std::span{tag.buffer(), tag.size()}))) {
       return true;
     }
 
@@ -546,7 +575,7 @@ Optional<string> eval_cipher(bool encrypt, const string& data, const string& met
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
   array<string> res{array_size{CIPHER_METHODS.size(), true}};
   for (const auto method : CIPHER_METHODS) {
-    res.push_back(to_string(method));
+    res.push_back(string{method.data(), static_cast<string::size_type>(method.size())});
   }
 
   return res;
@@ -625,7 +654,7 @@ Optional<string> f$openssl_pkey_get_private(const string& private_key, const str
     return private_key;
   }
 
-  auto key{kphp::openssl::pkey::read_pem_private_key(bytes_of(private_key), bytes_of(passphrase))};
+  auto key{read_private_key(private_key, passphrase)};
   if (!key) [[unlikely]] {
     kphp::log::warning("Parameter key is not a valid key or passphrase is not a valid password");
     return false;
@@ -633,19 +662,6 @@ Optional<string> f$openssl_pkey_get_private(const string& private_key, const str
 
   return make_pkey_handle(std::move(*key), PRIVATE_KEY_HANDLE_TAG);
 }
-
-namespace {
-
-// the `EVP_PKEY_RSA` and `EVP_PKEY_RSA2` of OpenSSL: `NID_rsaEncryption` and `NID_rsa`
-constexpr int32_t PKEY_RSA{6};
-constexpr int32_t PKEY_RSA2{19};
-
-bool is_rsa_key(const kphp::openssl::pkey& key) noexcept {
-  const auto id{key.id()};
-  return id && (*id == PKEY_RSA || *id == PKEY_RSA2);
-}
-
-} // namespace
 
 bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept {
   const auto key{load_public_key(public_key)};
@@ -655,7 +671,7 @@ bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
     return false;
   }
 
-  if (!is_rsa_key(*key)) [[unlikely]] {
+  if (const auto is_rsa{key->is_rsa()}; !is_rsa || !*is_rsa) [[unlikely]] {
     kphp::log::warning("Key type is neither RSA nor RSA2");
     encrypted_data = string{};
     return false;
@@ -665,7 +681,9 @@ bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
   const auto rsa{key->get1_rsa()};
   if (size && rsa) {
     string buffer{static_cast<string::size_type>(*size), false};
-    const auto written{rsa->public_encrypt(bytes_of(data), writable_bytes_of(buffer), k2::RsaPadding::PKCS1)};
+    const auto from{std::as_bytes(std::span{data.c_str(), data.size()})};
+    const auto to{std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()})};
+    const auto written{rsa->public_encrypt(from, to, k2::RsaPadding::RSA_PADDING_PKCS1)};
     if (written && *written == *size) {
       encrypted_data = std::move(buffer);
       return true;
@@ -696,7 +714,7 @@ bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const
     return false;
   }
 
-  if (!is_rsa_key(*key)) [[unlikely]] {
+  if (const auto is_rsa{key->is_rsa()}; !is_rsa || !*is_rsa) [[unlikely]] {
     kphp::log::warning("Key type is not an RSA nor RSA2");
     return false;
   }
@@ -705,7 +723,9 @@ bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const
   const auto rsa{key->get1_rsa()};
   if (size && rsa) {
     string buffer{static_cast<string::size_type>(*size), false};
-    if (const auto written{rsa->private_decrypt(bytes_of(data), writable_bytes_of(buffer), k2::RsaPadding::PKCS1)}; written) {
+    const auto from{std::as_bytes(std::span{data.c_str(), data.size()})};
+    const auto to{std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()})};
+    if (const auto written{rsa->private_decrypt(from, to, k2::RsaPadding::RSA_PADDING_PKCS1)}; written) {
       buffer.shrink(static_cast<string::size_type>(*written));
       decrypted_data = std::move(buffer);
       return true;
@@ -750,21 +770,25 @@ constexpr size_t RIPEMD160_HASHED_SIZE{20};
 constexpr size_t MD2_HASHED_SIZE{16};
 constexpr size_t MD4_HASHED_SIZE{16};
 
+// the one-shot function of OpenSSL of the algorithm, as `algo_function` of the legacy runtime
+using hash_function = std::expected<void, int32_t> (*)(std::span<const std::byte>, std::span<std::byte>);
+
 struct hash_algorithm_traits {
   int64_t hashed_size;
   k2::HashAlgorithm algo;
+  hash_function hash;
 };
 
 constexpr auto HASH_ALGORITHMS{[]() noexcept {
-  auto arr{std::array{std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1}},
-                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA224}},
-                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA256}},
-                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA384}},
-                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA512}},
-                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, k2::HashAlgorithm::HASH_MD5}},
-                      std::pair{RIPEMD160, hash_algorithm_traits{RIPEMD160_HASHED_SIZE, k2::HashAlgorithm::HASH_RMD160}},
-                      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, k2::HashAlgorithm::HASH_MD2}},
-                      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, k2::HashAlgorithm::HASH_MD4}}}};
+  auto arr{std::array{std::pair{SHA1, hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1, k2::openssl_sha1}},
+                      std::pair{SHA224, hash_algorithm_traits{SHA224_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA224, k2::openssl_sha224}},
+                      std::pair{SHA256, hash_algorithm_traits{SHA256_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA256, k2::openssl_sha256}},
+                      std::pair{SHA384, hash_algorithm_traits{SHA384_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA384, k2::openssl_sha384}},
+                      std::pair{SHA512, hash_algorithm_traits{SHA512_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA512, k2::openssl_sha512}},
+                      std::pair{MD5, hash_algorithm_traits{MD5_HASHED_SIZE, k2::HashAlgorithm::HASH_MD5, k2::openssl_md5}},
+                      std::pair{RIPEMD160, hash_algorithm_traits{RIPEMD160_HASHED_SIZE, k2::HashAlgorithm::HASH_RMD160, k2::openssl_ripemd160}},
+                      std::pair{MD2, hash_algorithm_traits{MD2_HASHED_SIZE, k2::HashAlgorithm::HASH_MD2, k2::openssl_md2}},
+                      std::pair{MD4, hash_algorithm_traits{MD4_HASHED_SIZE, k2::HashAlgorithm::HASH_MD4, k2::openssl_md4}}}};
 
   std::ranges::sort(arr, std::less{}, &std::pair<std::string_view, hash_algorithm_traits>::first);
   return arr;
@@ -773,7 +797,7 @@ constexpr auto HASH_ALGORITHMS{[]() noexcept {
 static_assert(HASH_ALGORITHMS.size() == k2::HashAlgorithm::COUNT_HASH);
 
 std::optional<hash_algorithm_traits> parse_hash_algorithm(std::string_view algorithm) noexcept {
-  auto lowered{std::ranges::transform_view{algorithm, vk::to_lower_ascii}};
+  auto lowered{std::ranges::transform_view{algorithm, vk::tolower_ascii}};
 
   auto rng{
       std::ranges::equal_range(HASH_ALGORITHMS, lowered, std::ranges::lexicographical_compare, &std::pair<std::string_view, hash_algorithm_traits>::first)};
@@ -784,41 +808,28 @@ std::optional<hash_algorithm_traits> parse_hash_algorithm(std::string_view algor
   return std::nullopt;
 }
 
-// `EVP_Digest` is `EVP_DigestInit_ex`, `EVP_DigestUpdate` and `EVP_DigestFinal_ex`, here they are called on the context of the instance,
-// which OpenSSL allows to reuse after `EVP_DigestFinal_ex`
-std::expected<uint32_t, int32_t> evp_digest(k2::HashAlgorithm algorithm, std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  return kphp::openssl::crypto_instance_state::get().md_ctx().and_then([&](const kphp::openssl::md_ctx* ctx) noexcept {
-    return ctx->digest_init_ex(algorithm).and_then([&]() noexcept { return ctx->digest_update(data); }).and_then([&]() noexcept {
-      return ctx->digest_final_ex(md);
-    });
-  });
-}
-
-// `HMAC` is `HMAC_Init_ex`, `HMAC_Update` and `HMAC_Final`, here they are called on the context of the instance
-std::expected<uint32_t, int32_t> hmac(k2::HashAlgorithm algorithm, std::span<const std::byte> key, std::span<const std::byte> data,
-                                      std::span<std::byte> md) noexcept {
-  return kphp::openssl::crypto_instance_state::get().hmac_ctx().and_then([&](const kphp::openssl::hmac_ctx* ctx) noexcept {
-    return ctx->init_ex(key, algorithm).and_then([&]() noexcept { return ctx->update(data); }).and_then([&]() noexcept { return ctx->final(md); });
-  });
-}
-
-string hash_impl(hash_algorithm_traits traits, const string& data, bool binary) noexcept {
+string hash_impl(const hash_algorithm_traits& traits, const string& data, bool binary) noexcept {
   string hashed_data{binary ? static_cast<string::size_type>(traits.hashed_size) : static_cast<string::size_type>(traits.hashed_size * 2), false};
   const auto data_bytes{std::as_bytes(std::span{data.c_str(), data.size()})};
   const auto hashed_bytes{std::as_writable_bytes(std::span{hashed_data.buffer(), static_cast<size_t>(traits.hashed_size)})};
-  const auto md_len{evp_digest(traits.algo, data_bytes, hashed_bytes)};
-  if (!md_len) [[unlikely]] {
+  if (!traits.hash(data_bytes, hashed_bytes)) [[unlikely]] {
     kphp::log::warning("failed to generate hash");
     return {};
   }
-
-  kphp::log::assertion(static_cast<int64_t>(*md_len) == traits.hashed_size);
 
   if (!binary) {
     kphp::strings::bin2hex(hashed_data.buffer(), traits.hashed_size, hashed_data.size());
   }
 
   return hashed_data;
+}
+
+// `HMAC` of OpenSSL is `HMAC_Init_ex`, `HMAC_Update` and `HMAC_Final` on a fresh context, here they are called on the context of the instance
+std::expected<uint32_t, int32_t> hmac(k2::HashAlgorithm algorithm, std::span<const std::byte> key, std::span<const std::byte> data,
+                                      std::span<std::byte> md) noexcept {
+  return kphp::openssl::crypto_instance_state::get().hmac_ctx().and_then([&](const kphp::openssl::hmac_ctx* ctx) noexcept {
+    return ctx->init_ex(key, algorithm).and_then([&]() noexcept { return ctx->update(data); }).and_then([&]() noexcept { return ctx->final(md); });
+  });
 }
 
 } // namespace
@@ -871,7 +882,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
 }
 
 string f$sha1(const string& data, bool binary) noexcept {
-  return hash_impl(hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1}, data, binary);
+  return hash_impl(hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1, k2::openssl_sha1}, data, binary);
 }
 
 int64_t f$crc32(const string& s) noexcept {

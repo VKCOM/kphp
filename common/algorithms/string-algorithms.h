@@ -75,7 +75,7 @@ inline bool is_ascii_whitespace(char c) noexcept {
   return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
 }
 
-inline constexpr char to_lower_ascii(char c) noexcept {
+inline constexpr char tolower_ascii(char c) noexcept {
   if (c >= 'A' && c <= 'Z') {
     return c + ('a' - 'A');
   }

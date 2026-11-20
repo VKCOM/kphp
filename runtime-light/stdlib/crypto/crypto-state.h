@@ -61,15 +61,12 @@ private:
   static constexpr std::string_view PURPOSES_{"purposes"};
 };
 
-/**
- * The contexts that are reused by all hashes, HMACs, signatures and verifications of the instance, so that a context is not created for every call.
- *
- * OpenSSL allows to start a new operation on a context after the previous one (see `md_ctx` and `hmac_ctx`). A context is used by one operation at a time,
- * since the functions that use it do not suspend a coroutine. The contexts are created on the first use and freed together with the instance.
- */
 class crypto_instance_state final : private vk::not_copyable {
+  // The contexts that are reused by all signatures, verifications, HMACs and ciphers of the instance, so that a context is not created for every call.
+  // OpenSSL allows to start a new operation on a context after the previous one. A context is created on the first use and freed together with the instance.
   std::optional<kphp::openssl::md_ctx> m_md_ctx;
   std::optional<kphp::openssl::hmac_ctx> m_hmac_ctx;
+  std::optional<kphp::openssl::cipher_ctx> m_cipher_ctx;
 
 public:
   crypto_instance_state() noexcept = default;
@@ -98,6 +95,18 @@ public:
     }
 
     return std::addressof(*m_hmac_ctx);
+  }
+
+  auto cipher_ctx() noexcept -> std::expected<const kphp::openssl::cipher_ctx*, int32_t> {
+    if (!m_cipher_ctx) {
+      auto created{kphp::openssl::cipher_ctx::create()};
+      if (!created) [[unlikely]] {
+        return std::unexpected{created.error()};
+      }
+      m_cipher_ctx.emplace(std::move(*created));
+    }
+
+    return std::addressof(*m_cipher_ctx);
   }
 };
 

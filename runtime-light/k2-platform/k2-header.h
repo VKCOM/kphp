@@ -3,10 +3,6 @@
 
 #pragma once
 
-#ifndef K2_API_HEADER_H
-#error "should not be directly included"
-#endif // K2_API_HEADER_H
-
 #include <pwd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -102,7 +98,7 @@ enum CipherMode : uint32_t { CIPHER_MODE_GCM = 0x6, CIPHER_MODE_CCM = 0x7 };
 
 enum CipherCtrl : uint32_t { CIPHER_CTRL_AEAD_SET_IVLEN = 0x9, CIPHER_CTRL_AEAD_GET_TAG = 0x10, CIPHER_CTRL_AEAD_SET_TAG = 0x11 };
 
-enum RsaPadding : uint32_t { PKCS1 = 0, PKCS1_OAEP = 1, ASYMM_NO_PADDING = 2 };
+enum RsaPadding : uint32_t { RSA_PADDING_PKCS1 = 1, RSA_PADDING_NONE = 3, RSA_PADDING_PKCS1_OAEP = 4 };
 
 enum HashAlgorithm : uint32_t {
   HASH_SHA1 = 0,
@@ -566,21 +562,20 @@ int32_t k2_openssl_rand_bytes(void* buf, int32_t num, int32_t* openssl_err);
 /**
  * Platform binding of OpenSSL's `void RAND_add(const void *buf, int num, double randomness)`.
  * Adds `num` bytes from `buf` to the random generator state.
- * `randomness` tells how many of these bytes are really random.
+ * `randomness` tells how many of these bytes are really random (must be 0 <= and <= num).
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `buf` is `NULL` or `num` is negative.
+ * `EINVAL` => `buf` is `NULL` or `num` is negative or randomness is invalid.
  */
 int32_t k2_openssl_rand_add(const void* buf, int32_t num, double randomness);
 
 /**
- * Platform binding of OpenSSL's `X509 *PEM_read_bio_X509(BIO *bp, X509 **x, pem_password_cb *cb, void *u)`.
- * Reads the first PEM encoded certificate from the `pem` buffer. The BIO is created internally, the password callback is not used.
+ * Platform binding of OpenSSL's `X509 *PEM_read_bio_X509(BIO *bp, X509 **x, pem_password_cb *cb, void *u)` (`x`, `cb` and `u` are `NULL`).
  * The descriptor must be freed with `k2_free_descriptor`.
  *
- * @param `pem` A pointer to the PEM encoded data.
+ * @param `pem` A pointer to the PEM data.
  * @param `pem_len` The length of `pem`.
  * @param `x509_d` A pointer where the descriptor of the certificate will be stored.
  *
@@ -592,6 +587,382 @@ int32_t k2_openssl_rand_add(const void* buf, int32_t num, double randomness);
  * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_pem_read_bio_x509(const void* pem, int32_t pem_len, uint64_t* x509_d);
+
+/**
+ * Platform binding of OpenSSL's `X509_NAME *X509_get_subject_name(const X509 *a)`.
+ * The platform keeps the certificate alive while this descriptor exists, so the descriptors may be
+ * freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `name_d` A pointer where the descriptor of the name will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `name_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_get_subject_name(uint64_t x509_d, uint64_t* name_d);
+
+/**
+ * Platform binding of OpenSSL's `X509_NAME *X509_get_issuer_name(const X509 *a)`.
+ * The platform keeps the certificate alive while this descriptor exists, so the descriptors may be
+ * freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `name_d` A pointer where the descriptor of the name will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `name_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_get_issuer_name(uint64_t x509_d, uint64_t* name_d);
+
+/**
+ * Platform binding of OpenSSL's `char *X509_NAME_oneline(const X509_NAME *a, char *buf, int size)`.
+ * The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `name_d` The descriptor of a name.
+ * @param `str` A pointer where the return value of `X509_NAME_oneline` (a `NUL`-terminated string) will be stored. It is valid until `str_d` is freed.
+ * @param `str_d` A pointer where the descriptor of the string will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `str` or `str_d` is `NULL`, or `name_d` is not a descriptor of a name.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_name_oneline(uint64_t name_d, const char** str, uint64_t* str_d);
+
+/**
+ * Platform binding of OpenSSL's `int X509_NAME_entry_count(const X509_NAME *name)`.
+ *
+ * @param `name_d` The descriptor of a name.
+ * @param `count` A pointer where the return value of `X509_NAME_entry_count` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `count` is `NULL`, or `name_d` is not a descriptor of a name.
+ */
+int32_t k2_openssl_x509_name_entry_count(uint64_t name_d, int32_t* count);
+
+/**
+ * Platform binding of OpenSSL's `X509_NAME_ENTRY *X509_NAME_get_entry(const X509_NAME *name, int loc)`.
+ * The platform keeps the certificate alive while this descriptor
+ * exists, so the descriptors may be freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `name_d` The descriptor of a name.
+ * @param `loc` The index of the entry.
+ * @param `entry_d` A pointer where the descriptor of the entry will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `entry_d` is `NULL`, or `name_d` is not a descriptor of a name.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_name_get_entry(uint64_t name_d, int32_t loc, uint64_t* entry_d);
+
+/**
+ * Platform binding of OpenSSL's `ASN1_OBJECT *X509_NAME_ENTRY_get_object(const X509_NAME_ENTRY *ne)`.
+ * The platform keeps the certificate alive while this descriptor
+ * exists, so the descriptors may be freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `entry_d` The descriptor of a name entry.
+ * @param `obj_d` A pointer where the descriptor of the object will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `obj_d` is `NULL`, or `entry_d` is not a descriptor of a name entry.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_name_entry_get_object(uint64_t entry_d, uint64_t* obj_d);
+
+/**
+ * Platform binding of OpenSSL's `int OBJ_obj2nid(const ASN1_OBJECT *o)`.
+ *
+ * @param `obj_d` The descriptor of an object.
+ * @param `nid` A pointer where the return value of `OBJ_obj2nid` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `nid` is `NULL`, or `obj_d` is not a descriptor of an object.
+ */
+int32_t k2_openssl_obj_obj2nid(uint64_t obj_d, int32_t* nid);
+
+/**
+ * Platform binding of OpenSSL's `ASN1_STRING *X509_NAME_ENTRY_get_data(const X509_NAME_ENTRY *ne)`.
+ * The platform keeps the certificate alive while this descriptor
+ * exists, so the descriptors may be freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `entry_d` The descriptor of a name entry.
+ * @param `str_d` A pointer where the descriptor of the string will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `str_d` is `NULL`, or `entry_d` is not a descriptor of a name entry.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_name_entry_get_data(uint64_t entry_d, uint64_t* str_d);
+
+/**
+ * Platform binding of OpenSSL's `const unsigned char *ASN1_STRING_get0_data(const ASN1_STRING *x)`.
+ *
+ * @param `str_d` The descriptor of an ASN.1 string.
+ * @param `data` A pointer where the return value of `ASN1_STRING_get0_data` will be stored. It is valid only until `str_d` is freed, and it may be `NULL` only
+ * if the length of the string (`k2_openssl_asn1_string_length`) is `0`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `data` is `NULL`, or `str_d` is not a descriptor of an ASN.1 string.
+ */
+int32_t k2_openssl_asn1_string_get0_data(uint64_t str_d, const void** data);
+
+/**
+ * Platform binding of OpenSSL's `int ASN1_STRING_length(const ASN1_STRING *x)`.
+ *
+ * @param `str_d` The descriptor of an ASN.1 string.
+ * @param `len` A pointer where the return value of `ASN1_STRING_length` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `len` is `NULL`, or `str_d` is not a descriptor of an ASN.1 string.
+ */
+int32_t k2_openssl_asn1_string_length(uint64_t str_d, int32_t* len);
+
+/**
+ * Platform binding of OpenSSL's `const char *OBJ_nid2sn(int n)`.
+ *
+ * @param `nid` A NID.
+ * @param `str` A pointer where the return value of `OBJ_nid2sn` (a `NUL`-terminated string) will be stored. The string is static and valid forever.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `str` is `NULL`.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_obj_nid2sn(int32_t nid, const char** str);
+
+/**
+ * Platform binding of OpenSSL's `const char *OBJ_nid2ln(int n)`.
+ *
+ * @param `nid` A NID.
+ * @param `str` A pointer where the return value of `OBJ_nid2ln` (a `NUL`-terminated string) will be stored. The string is static and valid forever.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `str` is `NULL`.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_obj_nid2ln(int32_t nid, const char** str);
+
+/**
+ * Platform binding of OpenSSL's `unsigned long X509_subject_name_hash(X509 *x)`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `hash` A pointer where the return value of `X509_subject_name_hash` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `hash` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ */
+int32_t k2_openssl_x509_subject_name_hash(uint64_t x509_d, uint64_t* hash);
+
+/**
+ * Platform binding of OpenSSL's `long X509_get_version(const X509 *x)`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `version` A pointer where the return value of `X509_get_version` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `version` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ */
+int32_t k2_openssl_x509_get_version(uint64_t x509_d, int64_t* version);
+
+/**
+ * Platform binding of OpenSSL's `ASN1_TIME *X509_getm_notBefore(const X509 *x)`.
+ * The platform keeps the certificate alive while this descriptor exists, so the descriptors may be
+ * freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `time_d` A pointer where the descriptor of the time will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `time_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_getm_not_before(uint64_t x509_d, uint64_t* time_d);
+
+/**
+ * Platform binding of OpenSSL's `ASN1_TIME *X509_getm_notAfter(const X509 *x)`.
+ * The platform keeps the certificate alive while this descriptor exists, so the descriptors may be
+ * freed in any order. The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `time_d` A pointer where the descriptor of the time will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `time_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_getm_not_after(uint64_t x509_d, uint64_t* time_d);
+
+/**
+ * Platform binding of OpenSSL's `ASN1_TIME *ASN1_TIME_new(void)`.
+ * The descriptor must be freed with `k2_free_descriptor`.
+ *
+ * @param `time_d` A pointer where the descriptor of the time will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `time_d` is `NULL`.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_asn1_time_new(uint64_t* time_d);
+
+/**
+ * Platform binding of OpenSSL's `ASN1_TIME *ASN1_TIME_set(ASN1_TIME *s, time_t t)`.
+ *
+ * @param `time_d` The descriptor of a time made by `k2_openssl_asn1_time_new`.
+ * @param `t` The number of seconds since the Unix epoch.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `time_d` is not a descriptor of a time made by `k2_openssl_asn1_time_new`.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_asn1_time_set(uint64_t time_d, int64_t t);
+
+/**
+ * Platform binding of OpenSSL's `int ASN1_TIME_diff(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to)`.
+ *
+ * @param `from_d` The descriptor of a time.
+ * @param `to_d` The descriptor of a time.
+ * @param `days` A pointer where `pday` will be stored.
+ * @param `seconds` A pointer where `psec` will be stored.
+ * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `ASN1_TIME_diff`. Otherwise it is not touched.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `days` or `seconds` is `NULL`, or `from_d` or `to_d` is not a descriptor of a time.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_asn1_time_diff(uint64_t from_d, uint64_t to_d, int32_t* days, int32_t* seconds, int32_t* openssl_err);
+
+/**
+ * Platform binding of OpenSSL's `int X509_PURPOSE_get_count(void)`.
+ *
+ * @param `count` A pointer where the return value of `X509_PURPOSE_get_count` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `count` is `NULL`.
+ */
+int32_t k2_openssl_x509_purpose_get_count(int32_t* count);
+
+/**
+ * Platform binding of OpenSSL's `X509_PURPOSE *X509_PURPOSE_get0(int idx)`.
+ * The purpose is static, but its descriptor must still be freed with `k2_free_descriptor`.
+ *
+ * @param `idx` The index of the purpose.
+ * @param `purpose_d` A pointer where the descriptor of the purpose will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `purpose_d` is `NULL`.
+ * `ENOMEM` => The descriptor can not be created.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_purpose_get0(int32_t idx, uint64_t* purpose_d);
+
+/**
+ * Platform binding of OpenSSL's `int X509_PURPOSE_get_id(const X509_PURPOSE *xp)`.
+ *
+ * @param `purpose_d` The descriptor of a purpose.
+ * @param `id` A pointer where the return value of `X509_PURPOSE_get_id` will be stored.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `id` is `NULL`, or `purpose_d` is not a descriptor of a purpose.
+ */
+int32_t k2_openssl_x509_purpose_get_id(uint64_t purpose_d, int32_t* id);
+
+/**
+ * Platform binding of OpenSSL's `char *X509_PURPOSE_get0_name(const X509_PURPOSE *xp)`.
+ *
+ * @param `purpose_d` The descriptor of a purpose.
+ * @param `str` A pointer where the return value of `X509_PURPOSE_get0_name` (a `NUL`-terminated string) will be stored. The string is static and valid forever.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `str` is `NULL`, or `purpose_d` is not a descriptor of a purpose.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_purpose_get0_name(uint64_t purpose_d, const char** str);
+
+/**
+ * Platform binding of OpenSSL's `char *X509_PURPOSE_get0_sname(const X509_PURPOSE *xp)`.
+ *
+ * @param `purpose_d` The descriptor of a purpose.
+ * @param `str` A pointer where the return value of `X509_PURPOSE_get0_sname` (a `NUL`-terminated string) will be stored. The string is static and valid
+ * forever.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `str` is `NULL`, or `purpose_d` is not a descriptor of a purpose.
+ * `EIO` => OpenSSL failed.
+ */
+int32_t k2_openssl_x509_purpose_get0_sname(uint64_t purpose_d, const char** str);
+
+/**
+ * Platform binding of OpenSSL's `int X509_check_purpose(X509 *x, int id, int ca)`.
+ *
+ * @param `x509_d` The descriptor of a certificate.
+ * @param `id` The ID of the purpose.
+ * @param `ca` The `ca` argument of `X509_check_purpose`.
+ * @param `result` A pointer where the return value of `X509_check_purpose` will be stored: `1` if the certificate has the purpose,
+ *                 `0` if it has not, and `-1` if `id` is invalid.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `result` is `NULL`, or `x509_d` is not a descriptor of a certificate.
+ */
+int32_t k2_openssl_x509_check_purpose(uint64_t x509_d, int32_t id, int32_t ca, int32_t* result);
 
 /**
  * Platform binding of OpenSSL's `EVP_PKEY *X509_get_pubkey(X509 *x)`.
@@ -606,55 +977,53 @@ int32_t k2_openssl_pem_read_bio_x509(const void* pem, int32_t pem_len, uint64_t*
  * Possible `errno` values:
  * `EINVAL` => `pkey_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `X509_get_pubkey` returned `NULL`.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_x509_get_pubkey(uint64_t x509_d, uint64_t* pkey_d);
 
 /**
- * Platform binding of OpenSSL's `EVP_PKEY *PEM_read_bio_PUBKEY(BIO *bp, EVP_PKEY **x, pem_password_cb *cb, void *u)`.
- * Reads the first PEM encoded public key from the `pem` buffer. The BIO is created internally, the password callback is not used.
+ * Platform binding of OpenSSL's `EVP_PKEY *PEM_read_bio_PUBKEY(BIO *bp, EVP_PKEY **x, pem_password_cb *cb, void *u)` (`x`, `cb` and `u` are `NULL`).
  * The descriptor must be freed with `k2_free_descriptor`.
  *
- * @param `pem` A pointer to the PEM encoded data.
+ * @param `pem` A pointer to the PEM data.
  * @param `pem_len` The length of `pem`.
  * @param `pkey_d` A pointer where the descriptor of the public key will be stored.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `pem` or `pkey_d` is `NULL`, or `pem_len` exceeds `INT32_MAX`.
+ * `EINVAL` => `pem` or `pkey_d` is `NULL`, or `pem_len` is negative.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `PEM_read_bio_PUBKEY` returned `NULL`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_pem_read_bio_pubkey(const void* pem, size_t pem_len, uint64_t* pkey_d);
+int32_t k2_openssl_pem_read_bio_pubkey(const void* pem, int32_t pem_len, uint64_t* pkey_d);
 
 /**
- * Platform binding of OpenSSL's `EVP_PKEY *PEM_read_bio_PrivateKey(BIO *bp, EVP_PKEY **x, pem_password_cb *cb, void *u)`.
- * Reads the first PEM encoded private key from the `pem` buffer. The BIO is created internally.
- * If the key is encrypted, the password callback supplies `pass` up to its first `NUL` byte (as OpenSSL's default callback does for a C string).
- * The platform never asks anybody for a password: if `pass` is `NULL` or empty, an encrypted key can not be read.
+ * Platform binding of OpenSSL's `EVP_PKEY *PEM_read_bio_PrivateKey(BIO *bp, EVP_PKEY **x, pem_password_cb *cb, void *u)`
+ * (`x` and `cb` are `NULL`, `u` is the passphrase: the default callback of OpenSSL reads it as a `NUL`-terminated string).
  * The descriptor must be freed with `k2_free_descriptor`.
  *
- * @param `pem` A pointer to the PEM encoded data.
+ * @param `pem` A pointer to the PEM data.
  * @param `pem_len` The length of `pem`.
- * @param `pass` A pointer to the passphrase, may be `NULL`.
+ * @param `pass` A pointer to the passphrase, may be `NULL` (no passphrase). The passphrase does not need to be `NUL`-terminated: exactly `pass_len` bytes are
+ * read, and the part starting from the first `NUL` byte (if any) is ignored, as OpenSSL would do.
  * @param `pass_len` The length of `pass`.
  * @param `pkey_d` A pointer where the descriptor of the private key will be stored.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `pem` or `pkey_d` is `NULL`, or `pem_len` exceeds `INT32_MAX`.
+ * `EINVAL` => `pem` or `pkey_d` is `NULL`, or `pem_len` or `pass_len` is negative.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `PEM_read_bio_PrivateKey` returned `NULL`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_pem_read_bio_private_key(const void* pem, size_t pem_len, const void* pass, size_t pass_len, uint64_t* pkey_d);
+int32_t k2_openssl_pem_read_bio_private_key(const void* pem, int32_t pem_len, const void* pass, int32_t pass_len, uint64_t* pkey_d);
 
 /**
  * Platform binding of OpenSSL's `int EVP_PKEY_id(const EVP_PKEY *pkey)`.
  *
  * @param `pkey_d` The descriptor of a key.
- * @param `id` A pointer where the return value of `EVP_PKEY_id` will be stored (an `EVP_PKEY_*` type, e.g. `6` for `EVP_PKEY_RSA`).
+ * @param `id` A pointer where the return value of `EVP_PKEY_id` will be stored.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
@@ -662,6 +1031,19 @@ int32_t k2_openssl_pem_read_bio_private_key(const void* pem, size_t pem_len, con
  * `EINVAL` => `id` is `NULL`, or `pkey_d` is not a descriptor of a key.
  */
 int32_t k2_openssl_evp_pkey_id(uint64_t pkey_d, int32_t* id);
+
+/**
+ * Checks if the type of a key is rsa: `EVP_PKEY_id(pkey)` is `EVP_PKEY_RSA` or `EVP_PKEY_RSA2`.
+ *
+ * @param `pkey_d` The descriptor of a key.
+ * @param `is_rsa` A pointer where `1` will be stored if the key is an RSA key, and `0` otherwise.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `is_rsa` is `NULL`, or `pkey_d` is not a descriptor of a key.
+ */
+int32_t k2_openssl_evp_pkey_is_rsa(uint64_t pkey_d, int32_t* is_rsa);
 
 /**
  * Platform binding of OpenSSL's `int EVP_PKEY_size(const EVP_PKEY *pkey)`.
@@ -689,7 +1071,7 @@ int32_t k2_openssl_evp_pkey_size(uint64_t pkey_d, int32_t* size);
  * Possible `errno` values:
  * `EINVAL` => `rsa_d` is `NULL`, or `pkey_d` is not a descriptor of a key.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `EVP_PKEY_get1_RSA` returned `NULL` (the key is not an RSA key).
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_pkey_get1_rsa(uint64_t pkey_d, uint64_t* rsa_d);
 
@@ -700,20 +1082,20 @@ int32_t k2_openssl_evp_pkey_get1_rsa(uint64_t pkey_d, uint64_t* rsa_d);
  * @param `from` A pointer to the data to encrypt.
  * @param `from_len` The length of `from`.
  * @param `to` A pointer to the output buffer.
- * @param `to_len` The size of the output buffer, it must be at least `RSA_size(rsa)`.
+ * @param `to_len` The size of the output buffer, it must be at least `k2_openssl_evp_pkey_size(rsa_d)`.
  * @param `rsa_d` The descriptor of an RSA key.
  * @param `padding` The RSA padding.
- * @param `written` A pointer where the number of bytes written to `to` (the return value of `RSA_public_encrypt`) will be stored.
+ * @param `written` A pointer where the number of bytes written to `to` will be stored.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `RSA_public_encrypt`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `from`, `to` or `written` is `NULL`, `from_len` exceeds `INT32_MAX`, `padding` is unknown, or `rsa_d` is not a descriptor of an RSA key.
- * `ERANGE` => `to_len` is less than `RSA_size(rsa)`.
- * `EIO` => `RSA_public_encrypt` returned `-1`.
+ * `EINVAL` => `from`, `to` or `written` is `NULL`, `from_len` is negative, `padding` is not a `RsaPadding` value, or `rsa_d` is not a descriptor of an RSA key.
+ * `ERANGE` => `to_len` is less than `k2_openssl_evp_pkey_size(rsa_d)`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_rsa_public_encrypt(const void* from, size_t from_len, void* to, size_t to_len, uint64_t rsa_d, enum RsaPadding padding, int32_t* written,
+int32_t k2_openssl_rsa_public_encrypt(const void* from, int32_t from_len, void* to, int32_t to_len, uint64_t rsa_d, enum RsaPadding padding, int32_t* written,
                                       int32_t* openssl_err);
 
 /**
@@ -723,7 +1105,7 @@ int32_t k2_openssl_rsa_public_encrypt(const void* from, size_t from_len, void* t
  * @param `from` A pointer to the data to decrypt.
  * @param `from_len` The length of `from`.
  * @param `to` A pointer to the output buffer.
- * @param `to_len` The size of the output buffer, it must be at least `RSA_size(rsa)`.
+ * @param `to_len` The size of the output buffer, it must be at least `k2_openssl_evp_pkey_size(rsa_d)`.
  * @param `rsa_d` The descriptor of an RSA key.
  * @param `padding` The RSA padding.
  * @param `written` A pointer where the number of bytes written to `to` (the return value of `RSA_private_decrypt`) will be stored.
@@ -732,17 +1114,15 @@ int32_t k2_openssl_rsa_public_encrypt(const void* from, size_t from_len, void* t
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `from`, `to` or `written` is `NULL`, `from_len` exceeds `INT32_MAX`, `padding` is unknown, or `rsa_d` is not a descriptor of an RSA key.
- * `ERANGE` => `to_len` is less than `RSA_size(rsa)`.
- * `EIO` => `RSA_private_decrypt` returned `-1`.
+ * `EINVAL` => `from`, `to` or `written` is `NULL`, `from_len` is negative, `padding` is not a `RsaPadding` value, or `rsa_d` is not a descriptor of an RSA key.
+ * `ERANGE` => `to_len` is less than `k2_openssl_evp_pkey_size(rsa_d)`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_rsa_private_decrypt(const void* from, size_t from_len, void* to, size_t to_len, uint64_t rsa_d, enum RsaPadding padding, int32_t* written,
+int32_t k2_openssl_rsa_private_decrypt(const void* from, int32_t from_len, void* to, int32_t to_len, uint64_t rsa_d, enum RsaPadding padding, int32_t* written,
                                        int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's `EVP_MD_CTX *EVP_MD_CTX_new(void)`.
- * A context can be used for any number of operations (hashing, signing, verifying) one after another: every operation starts with
- * an init function (`k2_openssl_evp_digest_init_ex`, `k2_openssl_evp_sign_init`, `k2_openssl_evp_verify_init`), which resets the state of the previous one.
  * The descriptor must be freed with `k2_free_descriptor`.
  *
  * @param `md_ctx_d` A pointer where the descriptor of the context will be stored.
@@ -752,23 +1132,23 @@ int32_t k2_openssl_rsa_private_decrypt(const void* from, size_t from_len, void* 
  * Possible `errno` values:
  * `EINVAL` => `md_ctx_d` is `NULL`.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `EVP_MD_CTX_new` returned `NULL`.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_md_ctx_new(uint64_t* md_ctx_d);
 
 /**
- * Platform binding of OpenSSL's `int EVP_SignInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *impl)` (`impl` is `NULL`).
+ * Platform binding of OpenSSL's `int EVP_SignInit(EVP_MD_CTX *ctx, const EVP_MD *type)`.
  * `type` is selected by `algorithm`: `DIGEST_SHA1`, ..., `DIGEST_MD4` are `EVP_sha1()`, ..., `EVP_md4()`.
  *
  * @param `md_ctx_d` The descriptor of a context.
  * @param `algorithm` The message digest.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_SignInit_ex`. Otherwise it is not touched.
+ * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_SignInit`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context, `algorithm` is unknown or is `DIGEST_DSS1`, or the digest is not available in this OpenSSL build.
- * `EIO` => `EVP_SignInit_ex` did not return `1`.
+ * `EINVAL` => `md_ctx_d` is not a descriptor of a context, `algorithm` is unknown, or the digest is not available in this OpenSSL build.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_sign_init(uint64_t md_ctx_d, enum DigestAlgorithm algorithm, int32_t* openssl_err);
 
@@ -783,10 +1163,11 @@ int32_t k2_openssl_evp_sign_init(uint64_t md_ctx_d, enum DigestAlgorithm algorit
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_sign_init`, or `data` is `NULL` while `data_len` is not `0`.
- * `EIO` => `EVP_SignUpdate` did not return `1`.
+ * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_sign_init`, or `data` is `NULL` while `data_len` is not `0`, or
+ * `data_len` is negative.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_sign_update(uint64_t md_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
+int32_t k2_openssl_evp_sign_update(uint64_t md_ctx_d, const void* data, int32_t data_len, int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's
@@ -802,25 +1183,26 @@ int32_t k2_openssl_evp_sign_update(uint64_t md_ctx_d, const void* data, size_t d
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `sig` or `sig_len` is `NULL`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind, or the context was not initialized by `k2_openssl_evp_sign_init`.
+ * `EINVAL` => `sig` or `sig_len` is `NULL`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind, or the context was not initialized by
+ *             `k2_openssl_evp_sign_init`.
  * `ERANGE` => `sig_cap` is less than `EVP_PKEY_size(pkey)`.
- * `EIO` => `EVP_SignFinal` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_sign_final(uint64_t md_ctx_d, void* sig, size_t sig_cap, uint32_t* sig_len, uint64_t pkey_d, int32_t* openssl_err);
+int32_t k2_openssl_evp_sign_final(uint64_t md_ctx_d, void* sig, int32_t sig_cap, uint32_t* sig_len, uint64_t pkey_d, int32_t* openssl_err);
 
 /**
- * Platform binding of OpenSSL's `int EVP_VerifyInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *impl)` (`impl` is `NULL`).
+ * Platform binding of OpenSSL's `int EVP_VerifyInit(EVP_MD_CTX *ctx, const EVP_MD *type)`.
  * `type` is selected by `algorithm`: `DIGEST_SHA1`, ..., `DIGEST_MD4` are `EVP_sha1()`, ..., `EVP_md4()`.
  *
  * @param `md_ctx_d` The descriptor of a context.
  * @param `algorithm` The message digest.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_VerifyInit_ex`. Otherwise it is not touched.
+ * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_VerifyInit`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `md_ctx_d` is not a descriptor of a context, `algorithm` is unknown or is `DIGEST_DSS1`, or the digest is not available in this OpenSSL build.
- * `EIO` => `EVP_VerifyInit_ex` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_verify_init(uint64_t md_ctx_d, enum DigestAlgorithm algorithm, int32_t* openssl_err);
 
@@ -835,10 +1217,11 @@ int32_t k2_openssl_evp_verify_init(uint64_t md_ctx_d, enum DigestAlgorithm algor
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_verify_init`, or `data` is `NULL` while `data_len` is not `0`.
- * `EIO` => `EVP_VerifyUpdate` did not return `1`.
+ * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_verify_init`, or `data` is `NULL` while `data_len` is not `0`, or
+ * `data_len` is negative.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
+int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, int32_t data_len, int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's
@@ -848,7 +1231,7 @@ int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, size_t
  * @param `sig` A pointer to the signature. May be `NULL` if `sig_len` is `0`.
  * @param `sig_len` The length of `sig`.
  * @param `pkey_d` The descriptor of a public key.
- * @param `verified` A pointer where `1` will be stored if the signature is correct and `0` if it is not (the return value of `EVP_VerifyFinal`).
+ * @param `verified` A pointer where `1` will be stored if the signature is correct and `0` if it is not.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_VerifyFinal`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
@@ -856,7 +1239,7 @@ int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, size_t
  * Possible `errno` values:
  * `EINVAL` => `verified` is `NULL`, `sig` is `NULL` while `sig_len` is not `0`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind,
  *              or the context was not initialized by `k2_openssl_evp_verify_init`.
- * `EIO` => `EVP_VerifyFinal` returned a negative value (an error, not a wrong signature).
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_verify_final(uint64_t md_ctx_d, const void* sig, uint32_t sig_len, uint64_t pkey_d, int32_t* verified, int32_t* openssl_err);
 
@@ -864,17 +1247,18 @@ int32_t k2_openssl_evp_verify_final(uint64_t md_ctx_d, const void* sig, uint32_t
  * Platform binding of OpenSSL's `const EVP_CIPHER *EVP_get_cipherbyname(const char *name)`.
  * The descriptor must be freed with `k2_free_descriptor`.
  *
- * @param `name` A pointer to the `NUL`-terminated name of the cipher.
+ * @param `name` A pointer to the name of the cipher. It does not need to be `NUL`-terminated: exactly `name_len` bytes are read.
+ * @param `name_len` The length of `name`.
  * @param `cipher_d` A pointer where the descriptor of the cipher will be stored.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `name` or `cipher_d` is `NULL`.
+ * `EINVAL` => `name` or `cipher_d` is `NULL`, `name_len` is negative or too long for a cipher name, or `name` contains a `NUL` byte.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `EVP_get_cipherbyname` returned `NULL` (the cipher is unknown).
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_get_cipherbyname(const char* name, uint64_t* cipher_d);
+int32_t k2_openssl_evp_get_cipherbyname(const void* name, int32_t name_len, uint64_t* cipher_d);
 
 /**
  * Platform binding of OpenSSL's `int EVP_CIPHER_key_length(const EVP_CIPHER *cipher)`.
@@ -939,7 +1323,7 @@ int32_t k2_openssl_evp_cipher_mode(uint64_t cipher_d, int32_t* mode);
  * Possible `errno` values:
  * `EINVAL` => `cipher_ctx_d` is `NULL`.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `EVP_CIPHER_CTX_new` returned `NULL`.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_cipher_ctx_new(uint64_t* cipher_ctx_d);
 
@@ -948,9 +1332,10 @@ int32_t k2_openssl_evp_cipher_ctx_new(uint64_t* cipher_ctx_d);
  * `int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *type, ENGINE *impl, const unsigned char *key, const unsigned char *iv, int enc)`
  * (`impl` is `NULL`).
  *
- * OpenSSL reads the key and the IV without knowing their sizes, so the platform checks them after the cipher is set:
- * `key_len` must be at least the key length of the context (`EVP_CIPHER_CTX_key_length`) and `iv_len` must be at least the IV length of the context
- * (`EVP_CIPHER_CTX_iv_length`, which follows a successful `CIPHER_CTRL_AEAD_SET_IVLEN`). The check is skipped for a `NULL` key or IV.
+ * OpenSSL reads the key and the IV without knowing their sizes, so the platform checks them: if `key` is not `NULL`, `key_len` must be at least
+ * the key length of the cipher (`EVP_CIPHER_CTX_key_length`) and if `iv` is not `NULL`, `iv_len` must be at least the IV length
+ * (`EVP_CIPHER_CTX_iv_length`, which follows a successful `CIPHER_CTRL_AEAD_SET_IVLEN`). The lengths are taken from `cipher_d` if it is not `0`,
+ * otherwise from the cipher set in the context by an earlier call.
  *
  * @param `cipher_ctx_d` The descriptor of a context.
  * @param `cipher_d` The descriptor of a cipher, or `0` for `type == NULL` (keep the cipher set by an earlier call).
@@ -964,43 +1349,54 @@ int32_t k2_openssl_evp_cipher_ctx_new(uint64_t* cipher_ctx_d);
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `cipher_ctx_d` is not a descriptor of a context, `cipher_d` is neither `0` nor a descriptor of a cipher, or `enc` is not `-1`, `0` or `1`.
+ * `EINVAL` => `cipher_ctx_d` is not a descriptor of a context, `cipher_d` is neither `0` nor a descriptor of a cipher, `enc` is not `-1`, `0` or `1`,
+ *             or `cipher_d` is `0` while the context has no cipher and `key` or `iv` is not `NULL`.
  * `ERANGE` => `key_len` or `iv_len` is less than described above.
- * `EIO` => `EVP_CipherInit_ex` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_cipher_init_ex(uint64_t cipher_ctx_d, uint64_t cipher_d, const void* key, size_t key_len, const void* iv, size_t iv_len, int32_t enc,
+int32_t k2_openssl_evp_cipher_init_ex(uint64_t cipher_ctx_d, uint64_t cipher_d, const void* key, int32_t key_len, const void* iv, int32_t iv_len, int32_t enc,
                                       int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's `int EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)`.
+ * Only the controls of the "AEAD Interface" section of EVP_EncryptInit(3) of OpenSSL 1.1.1 are supported, and only for AEAD ciphers.
+ * The range checks that are not listed here (e.g. the IV length range of a mode, the state of the operation) are done by OpenSSL and reported as `EIO`.
+ *
+ * `CIPHER_CTRL_AEAD_SET_IVLEN`: `arg` is the IV length (must be positive), `ptr` is ignored. Must be called before the IV is set.
+ * `CIPHER_CTRL_AEAD_GET_TAG`: only when encrypting, after all the data is processed. `ptr` receives `arg` bytes of the tag, `arg` is in `1..=16`.
+ * `CIPHER_CTRL_AEAD_SET_TAG`: `arg` is in `1..=16`.
+ *     `ptr` is the expected tag of `arg` bytes (when decrypting).
+ *     `ptr` may be `NULL` only when encrypting (CCM and OCB): then `arg` is the length of the tag that will be produced.
  *
  * @param `cipher_ctx_d` The descriptor of a context.
  * @param `type` The control operation.
  * @param `arg` The `arg` argument of `EVP_CIPHER_CTX_ctrl`.
- * @param `ptr` The `ptr` argument of `EVP_CIPHER_CTX_ctrl`, may be `NULL`.
- * @param `ptr_len` The size of the memory `ptr` points to. If `ptr` is not `NULL`, it must be at least `arg`.
+ * @param `ptr` The `ptr` argument of `EVP_CIPHER_CTX_ctrl`, see above.
+ * @param `ptr_len` The size of the memory `ptr` points to. If `ptr` is used, it must be at least `arg`.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_CIPHER_CTX_ctrl`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `cipher_ctx_d` is not a descriptor of a context, `type` is unknown, `arg` is negative, or `ptr` is not `NULL` and `ptr_len` is less than `arg`.
- * `EIO` => `EVP_CIPHER_CTX_ctrl` did not return `1`.
+ * `EINVAL` => `cipher_ctx_d` is not a descriptor of a context with an AEAD cipher set, `type` is not a `CipherCtrl` value, or `arg`, `ptr` and `ptr_len`
+ *             do not satisfy the rules above.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_cipher_ctx_ctrl(uint64_t cipher_ctx_d, enum CipherCtrl type, int32_t arg, void* ptr, size_t ptr_len, int32_t* openssl_err);
+int32_t k2_openssl_evp_cipher_ctx_ctrl(uint64_t cipher_ctx_d, enum CipherCtrl type, int32_t arg, void* ptr, int32_t ptr_len, int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's `int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *x, int keylen)`.
  *
  * @param `cipher_ctx_d` The descriptor of a context.
  * @param `key_len` The new key length.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_CIPHER_CTX_set_key_length`. Otherwise it is not touched.
+ * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_CIPHER_CTX_set_key_length`. Otherwise it is not
+ * touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `cipher_ctx_d` is not a descriptor of a context with a cipher set, or `key_len` is negative.
- * `EIO` => `EVP_CIPHER_CTX_set_key_length` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_cipher_ctx_set_key_length(uint64_t cipher_ctx_d, int32_t key_len, int32_t* openssl_err);
 
@@ -1009,15 +1405,13 @@ int32_t k2_openssl_evp_cipher_ctx_set_key_length(uint64_t cipher_ctx_d, int32_t 
  *
  * @param `cipher_ctx_d` The descriptor of a context.
  * @param `pad` Non-zero to enable padding, `0` to disable it.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_CIPHER_CTX_set_padding`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
  * `EINVAL` => `cipher_ctx_d` is not a descriptor of a context.
- * `EIO` => `EVP_CIPHER_CTX_set_padding` did not return `1`.
  */
-int32_t k2_openssl_evp_cipher_ctx_set_padding(uint64_t cipher_ctx_d, int32_t pad, int32_t* openssl_err);
+int32_t k2_openssl_evp_cipher_ctx_set_padding(uint64_t cipher_ctx_d, int32_t pad);
 
 /**
  * Platform binding of OpenSSL's
@@ -1040,14 +1434,13 @@ int32_t k2_openssl_evp_cipher_ctx_set_padding(uint64_t cipher_ctx_d, int32_t pad
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `out_len` is `NULL`, `cipher_ctx_d` is not a descriptor of a context with a cipher set, `in_len` exceeds `INT32_MAX`,
- *              `in` is `NULL` while `out` is not `NULL` and `in_len` is not `0`,
- *              `out` is `NULL` and `in` is not `NULL` while the cipher is not an AEAD cipher (OpenSSL would write to `NULL`),
- *              or `out` and `in` are `NULL` (the CCM data length call) while the cipher is not a CCM cipher.
+ * `EINVAL` => `out_len` is `NULL`, `cipher_ctx_d` is not a descriptor of a context with a cipher and a key set (see `k2_openssl_evp_cipher_init_ex`), `in_len`
+ * is negative, `in` is `NULL` while `out` is not `NULL` and `in_len` is not `0`, `out` is `NULL` and `in` is not `NULL` while the cipher is not an AEAD cipher,
+ * or `out` and `in` are `NULL` while the cipher is not a CCM cipher.
  * `ERANGE` => `out` is not `NULL` and `out_cap` is less than described above.
- * `EIO` => `EVP_CipherUpdate` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_cipher_update(uint64_t cipher_ctx_d, void* out, size_t out_cap, int32_t* out_len, const void* in, size_t in_len, int32_t* openssl_err);
+int32_t k2_openssl_evp_cipher_update(uint64_t cipher_ctx_d, void* out, int32_t out_cap, int32_t* out_len, const void* in, int32_t in_len, int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's `int EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *outm, int *outl)`.
@@ -1062,313 +1455,159 @@ int32_t k2_openssl_evp_cipher_update(uint64_t cipher_ctx_d, void* out, size_t ou
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `out` or `out_len` is `NULL`, or `cipher_ctx_d` is not a descriptor of a context with a cipher set.
+ * `EINVAL` => `out` or `out_len` is `NULL`, or `cipher_ctx_d` is not a descriptor of a context with a cipher and a key set (see
+ * `k2_openssl_evp_cipher_init_ex`).
  * `ERANGE` => `out_cap` is less than described above.
- * `EIO` => `EVP_CipherFinal_ex` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_evp_cipher_final_ex(uint64_t cipher_ctx_d, void* out, size_t out_cap, int32_t* out_len, int32_t* openssl_err);
+int32_t k2_openssl_evp_cipher_final_ex(uint64_t cipher_ctx_d, void* out, int32_t out_cap, int32_t* out_len, int32_t* openssl_err);
 
 /**
- * Platform binding of OpenSSL's `X509_NAME *X509_get_subject_name(const X509 *a)`.
- * The name does not depend on the certificate: it stays valid after `x509_d` is freed.
- * The descriptor must be freed with `k2_free_descriptor`.
+ * Platform binding of OpenSSL's `unsigned char *SHA1(const unsigned char *d, size_t n, unsigned char *md)`.
  *
- * @param `x509_d` The descriptor of a certificate.
- * @param `name_d` A pointer where the descriptor of the name will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `name_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `X509_get_subject_name` returned `NULL`.
- */
-int32_t k2_openssl_x509_get_subject_name(uint64_t x509_d, uint64_t* name_d);
-
-/**
- * Platform binding of OpenSSL's `X509_NAME *X509_get_issuer_name(const X509 *a)`.
- * The name does not depend on the certificate: it stays valid after `x509_d` is freed.
- * The descriptor must be freed with `k2_free_descriptor`.
- *
- * @param `x509_d` The descriptor of a certificate.
- * @param `name_d` A pointer where the descriptor of the name will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `name_d` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `X509_get_issuer_name` returned `NULL`.
- */
-int32_t k2_openssl_x509_get_issuer_name(uint64_t x509_d, uint64_t* name_d);
-
-/**
- * Platform binding of OpenSSL's `char *X509_NAME_oneline(const X509_NAME *a, char *buf, int size)` (`buf` is `NULL`).
- * The string is created by the first call for the descriptor and reused by the following ones.
- *
- * @param `name_d` The descriptor of a name.
- * @param `str` A pointer where a pointer to the `NUL`-terminated string will be stored. The string is owned by `name_d`
- *              and is valid until `name_d` is freed.
- * @param `str_len` A pointer where the length of the string (without `NUL`) will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `str` or `str_len` is `NULL`, or `name_d` is not a descriptor of a name.
- * `EIO` => `X509_NAME_oneline` returned `NULL`.
- */
-int32_t k2_openssl_x509_name_oneline(uint64_t name_d, const char** str, size_t* str_len);
-
-/**
- * Platform binding of OpenSSL's `int X509_NAME_entry_count(const X509_NAME *name)`.
- *
- * @param `name_d` The descriptor of a name.
- * @param `count` A pointer where the return value of `X509_NAME_entry_count` will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `count` is `NULL`, or `name_d` is not a descriptor of a name.
- */
-int32_t k2_openssl_x509_name_entry_count(uint64_t name_d, int32_t* count);
-
-/**
- * Platform binding of OpenSSL's `X509_NAME_ENTRY *X509_NAME_get_entry(const X509_NAME *name, int loc)`
- * followed by `ASN1_OBJECT *X509_NAME_ENTRY_get_object(const X509_NAME_ENTRY *ne)` and `int OBJ_obj2nid(const ASN1_OBJECT *o)`.
- *
- * @param `name_d` The descriptor of a name.
- * @param `loc` The index of the entry.
- * @param `nid` A pointer where the return value of `OBJ_obj2nid` (the NID of the entry key) will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `nid` is `NULL`, `name_d` is not a descriptor of a name, or `loc` is not in `[0, X509_NAME_entry_count)`.
- */
-int32_t k2_openssl_x509_name_entry_nid(uint64_t name_d, int32_t loc, int32_t* nid);
-
-/**
- * Platform binding of OpenSSL's `X509_NAME_ENTRY *X509_NAME_get_entry(const X509_NAME *name, int loc)`
- * followed by `ASN1_STRING *X509_NAME_ENTRY_get_data(const X509_NAME_ENTRY *ne)`,
- * `const unsigned char *ASN1_STRING_get0_data(const ASN1_STRING *x)` and `int ASN1_STRING_length(const ASN1_STRING *x)`.
- *
- * @param `name_d` The descriptor of a name.
- * @param `loc` The index of the entry.
- * @param `data` A pointer where a pointer to the value of the entry will be stored. The value is owned by `name_d`
- *               and is valid until `name_d` is freed.
- * @param `data_len` A pointer where the length of the value will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `data` or `data_len` is `NULL`, `name_d` is not a descriptor of a name, or `loc` is not in `[0, X509_NAME_entry_count)`.
- */
-int32_t k2_openssl_x509_name_entry_data(uint64_t name_d, int32_t loc, const void** data, int32_t* data_len);
-
-/**
- * Platform binding of OpenSSL's `const char *OBJ_nid2sn(int n)`.
- *
- * @param `nid` A NID.
- * @param `str` A pointer where a pointer to the `NUL`-terminated string will be stored. The string is static and valid forever.
- * @param `str_len` A pointer where the length of the string (without `NUL`) will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `str` or `str_len` is `NULL`.
- * `EIO` => `OBJ_nid2sn` returned `NULL`.
- */
-int32_t k2_openssl_obj_nid2sn(int32_t nid, const char** str, size_t* str_len);
-
-/**
- * Platform binding of OpenSSL's `const char *OBJ_nid2ln(int n)`.
- *
- * @param `nid` A NID.
- * @param `str` A pointer where a pointer to the `NUL`-terminated string will be stored. The string is static and valid forever.
- * @param `str_len` A pointer where the length of the string (without `NUL`) will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `str` or `str_len` is `NULL`.
- * `EIO` => `OBJ_nid2ln` returned `NULL`.
- */
-int32_t k2_openssl_obj_nid2ln(int32_t nid, const char** str, size_t* str_len);
-
-/**
- * Platform binding of OpenSSL's `unsigned long X509_subject_name_hash(X509 *x)`.
- *
- * @param `x509_d` The descriptor of a certificate.
- * @param `hash` A pointer where the return value of `X509_subject_name_hash` will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `hash` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- */
-int32_t k2_openssl_x509_subject_name_hash(uint64_t x509_d, uint64_t* hash);
-
-/**
- * Platform binding of OpenSSL's `long X509_get_version(const X509 *x)`.
- *
- * @param `x509_d` The descriptor of a certificate.
- * @param `version` A pointer where the return value of `X509_get_version` will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `version` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- */
-int32_t k2_openssl_x509_get_version(uint64_t x509_d, int64_t* version);
-
-/**
- * Platform binding of OpenSSL's `int ASN1_TIME_diff(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to)`
- * where `from` is the Unix epoch (`1970-01-01 00:00:00`, made with `ASN1_TIME_set(NULL, 0)`) and `to` is `X509_getm_notBefore(x)`.
- *
- * @param `x509_d` The descriptor of a certificate.
- * @param `days` A pointer where `pday` will be stored.
- * @param `seconds` A pointer where `psec` will be stored.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned because of `ASN1_TIME_diff`, receives its return value. Otherwise it is not touched.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `days` or `seconds` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- * `EIO` => `ASN1_TIME_diff` did not return `1`, or the epoch can not be created. `days` and `seconds` are not written.
- */
-int32_t k2_openssl_x509_not_before_diff(uint64_t x509_d, int32_t* days, int32_t* seconds, int32_t* openssl_err);
-
-/**
- * Platform binding of OpenSSL's `int ASN1_TIME_diff(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to)`
- * where `from` is the Unix epoch (`1970-01-01 00:00:00`, made with `ASN1_TIME_set(NULL, 0)`) and `to` is `X509_getm_notAfter(x)`.
- *
- * @param `x509_d` The descriptor of a certificate.
- * @param `days` A pointer where `pday` will be stored.
- * @param `seconds` A pointer where `psec` will be stored.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned because of `ASN1_TIME_diff`, receives its return value. Otherwise it is not touched.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `days` or `seconds` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- * `EIO` => `ASN1_TIME_diff` did not return `1`, or the epoch can not be created. `days` and `seconds` are not written.
- */
-int32_t k2_openssl_x509_not_after_diff(uint64_t x509_d, int32_t* days, int32_t* seconds, int32_t* openssl_err);
-
-/**
- * Platform binding of OpenSSL's `int X509_PURPOSE_get_count(void)`.
- *
- * @param `count` A pointer where the return value of `X509_PURPOSE_get_count` will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `count` is `NULL`.
- */
-int32_t k2_openssl_x509_purpose_get_count(int32_t* count);
-
-/**
- * Platform binding of OpenSSL's `X509_PURPOSE *X509_PURPOSE_get0(int idx)` followed by `int X509_PURPOSE_get_id(const X509_PURPOSE *)`.
- *
- * @param `idx` The index of the purpose.
- * @param `id` A pointer where the return value of `X509_PURPOSE_get_id` (the ID of the purpose) will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `id` is `NULL`, or `idx` is not in `[0, X509_PURPOSE_get_count())`.
- */
-int32_t k2_openssl_x509_purpose_get_id(int32_t idx, int32_t* id);
-
-/**
- * Platform binding of OpenSSL's `X509_PURPOSE *X509_PURPOSE_get0(int idx)` followed by `char *X509_PURPOSE_get0_sname(const X509_PURPOSE *xp)`
- * (if `shortname` is not `0`) or `char *X509_PURPOSE_get0_name(const X509_PURPOSE *xp)` (if `shortname` is `0`).
- *
- * @param `idx` The index of the purpose.
- * @param `shortname` Non-zero to get the short name, `0` to get the long name.
- * @param `str` A pointer where a pointer to the `NUL`-terminated string will be stored. The string is static and valid forever.
- * @param `str_len` A pointer where the length of the string (without `NUL`) will be stored.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `str` or `str_len` is `NULL`, or `idx` is not in `[0, X509_PURPOSE_get_count())`.
- * `EIO` => The OpenSSL function returned `NULL`.
- */
-int32_t k2_openssl_x509_purpose_get0_name(int32_t idx, int32_t shortname, const char** str, size_t* str_len);
-
-/**
- * Platform binding of OpenSSL's `int X509_check_purpose(X509 *x, int id, int ca)`.
- *
- * @param `x509_d` The descriptor of a certificate.
- * @param `id` The ID of the purpose.
- * @param `ca` The `ca` argument of `X509_check_purpose`.
- * @param `result` A pointer where the return value of `X509_check_purpose` will be stored: `1` if the certificate has the purpose,
- *                 `0` if it has not, and `-1` if `id` is invalid. The platform does not interpret the value.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `result` is `NULL`, or `x509_d` is not a descriptor of a certificate.
- */
-int32_t k2_openssl_x509_check_purpose(uint64_t x509_d, int32_t id, int32_t ca, int32_t* result);
-
-/**
- * Platform binding of OpenSSL's `int EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *impl)` (`impl` is `NULL`).
- * `type` is selected by `algorithm`: `HASH_SHA1`, ..., `HASH_MD4` are `EVP_sha1()`, ..., `EVP_md4()`.
- * The context may have been used for another operation before, it is reset.
- *
- * @param `md_ctx_d` The descriptor of a context.
- * @param `algorithm` The hash algorithm.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_DigestInit_ex`. Otherwise it is not touched.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context, `algorithm` is unknown, or the digest is not available in this OpenSSL build.
- * `EIO` => `EVP_DigestInit_ex` did not return `1`.
- */
-int32_t k2_openssl_evp_digest_init_ex(uint64_t md_ctx_d, enum HashAlgorithm algorithm, int32_t* openssl_err);
-
-/**
- * Platform binding of OpenSSL's `int EVP_DigestUpdate(EVP_MD_CTX *ctx, const void *d, size_t cnt)`.
- *
- * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_digest_init_ex`.
  * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
  * @param `data_len` The length of `data`.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_DigestUpdate`. Otherwise it is not touched.
+ * @param `md` A pointer to the output buffer, it receives `SHA_DIGEST_LENGTH` (20) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `SHA_DIGEST_LENGTH`.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_digest_init_ex` (a context is not initialized anymore after
- *             `k2_openssl_evp_digest_final_ex`), or `data` is `NULL` while `data_len` is not `0`.
- * `EIO` => `EVP_DigestUpdate` did not return `1`.
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `SHA_DIGEST_LENGTH`.
  */
-int32_t k2_openssl_evp_digest_update(uint64_t md_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
+int32_t k2_openssl_sha1(const void* data, int32_t data_len, void* md, int32_t md_cap);
 
 /**
- * Platform binding of OpenSSL's `int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s)`.
- * The context must be initialized again with `k2_openssl_evp_digest_init_ex` before it is used for another operation.
+ * Platform binding of OpenSSL's `unsigned char *SHA224(const unsigned char *d, size_t n, unsigned char *md)`.
  *
- * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_digest_init_ex`.
- * @param `md` A pointer to the output buffer.
- * @param `md_cap` The size of the output buffer, it must be at least `EVP_MD_size` of the digest of the context.
- * @param `md_len` A pointer where the length of the digest (the `s` argument of `EVP_DigestFinal_ex`) will be stored.
- * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_DigestFinal_ex`. Otherwise it is not touched.
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `SHA224_DIGEST_LENGTH` (28) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `SHA224_DIGEST_LENGTH`.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md` or `md_len` is `NULL`, or `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_digest_init_ex`.
- * `ERANGE` => `md_cap` is less than `EVP_MD_size` of the digest of the context.
- * `EIO` => `EVP_DigestFinal_ex` did not return `1`.
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `SHA224_DIGEST_LENGTH`.
  */
-int32_t k2_openssl_evp_digest_final_ex(uint64_t md_ctx_d, void* md, size_t md_cap, uint32_t* md_len, int32_t* openssl_err);
+int32_t k2_openssl_sha224(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `SHA256_DIGEST_LENGTH` (32) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `SHA256_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `SHA256_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_sha256(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *SHA384(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `SHA384_DIGEST_LENGTH` (48) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `SHA384_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `SHA384_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_sha384(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *SHA512(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `SHA512_DIGEST_LENGTH` (64) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `SHA512_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `SHA512_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_sha512(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *MD5(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `MD5_DIGEST_LENGTH` (16) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `MD5_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `MD5_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_md5(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *RIPEMD160(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `RIPEMD160_DIGEST_LENGTH` (20) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `RIPEMD160_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `ERANGE` => `md_cap` is less than `RIPEMD160_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_ripemd160(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *MD4(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `MD4_DIGEST_LENGTH` (16) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `MD4_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative, or the function is not available in this OpenSSL build.
+ * `ERANGE` => `md_cap` is less than `MD4_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_md4(const void* data, int32_t data_len, void* md, int32_t md_cap);
+
+/**
+ * Platform binding of OpenSSL's `unsigned char *MD2(const unsigned char *d, size_t n, unsigned char *md)`.
+ *
+ * @param `data` A pointer to the data to hash. May be `NULL` if `data_len` is `0`.
+ * @param `data_len` The length of `data`.
+ * @param `md` A pointer to the output buffer, it receives `MD2_DIGEST_LENGTH` (16) bytes.
+ * @param `md_cap` The size of the output buffer, it must be at least `MD2_DIGEST_LENGTH`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => `md` is `NULL`, `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative, or the function is not available in this OpenSSL build.
+ * `ERANGE` => `md_cap` is less than `MD2_DIGEST_LENGTH`.
+ */
+int32_t k2_openssl_md2(const void* data, int32_t data_len, void* md, int32_t md_cap);
 
 /**
  * Platform binding of OpenSSL's `HMAC_CTX *HMAC_CTX_new(void)`.
- * A context can compute any number of HMACs one after another: every one starts with `k2_openssl_hmac_init_ex`.
  * The descriptor must be freed with `k2_free_descriptor`.
  *
  * @param `hmac_ctx_d` A pointer where the descriptor of the context will be stored.
@@ -1378,30 +1617,29 @@ int32_t k2_openssl_evp_digest_final_ex(uint64_t md_ctx_d, void* md, size_t md_ca
  * Possible `errno` values:
  * `EINVAL` => `hmac_ctx_d` is `NULL`.
  * `ENOMEM` => The descriptor can not be created.
- * `EIO` => `HMAC_CTX_new` returned `NULL`.
+ * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_hmac_ctx_new(uint64_t* hmac_ctx_d);
 
 /**
  * Platform binding of OpenSSL's `int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, int len, const EVP_MD *md, ENGINE *impl)` (`impl` is `NULL`).
  * `md` is selected by `algorithm`: `HASH_SHA1`, ..., `HASH_MD4` are `EVP_sha1()`, ..., `EVP_md4()`.
- * The key passed to OpenSSL is never `NULL` (`NULL` makes `HMAC_Init_ex` reuse the previous key): if `key_len` is `0`, the platform passes a pointer to
- * a single zero byte, as `HMAC()` does. The context may have been used for another HMAC before, it is reset.
+ * The key is always set (unlike OpenSSL, there is no way to keep the key of an earlier call), so a context can be reused with any `algorithm`.
  *
  * @param `hmac_ctx_d` The descriptor of a context.
- * @param `key` A pointer to the HMAC key. May be `NULL` if `key_len` is `0`.
- * @param `key_len` The length of `key`, it must fit `int`.
+ * @param `key` A pointer to the HMAC key. May be `NULL` if `key_len` is `0`, that is an empty key.
+ * @param `key_len` The length of `key`.
  * @param `algorithm` The hash algorithm.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `HMAC_Init_ex`. Otherwise it is not touched.
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `hmac_ctx_d` is not a descriptor of an HMAC context, `key` is `NULL` while `key_len` is not `0`, `key_len` does not fit `int`,
+ * `EINVAL` => `hmac_ctx_d` is not a descriptor of an HMAC context, `key` is `NULL` while `key_len` is not `0`, `key_len` is negative,
  *             `algorithm` is unknown, or the digest is not available in this OpenSSL build.
- * `EIO` => `HMAC_Init_ex` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_hmac_init_ex(uint64_t hmac_ctx_d, const void* key, size_t key_len, enum HashAlgorithm algorithm, int32_t* openssl_err);
+int32_t k2_openssl_hmac_init_ex(uint64_t hmac_ctx_d, const void* key, int32_t key_len, enum HashAlgorithm algorithm, int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's `int HMAC_Update(HMAC_CTX *ctx, const unsigned char *data, size_t len)`.
@@ -1415,14 +1653,13 @@ int32_t k2_openssl_hmac_init_ex(uint64_t hmac_ctx_d, const void* key, size_t key
  *
  * Possible `errno` values:
  * `EINVAL` => `hmac_ctx_d` is not a descriptor of an HMAC context initialized by `k2_openssl_hmac_init_ex` (a context is not initialized anymore after
- *             `k2_openssl_hmac_final`), or `data` is `NULL` while `data_len` is not `0`.
- * `EIO` => `HMAC_Update` did not return `1`.
+ *             `k2_openssl_hmac_final`), `data` is `NULL` while `data_len` is not `0`, or `data_len` is negative.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_hmac_update(uint64_t hmac_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
+int32_t k2_openssl_hmac_update(uint64_t hmac_ctx_d, const void* data, int32_t data_len, int32_t* openssl_err);
 
 /**
  * Platform binding of OpenSSL's `int HMAC_Final(HMAC_CTX *ctx, unsigned char *md, unsigned int *len)`.
- * The context must be initialized again with `k2_openssl_hmac_init_ex` before it is used for another HMAC.
  *
  * @param `hmac_ctx_d` The descriptor of a context initialized by `k2_openssl_hmac_init_ex`.
  * @param `md` A pointer to the output buffer.
@@ -1433,11 +1670,12 @@ int32_t k2_openssl_hmac_update(uint64_t hmac_ctx_d, const void* data, size_t dat
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md` or `md_len` is `NULL`, or `hmac_ctx_d` is not a descriptor of an HMAC context initialized by `k2_openssl_hmac_init_ex`.
+ * `EINVAL` => `md` or `md_len` is `NULL`, `md_cap` is negative, or `hmac_ctx_d` is not a descriptor of an HMAC context initialized by
+ *             `k2_openssl_hmac_init_ex`.
  * `ERANGE` => `md_cap` is less than `EVP_MD_size` of the digest of the context.
- * `EIO` => `HMAC_Final` did not return `1`.
+ * `EIO` => OpenSSL failed.
  */
-int32_t k2_openssl_hmac_final(uint64_t hmac_ctx_d, void* md, size_t md_cap, uint32_t* md_len, int32_t* openssl_err);
+int32_t k2_openssl_hmac_final(uint64_t hmac_ctx_d, void* md, int32_t md_cap, uint32_t* md_len, int32_t* openssl_err);
 
 /**
  * Try to send rpc request to actor. On success, write descriptor of the corresponding rpc query to `rpc_d`.
