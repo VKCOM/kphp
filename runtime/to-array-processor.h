@@ -4,34 +4,17 @@
 
 #pragma once
 
+#include <memory>
 #include <string_view>
 
-#include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/shape-visitors.h"
 
-class ShapeKeyDemangle : vk::not_copyable {
-public:
-  friend class vk::singleton<ShapeKeyDemangle>;
-
-  void init(std::unordered_map<std::int64_t, std::string_view>&& shape_keys_storage) noexcept {
-    inited_ = true;
-    shape_keys_storage_ = std::move(shape_keys_storage);
-  }
-
-  std::string_view get_key_by(std::int64_t tag) const noexcept {
-    php_assert(inited_);
-    auto key_it = shape_keys_storage_.find(tag);
-    php_assert(key_it != shape_keys_storage_.end());
-    return key_it->second;
-  }
-
-private:
-  ShapeKeyDemangle() = default;
-
-  bool inited_{false};
-  std::unordered_map<std::int64_t, std::string_view> shape_keys_storage_;
-};
+template<>
+inline const ShapeKeyDemangle<std::allocator>& ShapeKeyDemangle<std::allocator>::get() noexcept {
+  return vk::singleton<ShapeKeyDemangle<std::allocator>>::get();
+}
 
 class ToArrayVisitor {
 public:
@@ -54,7 +37,7 @@ public:
 
   template<size_t... Is, typename... T>
   static void process_shape(const shape<std::index_sequence<Is...>, T...>& shape, ToArrayVisitor& visitor) {
-    auto& demangler = vk::singleton<ShapeKeyDemangle>::get();
+    const auto& demangler{ShapeKeyDemangle<std::allocator>::get()};
     (visitor.process_impl(demangler.get_key_by(Is).data(), shape.template get<Is>()), ...);
   }
 
