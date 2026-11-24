@@ -13,9 +13,9 @@
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/array-visitors.h"
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
-#include "runtime-light/stdlib/visitors/array-visitors.h"
 #include "runtime-light/stdlib/visitors/instance-deep-copy-visitor.h"
 #include "runtime-light/stdlib/visitors/instance-deep-estimate-size-visitor.h"
 

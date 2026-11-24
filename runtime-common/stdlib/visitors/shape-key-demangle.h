@@ -9,14 +9,16 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
-template<template<class> class Allocator>
 struct ShapeKeyDemangle final : vk::not_copyable {
-  using storage_type = kphp::stl::unordered_map<int64_t, std::string_view, Allocator>;
+  using storage_type = kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator>;
 
   ShapeKeyDemangle() = default;
+
+  static const ShapeKeyDemangle& get() noexcept;
 
   void init(storage_type&& shape_keys_storage) noexcept {
     inited_ = true;
@@ -30,9 +32,10 @@ struct ShapeKeyDemangle final : vk::not_copyable {
     return key_it->second;
   }
 
-  static const ShapeKeyDemangle& get() noexcept;
-
 private:
   bool inited_{};
+  // Initialized once during startup.
+  // In the legacy runtime, heap_replacer is active at that point, so storage is allocated from the heap; the map is never reset after switching to the script allocator.
+  // Runtime-light has no such transition.
   storage_type shape_keys_storage_;
 };

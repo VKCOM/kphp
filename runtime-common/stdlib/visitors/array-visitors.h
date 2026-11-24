@@ -1,21 +1,19 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2025 LLC «V Kontakte»
+// Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
+#include <cstddef>
 #include <string_view>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/components/kphp/state/image-state.h"
-
-template<>
-inline const ShapeKeyDemangle<kphp::memory::script_allocator>& ShapeKeyDemangle<kphp::memory::script_allocator>::get() noexcept {
-  return ImageState::get().shape_key_demangler;
-}
+#include "runtime-common/stdlib/visitors/shape-key-demangle.h"
 
 class ToArrayVisitor {
 public:
@@ -38,7 +36,7 @@ public:
 
   template<size_t... Is, typename... T>
   void process_shape(const shape<std::index_sequence<Is...>, T...>& shape) noexcept {
-    const auto& demangler{ShapeKeyDemangle<kphp::memory::script_allocator>::get()};
+    const auto& demangler{ShapeKeyDemangle::get()};
     (this->process_impl(demangler.get_key_by(Is).data(), shape.template get<Is>()), ...);
   }
 
@@ -51,7 +49,7 @@ public:
 
     if constexpr (!std::is_empty_v<I>) {
       void* instance_raw_ptr{instance.get()->get_instance_data_raw_ptr()};
-      if (active_instances_set.contains(instance_raw_ptr)) {
+      if (active_instances_set.find(instance_raw_ptr) != active_instances_set.end()) {
         return;
       }
       active_instances_set.emplace(instance_raw_ptr);
@@ -142,6 +140,8 @@ private:
   bool with_class_names_{};
   kphp::stl::unordered_set<void*, kphp::memory::script_allocator> active_instances_set;
 };
+
+// ===========================================================================================================================
 
 template<class T>
 array<mixed> f$to_array_debug(const class_instance<T>& klass, bool with_class_names = false) noexcept {

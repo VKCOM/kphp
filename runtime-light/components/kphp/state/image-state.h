@@ -14,9 +14,8 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/visitors/shape-visitors.h"
+#include "runtime-common/stdlib/visitors/shape-key-demangle.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -43,7 +42,7 @@ struct ImageState final : private vk::not_copyable {
   string uname_info_m;
   string uname_info_a;
 
-  ShapeKeyDemangle<kphp::memory::script_allocator> shape_key_demangler;
+  ShapeKeyDemangle shape_key_demangler;
 
   FileSystemImageState file_system_image_state;
   SerializationImageState serialization_image_state;

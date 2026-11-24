@@ -23,6 +23,7 @@ prepend(
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
+  visitors/shape-key-demangle.cpp
   server/http-functions.cpp
   string/regex-functions.cpp
   system/system-functions.cpp
