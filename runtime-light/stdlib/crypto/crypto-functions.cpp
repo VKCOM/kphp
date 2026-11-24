@@ -8,6 +8,7 @@
 #include <array>
 #include <cerrno>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <expected>
 #include <functional>
@@ -19,6 +20,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
@@ -40,7 +42,7 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   k2::SystemTime now{};
   k2::system_time(std::addressof(now));
   // Error occurs only if arguments are invalid.
-  [[maybe_unused]] auto _{k2::openssl_rand_add(std::as_bytes(std::span{std::addressof(now), 1}), 0.0)};
+  std::ignore = k2::openssl_rand_add(std::as_bytes(std::span{std::addressof(now), 1}), 0.0);
   if (!k2::openssl_rand_bytes(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}))) [[unlikely]] {
     return false;
   }
@@ -101,11 +103,6 @@ array<mixed> x509_get_purposes(const kphp::openssl::x509& cert, bool shortnames)
   return res;
 }
 
-string hash_to_hex(uint64_t hash) noexcept {
-  const std::array<char, 4> bytes{static_cast<char>(hash >> 24), static_cast<char>(hash >> 16), static_cast<char>(hash >> 8), static_cast<char>(hash)};
-  return kphp::strings::bin2hex(std::string_view{bytes.data(), bytes.size()});
-}
-
 int64_t convert_asn1_time(const std::optional<kphp::openssl::asn1_time>& epoch, const kphp::openssl::asn1_time& time) noexcept {
   const auto diff{epoch ? epoch->diff(time) : time.diff_from_now()};
   return diff ? int64_t{diff->days} * 24 * 60 * 60 + diff->seconds : 0;
@@ -141,7 +138,7 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
   auto epoch{kphp::openssl::asn1_time::create()};
   std::optional<kphp::openssl::asn1_time> epoch_opt{std::nullopt};
   if (epoch) [[likely]] {
-    [[maybe_unused]] auto _{epoch->set(0)};
+    std::ignore = epoch->set(0);
     epoch_opt = *std::move(epoch);
   }
 
@@ -157,10 +154,17 @@ Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames)
 
   const auto& crypto_state{kphp::openssl::crypto_image_state::get()};
 
-  return std::initializer_list<std::pair<string, mixed>>{{crypto_state.NAME_STR, string{name->c_str()}}, {crypto_state.SUBJECT_STR, std::move(subject)},
-                                                         {crypto_state.HASH_STR, hash_to_hex(*hash)},    {crypto_state.ISSUER_STR, std::move(issuer)},
-                                                         {crypto_state.VERSION_STR, *version},           {crypto_state.VALID_FROM_TIME_T_STR, valid_from},
-                                                         {crypto_state.VALID_TO_TIME_T_STR, valid_to},   {crypto_state.PURPOSES_STR, std::move(purposes)}};
+  const std::array<char, 4> hash_bytes{static_cast<char>(*hash >> 24), static_cast<char>(*hash >> 16), static_cast<char>(*hash >> 8), static_cast<char>(*hash)};
+
+  return std::initializer_list<std::pair<string, mixed>>{
+      {crypto_state.NAME_STR, string{name->c_str()}},
+      {crypto_state.SUBJECT_STR, std::move(subject)},
+      {crypto_state.HASH_STR, kphp::strings::bin2hex(std::string_view{hash_bytes.data(), hash_bytes.size()})},
+      {crypto_state.ISSUER_STR, std::move(issuer)},
+      {crypto_state.VERSION_STR, *version},
+      {crypto_state.VALID_FROM_TIME_T_STR, valid_from},
+      {crypto_state.VALID_TO_TIME_T_STR, valid_to},
+      {crypto_state.PURPOSES_STR, std::move(purposes)}};
 }
 
 namespace {
@@ -302,230 +306,266 @@ constexpr int64_t OPENSSL_RAW_DATA{1};
 constexpr int64_t OPENSSL_ZERO_PADDING{2};
 constexpr int64_t OPENSSL_DONT_ZERO_PAD_KEY{4};
 
-// The largest IV and key of the ciphers of OpenSSL, `EVP_MAX_IV_LENGTH` and `EVP_MAX_KEY_LENGTH`.
-constexpr size_t MAX_IV_LEN{16};
-constexpr size_t MAX_KEY_LEN{64};
-
-constexpr auto CIPHER_METHODS{[]() noexcept {
+constexpr auto CIPHER_ALGORITHMS{[]() noexcept {
   auto arr{std::array<std::string_view, 4>{"aes-128-cbc", "aes-256-cbc", "aes-128-gcm", "aes-256-gcm"}};
   std::ranges::sort(arr);
   return arr;
 }()};
 
-// returns the name from `CIPHER_METHODS` that matches `method` ignoring the case
-std::optional<std::string_view> find_cipher_method(std::string_view method) noexcept {
-  auto lowered{std::ranges::transform_view{method, vk::tolower_ascii}};
-
-  auto rng{std::ranges::equal_range(CIPHER_METHODS, lowered, std::ranges::lexicographical_compare)};
-  if (!rng.empty()) [[likely]] {
-    return rng.front();
-  }
-
-  return std::nullopt;
-}
-
-std::expected<kphp::openssl::cipher, int32_t> cipher_by_method(const string& method) noexcept {
-  const auto name{find_cipher_method({method.c_str(), method.size()})};
-  if (!name) {
-    return std::unexpected{EINVAL};
-  }
-
-  return kphp::openssl::cipher::create_by_name(*name);
-}
-
-struct cipher_session {
-  kphp::openssl::cipher type;
-  // the context of the instance: the first `init_ex` with a cipher resets the state left by the previous session
-  const kphp::openssl::cipher_ctx& ctx;
-  size_t key_len;
-  size_t iv_len;
-  size_t block_size;
-  bool encrypt;
-  bool aead;
-  bool single_run_aead;
-};
-
-std::optional<cipher_session> open_cipher_session(const string& method, bool encrypt) noexcept {
-  auto type{cipher_by_method(method)};
-  if (!type) {
-    kphp::log::warning("Unknown cipher algorithm '{}'", method.c_str());
+std::optional<std::string_view> find_cipher_algorithm(std::string_view name) noexcept {
+  const auto lowered{std::ranges::transform_view{name, vk::tolower_ascii}};
+  const auto found{std::ranges::equal_range(CIPHER_ALGORITHMS, lowered, std::ranges::lexicographical_compare)};
+  if (found.empty()) {
     return std::nullopt;
   }
 
-  const auto mode{type->mode()};
-  const auto key_len{type->key_length()};
-  const auto iv_len{type->iv_length()};
-  const auto block_size{type->block_size()};
-  if (!mode || !key_len || !iv_len || !block_size) [[unlikely]] {
-    kphp::log::warning("Failed to get the parameters of cipher '{}'", method.c_str());
+  return found.front();
+}
+
+enum class cipher_direction : uint8_t { ENCRYPT, DECRYPT };
+
+struct cipher_session {
+  kphp::openssl::cipher cipher;
+  // the context of the instance: the first `init_ex` with a cipher resets the state left by the previous session
+  const kphp::openssl::cipher_ctx& ctx;
+  cipher_direction direction;
+  size_t key_length;
+  size_t iv_length;
+  size_t block_size;
+  bool is_aead;
+  // CCM: the length of the data has to be set before the data is processed
+  bool is_single_run_aead;
+
+  bool encrypts() const noexcept {
+    return direction == cipher_direction::ENCRYPT;
+  }
+};
+
+std::optional<cipher_session> open_cipher_session(const string& algorithm, cipher_direction direction) noexcept {
+  const auto name{find_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
+  if (!name) {
+    kphp::log::warning("unknown cipher algorithm '{}'", algorithm.c_str());
+    return std::nullopt;
+  }
+
+  auto cipher{kphp::openssl::cipher::create_by_name(*name)};
+  if (!cipher) {
+    kphp::log::warning("failed to create cipher '{}'", algorithm.c_str());
+    return std::nullopt;
+  }
+
+  const auto mode{cipher->mode()};
+  const auto key_length{cipher->key_length()};
+  const auto iv_length{cipher->iv_length()};
+  const auto block_size{cipher->block_size()};
+  if (!mode || !key_length || !iv_length || !block_size) [[unlikely]] {
+    kphp::log::warning("failed to get the parameters of cipher '{}'", algorithm.c_str());
     return std::nullopt;
   }
 
   const auto ctx{kphp::openssl::crypto_instance_state::get().cipher_ctx()};
   if (!ctx) {
-    kphp::log::warning("Failed to create cipher context");
+    kphp::log::warning("failed to create cipher context");
     return std::nullopt;
   }
 
   const bool is_gcm{*mode == k2::CipherMode::CIPHER_MODE_GCM};
   const bool is_ccm{*mode == k2::CipherMode::CIPHER_MODE_CCM};
-  return cipher_session{.type = std::move(*type),
+
+  return cipher_session{.cipher = std::move(*cipher),
                         .ctx = **ctx,
-                        .key_len = static_cast<size_t>(*key_len),
-                        .iv_len = static_cast<size_t>(*iv_len),
+                        .direction = direction,
+                        .key_length = static_cast<size_t>(*key_length),
+                        .iv_length = static_cast<size_t>(*iv_length),
                         .block_size = static_cast<size_t>(*block_size),
-                        .encrypt = encrypt,
-                        .aead = is_gcm || is_ccm,
-                        .single_run_aead = is_ccm};
+                        .is_aead = is_gcm || is_ccm,
+                        .is_single_run_aead = is_ccm};
 }
 
-// `tag` is the tag to check when decrypting and the requested tag, the length of which matters, when encrypting
-bool init_cipher(const cipher_session& session, const string& key, const string& iv, int64_t options, const string& tag) noexcept {
-  const auto& ctx{session.ctx};
-  const int32_t enc{session.encrypt ? 1 : 0};
-
-  if (session.encrypt && iv.empty() && session.iv_len > 0) {
-    kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
+// Returns the iv the cipher is initialized with: the passed one, or its copy in `buffer` if it has to be padded with zeros.
+std::optional<std::span<const std::byte>> get_cipher_iv(const cipher_session& session, const string& iv, std::span<std::byte> buffer) noexcept {
+  const std::span<const std::byte> iv_bytes{std::as_bytes(std::span{iv.c_str(), iv.size()})};
+  if (iv.size() == session.iv_length) {
+    return iv_bytes;
   }
 
-  if (!ctx.init_ex(session.type, {}, {}, enc)) {
-    kphp::log::warning("Cipher init error");
+  if (session.is_aead) {
+    if (!session.ctx.set_iv_length(static_cast<int32_t>(iv.size()))) {
+      kphp::log::warning("setting of IV length for AEAD mode failed");
+      return std::nullopt;
+    }
+
+    return iv_bytes;
+  }
+
+  if (iv.empty()) {
+    kphp::log::assertion(session.iv_length <= buffer.size());
+    return std::span<const std::byte>{buffer.data(), session.iv_length};
+  }
+
+  if (iv.size() < session.iv_length) {
+    kphp::log::assertion(session.iv_length <= buffer.size());
+    kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), session.iv_length);
+    std::memcpy(buffer.data(), iv.c_str(), iv.size());
+    return std::span<const std::byte>{buffer.data(), session.iv_length};
+  }
+
+  kphp::log::warning("IV passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", iv.size(), session.iv_length);
+
+  return iv_bytes.first(session.iv_length);
+}
+
+// Returns the key the cipher is initialized with: the passed one, or its copy in `buffer` if it has to be padded with zeros.
+std::optional<std::span<const std::byte>> get_cipher_key(const cipher_session& session, const string& key, int64_t options,
+                                                         std::span<std::byte> buffer) noexcept {
+  const std::span<const std::byte> key_bytes{std::as_bytes(std::span{key.c_str(), key.size()})};
+  if (key.size() < session.key_length) {
+    // a short key is always padded with zeros, `OPENSSL_DONT_ZERO_PAD_KEY` only makes the cipher accept the key of the shorter length as well
+    if ((options & OPENSSL_DONT_ZERO_PAD_KEY) && !session.ctx.set_key_length(static_cast<int32_t>(key.size()))) {
+      kphp::log::warning("key length cannot be set for the cipher method");
+      return std::nullopt;
+    }
+
+    kphp::log::assertion(session.key_length <= buffer.size());
+    std::memcpy(buffer.data(), key.c_str(), key.size());
+
+    return std::span<const std::byte>{buffer.data(), session.key_length};
+  }
+
+  if (key.size() > session.key_length && !session.ctx.set_key_length(static_cast<int32_t>(key.size()))) {
+    kphp::log::warning("key length cannot be set for the cipher method");
+  }
+
+  return key_bytes;
+}
+
+bool set_tag(const cipher_session& session, const string& tag) noexcept {
+  if (session.is_single_run_aead && session.encrypts()) {
+    if (!session.ctx.set_tag_length(static_cast<int32_t>(tag.size()))) {
+      kphp::log::warning("setting tag length for AEAD cipher failed");
+      return false;
+    }
+  } else if (!session.encrypts() && !tag.empty()) {
+    if (!session.is_aead) {
+      kphp::log::warning("the tag cannot be used because the cipher method does not support AEAD");
+    } else if (!session.ctx.set_tag(std::as_bytes(std::span{tag.c_str(), tag.size()}))) {
+      kphp::log::warning("setting tag for AEAD cipher decryption failed");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool init_cipher(const cipher_session& session, const string& key, const string& iv, int64_t options, const string& tag) noexcept {
+  static constexpr size_t MAX_IV_LEN{16};
+  static constexpr size_t MAX_KEY_LEN{64};
+
+  const auto& ctx{session.ctx};
+  const int32_t encrypt{session.encrypts()};
+
+  if (session.encrypts() && iv.empty() && session.iv_length > 0) {
+    kphp::log::warning("using an empty Initialization Vector (iv) is potentially insecure and not recommended");
+  }
+
+  if (!ctx.init_ex(session.cipher, {}, {}, encrypt)) {
+    kphp::log::warning("cipher init error");
     return false;
   }
 
-  // the IV is the passed one unless it has to be padded or truncated
-  std::array<std::byte, MAX_IV_LEN> padded_iv{};
-  std::span<const std::byte> iv_bytes{std::as_bytes(std::span{iv.c_str(), iv.size()})};
-  if (iv.size() != session.iv_len) {
-    if (session.aead) {
-      if (!ctx.set_iv_length(static_cast<int32_t>(iv.size()))) {
-        kphp::log::warning("Setting of IV length for AEAD mode failed");
-        return false;
-      }
-    } else if (iv.empty()) {
-      kphp::log::assertion(session.iv_len <= padded_iv.size());
-      iv_bytes = {padded_iv.data(), session.iv_len};
-    } else if (iv.size() < session.iv_len) {
-      kphp::log::assertion(session.iv_len <= padded_iv.size());
-      kphp::log::warning("IV passed is only {} bytes long, cipher expects an IV of precisely {} bytes, padding with \\0", iv.size(), session.iv_len);
-      std::memcpy(padded_iv.data(), iv.c_str(), iv.size());
-      iv_bytes = {padded_iv.data(), session.iv_len};
-    } else {
-      kphp::log::warning("IV passed is {} bytes long which is longer than the {} expected by selected cipher, truncating", iv.size(), session.iv_len);
-      iv_bytes = iv_bytes.first(session.iv_len);
-    }
+  std::array<std::byte, MAX_IV_LEN> iv_buffer{};
+  const auto fitted_iv{get_cipher_iv(session, iv, iv_buffer)};
+  if (!fitted_iv || !set_tag(session, tag)) {
+    return false;
   }
 
-  if (session.single_run_aead && session.encrypt) {
-    if (!ctx.set_tag_length(static_cast<int32_t>(tag.size()))) {
-      kphp::log::warning("Setting tag length for AEAD cipher failed");
-      return false;
-    }
-  } else if (!session.encrypt && !tag.empty()) {
-    if (!session.aead) {
-      kphp::log::warning("The tag cannot be used because the cipher method does not support AEAD");
-    } else if (!ctx.set_tag(std::as_bytes(std::span{tag.c_str(), tag.size()}))) {
-      kphp::log::warning("Setting tag for AEAD cipher decryption failed");
-      return false;
-    }
+  std::array<std::byte, MAX_KEY_LEN> key_buffer{};
+  const auto fitted_key{get_cipher_key(session, key, options, key_buffer)};
+  if (!fitted_key) {
+    return false;
   }
 
-  // a short key is always padded with zeros, `OPENSSL_DONT_ZERO_PAD_KEY` only makes the cipher accept the key of the shorter length as well
-  std::array<std::byte, MAX_KEY_LEN> padded_key{};
-  std::span<const std::byte> key_bytes{std::as_bytes(std::span{key.c_str(), key.size()})};
-  if (session.key_len > key.size()) {
-    if ((options & OPENSSL_DONT_ZERO_PAD_KEY) && !ctx.set_key_length(static_cast<int32_t>(key.size()))) {
-      kphp::log::warning("Key length cannot be set for the cipher method");
-      return false;
-    }
-
-    kphp::log::assertion(session.key_len <= padded_key.size());
-    std::memcpy(padded_key.data(), key.c_str(), key.size());
-    key_bytes = {padded_key.data(), session.key_len};
-  } else if (key.size() > session.key_len && !ctx.set_key_length(static_cast<int32_t>(key.size()))) {
-    kphp::log::warning("Key length cannot be set for the cipher method");
-  }
-
-  if (!ctx.init_ex(key_bytes, iv_bytes, enc)) {
-    kphp::log::warning("Cipher init error");
+  if (!ctx.init_ex(*fitted_key, *fitted_iv, encrypt)) {
+    kphp::log::warning("cipher init error");
     return false;
   }
 
   if (options & OPENSSL_ZERO_PADDING) {
-    ctx.set_padding(0);
+    std::ignore = ctx.set_padding(0);
   }
 
   return true;
 }
 
-std::optional<string> process_cipher_data(const cipher_session& session, const string& data, const string& aad) noexcept {
+std::optional<string> apply_cipher(const cipher_session& session, const string& data, const string& aad) noexcept {
   const auto& ctx{session.ctx};
 
   if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    kphp::log::warning("Data is too long for the cipher");
+    kphp::log::warning("data is too long for the cipher");
     return std::nullopt;
   }
 
-  if (session.single_run_aead && !ctx.set_data_length(static_cast<int32_t>(data.size()))) {
-    kphp::log::warning("Setting of data length failed");
+  if (session.is_single_run_aead && !ctx.set_data_length(static_cast<int32_t>(data.size()))) {
+    kphp::log::warning("setting of data length failed");
     return std::nullopt;
   }
 
-  if (session.aead && !ctx.update({}, std::as_bytes(std::span{aad.c_str(), aad.size()}))) {
-    kphp::log::warning("Setting of additional application data failed");
+  if (session.is_aead && !ctx.update({}, std::as_bytes(std::span{aad.c_str(), aad.size()}))) {
+    kphp::log::warning("setting of additional application data failed");
     return std::nullopt;
   }
 
-  string out{static_cast<string::size_type>(data.size() + session.block_size), false};
-  const auto out_bytes{std::as_writable_bytes(std::span{out.buffer(), out.size()})};
-  const auto out_len{ctx.update(out_bytes, std::as_bytes(std::span{data.c_str(), data.size()}))};
-  if (!out_len) {
-    kphp::log::warning("Cipher update error");
+  string result{static_cast<string::size_type>(data.size() + session.block_size), false};
+  const auto result_bytes{std::as_writable_bytes(std::span{result.buffer(), result.size()})};
+  const auto updated_len{ctx.update(result_bytes, std::as_bytes(std::span{data.c_str(), data.size()}))};
+  if (!updated_len) {
+    kphp::log::warning("cipher update error");
     return std::nullopt;
   }
 
-  const auto final_len{ctx.final_ex(out_bytes.subspan(*out_len))};
+  const auto final_len{ctx.final_ex(result_bytes.subspan(*updated_len))};
   if (!final_len) {
-    kphp::log::warning("Cipher finalize error");
+    kphp::log::warning("cipher finalize error");
     return std::nullopt;
   }
 
-  out.shrink(static_cast<string::size_type>(*out_len + *final_len));
-  return out;
+  result.shrink(static_cast<string::size_type>(*updated_len + *final_len));
+
+  return result;
 }
 
-// the tag is received only after the data is processed
-bool make_tag(const cipher_session& session, string& tag) noexcept {
-  if (session.aead && !tag.empty()) {
+bool receive_tag(const cipher_session& session, string& tag) noexcept {
+  if (session.is_aead && !tag.empty()) {
     if (session.ctx.get_tag(std::as_writable_bytes(std::span{tag.buffer(), tag.size()}))) {
       return true;
     }
 
-    kphp::log::warning("Retrieving verification tag failed");
+    kphp::log::warning("retrieving verification tag failed");
+
     return false;
   }
 
   if (!tag.empty()) {
-    kphp::log::warning("The authenticated tag cannot be provided for cipher that doesn not support AEAD");
-  } else if (session.aead) {
-    kphp::log::warning("A tag should be provided when using AEAD mode");
+    kphp::log::warning("the authenticated tag cannot be provided for cipher that doesn not support AEAD");
+  } else if (session.is_aead) {
+    kphp::log::warning("a tag should be provided when using AEAD mode");
     return false;
   }
 
   tag = string{};
+
   return true;
 }
 
-// `tag_out` is `nullptr` when decrypting and points to `tag` when encrypting
-Optional<string> eval_cipher(bool encrypt, const string& data, const string& method, const string& key, int64_t options, const string& iv, const string& tag,
-                             string* tag_out, const string& aad) noexcept {
-  const auto session{open_cipher_session(method, encrypt)};
+Optional<string> run_cipher(cipher_direction direction, const string& data, const string& algorithm, const string& key, int64_t options, const string& iv,
+                            string& tag, const string& aad) noexcept {
+  const auto session{open_cipher_session(algorithm, direction)};
   if (!session || !init_cipher(*session, key, iv, options, tag)) {
     return false;
   }
 
-  auto result{process_cipher_data(*session, data, aad)};
-  if (!result || (encrypt && !make_tag(*session, *tag_out))) {
+  auto result{apply_cipher(*session, data, aad)};
+  if (!result || (session->encrypts() && !receive_tag(*session, tag))) {
     return false;
   }
 
@@ -535,8 +575,8 @@ Optional<string> eval_cipher(bool encrypt, const string& data, const string& met
 } // namespace
 
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
-  array<string> res{array_size{CIPHER_METHODS.size(), true}};
-  for (const auto method : CIPHER_METHODS) {
+  array<string> res{array_size{CIPHER_ALGORITHMS.size(), true}};
+  for (const auto method : CIPHER_ALGORITHMS) {
     res.push_back(string{method.data(), static_cast<string::size_type>(method.size())});
   }
 
@@ -544,9 +584,15 @@ array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexce
 }
 
 Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
-  const auto iv_len{cipher_by_method(algorithm).and_then([](const kphp::openssl::cipher& c) noexcept { return c.iv_length(); })};
+  const auto name{find_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
+  if (!name) {
+    kphp::log::warning("unknown cipher algorithm {}", algorithm.c_str());
+    return false;
+  }
+
+  const auto iv_len{kphp::openssl::cipher::create_by_name(*name).and_then([](const kphp::openssl::cipher& c) noexcept { return c.iv_length(); })};
   if (!iv_len) {
-    kphp::log::warning("Unknown cipher algorithm");
+    kphp::log::warning("failed to get iv length of cipher algorithm {}", algorithm.c_str());
     return false;
   }
 
@@ -555,19 +601,19 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept {
 
 Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv,
                                    std::optional<std::reference_wrapper<string>> tag, const string& aad, int64_t tag_length) noexcept {
-  // the length matters for the tag only when it is requested, the tag itself is received by `eval_cipher`
   string out_tag;
   if (tag) {
     if (tag_length < 0 || tag_length > string::max_size()) [[unlikely]] {
-      kphp::log::warning("Invalid tag length {}", tag_length);
+      kphp::log::warning("invalid tag length {}", tag_length);
       return false;
     }
 
     out_tag = string{static_cast<string::size_type>(tag_length), false};
   }
 
-  auto result{eval_cipher(true, data, algorithm, key, options, iv, out_tag, std::addressof(out_tag), aad)};
+  auto result{run_cipher(cipher_direction::ENCRYPT, data, algorithm, key, options, iv, out_tag, aad)};
   if (!result.has_value()) {
+    kphp::log::warning("failed to encrypt data");
     return false;
   }
 
@@ -582,10 +628,10 @@ Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, 
   return f$base64_encode(result.val());
 }
 
-Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv, const string& tag,
+Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv, string tag,
                                    const string& aad) noexcept {
   if (options & OPENSSL_RAW_DATA) {
-    return eval_cipher(false, data, algorithm, key, options, iv, tag, nullptr, aad);
+    return run_cipher(cipher_direction::DECRYPT, data, algorithm, key, options, iv, tag, aad);
   }
 
   auto decoded_data{f$base64_decode(data, true)};
@@ -594,7 +640,7 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
     return false;
   }
 
-  return eval_cipher(false, decoded_data.val(), algorithm, key, options, iv, tag, nullptr, aad);
+  return run_cipher(cipher_direction::DECRYPT, decoded_data.val(), algorithm, key, options, iv, tag, aad);
 }
 
 Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
