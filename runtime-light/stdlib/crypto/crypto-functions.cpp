@@ -39,7 +39,8 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   string buffer{static_cast<string::size_type>(length), false};
   k2::SystemTime now{};
   k2::system_time(std::addressof(now));
-  [[maybe_unused]] auto _ = k2::openssl_rand_add(std::as_bytes(std::span{std::addressof(now), 1}), 0.0);
+  // Error occurs only if arguments are invalid.
+  [[maybe_unused]] auto _{k2::openssl_rand_add(std::as_bytes(std::span{std::addressof(now), 1}), 0.0)};
   if (!k2::openssl_rand_bytes(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}))) [[unlikely]] {
     return false;
   }
@@ -49,67 +50,50 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
 
 namespace {
 
-std::optional<array<mixed>> x509_get_name_entries(const kphp::openssl::x509_name& name, bool shortnames) noexcept {
+array<mixed> x509_get_name_entries(const kphp::openssl::x509_name& name, bool shortnames) noexcept {
+  // These getters cannot fail for a parsed certificate (the old runtime does not check them either).
   const auto count{name.entry_count()};
-  if (!count) [[unlikely]] {
-    return std::nullopt;
-  }
+  kphp::log::assertion(count.has_value());
 
   array<mixed> res{array_size{static_cast<int64_t>(*count), false}};
   for (int32_t i = 0; i < *count; ++i) {
     const auto entry{name.entry(i)};
-    if (!entry) [[unlikely]] {
-      return std::nullopt;
-    }
-
+    kphp::log::assertion(entry.has_value());
     const auto key_object{entry->object()};
+    kphp::log::assertion(key_object.has_value());
     const auto value{entry->data()};
-    if (!key_object || !value) [[unlikely]] {
-      return std::nullopt;
-    }
-
+    kphp::log::assertion(value.has_value());
     const auto nid{key_object->obj2nid()};
-    if (!nid) [[unlikely]] {
-      return std::nullopt;
-    }
-
+    kphp::log::assertion(nid.has_value());
     const auto key_str{shortnames ? k2::openssl_obj_nid2sn(*nid) : k2::openssl_obj_nid2ln(*nid)};
+    kphp::log::assertion(key_str.has_value());
     const auto value_data{value->data()};
+    kphp::log::assertion(value_data.has_value());
     const auto value_len{value->length()};
-    if (!key_str || !value_data || !value_len) [[unlikely]] {
-      return std::nullopt;
-    }
+    kphp::log::assertion(value_len.has_value());
 
-    res.set_value(string{*key_str}, *value_len == 0 ? string{} : string{static_cast<const char*>(*value_data), static_cast<string::size_type>(*value_len)});
+    res.set_value(string{*key_str}, string{static_cast<const char*>(*value_data), static_cast<string::size_type>(*value_len)});
   }
 
   return res;
 }
 
-std::optional<array<mixed>> x509_get_purposes(const kphp::openssl::x509& cert, bool shortnames) noexcept {
+array<mixed> x509_get_purposes(const kphp::openssl::x509& cert, bool shortnames) noexcept {
+  // These getters cannot fail for a parsed certificate (the old runtime does not check them either).
   const auto count{kphp::openssl::x509_purpose::count()};
-  if (!count) [[unlikely]] {
-    return std::nullopt;
-  }
-
+  kphp::log::assertion(count.has_value());
   array<mixed> res{array_size{static_cast<int64_t>(*count), false}};
   for (int32_t i = 0; i < *count; ++i) {
     const auto purpose{kphp::openssl::x509_purpose::get(i)};
-    if (!purpose) [[unlikely]] {
-      return std::nullopt;
-    }
-
+    kphp::log::assertion(purpose.has_value());
     const auto id{purpose->id()};
+    kphp::log::assertion(id.has_value());
     const auto name{shortnames ? purpose->sname() : purpose->name()};
-    if (!id || !name) [[unlikely]] {
-      return std::nullopt;
-    }
-
+    kphp::log::assertion(name.has_value());
     const auto purpset_0{cert.check_purpose(*id, 0)};
+    kphp::log::assertion(purpset_0.has_value());
     const auto purpset_1{cert.check_purpose(*id, 1)};
-    if (!purpset_0 || !purpset_1) [[unlikely]] {
-      return std::nullopt;
-    }
+    kphp::log::assertion(purpset_1.has_value());
 
     res.set_value(static_cast<int64_t>(*id), array<mixed>::create(*purpset_0 != 0, *purpset_1 != 0, string{*name}));
   }
@@ -118,93 +102,81 @@ std::optional<array<mixed>> x509_get_purposes(const kphp::openssl::x509& cert, b
 }
 
 string hash_to_hex(uint64_t hash) noexcept {
-  constexpr std::string_view hex_digits{"0123456789abcdef"};
-  constexpr string::size_type hash_str_size{8};
-
-  string res{hash_str_size, false};
-  for (auto i{hash_str_size}; i > 0; --i, hash >>= 4) {
-    res[i - 1] = hex_digits[hash & 0xf];
-  }
-
-  return res;
+  const std::array<char, 4> bytes{static_cast<char>(hash >> 24), static_cast<char>(hash >> 16), static_cast<char>(hash >> 8), static_cast<char>(hash)};
+  return kphp::strings::bin2hex(std::string_view{bytes.data(), bytes.size()});
 }
 
-std::optional<int64_t> convert_asn1_time(const kphp::openssl::asn1_time& epoch, const kphp::openssl::asn1_time& time) noexcept {
-  const auto diff{epoch.diff(time)};
-  if (!diff) {
-    return diff.error() == EIO ? std::optional<int64_t>{0} : std::nullopt;
-  }
-
-  return int64_t{diff->days} * 24 * 60 * 60 + diff->seconds;
+int64_t convert_asn1_time(const std::optional<kphp::openssl::asn1_time>& epoch, const kphp::openssl::asn1_time& time) noexcept {
+  const auto diff{epoch ? epoch->diff(time) : time.diff_from_now()};
+  return diff ? int64_t{diff->days} * 24 * 60 * 60 + diff->seconds : 0;
 }
 
 } // namespace
 
 Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames) noexcept {
-  const auto cert{kphp::openssl::x509::read_bio(std::as_bytes(std::span{data.c_str(), data.size()}))};
+  const auto cert{kphp::openssl::x509::from_pem(std::as_bytes(std::span{data.c_str(), data.size()}))};
   if (!cert) {
     return false;
   }
 
+  // These getters cannot fail for a parsed certificate (the old runtime does not check them either).
   const auto subject_name{cert->subject_name()};
+  kphp::log::assertion(subject_name.has_value());
   const auto issuer_name{cert->issuer_name()};
+  kphp::log::assertion(issuer_name.has_value());
   const auto hash{cert->subject_name_hash()};
+  kphp::log::assertion(hash.has_value());
   const auto version{cert->version()};
-  if (!subject_name || !issuer_name || !hash || !version) [[unlikely]] {
-    kphp::log::warning("failed to get X509 certificate fields");
+  kphp::log::assertion(version.has_value());
+
+  const auto name{subject_name->oneline()};
+  if (!name) [[unlikely]] {
+    kphp::log::warning("failed to get X509 subject name");
     return false;
   }
 
-  const auto name{subject_name->oneline()};
   auto subject{x509_get_name_entries(*subject_name, shortnames)};
   auto issuer{x509_get_name_entries(*issuer_name, shortnames)};
-  const auto epoch{kphp::openssl::asn1_time::create()};
-  if (!epoch || !epoch->set(0)) [[unlikely]] {
-    kphp::log::warning("failed to get X509 certificate fields");
-    return false;
+
+  auto epoch{kphp::openssl::asn1_time::create()};
+  std::optional<kphp::openssl::asn1_time> epoch_opt{std::nullopt};
+  if (epoch) [[likely]] {
+    [[maybe_unused]] auto _{epoch->set(0)};
+    epoch_opt = *std::move(epoch);
   }
 
   const auto not_before{cert->not_before()};
+  kphp::log::assertion(not_before.has_value());
   const auto not_after{cert->not_after()};
-  if (!not_before || !not_after) [[unlikely]] {
-    kphp::log::warning("failed to get X509 certificate fields");
-    return false;
-  }
+  kphp::log::assertion(not_after.has_value());
 
-  const auto valid_from{convert_asn1_time(*epoch, *not_before)};
-  const auto valid_to{convert_asn1_time(*epoch, *not_after)};
+  const auto valid_from{convert_asn1_time(epoch_opt, *not_before)};
+  const auto valid_to{convert_asn1_time(epoch_opt, *not_after)};
+
   auto purposes{x509_get_purposes(*cert, shortnames)};
-  if (!name || !subject || !issuer || !valid_from || !valid_to || !purposes) [[unlikely]] {
-    kphp::log::warning("failed to get X509 certificate fields");
-    return false;
-  }
 
   const auto& crypto_state{kphp::openssl::crypto_image_state::get()};
 
-  return std::initializer_list<std::pair<string, mixed>>{{crypto_state.NAME_STR, string{name->c_str()}}, {crypto_state.SUBJECT_STR, std::move(*subject)},
-                                                         {crypto_state.HASH_STR, hash_to_hex(*hash)},    {crypto_state.ISSUER_STR, std::move(*issuer)},
-                                                         {crypto_state.VERSION_STR, *version},           {crypto_state.VALID_FROM_TIME_T_STR, *valid_from},
-                                                         {crypto_state.VALID_TO_TIME_T_STR, *valid_to},  {crypto_state.PURPOSES_STR, std::move(*purposes)}};
+  return std::initializer_list<std::pair<string, mixed>>{{crypto_state.NAME_STR, string{name->c_str()}}, {crypto_state.SUBJECT_STR, std::move(subject)},
+                                                         {crypto_state.HASH_STR, hash_to_hex(*hash)},    {crypto_state.ISSUER_STR, std::move(issuer)},
+                                                         {crypto_state.VERSION_STR, *version},           {crypto_state.VALID_FROM_TIME_T_STR, valid_from},
+                                                         {crypto_state.VALID_TO_TIME_T_STR, valid_to},   {crypto_state.PURPOSES_STR, std::move(purposes)}};
 }
 
 namespace {
 
 // A key argument is either a handle returned by openssl_pkey_get_{public,private} or a PEM string.
-// A handle is a tag followed by the raw bytes of a platform descriptor, which lives until the end of the instance.
-// The tag tells a public key from a private one. No valid PEM is that short, so the size alone tells a handle from a PEM.
-constexpr char PUBLIC_KEY_HANDLE_TAG{';'};
-constexpr char PRIVATE_KEY_HANDLE_TAG{':'};
-constexpr size_t PKEY_HANDLE_SIZE{1 + sizeof(k2::descriptor)};
+// A handle is the raw bytes of a platform descriptor, which lives until the end of the instance.
+constexpr size_t PKEY_HANDLE_SIZE{sizeof(k2::descriptor)};
 
-std::optional<kphp::openssl::pkey> borrow_pkey_handle(const string& key, char tag) noexcept {
-  if (key.size() != PKEY_HANDLE_SIZE || key[0] != tag) {
+std::optional<kphp::openssl::pkey> borrow_pkey_handle(const string& key) noexcept {
+  if (key.size() != PKEY_HANDLE_SIZE) {
     return std::nullopt;
   }
 
   k2::descriptor descriptor{};
-  std::memcpy(std::addressof(descriptor), key.c_str() + 1, sizeof(descriptor));
+  std::memcpy(std::addressof(descriptor), key.c_str(), sizeof(descriptor));
 
-  // a forged handle is rejected here: the platform knows what its descriptors are
   auto handle{kphp::openssl::pkey::borrow(descriptor)};
   if (!handle.id()) {
     return std::nullopt;
@@ -214,12 +186,11 @@ std::optional<kphp::openssl::pkey> borrow_pkey_handle(const string& key, char ta
 }
 
 // Gives the key to the instance: the platform frees its descriptor when the instance ends.
-string make_pkey_handle(kphp::openssl::pkey key, char tag) noexcept {
+string make_pkey_handle(kphp::openssl::pkey key) noexcept {
   const auto descriptor{key.release()};
 
   string handle{static_cast<string::size_type>(PKEY_HANDLE_SIZE), false};
-  handle[0] = tag;
-  std::memcpy(handle.buffer() + 1, std::addressof(descriptor), sizeof(descriptor));
+  std::memcpy(handle.buffer(), std::addressof(descriptor), sizeof(descriptor));
 
   return handle;
 }
@@ -227,36 +198,35 @@ string make_pkey_handle(kphp::openssl::pkey key, char tag) noexcept {
 // Accepts either a certificate, in which case the key is taken from it, or a public key.
 std::expected<kphp::openssl::pkey, int32_t> parse_public_key(const string& key) noexcept {
   const auto pem{std::as_bytes(std::span{key.c_str(), key.size()})};
-  if (const auto cert{kphp::openssl::x509::read_bio(pem)}; cert) {
+  if (const auto cert{kphp::openssl::x509::from_pem(pem)}; cert) {
     return cert->pubkey();
   }
 
-  return kphp::openssl::pkey::read_bio_pubkey(pem);
+  return kphp::openssl::pkey::public_from_pem(pem);
 }
 
 std::expected<kphp::openssl::pkey, int32_t> load_public_key(const string& key) noexcept {
-  if (auto handle{borrow_pkey_handle(key, PUBLIC_KEY_HANDLE_TAG)}; handle) {
+  if (auto handle{borrow_pkey_handle(key)}; handle) {
     return std::move(*handle);
   }
 
   return parse_public_key(key);
 }
 
-// an empty passphrase is no passphrase at all, as in the legacy runtime
-std::expected<kphp::openssl::pkey, int32_t> read_private_key(const string& key, const string& passphrase) noexcept {
-  return kphp::openssl::pkey::read_bio_private_key(std::as_bytes(std::span{key.c_str(), key.size()}),
-                                                   std::as_bytes(std::span{passphrase.c_str(), passphrase.size()}));
+std::expected<kphp::openssl::pkey, int32_t> parse_private_key(const string& key, const string& passphrase) noexcept {
+  return kphp::openssl::pkey::private_from_pem(std::as_bytes(std::span{key.c_str(), key.size()}),
+                                               std::as_bytes(std::span{passphrase.c_str(), passphrase.size()}));
 }
 
 std::expected<kphp::openssl::pkey, int32_t> load_private_key(const string& key) noexcept {
-  if (auto handle{borrow_pkey_handle(key, PRIVATE_KEY_HANDLE_TAG)}; handle) {
+  if (auto handle{borrow_pkey_handle(key)}; handle) {
     return std::move(*handle);
   }
 
-  return read_private_key(key, string{});
+  return parse_private_key(key, string{});
 }
 
-std::optional<k2::DigestAlgorithm> parse_digest_algorithm(int64_t algorithm) noexcept {
+std::optional<k2::DigestAlgorithm> get_digest_algorithm(int64_t algorithm) noexcept {
   if (algorithm < 0 || algorithm >= k2::DigestAlgorithm::COUNT_DIGEST) {
     return std::nullopt;
   }
@@ -267,32 +237,26 @@ std::optional<k2::DigestAlgorithm> parse_digest_algorithm(int64_t algorithm) noe
 } // namespace
 
 bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm) noexcept {
-  const auto digest{parse_digest_algorithm(algorithm)};
+  const auto digest{get_digest_algorithm(algorithm)};
   if (!digest) [[unlikely]] {
-    kphp::log::warning("Unknown signature algorithm");
-    return false;
-  }
-
-  // the failure of everything but the algorithm is reported after the key is loaded, as in the legacy runtime
-  const auto ctx{kphp::openssl::crypto_instance_state::get().md_ctx()};
-  const auto init{ctx.and_then([digest](const kphp::openssl::md_ctx* c) noexcept { return c->sign_init(*digest); })};
-  if (!init && init.error() == EINVAL) [[unlikely]] {
-    kphp::log::warning("Unknown signature algorithm");
+    kphp::log::warning("unknown signature algorithm");
     return false;
   }
 
   const auto key{load_private_key(private_key)};
   if (!key) [[unlikely]] {
-    kphp::log::warning("Parameter key cannot be converted into a private key");
+    kphp::log::warning("parameter key cannot be converted into a private key");
     return false;
   }
 
+  // Reuse md_ctx from cache to avoid allocation
+  // It's safe, because we call init, that resets md_ctx state.
+  const auto ctx{kphp::openssl::crypto_instance_state::get().md_ctx()};
   if (const auto size{key->size()}; size) {
     string buffer{static_cast<string::size_type>(*size), false};
-    const auto sig_len{
-        init.and_then([&]() noexcept { return (*ctx)->sign_update(std::as_bytes(std::span{data.c_str(), data.size()})); }).and_then([&]() noexcept {
-          return (*ctx)->sign_final(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}), *key);
-        })};
+    const auto sig_len{ctx.and_then([&](const kphp::openssl::md_ctx* c) noexcept { return c->sign_init(*digest); })
+                           .and_then([&]() noexcept { return (*ctx)->sign_update(std::as_bytes(std::span{data.c_str(), data.size()})); })
+                           .and_then([&]() noexcept { return (*ctx)->sign_final(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}), *key); })};
     if (sig_len) {
       buffer.shrink(static_cast<string::size_type>(*sig_len));
       signature = std::move(buffer);
@@ -301,36 +265,34 @@ bool f$openssl_sign(const string& data, string& signature, const string& private
   }
 
   signature = string{};
-  kphp::log::warning("Can't create signature for data");
+  kphp::log::warning("can't create signature for data");
+
   return false;
 }
 
 int64_t f$openssl_verify(const string& data, const string& signature, const string& public_key, int64_t algorithm) noexcept {
-  const auto digest{parse_digest_algorithm(algorithm)};
+  const auto digest{get_digest_algorithm(algorithm)};
   if (!digest) [[unlikely]] {
-    kphp::log::warning("Unknown signature algorithm");
-    return 0;
-  }
-
-  const auto ctx{kphp::openssl::crypto_instance_state::get().md_ctx()};
-  const auto init{ctx.and_then([digest](const kphp::openssl::md_ctx* c) noexcept { return c->verify_init(*digest); })};
-  if (!init && init.error() == EINVAL) [[unlikely]] {
-    kphp::log::warning("Unknown signature algorithm");
+    kphp::log::warning("unknown signature algorithm");
     return 0;
   }
 
   const auto key{load_public_key(public_key)};
   if (!key) [[unlikely]] {
-    kphp::log::warning("Parameter key cannot be converted into a public key");
+    kphp::log::warning("parameter key cannot be converted into a public key");
     return 0;
   }
 
-  // the result of `EVP_VerifyFinal` is returned as is, `0` is the result if the verification did not get to it
   int32_t openssl_err{0};
-  const auto verified{
-      init.and_then([&]() noexcept { return (*ctx)->verify_update(std::as_bytes(std::span{data.c_str(), data.size()})); }).and_then([&]() noexcept {
-        return (*ctx)->verify_final(std::as_bytes(std::span{signature.c_str(), signature.size()}), *key, std::addressof(openssl_err));
-      })};
+  // Reuse md_ctx from cache to avoid allocation
+  // It's safe, because we call init, that resets md_ctx state.
+  const auto ctx{kphp::openssl::crypto_instance_state::get().md_ctx()};
+  const auto verified{ctx.and_then([&](const kphp::openssl::md_ctx* c) noexcept { return c->verify_init(*digest); })
+                          .and_then([&]() noexcept { return (*ctx)->verify_update(std::as_bytes(std::span{data.c_str(), data.size()})); })
+                          .and_then([&]() noexcept {
+                            return (*ctx)->verify_final(std::as_bytes(std::span{signature.c_str(), signature.size()}), *key, std::addressof(openssl_err));
+                          })};
+
   return verified ? static_cast<int64_t>(*verified) : openssl_err;
 }
 
@@ -636,62 +598,63 @@ Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, 
 }
 
 Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept {
-  if (borrow_pkey_handle(public_key, PUBLIC_KEY_HANDLE_TAG)) {
+  if (borrow_pkey_handle(public_key)) {
     return public_key;
   }
 
   auto key{parse_public_key(public_key)};
   if (!key) [[unlikely]] {
-    kphp::log::warning("Parameter key is not a valid key");
+    kphp::log::warning("parameter key is not a valid key");
     return false;
   }
 
-  return make_pkey_handle(std::move(*key), PUBLIC_KEY_HANDLE_TAG);
+  return make_pkey_handle(std::move(*key));
 }
 
 Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept {
-  if (borrow_pkey_handle(private_key, PRIVATE_KEY_HANDLE_TAG)) {
+  if (borrow_pkey_handle(private_key)) {
     return private_key;
   }
 
-  auto key{read_private_key(private_key, passphrase)};
+  auto key{parse_private_key(private_key, passphrase)};
   if (!key) [[unlikely]] {
-    kphp::log::warning("Parameter key is not a valid key or passphrase is not a valid password");
+    kphp::log::warning("parameter key is not a valid key or passphrase is not a valid password");
     return false;
   }
 
-  return make_pkey_handle(std::move(*key), PRIVATE_KEY_HANDLE_TAG);
+  return make_pkey_handle(std::move(*key));
 }
 
 bool f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept {
   const auto key{load_public_key(public_key)};
   if (!key) [[unlikely]] {
-    kphp::log::warning("Parameter key is not a valid public key");
+    kphp::log::warning("parameter key is not a valid public key");
     encrypted_data = string{};
     return false;
   }
 
   if (const auto is_rsa{key->is_rsa()}; !is_rsa || !*is_rsa) [[unlikely]] {
-    kphp::log::warning("Key type is neither RSA nor RSA2");
+    kphp::log::warning("key type is neither RSA nor RSA2");
     encrypted_data = string{};
     return false;
   }
 
-  const auto size{key->size()};
-  const auto rsa{key->get1_rsa()};
-  if (size && rsa) {
-    string buffer{static_cast<string::size_type>(*size), false};
+  const auto key_size{key->size()};
+  const auto rsa{key->rsa()};
+  if (key_size && rsa) {
+    string buffer{static_cast<string::size_type>(*key_size), false};
     const auto from{std::as_bytes(std::span{data.c_str(), data.size()})};
     const auto to{std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()})};
     const auto written{rsa->public_encrypt(from, to, k2::RsaPadding::RSA_PADDING_PKCS1)};
-    if (written && *written == *size) {
+    if (written && *written == *key_size) {
       encrypted_data = std::move(buffer);
       return true;
     }
   }
 
-  kphp::log::warning("RSA public encrypt failed");
   encrypted_data = string{};
+  kphp::log::warning("RSA public encrypt failed");
+
   return false;
 }
 
@@ -710,17 +673,17 @@ bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const s
 bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const string& private_key) noexcept {
   const auto key{load_private_key(private_key)};
   if (!key) [[unlikely]] {
-    kphp::log::warning("Parameter key is not a valid private key");
+    kphp::log::warning("parameter key is not a valid private key");
     return false;
   }
 
   if (const auto is_rsa{key->is_rsa()}; !is_rsa || !*is_rsa) [[unlikely]] {
-    kphp::log::warning("Key type is not an RSA nor RSA2");
+    kphp::log::warning("key type is not an RSA nor RSA2");
     return false;
   }
 
   const auto size{key->size()};
-  const auto rsa{key->get1_rsa()};
+  const auto rsa{key->rsa()};
   if (size && rsa) {
     string buffer{static_cast<string::size_type>(*size), false};
     const auto from{std::as_bytes(std::span{data.c_str(), data.size()})};
@@ -733,6 +696,7 @@ bool f$openssl_private_decrypt(const string& data, string& decrypted_data, const
   }
 
   decrypted_data = string{};
+
   return false;
 }
 
@@ -770,7 +734,6 @@ constexpr size_t RIPEMD160_HASHED_SIZE{20};
 constexpr size_t MD2_HASHED_SIZE{16};
 constexpr size_t MD4_HASHED_SIZE{16};
 
-// the one-shot function of OpenSSL of the algorithm, as `algo_function` of the legacy runtime
 using hash_function = std::expected<void, int32_t> (*)(std::span<const std::byte>, std::span<std::byte>);
 
 struct hash_algorithm_traits {
@@ -808,14 +771,11 @@ std::optional<hash_algorithm_traits> parse_hash_algorithm(std::string_view algor
   return std::nullopt;
 }
 
-string hash_impl(const hash_algorithm_traits& traits, const string& data, bool binary) noexcept {
+string hash(const hash_algorithm_traits& traits, const string& data, bool binary) noexcept {
   string hashed_data{binary ? static_cast<string::size_type>(traits.hashed_size) : static_cast<string::size_type>(traits.hashed_size * 2), false};
   const auto data_bytes{std::as_bytes(std::span{data.c_str(), data.size()})};
   const auto hashed_bytes{std::as_writable_bytes(std::span{hashed_data.buffer(), static_cast<size_t>(traits.hashed_size)})};
-  if (!traits.hash(data_bytes, hashed_bytes)) [[unlikely]] {
-    kphp::log::warning("failed to generate hash");
-    return {};
-  }
+  kphp::log::assertion(traits.hash(data_bytes, hashed_bytes).has_value());
 
   if (!binary) {
     kphp::strings::bin2hex(hashed_data.buffer(), traits.hashed_size, hashed_data.size());
@@ -824,9 +784,10 @@ string hash_impl(const hash_algorithm_traits& traits, const string& data, bool b
   return hashed_data;
 }
 
-// `HMAC` of OpenSSL is `HMAC_Init_ex`, `HMAC_Update` and `HMAC_Final` on a fresh context, here they are called on the context of the instance
 std::expected<uint32_t, int32_t> hmac(k2::HashAlgorithm algorithm, std::span<const std::byte> key, std::span<const std::byte> data,
                                       std::span<std::byte> md) noexcept {
+  // Reuse hmac_ctx from cache to avoid allocation
+  // It's safe, because we call init, that resets hmac_ctx state.
   return kphp::openssl::crypto_instance_state::get().hmac_ctx().and_then([&](const kphp::openssl::hmac_ctx* ctx) noexcept {
     return ctx->init_ex(key, algorithm).and_then([&]() noexcept { return ctx->update(data); }).and_then([&]() noexcept { return ctx->final(md); });
   });
@@ -853,7 +814,7 @@ string f$hash(const string& algorithm, const string& data, bool binary) noexcept
     kphp::log::error("algorithm {} not supported in function hash", algorithm.c_str());
   }
 
-  return hash_impl(*algo, data, binary);
+  return hash(*algo, data, binary);
 }
 
 string f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary) noexcept {
@@ -867,12 +828,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
   const auto key_bytes{std::as_bytes(std::span{key.c_str(), key.size()})};
   const auto hashed_bytes{std::as_writable_bytes(std::span{hashed_data.buffer(), static_cast<size_t>(algo->hashed_size)})};
   const auto md_len{hmac(algo->algo, key_bytes, data_bytes, hashed_bytes)};
-  if (!md_len) [[unlikely]] {
-    kphp::log::warning("failed to generate HMAC hash");
-    return {};
-  }
-
-  kphp::log::assertion(static_cast<int64_t>(*md_len) == algo->hashed_size);
+  kphp::log::assertion(md_len.has_value() && static_cast<int64_t>(*md_len) == algo->hashed_size);
 
   if (!binary) {
     kphp::strings::bin2hex(hashed_data.buffer(), algo->hashed_size, hashed_data.size());
@@ -882,7 +838,7 @@ string f$hash_hmac(const string& algorithm, const string& data, const string& ke
 }
 
 string f$sha1(const string& data, bool binary) noexcept {
-  return hash_impl(hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1, k2::openssl_sha1}, data, binary);
+  return hash(hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1, k2::openssl_sha1}, data, binary);
 }
 
 int64_t f$crc32(const string& s) noexcept {

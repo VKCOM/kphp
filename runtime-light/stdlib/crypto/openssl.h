@@ -98,11 +98,11 @@ class pkey final : public descriptor_guard {
       : descriptor_guard(descriptor, owned) {}
 
 public:
-  static auto read_bio_pubkey(std::span<const std::byte> pem) noexcept -> std::expected<pkey, int32_t> {
+  static auto public_from_pem(std::span<const std::byte> pem) noexcept -> std::expected<pkey, int32_t> {
     return k2::openssl_pem_read_bio_pubkey(pem).transform(adopt);
   }
 
-  static auto read_bio_private_key(std::span<const std::byte> pem, std::span<const std::byte> pass) noexcept -> std::expected<pkey, int32_t> {
+  static auto private_from_pem(std::span<const std::byte> pem, std::span<const std::byte> pass) noexcept -> std::expected<pkey, int32_t> {
     return k2::openssl_pem_read_bio_private_key(pem, pass).transform(adopt);
   }
 
@@ -126,7 +126,7 @@ public:
     return k2::openssl_evp_pkey_size(descriptor());
   }
 
-  auto get1_rsa() const noexcept -> std::expected<rsa, int32_t> {
+  auto rsa() const noexcept -> std::expected<rsa, int32_t> {
     return k2::openssl_evp_pkey_get1_rsa(descriptor()).transform(rsa::adopt);
   }
 };
@@ -208,7 +208,7 @@ public:
     return k2::openssl_evp_cipher_block_size(descriptor());
   }
 
-  auto mode() const noexcept -> std::expected<int32_t, int32_t> {
+  auto mode() const noexcept -> std::expected<uint32_t, int32_t> {
     return k2::openssl_evp_cipher_mode(descriptor());
   }
 };
@@ -232,24 +232,20 @@ public:
     return k2::openssl_evp_cipher_init_ex(descriptor(), k2::INVALID_PLATFORM_DESCRIPTOR, key, iv, enc, openssl_err);
   }
 
-  auto ctrl(k2::CipherCtrl type, int32_t arg, std::span<std::byte> ptr = {}, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
-    return k2::openssl_evp_cipher_ctx_ctrl(descriptor(), type, arg, ptr, openssl_err);
-  }
-
   auto set_iv_length(int32_t iv_len, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
-    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_SET_IVLEN, iv_len, {}, openssl_err);
+    return k2::openssl_evp_cipher_ctx_set_iv_len(descriptor(), iv_len, openssl_err);
   }
 
   auto set_tag_length(int32_t tag_len, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
-    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_SET_TAG, tag_len, {}, openssl_err);
+    return k2::openssl_evp_cipher_ctx_set_tag_len(descriptor(), tag_len, openssl_err);
   }
 
   auto set_tag(std::span<const std::byte> tag, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
-    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_SET_TAG, static_cast<int32_t>(tag.size()), {const_cast<std::byte*>(tag.data()), tag.size()}, openssl_err);
+    return k2::openssl_evp_cipher_ctx_set_tag(descriptor(), tag, openssl_err);
   }
 
   auto get_tag(std::span<std::byte> tag, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
-    return ctrl(k2::CipherCtrl::CIPHER_CTRL_AEAD_GET_TAG, static_cast<int32_t>(tag.size()), tag, openssl_err);
+    return k2::openssl_evp_cipher_ctx_get_tag(descriptor(), tag, openssl_err);
   }
 
   auto set_key_length(int32_t key_len, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
@@ -265,7 +261,7 @@ public:
   }
 
   auto set_data_length(int32_t data_len, int32_t* openssl_err = nullptr) const noexcept -> std::expected<void, int32_t> {
-    return k2::openssl_evp_cipher_set_data_length(descriptor(), data_len, openssl_err);
+    return k2::openssl_evp_cipher_ctx_set_ccm_data_len(descriptor(), data_len, openssl_err);
   }
 
   auto final_ex(std::span<std::byte> out, int32_t* openssl_err = nullptr) const noexcept -> std::expected<int32_t, int32_t> {
@@ -341,6 +337,14 @@ public:
 
   auto diff(const asn1_time& to, int32_t* openssl_err = nullptr) const noexcept -> std::expected<k2::asn1_time_diff, int32_t> {
     return k2::openssl_asn1_time_diff(descriptor(), to.descriptor(), openssl_err);
+  }
+
+  auto diff_from_now(int32_t* openssl_err = nullptr) const noexcept -> std::expected<k2::asn1_time_diff, int32_t> {
+    return k2::openssl_asn1_time_diff_from_now(descriptor(), openssl_err);
+  }
+
+  auto diff_to_now(int32_t* openssl_err = nullptr) const noexcept -> std::expected<k2::asn1_time_diff, int32_t> {
+    return k2::openssl_asn1_time_diff_to_now(descriptor(), openssl_err);
   }
 };
 
@@ -419,7 +423,7 @@ class x509 final : public descriptor_guard {
       : descriptor_guard(descriptor) {}
 
 public:
-  static auto read_bio(std::span<const std::byte> pem) noexcept -> std::expected<x509, int32_t> {
+  static auto from_pem(std::span<const std::byte> pem) noexcept -> std::expected<x509, int32_t> {
     return k2::openssl_pem_read_bio_x509(pem).transform([](k2::descriptor d) noexcept { return x509{d}; });
   }
 

@@ -93,8 +93,6 @@ using DigestAlgorithm = DigestAlgorithm;
 
 using CipherMode = CipherMode;
 
-using CipherCtrl = CipherCtrl;
-
 using RsaPadding = RsaPadding;
 
 struct cstring {
@@ -491,6 +489,26 @@ inline std::expected<asn1_time_diff, int32_t> openssl_asn1_time_diff(k2::descrip
   return {diff};
 }
 
+inline std::expected<asn1_time_diff, int32_t> openssl_asn1_time_diff_from_now(k2::descriptor to_d, int32_t* openssl_err = nullptr) noexcept {
+  asn1_time_diff diff{};
+  if (auto error_code{k2_openssl_asn1_time_diff_from_now(to_d, std::addressof(diff.days), std::addressof(diff.seconds), openssl_err)};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {diff};
+}
+
+inline std::expected<asn1_time_diff, int32_t> openssl_asn1_time_diff_to_now(k2::descriptor from_d, int32_t* openssl_err = nullptr) noexcept {
+  asn1_time_diff diff{};
+  if (auto error_code{k2_openssl_asn1_time_diff_to_now(from_d, std::addressof(diff.days), std::addressof(diff.seconds), openssl_err)};
+      error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {diff};
+}
+
 inline std::expected<int32_t, int32_t> openssl_x509_purpose_get_count() noexcept {
   int32_t count{0};
   if (auto error_code{k2_openssl_x509_purpose_get_count(std::addressof(count))}; error_code != k2::errno_ok) {
@@ -676,11 +694,7 @@ inline std::expected<void, int32_t> openssl_evp_sign_init(k2::descriptor md_ctx_
 }
 
 inline std::expected<void, int32_t> openssl_evp_sign_update(k2::descriptor md_ctx_d, std::span<const std::byte> data, int32_t* openssl_err = nullptr) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_evp_sign_update(md_ctx_d, data.data(), static_cast<int32_t>(data.size()), openssl_err)}; error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_evp_sign_update(md_ctx_d, data.data(), data.size(), openssl_err)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -697,11 +711,7 @@ inline std::expected<void, int32_t> openssl_evp_verify_init(k2::descriptor md_ct
 
 inline std::expected<void, int32_t> openssl_evp_verify_update(k2::descriptor md_ctx_d, std::span<const std::byte> data,
                                                               int32_t* openssl_err = nullptr) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_evp_verify_update(md_ctx_d, data.data(), static_cast<int32_t>(data.size()), openssl_err)}; error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_evp_verify_update(md_ctx_d, data.data(), data.size(), openssl_err)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -710,13 +720,8 @@ inline std::expected<void, int32_t> openssl_evp_verify_update(k2::descriptor md_
 
 inline std::expected<uint32_t, int32_t> openssl_evp_sign_final(k2::descriptor md_ctx_d, std::span<std::byte> sig, k2::descriptor pkey_d,
                                                                int32_t* openssl_err = nullptr) noexcept {
-  if (sig.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
   uint32_t sig_len{0};
-  if (auto error_code{k2_openssl_evp_sign_final(md_ctx_d, sig.data(), static_cast<int32_t>(sig.size()), std::addressof(sig_len), pkey_d, openssl_err)};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_evp_sign_final(md_ctx_d, sig.data(), sig.size(), std::addressof(sig_len), pkey_d, openssl_err)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -778,8 +783,8 @@ inline std::expected<int32_t, int32_t> openssl_evp_cipher_block_size(k2::descrip
   return {block_size};
 }
 
-inline std::expected<int32_t, int32_t> openssl_evp_cipher_mode(k2::descriptor cipher_d) noexcept {
-  int32_t mode{0};
+inline std::expected<uint32_t, int32_t> openssl_evp_cipher_mode(k2::descriptor cipher_d) noexcept {
+  uint32_t mode{0};
   if (auto error_code{k2_openssl_evp_cipher_mode(cipher_d, std::addressof(mode))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
@@ -815,14 +820,51 @@ inline std::expected<void, int32_t> openssl_evp_cipher_init_ex(k2::descriptor ci
   return {};
 }
 
-inline std::expected<void, int32_t> openssl_evp_cipher_ctx_ctrl(k2::descriptor cipher_ctx_d, CipherCtrl type, int32_t arg, std::span<std::byte> ptr = {},
-                                                                int32_t* openssl_err = nullptr) noexcept {
-  if (ptr.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
+inline std::expected<void, int32_t> openssl_evp_cipher_ctx_set_iv_len(k2::descriptor cipher_ctx_d, int32_t iv_len, int32_t* openssl_err = nullptr) noexcept {
+  if (auto error_code{k2_openssl_evp_cipher_ctx_set_iv_len(cipher_ctx_d, iv_len, openssl_err)}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
+}
+
+inline std::expected<void, int32_t> openssl_evp_cipher_ctx_get_tag(k2::descriptor cipher_ctx_d, std::span<std::byte> tag,
+                                                                   int32_t* openssl_err = nullptr) noexcept {
+  if (tag.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
     return std::unexpected{EINVAL};
   }
 
-  if (auto error_code{k2_openssl_evp_cipher_ctx_ctrl(cipher_ctx_d, type, arg, ptr.data(), static_cast<int32_t>(ptr.size()), openssl_err)};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_evp_cipher_ctx_get_tag(cipher_ctx_d, tag.data(), static_cast<int32_t>(tag.size()), openssl_err)}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
+}
+
+inline std::expected<void, int32_t> openssl_evp_cipher_ctx_set_tag(k2::descriptor cipher_ctx_d, std::span<const std::byte> tag,
+                                                                   int32_t* openssl_err = nullptr) noexcept {
+  if (tag.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
+    return std::unexpected{EINVAL};
+  }
+
+  if (auto error_code{k2_openssl_evp_cipher_ctx_set_tag(cipher_ctx_d, tag.data(), static_cast<int32_t>(tag.size()), openssl_err)}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
+}
+
+inline std::expected<void, int32_t> openssl_evp_cipher_ctx_set_tag_len(k2::descriptor cipher_ctx_d, int32_t tag_len, int32_t* openssl_err = nullptr) noexcept {
+  if (auto error_code{k2_openssl_evp_cipher_ctx_set_tag_len(cipher_ctx_d, tag_len, openssl_err)}; error_code != k2::errno_ok) {
+    return std::unexpected{error_code};
+  }
+
+  return {};
+}
+
+inline std::expected<void, int32_t> openssl_evp_cipher_ctx_set_ccm_data_len(k2::descriptor cipher_ctx_d, int32_t data_len,
+                                                                            int32_t* openssl_err = nullptr) noexcept {
+  if (auto error_code{k2_openssl_evp_cipher_ctx_set_ccm_data_len(cipher_ctx_d, data_len, openssl_err)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -866,16 +908,6 @@ inline std::expected<int32_t, int32_t> openssl_evp_cipher_update(k2::descriptor 
   return {out_len};
 }
 
-inline std::expected<void, int32_t> openssl_evp_cipher_set_data_length(k2::descriptor cipher_ctx_d, int32_t data_len, int32_t* openssl_err = nullptr) noexcept {
-  int32_t out_len{0};
-  if (auto error_code{k2_openssl_evp_cipher_update(cipher_ctx_d, nullptr, 0, std::addressof(out_len), nullptr, data_len, openssl_err)};
-      error_code != k2::errno_ok) {
-    return std::unexpected{error_code};
-  }
-
-  return {};
-}
-
 inline std::expected<int32_t, int32_t> openssl_evp_cipher_final_ex(k2::descriptor cipher_ctx_d, std::span<std::byte> out,
                                                                    int32_t* openssl_err = nullptr) noexcept {
   if (out.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
@@ -892,16 +924,7 @@ inline std::expected<int32_t, int32_t> openssl_evp_cipher_final_ex(k2::descripto
 }
 
 inline std::expected<void, int32_t> openssl_sha1(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_sha1(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_sha1(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -909,16 +932,7 @@ inline std::expected<void, int32_t> openssl_sha1(std::span<const std::byte> data
 }
 
 inline std::expected<void, int32_t> openssl_sha224(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_sha224(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_sha224(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -926,16 +940,7 @@ inline std::expected<void, int32_t> openssl_sha224(std::span<const std::byte> da
 }
 
 inline std::expected<void, int32_t> openssl_sha256(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_sha256(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_sha256(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -943,16 +948,7 @@ inline std::expected<void, int32_t> openssl_sha256(std::span<const std::byte> da
 }
 
 inline std::expected<void, int32_t> openssl_sha384(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_sha384(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_sha384(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -960,16 +956,7 @@ inline std::expected<void, int32_t> openssl_sha384(std::span<const std::byte> da
 }
 
 inline std::expected<void, int32_t> openssl_sha512(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_sha512(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_sha512(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -977,15 +964,7 @@ inline std::expected<void, int32_t> openssl_sha512(std::span<const std::byte> da
 }
 
 inline std::expected<void, int32_t> openssl_md5(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_md5(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))}; error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_md5(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -993,16 +972,7 @@ inline std::expected<void, int32_t> openssl_md5(std::span<const std::byte> data,
 }
 
 inline std::expected<void, int32_t> openssl_ripemd160(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_ripemd160(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_ripemd160(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -1010,15 +980,7 @@ inline std::expected<void, int32_t> openssl_ripemd160(std::span<const std::byte>
 }
 
 inline std::expected<void, int32_t> openssl_md4(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_md4(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))}; error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_md4(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -1026,15 +988,7 @@ inline std::expected<void, int32_t> openssl_md4(std::span<const std::byte> data,
 }
 
 inline std::expected<void, int32_t> openssl_md2(std::span<const std::byte> data, std::span<std::byte> md) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_md2(data.data(), static_cast<int32_t>(data.size()), md.data(), static_cast<int32_t>(md.size()))}; error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_md2(data.data(), data.size(), md.data(), md.size())}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -1064,11 +1018,7 @@ inline std::expected<void, int32_t> openssl_hmac_init_ex(k2::descriptor hmac_ctx
 }
 
 inline std::expected<void, int32_t> openssl_hmac_update(k2::descriptor hmac_ctx_d, std::span<const std::byte> data, int32_t* openssl_err = nullptr) noexcept {
-  if (data.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
-  if (auto error_code{k2_openssl_hmac_update(hmac_ctx_d, data.data(), static_cast<int32_t>(data.size()), openssl_err)}; error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_hmac_update(hmac_ctx_d, data.data(), data.size(), openssl_err)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
@@ -1076,13 +1026,8 @@ inline std::expected<void, int32_t> openssl_hmac_update(k2::descriptor hmac_ctx_
 }
 
 inline std::expected<uint32_t, int32_t> openssl_hmac_final(k2::descriptor hmac_ctx_d, std::span<std::byte> md, int32_t* openssl_err = nullptr) noexcept {
-  if (md.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
-    return std::unexpected{EINVAL};
-  }
-
   uint32_t md_len{0};
-  if (auto error_code{k2_openssl_hmac_final(hmac_ctx_d, md.data(), static_cast<int32_t>(md.size()), std::addressof(md_len), openssl_err)};
-      error_code != k2::errno_ok) {
+  if (auto error_code{k2_openssl_hmac_final(hmac_ctx_d, md.data(), md.size(), std::addressof(md_len), openssl_err)}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
