@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <__expected/unexpected.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -730,7 +729,7 @@ inline std::expected<uint32_t, int32_t> openssl_evp_sign_final(k2::descriptor md
 
 inline std::expected<bool, int32_t> openssl_evp_verify_final(k2::descriptor md_ctx_d, std::span<const std::byte> sig, k2::descriptor pkey_d,
                                                              int32_t* openssl_err = nullptr) noexcept {
-  if (sig.size() > std::numeric_limits<int32_t>::max()) [[unlikely]] {
+  if (sig.size() > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
     return std::unexpected{EINVAL};
   }
 

@@ -1,6 +1,10 @@
 #ifndef K2_PLATFORM_HEADER_H
 #define K2_PLATFORM_HEADER_H
 
+#ifndef K2_API_HEADER_H
+#error "should not be directly included"
+#endif // K2_API_HEADER_H
+
 #pragma once
 
 #include <pwd.h>

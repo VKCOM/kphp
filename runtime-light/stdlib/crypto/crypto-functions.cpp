@@ -18,7 +18,6 @@
 #include <optional>
 #include <ranges>
 #include <span>
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
@@ -172,16 +171,19 @@ auto f$openssl_x509_parse(const string& data, bool shortnames) noexcept -> Optio
 namespace {
 
 // A key argument is either a handle returned by openssl_pkey_get_{public,private} or a PEM string.
-// A handle is the raw bytes of a platform descriptor, which lives until the end of the instance.
-constexpr size_t PKEY_HANDLE_SIZE{sizeof(k2::descriptor)};
+// A handle is the kind of the key followed by the raw bytes of a platform descriptor, which lives until the end of the instance.
+// The kind keeps a public handle from being used as a private key and vice versa.
+enum class pkey_kind : char { PUBLIC = 'P', PRIVATE = 'S' };
 
-auto borrow_pkey_handle(const string& key) noexcept -> std::optional<kphp::openssl::pkey> {
-  if (key.size() != PKEY_HANDLE_SIZE) {
+constexpr size_t PKEY_HANDLE_SIZE{sizeof(pkey_kind) + sizeof(k2::descriptor)};
+
+auto pkey_from_handle(pkey_kind kind, const string& key) noexcept -> std::optional<kphp::openssl::pkey> {
+  if (key.size() != PKEY_HANDLE_SIZE || key[0] != static_cast<char>(kind)) {
     return std::nullopt;
   }
 
   k2::descriptor descriptor{};
-  std::memcpy(std::addressof(descriptor), key.c_str(), sizeof(descriptor));
+  std::memcpy(std::addressof(descriptor), key.c_str() + sizeof(pkey_kind), sizeof(descriptor));
 
   auto handle{kphp::openssl::pkey::borrow(descriptor)};
   if (!handle.id()) {
@@ -192,11 +194,12 @@ auto borrow_pkey_handle(const string& key) noexcept -> std::optional<kphp::opens
 }
 
 // Gives the key to the instance: the platform frees its descriptor when the instance ends.
-auto make_pkey_handle(kphp::openssl::pkey key) noexcept -> string {
+auto make_pkey_handle(pkey_kind kind, kphp::openssl::pkey key) noexcept -> string {
   const auto descriptor{key.release()};
 
   string handle{static_cast<string::size_type>(PKEY_HANDLE_SIZE), false};
-  std::memcpy(handle.buffer(), std::addressof(descriptor), sizeof(descriptor));
+  handle[0] = static_cast<char>(kind);
+  std::memcpy(handle.buffer() + sizeof(pkey_kind), std::addressof(descriptor), sizeof(descriptor));
 
   return handle;
 }
@@ -212,8 +215,8 @@ auto parse_public_key(const string& key) noexcept -> std::expected<kphp::openssl
 }
 
 auto load_public_key(const string& key) noexcept -> std::expected<kphp::openssl::pkey, int32_t> {
-  if (auto handle{borrow_pkey_handle(key)}; handle) {
-    return std::move(*handle);
+  if (auto pkey{pkey_from_handle(pkey_kind::PUBLIC, key)}; pkey) {
+    return std::move(*pkey);
   }
 
   return parse_public_key(key);
@@ -225,8 +228,8 @@ auto parse_private_key(const string& key, const string& passphrase) noexcept -> 
 }
 
 auto load_private_key(const string& key) noexcept -> std::expected<kphp::openssl::pkey, int32_t> {
-  if (auto handle{borrow_pkey_handle(key)}; handle) {
-    return std::move(*handle);
+  if (auto pkey{pkey_from_handle(pkey_kind::PRIVATE, key)}; pkey) {
+    return std::move(*pkey);
   }
 
   return parse_private_key(key, string{});
@@ -663,7 +666,7 @@ auto f$openssl_decrypt(const string& data, const string& algorithm, const string
 }
 
 auto f$openssl_pkey_get_public(const string& public_key) noexcept -> Optional<string> {
-  if (borrow_pkey_handle(public_key)) {
+  if (pkey_from_handle(pkey_kind::PUBLIC, public_key)) {
     return public_key;
   }
 
@@ -673,11 +676,11 @@ auto f$openssl_pkey_get_public(const string& public_key) noexcept -> Optional<st
     return false;
   }
 
-  return make_pkey_handle(std::move(*key));
+  return make_pkey_handle(pkey_kind::PUBLIC, std::move(*key));
 }
 
 auto f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept -> Optional<string> {
-  if (borrow_pkey_handle(private_key)) {
+  if (pkey_from_handle(pkey_kind::PRIVATE, private_key)) {
     return private_key;
   }
 
@@ -687,7 +690,7 @@ auto f$openssl_pkey_get_private(const string& private_key, const string& passphr
     return false;
   }
 
-  return make_pkey_handle(std::move(*key));
+  return make_pkey_handle(pkey_kind::PRIVATE, std::move(*key));
 }
 
 auto f$openssl_public_encrypt(const string& data, string& encrypted_data, const string& public_key) noexcept -> bool {
