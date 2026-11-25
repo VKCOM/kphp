@@ -192,7 +192,7 @@ class cipher final : public descriptor_guard {
       : descriptor_guard(descriptor) {}
 
 public:
-  static auto create_by_name(std::string_view name) noexcept -> std::expected<cipher, int32_t> {
+  static auto from_name(std::string_view name) noexcept -> std::expected<cipher, int32_t> {
     return k2::openssl_evp_get_cipherbyname(name).transform([](k2::descriptor d) noexcept { return cipher{d}; });
   }
 
