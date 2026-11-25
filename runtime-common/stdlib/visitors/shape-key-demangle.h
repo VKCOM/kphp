@@ -36,6 +36,6 @@ private:
   bool inited_{};
   // Initialized once during startup.
   // In the legacy runtime, heap_replacer is active at that point, so storage is allocated from the heap; the map is never reset after switching to the script allocator.
-  // Runtime-light has no such transition.
+  // In runtime-light, storage is allocated from the image allocator and never reset after switching to component or instance allocators.
   storage_type shape_keys_storage_;
 };
