@@ -1196,7 +1196,7 @@ int32_t k2_openssl_evp_sign_init(uint64_t md_ctx_d, enum DigestAlgorithm algorit
 /**
  * Platform binding of OpenSSL's `int EVP_SignUpdate(EVP_MD_CTX *ctx, const void *d, size_t cnt)`.
  *
- * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_sign_init`.
+ * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_sign_init` and not finalized since.
  * @param `data` A pointer to the data to sign. May be `NULL` if `data_len` is `0`.
  * @param `data_len` The length of `data`.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_SignUpdate`. Otherwise it is not touched.
@@ -1204,7 +1204,8 @@ int32_t k2_openssl_evp_sign_init(uint64_t md_ctx_d, enum DigestAlgorithm algorit
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_sign_init`, or `data` is `NULL` while `data_len` is not `0`.
+ * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_sign_init` and not finalized since,
+ *             or `data` is `NULL` while `data_len` is not `0`.
  * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_sign_update(uint64_t md_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
@@ -1213,7 +1214,10 @@ int32_t k2_openssl_evp_sign_update(uint64_t md_ctx_d, const void* data, size_t d
  * Platform binding of OpenSSL's
  * `int EVP_SignFinal(EVP_MD_CTX *ctx, unsigned char *sig, unsigned int *s, EVP_PKEY *pkey)`.
  *
- * @param `md_ctx_d` The descriptor of a context.
+ * The context is consumed by this call: whether it succeeds or OpenSSL fails, it has to be initialized with `k2_openssl_evp_sign_init` again
+ * before it is used for another operation. A call rejected with `EINVAL` or `ERANGE` leaves the context as it was.
+ *
+ * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_sign_init` and not finalized since.
  * @param `sig` A pointer to the output buffer.
  * @param `sig_cap` The size of the output buffer, it must be at least `EVP_PKEY_size(pkey)`.
  * @param `sig_len` A pointer where the length of the signature (the `s` argument of `EVP_SignFinal`) will be stored.
@@ -1223,8 +1227,8 @@ int32_t k2_openssl_evp_sign_update(uint64_t md_ctx_d, const void* data, size_t d
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `sig` or `sig_len` is `NULL`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind, or the context was not initialized by
- *             `k2_openssl_evp_sign_init`.
+ * `EINVAL` => `sig` or `sig_len` is `NULL`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind,
+ *             or the context was not initialized by `k2_openssl_evp_sign_init` or was already finalized.
  * `ERANGE` => `sig_cap` is less than `EVP_PKEY_size(pkey)`.
  * `EIO` => OpenSSL failed.
  */
@@ -1249,7 +1253,7 @@ int32_t k2_openssl_evp_verify_init(uint64_t md_ctx_d, enum DigestAlgorithm algor
 /**
  * Platform binding of OpenSSL's `int EVP_VerifyUpdate(EVP_MD_CTX *ctx, const void *d, size_t cnt)`.
  *
- * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_verify_init`.
+ * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_verify_init` and not finalized since.
  * @param `data` A pointer to the signed data. May be `NULL` if `data_len` is `0`.
  * @param `data_len` The length of `data`.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `EVP_VerifyUpdate`. Otherwise it is not touched.
@@ -1257,7 +1261,8 @@ int32_t k2_openssl_evp_verify_init(uint64_t md_ctx_d, enum DigestAlgorithm algor
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_verify_init`, or `data` is `NULL` while `data_len` is not `0`.
+ * `EINVAL` => `md_ctx_d` is not a descriptor of a context initialized by `k2_openssl_evp_verify_init` and not finalized since,
+ *             or `data` is `NULL` while `data_len` is not `0`.
  * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
@@ -1266,8 +1271,11 @@ int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, size_t
  * Platform binding of OpenSSL's
  * `int EVP_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey)`.
  *
- * @param `md_ctx_d` The descriptor of a context.
- * @param `sig` A pointer to the signature.
+ * The context is consumed by this call: whether it succeeds or OpenSSL fails, it has to be initialized with `k2_openssl_evp_verify_init` again
+ * before it is used for another operation. A call rejected with `EINVAL` or `ERANGE` leaves the context as it was.
+ *
+ * @param `md_ctx_d` The descriptor of a context initialized by `k2_openssl_evp_verify_init` and not finalized since.
+ * @param `sig` A pointer to the signature. May be `NULL` if `sig_len` is `0`.
  * @param `sig_len` The length of `sig`.
  * @param `pkey_d` The descriptor of a public key.
  * @param `verified` A pointer where `1` will be stored if the signature is correct and `0` if it is not.
@@ -1276,8 +1284,8 @@ int32_t k2_openssl_evp_verify_update(uint64_t md_ctx_d, const void* data, size_t
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `verified` or `sig` is `NULL`, `sig_len` is `0`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind,
- *              or the context was not initialized by `k2_openssl_evp_verify_init`.
+ * `EINVAL` => `verified` is `NULL`, `sig` is `NULL` while `sig_len` is not `0`, `md_ctx_d` or `pkey_d` is not a descriptor of the right kind,
+ *              or the context was not initialized by `k2_openssl_evp_verify_init` or was already finalized.
  * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_evp_verify_final(uint64_t md_ctx_d, const void* sig, uint32_t sig_len, uint64_t pkey_d, int32_t* verified, int32_t* openssl_err);
@@ -1739,7 +1747,7 @@ int32_t k2_openssl_hmac_init_ex(uint64_t hmac_ctx_d, const void* key, int32_t ke
 /**
  * Platform binding of OpenSSL's `int HMAC_Update(HMAC_CTX *ctx, const unsigned char *data, size_t len)`.
  *
- * @param `hmac_ctx_d` The descriptor of a context initialized by `k2_openssl_hmac_init_ex`.
+ * @param `hmac_ctx_d` The descriptor of a context initialized by `k2_openssl_hmac_init_ex` and not finalized since.
  * @param `data` A pointer to the data to authenticate. May be `NULL` if `data_len` is `0`.
  * @param `data_len` The length of `data`.
  * @param `openssl_err` Optional (may be `NULL`). If `EIO` is returned, receives the return value of `HMAC_Update`. Otherwise it is not touched.
@@ -1747,7 +1755,8 @@ int32_t k2_openssl_hmac_init_ex(uint64_t hmac_ctx_d, const void* key, int32_t ke
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `hmac_ctx_d` is not a descriptor of an HMAC context initialized by `k2_openssl_hmac_init_ex`, or `data` is `NULL` while `data_len` is not `0`.
+ * `EINVAL` => `hmac_ctx_d` is not a descriptor of an HMAC context initialized by `k2_openssl_hmac_init_ex` and not finalized since,
+ *             or `data` is `NULL` while `data_len` is not `0`.
  * `EIO` => OpenSSL failed.
  */
 int32_t k2_openssl_hmac_update(uint64_t hmac_ctx_d, const void* data, size_t data_len, int32_t* openssl_err);
@@ -1755,7 +1764,10 @@ int32_t k2_openssl_hmac_update(uint64_t hmac_ctx_d, const void* data, size_t dat
 /**
  * Platform binding of OpenSSL's `int HMAC_Final(HMAC_CTX *ctx, unsigned char *md, unsigned int *len)`.
  *
- * @param `hmac_ctx_d` The descriptor of a context initialized by `k2_openssl_hmac_init_ex`.
+ * The context is consumed by this call: whether it succeeds or OpenSSL fails, it has to be initialized with `k2_openssl_hmac_init_ex` again
+ * before it is used for another operation. A call rejected with `EINVAL` or `ERANGE` leaves the context as it was.
+ *
+ * @param `hmac_ctx_d` The descriptor of a context initialized by `k2_openssl_hmac_init_ex` and not finalized since.
  * @param `md` A pointer to the output buffer.
  * @param `md_cap` The size of the output buffer, it must be at least `EVP_MD_size` of the digest of the context.
  * @param `md_len` A pointer where the length of the result (the `len` argument of `HMAC_Final`) will be stored.
@@ -1764,8 +1776,8 @@ int32_t k2_openssl_hmac_update(uint64_t hmac_ctx_d, const void* data, size_t dat
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  * Possible `errno` values:
- * `EINVAL` => `md` or `md_len` is `NULL`, or `hmac_ctx_d` is not a descriptor of an HMAC context initialized by
- *             `k2_openssl_hmac_init_ex`.
+ * `EINVAL` => `md` or `md_len` is `NULL`, or `hmac_ctx_d` is not a descriptor of an HMAC context initialized by `k2_openssl_hmac_init_ex` and not
+ *             finalized since.
  * `ERANGE` => `md_cap` is less than `EVP_MD_size` of the digest of the context.
  * `EIO` => OpenSSL failed.
  */

@@ -441,7 +441,7 @@ private:
 
 public:
   static auto create(const string& algorithm, direction direction) noexcept -> std::optional<cipher_operation> {
-    const auto name{find_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
+    const auto name{find_cipher_algorithm(algorithm.c_str())};
     if (!name) {
       kphp::log::warning("unknown cipher algorithm '{}'", algorithm.c_str());
       return std::nullopt;
@@ -607,7 +607,7 @@ auto f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept -> arr
 }
 
 auto f$openssl_cipher_iv_length(const string& algorithm) noexcept -> Optional<int64_t> {
-  const auto name{find_cipher_algorithm({algorithm.c_str(), algorithm.size()})};
+  const auto name{find_cipher_algorithm(algorithm.c_str())};
   if (!name) {
     kphp::log::warning("unknown cipher algorithm '{}'", algorithm.c_str());
     return false;
