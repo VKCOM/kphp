@@ -13,43 +13,45 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/string/string-state.h"
 
-Optional<string> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
+auto f$openssl_random_pseudo_bytes(int64_t length) noexcept -> Optional<string>;
 
-Optional<array<mixed>> f$openssl_x509_parse(const string& data, bool shortnames = true) noexcept;
+auto f$openssl_x509_parse(const string& data, bool shortnames = true) noexcept -> Optional<array<mixed>>;
 
-bool f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm = k2::DigestAlgorithm::DIGEST_SHA1) noexcept;
+auto f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm = k2::DigestAlgorithm::DIGEST_SHA1) noexcept -> bool;
 
-int64_t f$openssl_verify(const string& data, const string& signature, const string& public_key, int64_t algorithm = k2::DigestAlgorithm::DIGEST_SHA1) noexcept;
+auto f$openssl_verify(const string& data, const string& signature, const string& public_key,
+                      int64_t algorithm = k2::DigestAlgorithm::DIGEST_SHA1) noexcept -> int64_t;
 
-array<string> f$openssl_get_cipher_methods(bool aliases = false) noexcept;
+auto f$openssl_get_cipher_methods(bool aliases = false) noexcept -> array<string>;
 
-Optional<int64_t> f$openssl_cipher_iv_length(const string& algorithm) noexcept;
+auto f$openssl_cipher_iv_length(const string& algorithm) noexcept -> Optional<int64_t>;
 
-Optional<string> f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
-                                   std::optional<std::reference_wrapper<string>> tag = {}, const string& aad = string{}, int64_t tag_length = 16) noexcept;
+auto f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
+                       std::optional<std::reference_wrapper<string>> tag = {}, const string& aad = string{},
+                       int64_t tag_length = 16) noexcept -> Optional<string>;
 
-Optional<string> f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{},
-                                   string tag = string{}, const string& aad = string{}) noexcept;
+auto f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options = 0, const string& iv = string{}, string tag = string{},
+                       const string& aad = string{}) noexcept -> Optional<string>;
 
-Optional<string> f$openssl_pkey_get_public(const string& public_key) noexcept;
+auto f$openssl_pkey_get_public(const string& public_key) noexcept -> Optional<string>;
 
-Optional<string> f$openssl_pkey_get_private(const string& private_key, const string& passphrase = string{}) noexcept;
+auto f$openssl_pkey_get_private(const string& private_key, const string& passphrase = string{}) noexcept -> Optional<string>;
 
-bool f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept;
+auto f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept -> bool;
 
-bool f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const string& private_key) noexcept;
+auto f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const string& private_key) noexcept -> bool;
 
-array<string> f$hash_algos() noexcept;
+auto f$hash_algos() noexcept -> array<string>;
 
-array<string> f$hash_hmac_algos() noexcept;
+auto f$hash_hmac_algos() noexcept -> array<string>;
 
-string f$hash(const string& algorithm, const string& data, bool binary = false) noexcept;
+auto f$hash(const string& algorithm, const string& data, bool binary = false) noexcept -> string;
 
-string f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary = false) noexcept;
+auto f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary = false) noexcept -> string;
 
-string f$sha1(const string& data, bool binary = false) noexcept;
+auto f$sha1(const string& data, bool binary = false) noexcept -> string;
 
-inline string f$md5(const string& str, bool binary = false) noexcept {
+inline auto f$md5(const string& str, bool binary = false) noexcept -> string {
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
   md5(reinterpret_cast<const unsigned char*>(str.c_str()), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char*>(output.buffer()));
@@ -64,4 +66,4 @@ inline string f$md5(const string& str, bool binary = false) noexcept {
   return output;
 }
 
-int64_t f$crc32(const string& s) noexcept;
+auto f$crc32(const string& s) noexcept -> int64_t;
