@@ -9,6 +9,7 @@
 #include <charconv>
 #include <chrono>
 #include <cstddef>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -17,6 +18,7 @@
 #include "common/resolver.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime/instance-cache.h"
+#include "runtime/interface.h"
 #include "runtime/runtime-builtin-stats.h"
 #include "server/confdata-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
@@ -35,6 +37,17 @@ T unpack(const std::atomic<T> &value) {
 
 inline size_t get_memory_used(size_t acquired, size_t released, size_t buffer_size) {
   return acquired > released ? (acquired - released) * buffer_size : 0;
+}
+
+// GCC 8 inlines copies of pack_string() (third-party/statshouse.h) into add_request_stats() and merges them
+// (cross-jumping), after which it loses the relation between `len` and the source object and emits
+// false positive -Warray-bounds for the "return_code" literal. Hiding the literal behind a noinline
+// function (GCC 8 only) keeps its bounds invisible to the merged copies.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 8
+__attribute__((noinline))
+#endif
+std::string_view get_return_code_tag_name() {
+  return "return_code";
 }
 
 const char *get_current_worker_type() {
@@ -118,6 +131,12 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
+  // format the return code on the stack;
+  // the std::min tells GCC 8 that the length fits the buffer, otherwise it loses the
+  // relation while inlining pack_string() and emits false positive -Warray-bounds
+  std::array<char, 16> return_code_str;
+  const size_t return_code_len = std::min(static_cast<size_t>(std::distance(return_code_str.begin(), std::to_chars(return_code_str.begin(), return_code_str.end(), get_http_return_code()).ptr)),
+                                          return_code_str.size());
 
   client.metric("kphp_request_time").tag("script").tag(worker_type).tag(status).write_value(script_time_ns);
   client.metric("kphp_request_time").tag("net").tag(worker_type).tag(status).write_value(net_time_ns);
@@ -126,7 +145,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_request_cpu_time").tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
   client.metric("kphp_request_init_time").tag(worker_type).tag(status).write_value(script_init_time);
   if (process_type == ProcessType::http_worker) {
-    client.metric("kphp_http_connection_process_time").tag(status).write_value(http_connection_process_time);
+    client.metric("kphp_http_connection_process_time").tag(get_return_code_tag_name(), std::string_view{return_code_str.data(), return_code_len}).tag(status).write_value(http_connection_process_time);
   }
 
   client.metric("kphp_by_host_request_time", true).tag("script").tag(worker_type).write_value(script_time_ns);
@@ -135,7 +154,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_by_host_request_cpu_time", true).tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
   client.metric("kphp_by_host_request_init_time", true).tag(worker_type).tag(status).write_value(script_init_time);
   if (process_type == ProcessType::http_worker) {
-    client.metric("kphp_by_host_http_connection_process_time", true).tag(status).write_value(http_connection_process_time);
+    client.metric("kphp_by_host_http_connection_process_time", true).tag(get_return_code_tag_name(), std::string_view{return_code_str.data(), return_code_len}).tag(status).write_value(http_connection_process_time);
   }
 
   if (error != script_error_t::no_error) {
