@@ -25,6 +25,12 @@
 // shared memory layout: class_name_hash(u64) | class_instance shell | inner data
 template<typename InstanceType>
 bool f$instance_cache_store(const string& key, class_instance<InstanceType> instance, int64_t ttl_sec = 0) noexcept {
+  static constexpr double FRESHNESS_ELEMENT_RATIO{0.2};
+  static constexpr auto freshness_ratio{[](uint64_t now, uint64_t expires_at) noexcept {
+    static constexpr double IMMORTAL_RATIO{0.5};
+    return expires_at == 0 ? IMMORTAL_RATIO : static_cast<double>(now) / static_cast<double>(expires_at);
+  }};
+
   if (key.empty()) [[unlikely]] {
     kphp::log::warning("instance_cache_store. empty key is not supported");
     return false;
@@ -43,6 +49,15 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
     ttl_sec = 0;
   }
 
+  std::string_view name{std::string_view{key.c_str(), key.size()}};
+
+  if (auto shared_memory_info_result{k2::shared_memory_info(name)}; shared_memory_info_result.has_value()) {
+    const k2::SharedMemoryInfo info{*shared_memory_info_result};
+    if (!info.is_own && freshness_ratio(info.now, info.expires_at) < FRESHNESS_ELEMENT_RATIO) {
+      return false;
+    }
+  }
+
   kphp::visitors::instance_deep_estimate_size_visitor estimate_size_visitor{};
   if (!estimate_size_visitor.process_instance(instance)) [[unlikely]] {
     kphp::log::warning("instance_cache_store. failed to estimate instance size: key -> {}", key.c_str());
@@ -52,7 +67,7 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   constexpr size_t instance_size{sizeof(class_instance<InstanceType>)};
   constexpr size_t hash_size{sizeof(uint64_t)};
 
-  auto alloc_result{k2::alloc_shared_memory(hash_size + instance_size + estimated_size)};
+  auto alloc_result{k2::shared_memory_alloc(hash_size + instance_size + estimated_size)};
   if (!alloc_result.has_value()) [[unlikely]] {
     kphp::log::warning("instance_cache_store. failed to allocate shared memory: error -> {}, key -> {}", alloc_result.error(), key.c_str());
     return false;
@@ -67,19 +82,19 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   kphp::visitors::instance_deep_copy_visitor copy_visitor{std::span{std::next(mem, hash_size + instance_size), estimated_size},
                                                           ExtraRefCnt::for_instance_cache};
   if (!copy_visitor.process_instance(instance)) [[unlikely]] {
-    kphp::log::assertion(k2::release_shared_memory(mem).has_value());
+    kphp::log::assertion(k2::shared_memory_release(mem).has_value());
     kphp::log::warning("instance_cache_store. failed to deep-copy instance into shared memory: estimated size -> {}, key -> {}", estimated_size, key.c_str());
     return false;
   }
   std::construct_at(reinterpret_cast<class_instance<InstanceType>*>(std::next(mem, hash_size)), std::move(instance));
 
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds
-  if (auto publish_result{k2::publish_shared_memory(std::string_view{key.c_str(), key.size()}, mem, ttl_sec * 1000, false, true)}; publish_result.has_value()) {
+  if (auto publish_result{k2::shared_memory_publish(name, mem, ttl_sec * 1000, false, true)}; publish_result.has_value()) {
     InstanceCacheInstanceState::get().request_cache.insert_or_assign(key, std::span{mem, hash_size + instance_size + estimated_size});
     return true;
   } else {
     // publish is expected to always succeed here (ignore_if_exist=true, valid key/memory), so this should never actually happen.
-    kphp::log::assertion(k2::release_shared_memory(mem).has_value());
+    kphp::log::assertion(k2::shared_memory_release(mem).has_value());
     kphp::log::warning("instance_cache_store. failed to publish shared memory: error -> {}, key -> {}", publish_result.error(), key.c_str());
     return false;
   }
@@ -119,7 +134,7 @@ ClassInstanceType f$instance_cache_fetch(const string& class_name, const string&
     return materialize(it->second);
   }
 
-  auto get_result{k2::get_shared_memory(std::string_view{key.c_str(), key.size()})};
+  auto get_result{k2::shared_memory_get(std::string_view{key.c_str(), key.size()})};
   if (!get_result.has_value()) {
     return {};
   }
@@ -142,7 +157,7 @@ inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl_sec = 0) 
     ttl_sec = 0;
   }
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds
-  return k2::republish_shared_memory(std::string_view{key.c_str(), key.size()}, ttl_sec * 1000).has_value();
+  return k2::shared_memory_republish(std::string_view{key.c_str(), key.size()}, ttl_sec * 1000).has_value();
 }
 
 inline bool f$instance_cache_delete(const string& key) noexcept {
@@ -154,7 +169,7 @@ inline bool f$instance_cache_delete(const string& key) noexcept {
     return false;
   }
   InstanceCacheInstanceState::get().request_cache.erase(key);
-  return k2::seek_ttl_to_shared_memory(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_PERCENTILE,
+  return k2::shared_memory_seek_ttl_to(std::string_view{key.c_str(), key.size()}, EARLY_EXPIRATION_ELEMENT_PERCENTILE,
                                        EXPIRED_ELEMENT_REMAINING_LIFETIME_LIMIT_MS)
       .has_value();
 }
