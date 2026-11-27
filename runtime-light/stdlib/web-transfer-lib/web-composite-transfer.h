@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "runtime-light/coroutine/task.h"
+#include "runtime-common/stdlib/diagnostics/builtin-time-stats.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-error.h"
@@ -22,7 +23,7 @@
 
 namespace kphp::web::composite {
 
-inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::expected<composite::transfer, error>> {
+inline auto open(transfer_backend backend, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<composite::transfer, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto session{web_state.session_get_or_init()};
@@ -56,6 +57,7 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
   }
 
   const auto result{transfer_open_resp.value};
+  details::subtract_network_wait(timer, result);
   if (std::holds_alternative<tl::WebError>(result)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
   }
@@ -73,7 +75,7 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
   co_return std::expected<composite::transfer, error>{descriptor};
 }
 
-inline auto add(composite::transfer ct, simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto add(composite::transfer ct, simple::transfer st, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -126,7 +128,9 @@ inline auto add(composite::transfer ct, simple::transfer st) noexcept -> kphp::c
     kphp::log::error("failed to parse response of adding Simple into Composite transfer");
   }
 
-  if (auto r{composite_add_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+  auto r{composite_add_resp.value};
+  details::subtract_network_wait(timer, r);
+  if (std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
@@ -145,7 +149,7 @@ inline auto add(composite::transfer ct, simple::transfer st) noexcept -> kphp::c
   co_return std::expected<void, error>{};
 }
 
-inline auto remove(composite::transfer ct, simple::transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto remove(composite::transfer ct, simple::transfer st, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -203,14 +207,16 @@ inline auto remove(composite::transfer ct, simple::transfer st) noexcept -> kphp
     kphp::log::error("failed to parse response of removing Simple into Composite transfer");
   }
 
-  if (auto r{composite_remove_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+  auto r{composite_remove_resp.value};
+  details::subtract_network_wait(timer, r);
+  if (std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
   co_return std::expected<void, error>{};
 }
 
-inline auto perform(composite::transfer ct) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
+inline auto perform(composite::transfer ct, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -259,16 +265,16 @@ inline auto perform(composite::transfer ct) noexcept -> kphp::coro::task<std::ex
   }
 
   const auto result{composite_perform_resp.value};
+  details::subtract_network_wait(timer, result);
   if (std::holds_alternative<tl::WebError>(result)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
   }
 
   const auto remaining{std::get<tl::CompositeWebTransferPerformResultOk>(result).remaining.value};
-
   co_return std::expected<uint64_t, error>{remaining};
 }
 
-inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expected<void, error>> {
+inline auto close(composite::transfer ct, BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<void, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -289,7 +295,7 @@ inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expe
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
   auto it_simple_transfer{simple_transfers.begin()};
   while (simple_transfers.size()) {
-    if (auto remove_res{co_await kphp::web::composite::remove(ct, kphp::web::simple::transfer{*it_simple_transfer})}; !remove_res.has_value()) {
+    if (auto remove_res{co_await kphp::web::composite::remove(ct, kphp::web::simple::transfer{*it_simple_transfer}, timer)}; !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
   }
@@ -315,7 +321,9 @@ inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expe
     kphp::log::error("failed to parse response of closing Composite transfer");
   }
 
-  if (auto r{composite_close_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+  auto r{composite_close_resp.value};
+  details::subtract_network_wait(timer, r);
+  if (std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
@@ -324,7 +332,8 @@ inline auto close(composite::transfer ct) noexcept -> kphp::coro::task<std::expe
 
 template<typename rep_type, typename period_type>
 inline auto wait_updates(composite::transfer ct,
-                         std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
+                         std::chrono::duration<rep_type, period_type> timeout,
+                         BuiltinTimeGuard* timer = nullptr) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& composite2config{web_state.composite_transfer2config};
@@ -365,6 +374,7 @@ inline auto wait_updates(composite::transfer ct,
   }
 
   auto result{composite_wait_resp.value};
+  details::subtract_network_wait(timer, result);
   if (std::holds_alternative<tl::WebError>(result)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
   }

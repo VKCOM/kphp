@@ -25,14 +25,17 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/crc32_generic.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/crypto-time-stats.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/crypto/openssl.h"
+#include "runtime-light/stdlib/diagnostics/crypto-time-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 auto f$openssl_random_pseudo_bytes(int64_t length) noexcept -> Optional<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_random_pseudo_bytes)};
   if (length <= 0 || length > string::max_size()) [[unlikely]] {
     return false;
   }
@@ -111,6 +114,7 @@ auto convert_asn1_time(const std::optional<kphp::openssl::asn1_time>& epoch, con
 } // namespace
 
 auto f$openssl_x509_parse(const string& data, bool shortnames) noexcept -> Optional<array<mixed>> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_x509_parse)};
   const auto cert{kphp::openssl::x509::from_pem(std::as_bytes(std::span{data.c_str(), data.size()}))};
   if (!cert) {
     kphp::log::warning("failed to parse x509 certificate");
@@ -246,6 +250,7 @@ auto get_digest_algorithm(int64_t algorithm) noexcept -> std::optional<k2::Diges
 } // namespace
 
 auto f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algorithm) noexcept -> bool {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_sign)};
   const auto digest{get_digest_algorithm(algorithm)};
   if (!digest) [[unlikely]] {
     kphp::log::warning("unknown signature algorithm");
@@ -280,6 +285,7 @@ auto f$openssl_sign(const string& data, string& signature, const string& private
 }
 
 auto f$openssl_verify(const string& data, const string& signature, const string& public_key, int64_t algorithm) noexcept -> int64_t {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_verify)};
   const auto digest{get_digest_algorithm(algorithm)};
   if (!digest) [[unlikely]] {
     kphp::log::warning("unknown signature algorithm");
@@ -598,6 +604,7 @@ auto eval_cipher(cipher_operation::direction direction, const string& data, cons
 } // namespace
 
 auto f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept -> array<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_get_cipher_methods)};
   array<string> res{array_size{CIPHER_ALGORITHMS.size(), true}};
   for (const auto method : CIPHER_ALGORITHMS) {
     res.push_back(string{method.data(), static_cast<string::size_type>(method.size())});
@@ -607,6 +614,7 @@ auto f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept -> arr
 }
 
 auto f$openssl_cipher_iv_length(const string& algorithm) noexcept -> Optional<int64_t> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_cipher_iv_length)};
   const auto name{find_cipher_algorithm(algorithm.c_str())};
   if (!name) {
     kphp::log::warning("unknown cipher algorithm '{}'", algorithm.c_str());
@@ -624,6 +632,7 @@ auto f$openssl_cipher_iv_length(const string& algorithm) noexcept -> Optional<in
 
 auto f$openssl_encrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv,
                        std::optional<std::reference_wrapper<string>> tag, const string& aad, int64_t tag_length) noexcept -> Optional<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_encrypt)};
   string out_tag;
   if (tag) {
     if (tag_length < 0 || tag_length > string::max_size()) [[unlikely]] {
@@ -652,6 +661,7 @@ auto f$openssl_encrypt(const string& data, const string& algorithm, const string
 
 auto f$openssl_decrypt(const string& data, const string& algorithm, const string& key, int64_t options, const string& iv, string tag,
                        const string& aad) noexcept -> Optional<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_decrypt)};
   if (options & OPENSSL_RAW_DATA) {
     return eval_cipher(cipher_operation::direction::DECRYPT, data, algorithm, key, options, iv, tag, aad);
   }
@@ -666,6 +676,7 @@ auto f$openssl_decrypt(const string& data, const string& algorithm, const string
 }
 
 auto f$openssl_pkey_get_public(const string& public_key) noexcept -> Optional<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_pkey_get_public)};
   if (pkey_from_handle(pkey_kind::PUBLIC, public_key)) {
     return public_key;
   }
@@ -680,6 +691,7 @@ auto f$openssl_pkey_get_public(const string& public_key) noexcept -> Optional<st
 }
 
 auto f$openssl_pkey_get_private(const string& private_key, const string& passphrase) noexcept -> Optional<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_pkey_get_private)};
   if (pkey_from_handle(pkey_kind::PRIVATE, private_key)) {
     return private_key;
   }
@@ -727,6 +739,7 @@ auto f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
 }
 
 auto f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept -> bool {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_public_encrypt)};
   string result;
   if (f$openssl_public_encrypt(data, result, public_key)) {
     encrypted_data = std::move(result);
@@ -770,6 +783,7 @@ auto f$openssl_private_decrypt(const string& data, string& decrypted_data, const
 }
 
 auto f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const string& private_key) noexcept -> bool {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::openssl_private_decrypt)};
   string result;
   if (f$openssl_private_decrypt(data, result, private_key)) {
     decrypted_data = std::move(result);
@@ -862,9 +876,7 @@ auto hmac(k2::HashAlgorithm algorithm, std::span<const std::byte> key, std::span
   });
 }
 
-} // namespace
-
-auto f$hash_algos() noexcept -> array<string> {
+auto hash_algos_impl() noexcept -> array<string> {
   array<string> res{array_size{HASH_ALGORITHMS.size(), true}};
   for (const auto& [algo, _] : HASH_ALGORITHMS) {
     res.push_back(string{algo.data(), static_cast<string::size_type>(algo.size())});
@@ -873,11 +885,20 @@ auto f$hash_algos() noexcept -> array<string> {
   return res;
 }
 
+} // namespace
+
+auto f$hash_algos() noexcept -> array<string> {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash_algos)};
+  return hash_algos_impl();
+}
+
 auto f$hash_hmac_algos() noexcept -> array<string> {
-  return f$hash_algos();
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash_hmac_algos)};
+  return hash_algos_impl();
 }
 
 auto f$hash(const string& algorithm, const string& data, bool binary) noexcept -> string {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash)};
   const auto algo{parse_hash_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
     kphp::log::error("unsupported hash algorithm '{}'", algorithm.c_str());
@@ -887,6 +908,7 @@ auto f$hash(const string& algorithm, const string& data, bool binary) noexcept -
 }
 
 auto f$hash_hmac(const string& algorithm, const string& data, const string& key, bool binary) noexcept -> string {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::hash_hmac)};
   const auto algo{parse_hash_algorithm({algorithm.c_str(), algorithm.size()})};
   if (!algo) [[unlikely]] {
     kphp::log::error("unsupported hash algorithm '{}'", algorithm.c_str());
@@ -907,6 +929,7 @@ auto f$hash_hmac(const string& algorithm, const string& data, const string& key,
 }
 
 auto f$sha1(const string& data, bool binary) noexcept -> string {
+  auto timer{CryptoTimeInstanceState::get().write(CryptoBuiltin::sha1)};
   return hash(hash_algorithm_traits{SHA1_HASHED_SIZE, k2::HashAlgorithm::HASH_SHA1, k2::openssl_sha1}, data, binary);
 }
 

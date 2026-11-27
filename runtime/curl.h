@@ -8,6 +8,7 @@
 #include "common/smart_ptrs/singleton.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/allocator.h"
+#include "runtime/curl-network-wait.h"
 
 using curl_easy = int64_t;
 
@@ -77,6 +78,8 @@ public:
   void send_async() const;
   void finish_request(Optional<string>&& respone = false) const;
   void detach_multi_and_easy_handles() const noexcept;
+  mutable CurlNetworkWait network_wait;
+  mutable BuiltinTimeGuard* builtin_timer{nullptr};
 
   const curl_easy easy_id{0};
   const curl_multi multi_id{0};

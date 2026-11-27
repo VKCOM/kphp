@@ -12,6 +12,7 @@
 #include "curl/easy.h"
 #include "curl/multi.h"
 
+#include "runtime-common/stdlib/diagnostics/curl-time-stats.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
@@ -38,6 +39,12 @@ static_assert(CURLE_OK == 0, "check value");
 static_assert(CURLM_CALL_MULTI_PERFORM == -1, "check value");
 static_assert(CURLM_OK == 0, "check value");
 static_assert(CURLM_BAD_HANDLE == 1, "check value");
+
+static CurlTimeStats curl_time_stats;
+
+CurlTimeStats& CurlTimeStats::get() noexcept {
+  return curl_time_stats;
+}
 static_assert(CURLM_BAD_EASY_HANDLE == 2, "check value");
 static_assert(CURLM_OUT_OF_MEMORY == 3, "check value");
 static_assert(CURLM_INTERNAL_ERROR == 4, "check value");
@@ -597,6 +604,8 @@ void off_multi_option_setter(MultiContext* multi_context, CURLMoption option, in
 } // namespace
 
 curl_easy f$curl_init(const string& url) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_init)};
+  BuiltinTimeNetworkScope network_scope{timer};
   auto& easy_contexts = vk::singleton<CurlContexts>::get().easy_contexts;
   EasyContext*& easy_context = easy_contexts.emplace_back();
   easy_context = new (dl::allocate(sizeof(EasyContext))) EasyContext(easy_contexts.count());
@@ -619,6 +628,8 @@ curl_easy f$curl_init(const string& url) noexcept {
 }
 
 void f$curl_reset(curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_reset)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (auto* easy_context = get_context<EasyContext>(easy_id)) {
     dl::CriticalSectionGuard critical_section;
     curl_easy_reset(easy_context->easy_handle);
@@ -630,7 +641,7 @@ void f$curl_reset(curl_easy easy_id) noexcept {
   }
 }
 
-bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value) noexcept {
+bool curl_setopt_impl(curl_easy easy_id, int64_t option, const mixed& value) noexcept {
   if (auto* easy_context = get_context<EasyContext>(easy_id)) {
     if (curl_setopt(easy_context, option, value)) {
       return true;
@@ -640,7 +651,15 @@ bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value) noexce
   return false;
 }
 
+bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_setopt)};
+  BuiltinTimeNetworkScope network_scope{timer};
+  return curl_setopt_impl(easy_id, option, value);
+}
+
 bool f$curl_setopt_array(curl_easy easy_id, const array<mixed>& options) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_setopt_array)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (auto* easy_context = get_context<EasyContext>(easy_id)) {
     for (auto p : options) {
       if (!curl_setopt(easy_context, p.get_key().to_int(), p.get_value())) {
@@ -654,6 +673,8 @@ bool f$curl_setopt_array(curl_easy easy_id, const array<mixed>& options) noexcep
 }
 
 mixed f$curl_exec(curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_exec)};
+  BuiltinTimeNetworkScope network_scope{timer};
   constexpr double long_curl_query = 2 * 1e-1; // 0.2 sec
   auto* easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
@@ -694,6 +715,8 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
 }
 
 mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_getinfo)};
+  BuiltinTimeNetworkScope network_scope{timer};
   auto* easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
     return false;
@@ -782,16 +805,22 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
 }
 
 string f$curl_error(curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_error)};
+  BuiltinTimeNetworkScope network_scope{timer};
   auto* easy_context = get_context<EasyContext>(easy_id);
   return (easy_context && easy_context->error_num != CURLE_OK) ? string{easy_context->error_msg} : string{};
 }
 
 int64_t f$curl_errno(curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_errno)};
+  BuiltinTimeNetworkScope network_scope{timer};
   auto* easy_context = get_context<EasyContext>(easy_id);
   return easy_context ? easy_context->error_num : 0;
 }
 
 void f$curl_close(curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_close)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (auto* easy_context = get_context<EasyContext>(easy_id)) {
     dl::CriticalSectionGuard critical_section;
     vk::singleton<CurlContexts>::get().easy_contexts.set_value(easy_id - 1, nullptr);
@@ -799,7 +828,7 @@ void f$curl_close(curl_easy easy_id) noexcept {
   }
 }
 
-curl_multi f$curl_multi_init() noexcept {
+curl_multi curl_multi_init_impl() noexcept {
   auto& multi_contexts = vk::singleton<CurlContexts>::get().multi_contexts;
   MultiContext*& multi = multi_contexts.emplace_back();
   multi = new (dl::allocate(sizeof(MultiContext))) MultiContext;
@@ -819,7 +848,13 @@ curl_multi f$curl_multi_init() noexcept {
   return multi_handle;
 }
 
-Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
+curl_multi f$curl_multi_init() noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_init)};
+  BuiltinTimeNetworkScope network_scope{timer};
+  return curl_multi_init_impl();
+}
+
+Optional<int64_t> curl_multi_add_handle_impl(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto* multi_context = get_context<MultiContext>(multi_id)) {
     if (auto* easy_context = get_context<EasyContext>(easy_id)) {
       if (kphp_tracing::is_turned_on()) {
@@ -834,7 +869,15 @@ Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id
   return false;
 }
 
+Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_add_handle)};
+  BuiltinTimeNetworkScope network_scope{timer};
+  return curl_multi_add_handle_impl(multi_id, easy_id);
+}
+
 Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_getcontent)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (auto* easy_context = get_context<EasyContext>(easy_id)) {
     return easy_context->return_transfer ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
   }
@@ -842,6 +885,8 @@ Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
 }
 
 bool f$curl_multi_setopt(curl_multi multi_id, int64_t option, int64_t value) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_setopt)};
+  BuiltinTimeNetworkScope network_scope{timer};
   auto* multi_context = get_context<MultiContext>(multi_id);
   if (!multi_context) {
     return false;
@@ -871,9 +916,11 @@ bool f$curl_multi_setopt(curl_multi multi_id, int64_t option, int64_t value) noe
 }
 
 Optional<int64_t> f$curl_multi_exec(curl_multi multi_id, int64_t& still_running) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_exec)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (auto* multi_context = get_context<MultiContext>(multi_id)) {
     int still_running_int = 0;
-    multi_context->error_num = dl::critical_section_call(curl_multi_perform, multi_context->multi_handle, &still_running_int);
+    multi_context->error_num = dl::critical_section_call([&] { return curl_multi_perform(multi_context->multi_handle, &still_running_int); });
     still_running = still_running_int;
     return multi_context->error_num;
   }
@@ -881,9 +928,12 @@ Optional<int64_t> f$curl_multi_exec(curl_multi multi_id, int64_t& still_running)
 }
 
 Optional<int64_t> f$curl_multi_select(curl_multi multi_id, double timeout) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_select)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (auto* multi_context = get_context<MultiContext>(multi_id)) {
     int numfds = 0;
-    multi_context->error_num = dl::critical_section_call(curl_multi_wait, multi_context->multi_handle, nullptr, 0, static_cast<int>(timeout * 1000.0), &numfds);
+    multi_context->error_num =
+        dl::critical_section_call([&] { return curl_multi_wait(multi_context->multi_handle, nullptr, 0, static_cast<int>(timeout * 1000.0), &numfds); });
     if (multi_context->error_num != CURLM_OK) {
       return -1;
     }
@@ -893,10 +943,10 @@ Optional<int64_t> f$curl_multi_select(curl_multi multi_id, double timeout) noexc
 }
 
 int64_t curl_multi_info_read_msgs_in_queue_stub = 0;
-Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t& msgs_in_queue) {
+Optional<array<int64_t>> curl_multi_info_read_impl(curl_multi multi_id, int64_t& msgs_in_queue) {
   if (auto* multi_context = get_context<MultiContext>(multi_id)) {
     int msgs_in_queue_int = 0;
-    CURLMsg* msg = dl::critical_section_call(curl_multi_info_read, multi_context->multi_handle, &msgs_in_queue_int);
+    CURLMsg* msg = dl::critical_section_call([&] { return curl_multi_info_read(multi_context->multi_handle, &msgs_in_queue_int); });
     msgs_in_queue = msgs_in_queue_int;
     if (msg) {
       array<int64_t> result{array_size{3, false}};
@@ -917,25 +967,39 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t& ms
   return false;
 }
 
-Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
+Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t& msgs_in_queue) {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_info_read)};
+  BuiltinTimeNetworkScope network_scope{timer};
+  return curl_multi_info_read_impl(multi_id, msgs_in_queue);
+}
+
+Optional<int64_t> curl_multi_remove_handle_impl(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto* multi_context = get_context<MultiContext>(multi_id)) {
     if (auto* easy_context = get_context<EasyContext>(easy_id)) {
       if (kphp_tracing::is_turned_on()) {
         kphp_tracing::on_curl_multi_remove_handle(multi_context->uniq_id, easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
       }
-      multi_context->error_num = dl::critical_section_call(curl_multi_remove_handle, multi_context->multi_handle, easy_context->easy_handle);
+      multi_context->error_num = dl::critical_section_call([&] { return curl_multi_remove_handle(multi_context->multi_handle, easy_context->easy_handle); });
       return multi_context->error_num;
     }
   }
   return false;
 }
 
+Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_remove_handle)};
+  BuiltinTimeNetworkScope network_scope{timer};
+  return curl_multi_remove_handle_impl(multi_id, easy_id);
+}
+
 Optional<int64_t> f$curl_multi_errno(curl_multi multi_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_errno)};
+  BuiltinTimeNetworkScope network_scope{timer};
   auto* multi_context = get_context<MultiContext>(multi_id);
   return multi_context ? multi_context->error_num : false;
 }
 
-void f$curl_multi_close(curl_multi multi_id) noexcept {
+void curl_multi_close_impl(curl_multi multi_id) noexcept {
   if (auto* multi_context = get_context<MultiContext>(multi_id)) {
     dl::CriticalSectionGuard critical_section;
     vk::singleton<CurlContexts>::get().multi_contexts.set_value(multi_id - 1, nullptr);
@@ -946,11 +1010,19 @@ void f$curl_multi_close(curl_multi multi_id) noexcept {
   }
 }
 
+void f$curl_multi_close(curl_multi multi_id) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_close)};
+  BuiltinTimeNetworkScope network_scope{timer};
+  curl_multi_close_impl(multi_id);
+}
+
 Optional<string> f$curl_multi_strerror(int64_t error_num) noexcept {
+  auto timer{CurlTimeStats::get().write(CurlBuiltin::curl_multi_strerror)};
+  BuiltinTimeNetworkScope network_scope{timer};
   if (error_num == BAD_CURL_OPTION) {
     return string{"Bad curl option"};
   }
-  const char* err_str = dl::critical_section_call(curl_multi_strerror, static_cast<CURLMcode>(error_num));
+  const char* err_str = dl::critical_section_call([&] { return curl_multi_strerror(static_cast<CURLMcode>(error_num)); });
   return err_str ? string{err_str} : Optional<string>{};
 }
 
@@ -966,9 +1038,14 @@ void register_curl_deallocation(size_t memory_used) noexcept {
   vk::singleton<CurlMemoryUsage>::get().currently_allocated -= memory_used;
 }
 
+namespace curl_async {
+void observe_network_ready(event_t* event);
+}
+
 void global_init_curl_lib() noexcept {
-  if (curl_global_init_mem(
-          CURL_GLOBAL_ALL, [](size_t size) { return register_curl_allocation(malloc(size)); },
+  net_reactor_network_ready_observer = curl_async::observe_network_ready;
+  if (std::invoke(
+          curl_global_init_mem, CURL_GLOBAL_ALL, [](size_t size) { return register_curl_allocation(malloc(size)); },
           [](void* ptr) {
             const size_t memory_used = malloc_usable_size(ptr);
             free(ptr);
@@ -1014,19 +1091,19 @@ void free_curl_lib() noexcept {
 namespace curl_async {
 
 CurlRequest CurlRequest::build(curl_easy easy_id) {
-  curl_multi multi_id = f$curl_multi_init();
+  curl_multi multi_id = curl_multi_init_impl();
   const EasyContext* easy_context = get_context<EasyContext>(easy_id);
   if (!multi_id || !easy_context) {
     throw std::runtime_error{"failed to get context"};
   }
 
   // it is pointless to use stdout during concurrent request processing
-  bool ok = f$curl_setopt(easy_id, CURLOPT_RETURNTRANSFER, 1);
+  bool ok = curl_setopt_impl(easy_id, CURLOPT_RETURNTRANSFER, 1);
   if (!ok) {
     throw std::runtime_error{"failed to set returntransfer option"};
   }
 
-  Optional<int64_t> status = f$curl_multi_add_handle(multi_id, easy_id);
+  Optional<int64_t> status = curl_multi_add_handle_impl(multi_id, easy_id);
   if (!status.has_value() || status.val()) {
     throw std::runtime_error{"failed to add handle"};
   }
@@ -1045,6 +1122,7 @@ CurlRequest::CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept
 static int curl_socketfunction_cb(CURL* easy, curl_socket_t fd, int action, void* userp, void* socketp);
 
 void CurlRequest::send_async() const {
+  BuiltinTimeNetworkScope network_scope{*builtin_timer};
   auto* easy_context = get_context<EasyContext>(easy_id);
   auto* multi_context = get_context<MultiContext>(multi_id);
   if (!easy_context || !multi_context) {
@@ -1056,10 +1134,11 @@ void CurlRequest::send_async() const {
   multi_context->set_option_safe(CURLMOPT_SOCKETDATA, this);
 
   int running_handles = 0;
-  multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, CURL_SOCKET_TIMEOUT, 0, &running_handles);
+  multi_context->error_num =
+      dl::critical_section_call([&] { return curl_multi_socket_action(multi_context->multi_handle, CURL_SOCKET_TIMEOUT, 0, &running_handles); });
 
   if (easy_context->connection_only) {
-    auto info = f$curl_multi_info_read(multi_id);
+    auto info = curl_multi_info_read_impl(multi_id, curl_multi_info_read_msgs_in_queue_stub);
     if (info.has_value()) {
       const int64_t* result = info.val().find_value(string{"result"});
       if (result && *result == 0) {
@@ -1070,7 +1149,9 @@ void CurlRequest::send_async() const {
   }
   if (!running_handles || multi_context->error_num != CURLM_OK) {
     finish_request();
+    return;
   }
+  network_wait.begin();
 }
 
 void CurlRequest::finish_request(Optional<string>&& response) const {
@@ -1079,8 +1160,8 @@ void CurlRequest::finish_request(Optional<string>&& response) const {
 }
 
 void CurlRequest::detach_multi_and_easy_handles() const noexcept {
-  f$curl_multi_remove_handle(multi_id, easy_id);
-  f$curl_multi_close(multi_id);
+  curl_multi_remove_handle_impl(multi_id, easy_id);
+  curl_multi_close_impl(multi_id);
 }
 
 static int curl_epoll_cb(int fd, void* data, event_t* ev) {
@@ -1095,6 +1176,8 @@ static int curl_epoll_cb(int fd, void* data, event_t* ev) {
   }
   auto* curl_request = static_cast<CurlRequest*>(data);
   php_assert(curl_request);
+  curl_request->network_wait.consume(fd);
+  BuiltinTimeNetworkScope network_scope{*curl_request->builtin_timer};
 
   int flags = 0;
   if (ev->ready & EVT_READ) {
@@ -1111,7 +1194,7 @@ static int curl_epoll_cb(int fd, void* data, event_t* ev) {
   }
 
   int running_handles = 0;
-  multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, fd, flags, &running_handles);
+  multi_context->error_num = dl::critical_section_call([&] { return curl_multi_socket_action(multi_context->multi_handle, fd, flags, &running_handles); });
 
   if (multi_context->error_num != CURLM_OK) {
     curl_request->finish_request();
@@ -1127,8 +1210,16 @@ static int curl_epoll_cb(int fd, void* data, event_t* ev) {
 
     string content = easy_context->received_data.concat_and_get_string();
     curl_request->finish_request(std::move(content));
+    return 0;
   }
+  curl_request->network_wait.begin();
   return 0;
+}
+
+void observe_network_ready(event_t* event) {
+  if ((event->state & EVT_IN_EPOLL) && event->work == curl_epoll_cb) {
+    static_cast<CurlRequest*>(event->data)->network_wait.ready(event->fd);
+  }
 }
 
 static int curl_socketfunction_cb(CURL* /*easy*/, curl_socket_t fd, int action, void* userp, void* /*socketp*/) {
@@ -1152,6 +1243,7 @@ static int curl_socketfunction_cb(CURL* /*easy*/, curl_socket_t fd, int action, 
     break;
   }
   case CURL_POLL_REMOVE: {
+    curl_request->network_wait.consume(fd);
     epoll_remove(fd);
     break;
   }

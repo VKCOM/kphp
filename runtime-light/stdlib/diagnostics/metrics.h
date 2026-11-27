@@ -258,6 +258,13 @@ public:
     return result;
   }
 
+  template<tag_range TagRange>
+  auto send_value(TagRange&& tags, double value, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
+    auto [buffer, result]{metric::with_buffer(std::move(this->buffer)).send_value(this->metric_name, std::forward<TagRange>(tags), value, timestamp)};
+    this->buffer = std::move(buffer);
+    return result;
+  }
+
   auto send_values_array(std::span<const double> values, std::optional<uint64_t> timestamp = std::nullopt) noexcept {
     auto [buffer, result]{metric::with_buffer(std::move(this->buffer)).send_values_array(this->metric_name, this->tags, values, timestamp)};
     this->buffer = std::move(buffer);

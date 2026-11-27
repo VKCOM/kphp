@@ -5,8 +5,10 @@
 #include "runtime-common/stdlib/crypto/crypto-functions.h"
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/diagnostics/crypto-time-stats.h"
 
 bool f$hash_equals(string known_string, string user_string) noexcept {
+  auto timer{CryptoTimeStats::get().write(CryptoBuiltin::hash_equals)};
   if (known_string.size() != user_string.size()) {
     return false;
   }

@@ -70,6 +70,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         confdata-keys.cpp
         critical_section.cpp
         curl.cpp
+        curl-network-wait.cpp
         curl-async.cpp
         env.cpp
         exception.cpp

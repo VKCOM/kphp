@@ -36,6 +36,8 @@ extern epoll_func_vector_t epoll_pre_runqueue, epoll_post_runqueue, epoll_pre_ev
 
 typedef struct event_descr event_t;
 typedef int (*event_handler_t)(int fd, void *data, event_t *ev);
+// Optional measurement observer; must not change event/scheduling state.
+extern void (*net_reactor_network_ready_observer)(event_t *ev);
 
 struct event_descr {
   int fd;
