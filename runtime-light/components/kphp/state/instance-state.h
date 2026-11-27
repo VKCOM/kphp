@@ -112,7 +112,7 @@ struct InstanceState final : vk::not_copyable {
   JobWorkerServerInstanceState job_worker_server_instance_state;
   InstanceCacheInstanceState instance_cache_instance_state;
   kphp::confdata::instance_state confdata_instance_state;
-  kphp::openssl::crypto_instance_state crypto_instance_state;
+  kphp::openssl::instance_state crypto_instance_state;
 
   TimeInstanceState time_instance_state;
   MathInstanceState math_instance_state;

@@ -142,11 +142,11 @@ auto CurlImageState::get() noexcept -> const CurlImageState& {
   return ImageState::get().curl_image_state;
 }
 
-auto kphp::openssl::crypto_image_state::get() noexcept -> const kphp::openssl::crypto_image_state& {
+auto kphp::openssl::image_state::get() noexcept -> const kphp::openssl::image_state& {
   return ImageState::get().crypto_image_state;
 }
 
-auto kphp::openssl::crypto_instance_state::get() noexcept -> kphp::openssl::crypto_instance_state& {
+auto kphp::openssl::instance_state::get() noexcept -> kphp::openssl::instance_state& {
   return InstanceState::get().crypto_instance_state;
 }
 

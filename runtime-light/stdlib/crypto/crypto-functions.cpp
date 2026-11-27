@@ -71,10 +71,9 @@ auto x509_get_name_entries(const kphp::openssl::x509_name& name, bool shortnames
     kphp::log::assertion(key_str.has_value());
     const auto value_data{value->data()};
     kphp::log::assertion(value_data.has_value());
-    const auto value_len{value->length()};
-    kphp::log::assertion(value_len.has_value());
 
-    res.set_value(string{*key_str}, string{static_cast<const char*>(*value_data), static_cast<string::size_type>(*value_len)});
+    res.set_value(string{key_str->data(), static_cast<string::size_type>(key_str->size())},
+                  string{reinterpret_cast<const char*>(value_data->data()), static_cast<string::size_type>(value_data->size())});
   }
 
   return res;
@@ -97,7 +96,8 @@ auto x509_get_purposes(const kphp::openssl::x509& cert, bool shortnames) noexcep
     const auto purpset_1{cert.check_purpose(*id, 1)};
     kphp::log::assertion(purpset_1.has_value());
 
-    res.set_value(static_cast<int64_t>(*id), array<mixed>::create(*purpset_0 != 0, *purpset_1 != 0, string{*name}));
+    res.set_value(static_cast<int64_t>(*id),
+                  array<mixed>::create(*purpset_0 != 0, *purpset_1 != 0, string{name->data(), static_cast<string::size_type>(name->size())}));
   }
 
   return res;
@@ -153,7 +153,7 @@ auto f$openssl_x509_parse(const string& data, bool shortnames) noexcept -> Optio
 
   auto purposes{x509_get_purposes(*cert, shortnames)};
 
-  const auto& crypto_state{kphp::openssl::crypto_image_state::get()};
+  const auto& crypto_state{kphp::openssl::image_state::get()};
 
   const std::array<char, 4> hash_bytes{static_cast<char>(*hash >> 24), static_cast<char>(*hash >> 16), static_cast<char>(*hash >> 8), static_cast<char>(*hash)};
 
@@ -260,12 +260,14 @@ auto f$openssl_sign(const string& data, string& signature, const string& private
 
   // Reuse md_ctx from cache to avoid allocation
   // It's safe, because we call init, that resets md_ctx state.
-  const auto ctx{kphp::openssl::crypto_instance_state::get().md_ctx()};
+  const auto ctx{kphp::openssl::instance_state::get().md_ctx()};
   if (const auto size{key->size()}; size) {
     string buffer{static_cast<string::size_type>(*size), false};
-    const auto sig_len{ctx.and_then([&](const kphp::openssl::md_ctx* c) noexcept { return c->sign_init(*digest); })
-                           .and_then([&]() noexcept { return (*ctx)->sign_update(std::as_bytes(std::span{data.c_str(), data.size()})); })
-                           .and_then([&]() noexcept { return (*ctx)->sign_final(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}), *key); })};
+    const auto sig_len{ctx.and_then([&digest, &data, &buffer, &key](const kphp::openssl::md_ctx& c) noexcept {
+      return c.sign_init(*digest)
+          .and_then([&c, &data]() noexcept { return c.sign_update(std::as_bytes(std::span{data.c_str(), data.size()})); })
+          .and_then([&c, &buffer, &key]() noexcept { return c.sign_final(std::as_writable_bytes(std::span{buffer.buffer(), buffer.size()}), *key); });
+    })};
     if (sig_len) {
       buffer.shrink(static_cast<string::size_type>(*sig_len));
       signature = std::move(buffer);
@@ -295,12 +297,14 @@ auto f$openssl_verify(const string& data, const string& signature, const string&
   int32_t openssl_err{0};
   // Reuse md_ctx from cache to avoid allocation
   // It's safe, because we call init, that resets md_ctx state.
-  const auto ctx{kphp::openssl::crypto_instance_state::get().md_ctx()};
-  const auto verified{ctx.and_then([&](const kphp::openssl::md_ctx* c) noexcept { return c->verify_init(*digest); })
-                          .and_then([&]() noexcept { return (*ctx)->verify_update(std::as_bytes(std::span{data.c_str(), data.size()})); })
-                          .and_then([&]() noexcept {
-                            return (*ctx)->verify_final(std::as_bytes(std::span{signature.c_str(), signature.size()}), *key, std::addressof(openssl_err));
-                          })};
+  const auto ctx{kphp::openssl::instance_state::get().md_ctx()};
+  const auto verified{ctx.and_then([&digest, &data, &signature, &key, &openssl_err](const kphp::openssl::md_ctx& c) noexcept {
+    return c.verify_init(*digest)
+        .and_then([&c, &data]() noexcept { return c.verify_update(std::as_bytes(std::span{data.c_str(), data.size()})); })
+        .and_then([&c, &signature, &key, &openssl_err]() noexcept {
+          return c.verify_final(std::as_bytes(std::span{signature.c_str(), signature.size()}), *key, std::addressof(openssl_err));
+        });
+  })};
 
   if (verified) {
     return static_cast<int64_t>(*verified);
@@ -462,7 +466,7 @@ public:
       return std::nullopt;
     }
 
-    const auto ctx{kphp::openssl::crypto_instance_state::get().cipher_ctx()};
+    const auto ctx{kphp::openssl::instance_state::get().cipher_ctx()};
     if (!ctx) {
       kphp::log::warning("failed to create cipher context");
       return std::nullopt;
@@ -473,7 +477,7 @@ public:
 
     return cipher_operation{*name,
                             std::move(*cipher),
-                            **ctx,
+                            ctx->get(),
                             direction,
                             static_cast<size_t>(*key_length),
                             static_cast<size_t>(*iv_length),
@@ -728,14 +732,14 @@ auto f$openssl_public_encrypt(const string& data, string& encrypted_data, const 
 
 auto f$openssl_public_encrypt(const string& data, mixed& encrypted_data, const string& public_key) noexcept -> bool {
   string result;
-  if (f$openssl_public_encrypt(data, result, public_key)) {
-    encrypted_data = std::move(result);
-    return true;
+  if (!f$openssl_public_encrypt(data, result, public_key)) {
+    encrypted_data = mixed{};
+    return false;
   }
 
-  encrypted_data = mixed{};
+  encrypted_data = std::move(result);
 
-  return false;
+  return true;
 }
 
 auto f$openssl_private_decrypt(const string& data, string& decrypted_data, const string& private_key) noexcept -> bool {
@@ -771,14 +775,14 @@ auto f$openssl_private_decrypt(const string& data, string& decrypted_data, const
 
 auto f$openssl_private_decrypt(const string& data, mixed& decrypted_data, const string& private_key) noexcept -> bool {
   string result;
-  if (f$openssl_private_decrypt(data, result, private_key)) {
-    decrypted_data = std::move(result);
-    return true;
+  if (!f$openssl_private_decrypt(data, result, private_key)) {
+    decrypted_data = mixed{};
+    return false;
   }
 
-  decrypted_data = mixed{};
+  decrypted_data = std::move(result);
 
-  return false;
+  return true;
 }
 
 namespace {
@@ -857,8 +861,10 @@ auto hmac(k2::HashAlgorithm algorithm, std::span<const std::byte> key, std::span
           std::span<std::byte> md) noexcept -> std::expected<uint32_t, int32_t> {
   // Reuse hmac_ctx from cache to avoid allocation
   // It's safe, because we call init, that resets hmac_ctx state.
-  return kphp::openssl::crypto_instance_state::get().hmac_ctx().and_then([&](const kphp::openssl::hmac_ctx* ctx) noexcept {
-    return ctx->init_ex(key, algorithm).and_then([&]() noexcept { return ctx->update(data); }).and_then([&]() noexcept { return ctx->final(md); });
+  return kphp::openssl::instance_state::get().hmac_ctx().and_then([&key, &algorithm, &data, &md](const kphp::openssl::hmac_ctx& ctx) noexcept {
+    return ctx.init_ex(key, algorithm).and_then([&ctx, &data]() noexcept { return ctx.update(data); }).and_then([&ctx, &md]() noexcept {
+      return ctx.final(md);
+    });
   });
 }
 

@@ -16,6 +16,8 @@
 
 namespace kphp::openssl {
 
+enum class ownership : uint8_t { owned, borrowed };
+
 /**
  * Base class of all OpenSSL objects: a move-only holder of a platform descriptor.
  *
@@ -24,35 +26,31 @@ namespace kphp::openssl {
  */
 class descriptor_guard {
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-  bool m_owned{false};
+  ownership m_ownership{ownership::borrowed};
 
   auto free() noexcept -> void {
-    if (m_owned && m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
+    if (m_ownership == ownership::owned && m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
       k2::free_descriptor(m_descriptor);
     }
 
     m_descriptor = k2::INVALID_PLATFORM_DESCRIPTOR;
-    m_owned = false;
+    m_ownership = ownership::borrowed;
   }
 
 protected:
-  explicit descriptor_guard(k2::descriptor descriptor, bool owned = true) noexcept
+  descriptor_guard(k2::descriptor descriptor, ownership kind) noexcept
       : m_descriptor(descriptor),
-        m_owned(owned) {}
-
-  descriptor_guard(const descriptor_guard&) = delete;
+        m_ownership(kind) {}
 
   descriptor_guard(descriptor_guard&& other) noexcept
       : m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)),
-        m_owned(std::exchange(other.m_owned, false)) {}
-
-  auto operator=(const descriptor_guard&) -> descriptor_guard& = delete;
+        m_ownership(std::exchange(other.m_ownership, ownership::borrowed)) {}
 
   auto operator=(descriptor_guard&& other) noexcept -> descriptor_guard& {
     if (this != std::addressof(other)) {
       free();
       m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
-      m_owned = std::exchange(other.m_owned, false);
+      m_ownership = std::exchange(other.m_ownership, ownership::borrowed);
     }
 
     return *this;
@@ -63,19 +61,23 @@ protected:
   }
 
 public:
+  descriptor_guard(const descriptor_guard&) = delete;
+
+  auto operator=(const descriptor_guard&) -> descriptor_guard& = delete;
+
   auto descriptor() const noexcept -> k2::descriptor {
     return m_descriptor;
   }
 
   auto release() noexcept -> k2::descriptor {
-    m_owned = false;
+    m_ownership = ownership::borrowed;
     return std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
   }
 };
 
 class rsa final : public descriptor_guard {
   explicit rsa(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> rsa {
@@ -94,8 +96,8 @@ public:
 };
 
 class pkey final : public descriptor_guard {
-  pkey(k2::descriptor descriptor, bool owned) noexcept
-      : descriptor_guard(descriptor, owned) {}
+  pkey(k2::descriptor descriptor, ownership kind) noexcept
+      : descriptor_guard(descriptor, kind) {}
 
 public:
   static auto public_from_pem(std::span<const std::byte> pem) noexcept -> std::expected<pkey, int32_t> {
@@ -107,11 +109,11 @@ public:
   }
 
   static auto adopt(k2::descriptor descriptor) noexcept -> pkey {
-    return pkey{descriptor, true};
+    return pkey{descriptor, ownership::owned};
   }
 
   static auto borrow(k2::descriptor descriptor) noexcept -> pkey {
-    return pkey{descriptor, false};
+    return pkey{descriptor, ownership::borrowed};
   }
 
   auto id() const noexcept -> std::expected<int32_t, int32_t> {
@@ -133,7 +135,7 @@ public:
 
 class md_ctx final : public descriptor_guard {
   explicit md_ctx(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto create() noexcept -> std::expected<md_ctx, int32_t> {
@@ -167,7 +169,7 @@ public:
 
 class hmac_ctx final : public descriptor_guard {
   explicit hmac_ctx(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto create() noexcept -> std::expected<hmac_ctx, int32_t> {
@@ -189,7 +191,7 @@ public:
 
 class cipher final : public descriptor_guard {
   explicit cipher(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto from_name(std::string_view name) noexcept -> std::expected<cipher, int32_t> {
@@ -215,7 +217,7 @@ public:
 
 class cipher_ctx final : public descriptor_guard {
   explicit cipher_ctx(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto create() noexcept -> std::expected<cipher_ctx, int32_t> {
@@ -273,12 +275,12 @@ class cstring final : public descriptor_guard {
   const char* m_str{nullptr};
 
   cstring(k2::descriptor descriptor, const char* str) noexcept
-      : descriptor_guard(descriptor),
+      : descriptor_guard(descriptor, ownership::owned),
         m_str(str) {}
 
 public:
-  static auto adopt(k2::cstring oneline) noexcept -> openssl::cstring {
-    return openssl::cstring{oneline.descriptor, oneline.str};
+  static auto adopt(k2::descriptor descriptor, std::string_view oneline) noexcept -> kphp::openssl::cstring {
+    return openssl::cstring{descriptor, oneline.data()};
   }
 
   auto c_str() const noexcept -> const char* {
@@ -288,7 +290,7 @@ public:
 
 class asn1_object final : public descriptor_guard {
   explicit asn1_object(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> asn1_object {
@@ -302,25 +304,21 @@ public:
 
 class asn1_string final : public descriptor_guard {
   explicit asn1_string(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> asn1_string {
     return asn1_string{descriptor};
   }
 
-  auto data() const noexcept -> std::expected<const void*, int32_t> {
+  auto data() const noexcept -> std::expected<std::span<const std::byte>, int32_t> {
     return k2::openssl_asn1_string_get0_data(descriptor());
-  }
-
-  auto length() const noexcept -> std::expected<int32_t, int32_t> {
-    return k2::openssl_asn1_string_length(descriptor());
   }
 };
 
 class asn1_time final : public descriptor_guard {
   explicit asn1_time(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> asn1_time {
@@ -350,7 +348,7 @@ public:
 
 class x509_name_entry final : public descriptor_guard {
   explicit x509_name_entry(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> x509_name_entry {
@@ -368,7 +366,7 @@ public:
 
 class x509_name final : public descriptor_guard {
   explicit x509_name(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> x509_name {
@@ -376,7 +374,9 @@ public:
   }
 
   auto oneline() const noexcept -> std::expected<openssl::cstring, int32_t> {
-    return k2::openssl_x509_name_oneline(descriptor()).transform(openssl::cstring::adopt);
+    return k2::openssl_x509_name_oneline(descriptor()).transform([](const auto& oneline) noexcept {
+      return openssl::cstring::adopt(oneline.first, oneline.second);
+    });
   }
 
   auto entry_count() const noexcept -> std::expected<int32_t, int32_t> {
@@ -390,7 +390,7 @@ public:
 
 class x509_purpose final : public descriptor_guard {
   explicit x509_purpose(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto adopt(k2::descriptor descriptor) noexcept -> x509_purpose {
@@ -409,18 +409,18 @@ public:
     return k2::openssl_x509_purpose_get_id(descriptor());
   }
 
-  auto name() const noexcept -> std::expected<const char*, int32_t> {
+  auto name() const noexcept -> std::expected<std::string_view, int32_t> {
     return k2::openssl_x509_purpose_get0_name(descriptor());
   }
 
-  auto sname() const noexcept -> std::expected<const char*, int32_t> {
+  auto sname() const noexcept -> std::expected<std::string_view, int32_t> {
     return k2::openssl_x509_purpose_get0_sname(descriptor());
   }
 };
 
 class x509 final : public descriptor_guard {
   explicit x509(k2::descriptor descriptor) noexcept
-      : descriptor_guard(descriptor) {}
+      : descriptor_guard(descriptor, ownership::owned) {}
 
 public:
   static auto from_pem(std::span<const std::byte> pem) noexcept -> std::expected<x509, int32_t> {

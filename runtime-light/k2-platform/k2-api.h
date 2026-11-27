@@ -94,11 +94,6 @@ using CipherMode = CipherMode;
 
 using RsaPadding = RsaPadding;
 
-struct cstring {
-  const char* str{nullptr}; // a NUL-terminated string, valid until `descriptor` is freed
-  k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-};
-
 inline const ImageInfo* describe() noexcept {
   return k2_describe();
 }
@@ -330,13 +325,14 @@ inline std::expected<k2::descriptor, int32_t> openssl_x509_get_issuer_name(k2::d
   return {name_d};
 }
 
-inline std::expected<cstring, int32_t> openssl_x509_name_oneline(k2::descriptor name_d) noexcept {
-  cstring result{};
-  if (auto error_code{k2_openssl_x509_name_oneline(name_d, std::addressof(result.str), std::addressof(result.descriptor))}; error_code != k2::errno_ok) {
+inline std::expected<std::pair<k2::descriptor, std::string_view>, int32_t> openssl_x509_name_oneline(k2::descriptor name_d) noexcept {
+  const char* str{nullptr};
+  k2::descriptor str_d{k2::INVALID_PLATFORM_DESCRIPTOR};
+  if (auto error_code{k2_openssl_x509_name_oneline(name_d, std::addressof(str), std::addressof(str_d))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {result};
+  return {std::pair{str_d, std::string_view{str}}};
 }
 
 inline std::expected<int32_t, int32_t> openssl_x509_name_entry_count(k2::descriptor name_d) noexcept {
@@ -384,25 +380,21 @@ inline std::expected<k2::descriptor, int32_t> openssl_x509_name_entry_get_data(k
   return {str_d};
 }
 
-inline std::expected<const void*, int32_t> openssl_asn1_string_get0_data(k2::descriptor str_d) noexcept {
+inline std::expected<std::span<const std::byte>, int32_t> openssl_asn1_string_get0_data(k2::descriptor str_d) noexcept {
   const void* data{nullptr};
   if (auto error_code{k2_openssl_asn1_string_get0_data(str_d, std::addressof(data))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {data};
-}
-
-inline std::expected<int32_t, int32_t> openssl_asn1_string_length(k2::descriptor str_d) noexcept {
   int32_t len{0};
   if (auto error_code{k2_openssl_asn1_string_length(str_d, std::addressof(len))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
   }
 
-  return {len};
+  return {std::span{static_cast<const std::byte*>(data), static_cast<size_t>(len)}};
 }
 
-inline std::expected<const char*, int32_t> openssl_obj_nid2sn(int32_t nid) noexcept {
+inline std::expected<std::string_view, int32_t> openssl_obj_nid2sn(int32_t nid) noexcept {
   const char* str{nullptr};
   if (auto error_code{k2_openssl_obj_nid2sn(nid, std::addressof(str))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
@@ -411,7 +403,7 @@ inline std::expected<const char*, int32_t> openssl_obj_nid2sn(int32_t nid) noexc
   return {str};
 }
 
-inline std::expected<const char*, int32_t> openssl_obj_nid2ln(int32_t nid) noexcept {
+inline std::expected<std::string_view, int32_t> openssl_obj_nid2ln(int32_t nid) noexcept {
   const char* str{nullptr};
   if (auto error_code{k2_openssl_obj_nid2ln(nid, std::addressof(str))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
@@ -535,7 +527,7 @@ inline std::expected<int32_t, int32_t> openssl_x509_purpose_get_id(k2::descripto
   return {id};
 }
 
-inline std::expected<const char*, int32_t> openssl_x509_purpose_get0_name(k2::descriptor purpose_d) noexcept {
+inline std::expected<std::string_view, int32_t> openssl_x509_purpose_get0_name(k2::descriptor purpose_d) noexcept {
   const char* str{nullptr};
   if (auto error_code{k2_openssl_x509_purpose_get0_name(purpose_d, std::addressof(str))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
@@ -544,7 +536,7 @@ inline std::expected<const char*, int32_t> openssl_x509_purpose_get0_name(k2::de
   return {str};
 }
 
-inline std::expected<const char*, int32_t> openssl_x509_purpose_get0_sname(k2::descriptor purpose_d) noexcept {
+inline std::expected<std::string_view, int32_t> openssl_x509_purpose_get0_sname(k2::descriptor purpose_d) noexcept {
   const char* str{nullptr};
   if (auto error_code{k2_openssl_x509_purpose_get0_sname(purpose_d, std::addressof(str))}; error_code != k2::errno_ok) {
     return std::unexpected{error_code};
