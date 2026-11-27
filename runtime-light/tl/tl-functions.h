@@ -453,16 +453,18 @@ class SimpleWebTransferPerform final {
 
 public:
   tl::u64 descriptor;
+  tl::u64 timeout;
   tl::simpleWebTransferConfig config;
 
   void store(tl::storer& tls) const noexcept {
     tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.store(tls);
     descriptor.store(tls);
+    timeout.store(tls);
     config.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.footprint() + descriptor.footprint() + config.footprint();
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.footprint() + descriptor.footprint() + timeout.footprint() + config.footprint();
   }
 };
 
