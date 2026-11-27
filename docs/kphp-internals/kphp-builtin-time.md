@@ -28,6 +28,22 @@ The purpose is to measure the existing implementations, not equalize them.
 Master's RSA blinding, X509 fields, cipher catalogue and other implementation
 differences are deliberately preserved. No adjustment factor is applied.
 
+In the optimized K2 implementation crypto builtins are plain synchronous calls into the
+K2 platform OpenSSL API (no internal crypto component, no IPC), so the same caller-side
+timer wraps the whole builtin body. `f$openssl_public_encrypt`/`f$openssl_private_decrypt`
+are timed in the `mixed&` overload only, and `hash_hmac_algos` shares its implementation
+with `hash_algos`, so nested builtins are never counted twice.
+
+## Memory
+
+K2 only. Group `memory` measures wall time spent in the coroutine frame allocator
+for `kphp::coro::task`: `task_new` is the promise `operator new` (both the plain and
+the aligned overloads), `task_delete` is the promise `operator delete`. Both are reported
+as separate methods, `method=total` is their sum. Other coroutine types (`shared_task`,
+await-set, `when_all`/`when_any`) are not measured. The timer itself (two clock reads
+per call) is part of the measured interval, so it inflates the absolute numbers; compare
+branches measured with the same instrumentation.
+
 ## Curl network boundaries
 
 Do not exclude `curl_easy_perform()`, `multi.action()` or other whole
