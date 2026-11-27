@@ -20,6 +20,7 @@
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
+#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
@@ -139,6 +140,14 @@ auto CurlInstanceState::get() noexcept -> CurlInstanceState& {
 
 auto CurlImageState::get() noexcept -> const CurlImageState& {
   return ImageState::get().curl_image_state;
+}
+
+auto kphp::openssl::image_state::get() noexcept -> const kphp::openssl::image_state& {
+  return ImageState::get().crypto_image_state;
+}
+
+auto kphp::openssl::instance_state::get() noexcept -> kphp::openssl::instance_state& {
+  return InstanceState::get().crypto_instance_state;
 }
 
 auto FileSystemImageState::get() noexcept -> const FileSystemImageState& {
