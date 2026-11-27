@@ -74,8 +74,8 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
   co_return std::expected<simple::transfer, error>{descriptor};
 }
 
-inline auto perform(simple::transfer st,
-                    std::chrono::nanoseconds timeout = std::chrono::nanoseconds::zero()) noexcept -> kphp::coro::task<std::expected<response, error>> {
+inline auto perform(simple::transfer st, std::chrono::milliseconds timeout = std::chrono::milliseconds::zero()) noexcept
+    -> kphp::coro::task<std::expected<response, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& simple2config{web_state.simple_transfer2config};
@@ -91,7 +91,7 @@ inline auto perform(simple::transfer st,
   }
   tl::simpleWebTransferConfig tl_config{tl::vector<tl::webProperty>{std::move(tl_props)}};
   tl::SimpleWebTransferPerform tl_perform{.descriptor = tl::u64{st.descriptor},
-                                          .timeout = tl::u64{.value = timeout > std::chrono::nanoseconds::zero() ? static_cast<uint64_t>(timeout.count()) : 0},
+                                          .timeout = tl::u64{.value = timeout > std::chrono::milliseconds::zero() ? static_cast<uint64_t>(timeout.count()) : 0},
                                           .config = std::move(tl_config)};
   tl::storer tls{tl_perform.footprint()};
   tl_perform.store(tls);
