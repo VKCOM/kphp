@@ -105,6 +105,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         streams.cpp
         string_functions.cpp
         string-context.cpp
+        shape-key-demangle.cpp
         tl/rpc_req_error.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp

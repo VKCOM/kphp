@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/shape-key-demangle.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/components/kphp/state/component-state.h"
 #include "runtime-light/components/kphp/state/image-state.h"
@@ -222,6 +223,10 @@ auto SerializationInstanceState::get() noexcept -> SerializationInstanceState& {
 
 auto SerializationImageState::get() noexcept -> const SerializationImageState& {
   return ImageState::get().serialization_image_state;
+}
+
+const ShapeKeyDemangle& ShapeKeyDemangle::get() noexcept {
+  return ImageState::get().shape_key_demangler;
 }
 
 auto StringInstanceState::get() noexcept -> StringInstanceState& {
