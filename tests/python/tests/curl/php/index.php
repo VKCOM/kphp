@@ -51,6 +51,10 @@ function main() {
         test_curl_resumable_timeout_sequence();
         return;
       }
+      case "/test_curl_resumable_then_curl_exec": {
+        test_curl_resumable_then_curl_exec();
+        return;
+      }
       case "/test_curl_reset_handle": {
         test_curl_reset_handle();
         return;
@@ -153,6 +157,24 @@ function test_curl_resumable_timeout_sequence() {
   curl_close($ch);
 
   echo json_encode(["exec_results" => $results]);
+}
+
+function test_curl_resumable_then_curl_exec() {
+  $params = json_decode(file_get_contents('php://input'));
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, (string)$params["url"]);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+
+  $output1 = curl_exec_concurrently($ch, 0.1);
+  $output2 = curl_exec($ch);
+  curl_close($ch);
+
+  echo json_encode([
+    "exec_result1" => to_json_safe($output1),
+    "exec_result2" => to_json_safe($output2)
+  ]);
 }
 
 function test_curl_reset_handle() {

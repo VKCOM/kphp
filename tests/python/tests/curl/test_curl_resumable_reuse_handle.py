@@ -1,6 +1,5 @@
 import re
 import time
-import pytest
 from python.tests.curl.curl_test_case import CurlTestCase
 
 
@@ -19,7 +18,6 @@ class TestCurlResumableReuseHandle(CurlTestCase):
             "exec_result2": self._prepare_result("/echo/test_get", "GET")
         })
 
-    @pytest.mark.kphp_skip
     def test_curl_resumable_timeout_sequence(self):
         url = "localhost:{}{}".format(self.web_server.http_port, "/echo/test_get")
         started_at = time.monotonic()
@@ -39,3 +37,20 @@ class TestCurlResumableReuseHandle(CurlTestCase):
         # The upstream endpoint sleeps for 0.5 s. A timed-out transfer must release
         # the Easy before the next call starts; otherwise three transfers take about 1.5 s.
         self.assertLess(elapsed, 1.2)
+
+    def test_curl_resumable_then_curl_exec_after_timeout(self):
+        url = "localhost:{}{}".format(self.web_server.http_port, "/echo/test_get")
+        started_at = time.monotonic()
+        response = self.web_server.http_post(
+            uri="/test_curl_resumable_then_curl_exec",
+            json={"url": url})
+        elapsed = time.monotonic() - started_at
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            "exec_result1": False,
+            "exec_result2": self._prepare_result("/echo/test_get", "GET")
+        })
+        # CURLOPT_TIMEOUT is deliberately much longer than the first concurrent timeout.
+        # The second call must not wait for the stale first transfer to finish.
+        self.assertLess(elapsed, 0.9)
