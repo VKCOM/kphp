@@ -74,8 +74,8 @@ inline auto open(transfer_backend backend) noexcept -> kphp::coro::task<std::exp
   co_return std::expected<simple::transfer, error>{descriptor};
 }
 
-inline auto perform(simple::transfer st, std::chrono::nanoseconds timeout = std::chrono::nanoseconds::zero()) noexcept
-    -> kphp::coro::task<std::expected<response, error>> {
+inline auto perform(simple::transfer st,
+                    std::chrono::nanoseconds timeout = std::chrono::nanoseconds::zero()) noexcept -> kphp::coro::task<std::expected<response, error>> {
   auto& web_state{WebInstanceState::get()};
 
   auto& simple2config{web_state.simple_transfer2config};
