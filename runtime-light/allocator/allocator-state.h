@@ -30,6 +30,9 @@ public:
   AllocatorState(size_t script_mem_size, size_t min_extra_mem_size, size_t oom_handling_mem_size) noexcept
       : allocator(script_mem_size, min_extra_mem_size, oom_handling_mem_size) {}
 
+  AllocatorState(kphp::memory::fixed_size_tag tag, size_t script_mem_size, size_t oom_handling_mem_size) noexcept
+      : allocator(tag, script_mem_size, oom_handling_mem_size) {}
+
   static const AllocatorState& get() noexcept;
   static AllocatorState& get_mutable() noexcept {
     return const_cast<AllocatorState&>(get());
