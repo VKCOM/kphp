@@ -22,6 +22,17 @@
 #include "runtime-light/stdlib/visitors/instance-deep-copy-visitor.h"
 #include "runtime-light/stdlib/visitors/instance-deep-estimate-size-visitor.h"
 
+namespace instance_cache_details {
+
+// converts php ttl seconds to platform milliseconds
+// non-positive and unrepresentable values select the infinite ttl sentinel
+inline uint64_t normalize_ttl_ms(int64_t ttl_sec) noexcept {
+  static constexpr uint64_t INFINITY_TTL_MS{std::numeric_limits<uint64_t>::max()};
+  return (ttl_sec <= 0 || ttl_sec > (INFINITY_TTL_MS / 1000)) ? INFINITY_TTL_MS : static_cast<uint64_t>(ttl_sec) * 1000;
+}
+
+} // namespace instance_cache_details
+
 // shared memory layout: class_name_hash(u64) | class_instance shell | inner data
 template<typename InstanceType>
 bool f$instance_cache_store(const string& key, class_instance<InstanceType> instance, int64_t ttl_sec = 0) noexcept {
@@ -35,11 +46,6 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   }
   if (ttl_sec < 0) [[unlikely]] {
     kphp::log::warning("instance_cache_store. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl_sec, key.c_str());
-    ttl_sec = 0;
-  }
-  if (constexpr int64_t max_ttl_sec{std::numeric_limits<int64_t>::max() / 1000}; ttl_sec > max_ttl_sec) [[unlikely]] {
-    kphp::log::warning("instance_cache_store. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl_sec, max_ttl_sec,
-                       key.c_str());
     ttl_sec = 0;
   }
 
@@ -74,7 +80,9 @@ bool f$instance_cache_store(const string& key, class_instance<InstanceType> inst
   std::construct_at(reinterpret_cast<class_instance<InstanceType>*>(std::next(mem, hash_size)), std::move(instance));
 
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds
-  if (auto publish_result{k2::publish_shared_memory(std::string_view{key.c_str(), key.size()}, mem, ttl_sec * 1000, false, true)}; publish_result.has_value()) {
+  if (auto publish_result{
+          k2::publish_shared_memory(std::string_view{key.c_str(), key.size()}, mem, instance_cache_details::normalize_ttl_ms(ttl_sec), false, true)};
+      publish_result.has_value()) {
     InstanceCacheInstanceState::get().request_cache.insert_or_assign(key, std::span{mem, hash_size + instance_size + estimated_size});
     return true;
   } else {
@@ -136,13 +144,9 @@ inline bool f$instance_cache_update_ttl(const string& key, int64_t ttl_sec = 0) 
     kphp::log::warning("instance_cache_update_ttl. ttl less than 0, key will be stored forever: ttl -> {}, key -> {}", ttl_sec, key.c_str());
     ttl_sec = 0;
   }
-  if (constexpr int64_t max_ttl_sec{std::numeric_limits<int64_t>::max() / 1000}; ttl_sec > max_ttl_sec) [[unlikely]] {
-    kphp::log::warning("instance_cache_update_ttl. ttl is too large, key will be stored forever: ttl -> {}, max ttl -> {}, key -> {}", ttl_sec, max_ttl_sec,
-                       key.c_str());
-    ttl_sec = 0;
-  }
+
   // the platform expects ttl in milliseconds, while the PHP API accepts seconds
-  return k2::republish_shared_memory(std::string_view{key.c_str(), key.size()}, ttl_sec * 1000).has_value();
+  return k2::republish_shared_memory(std::string_view{key.c_str(), key.size()}, instance_cache_details::normalize_ttl_ms(ttl_sec)).has_value();
 }
 
 inline bool f$instance_cache_delete(const string& key) noexcept {

@@ -28,7 +28,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 16
+#define K2_PLATFORM_HEADER_H_VERSION 17
 
 // Always check that enum value is a valid value!
 
@@ -204,17 +204,28 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  * then retrieve the memory by name with `k2_get_shared_memory`.
  *
  * Lifecycle:
- * - TTL defines when memory becomes eligible for reclamation
- * - Memory is reclaimed lazily after TTL expires AND no references remain
+ * - A finite TTL removes the name from shared-memory storage after the TTL.
+ *   The allocation is physically reclaimed after that point when no user
+ *   references remain.
+ * - A zero TTL publishes a weak entry with no time limit. It is removed from
+ *   storage when the last user reference is released.
+ * - UINT64_MAX publishes a strong entry with no initial expiration. Storage
+ *   keeps it alive until it is replaced, assigned a finite expiration by
+ *   `k2_republish_shared_memory` or `k2_seek_ttl_to_shared_memory`, or the
+ *   shared-memory subsystem stops.
  *
  * Reference counting:
- * - Calling `k2_publish_shared_memory` sets the reference count to one
- * - Calling `k2_get_shared_memory` increments the reference count by one if
- *   this instance does not already hold a reference; repeated calls for the
- *   same underlying pointer while already held do not increment it further
- * - Calling `k2_release_shared_memory` clears the held reference, if `pointer`
- *   is currently held; unpublished memory from `k2_alloc_shared_memory` is
- *   just freed
+ * - A successful `k2_publish_shared_memory` gives the calling instance one
+ *   user reference. For a zero TTL, storage keeps only a weak reference and
+ *   does not add a reference of its own.
+ * - For a finite TTL or UINT64_MAX, storage keeps a strong reference until
+ *   the entry is removed from storage.
+ * - Calling `k2_get_shared_memory` acquires a user reference if this instance
+ *   does not already hold one; repeated calls for the same pointer while it is
+ *   already held do not add another reference.
+ * - Calling `k2_release_shared_memory` clears the user reference held by this
+ *   instance, if `pointer` is currently held. Unpublished memory from
+ *   `k2_alloc_shared_memory` is simply freed.
  */
 
 /**
@@ -244,9 +255,10 @@ int32_t k2_alloc_shared_memory(size_t size, size_t align, void** pointer);
  *               Should be valid UTF-8 and not contain null bytes.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
  * @param `memory` Pointer to memory previously allocated via `k2_alloc_shared_memory`.
- * @param `ttl` Time-to-live in milliseconds. Memory becomes eligible for
- *              reclamation after this duration, but only when the reference
- *              count reaches zero. Zero TTL means infinite life.
+ * @param `ttl` Lifetime selector in milliseconds:
+ *              `0` publishes a weak entry with no TTL;
+ *              `1..=UINT64_MAX-1` uses a finite TTL;
+ *              `UINT64_MAX` means an initially infinite strong lifetime.
  * @param `as_mut` Controls whether write protection is disabled. If true, the memory is made writable.
  * @param `ignore_if_exist` If true, allows re-publishing memory previously allocated via
  *              `k2_alloc_shared_memory` even if a live published memory with the same name already exists.
@@ -278,25 +290,30 @@ int32_t k2_publish_shared_memory(const char* name, size_t name_len, const void* 
  * Possible `errno`:
  * `EINVAL` => `name` is NULL, `name_len` is 0, `pointer` is NULL, or `name`
  *             is not valid UTF-8.
- * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOENT` => No memory found with the given name, the weak entry has no live
+ *             user references, or its finite TTL has removed it from storage.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
 int32_t k2_get_shared_memory(const char* name, size_t name_len, const void** pointer, size_t* size);
 
 /**
- * Republishes shared memory, resetting its TTL and restarting the age counter from this call.
+ * Republishes shared memory, selecting the lifetime mode and restarting the
+ * finite-TTL age counter from this call.
  *
  * @param `name` Name of the published memory region.
  * @param `name_len` Length of the name in bytes. Must be greater than 0.
- * @param `ttl` New time-to-live in milliseconds, counted from this call.
- *              Zero TTL means infinite life.
+ * @param `ttl` New lifetime selector in milliseconds, counted from this call:
+ *              `0` changes the entry to weak mode;
+ *              `1..=UINT64_MAX-1` sets a finite TTL;
+ *              `UINT64_MAX` selects an infinite strong lifetime from this call.
  *
  * @return `0` on success. libc-like `errno` on error.
  *
  * Possible `errno`:
  * `EINVAL` => `name` is NULL, `name_len` is 0, `name` is not valid UTF-8, or
  *             `ttl` is too small (non-zero and less than 100 ms).
- * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOENT` => No memory found with the given name, the weak entry has no live
+ *             user references, or its finite TTL has removed it from storage.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
 int32_t k2_republish_shared_memory(const char* name, size_t name_len, uint64_t ttl);
@@ -331,7 +348,8 @@ int32_t k2_republish_shared_memory(const char* name, size_t name_len, uint64_t t
  * Possible `errno`:
  * `EINVAL` => `name` is NULL, `name_len` is 0, `name` is not valid UTF-8, or
  *             `percentile` is outside of `[0, 100]`.
- * `ENOENT` => No memory found with the given name (or TTL expired and memory was freed).
+ * `ENOENT` => No memory found with the given name, the weak entry has no live
+ *             user references, or its finite TTL has removed it from storage.
  * `ENOSYS` => Shared memory subsystem is unavailable on this host.
  */
 int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, uint8_t percentile, uint64_t remaining_lifetime_limit);
@@ -342,9 +360,11 @@ int32_t k2_seek_ttl_to_shared_memory(const char* name, size_t name_len, uint8_t 
  * instance, acquired via `k2_publish_shared_memory` or
  * `k2_get_shared_memory` (see the reference counting notes above).
  *
- * Releasing a reference does not free the underlying memory immediately: the
- * memory is only physically reclaimed once its TTL has expired AND the
- * reference count has reached zero (see the lifecycle notes above).
+ * Releasing a reference may remove a weak entry when it was the last user
+ * reference. For a finite-TTL entry, the allocation is physically reclaimed
+ * after the entry has expired and no user references remain. An infinite strong
+ * entry remains retained by shared-memory storage after user references are
+ * released.
  *
  * @param `pointer` Pointer to shared memory, as returned by
  *                  `k2_alloc_shared_memory` or `k2_get_shared_memory`, or
