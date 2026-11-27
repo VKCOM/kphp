@@ -913,6 +913,10 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     } else if (function_name == "is_null") {
       const TypeData* arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
+    } else if (function_name == "count" || function_name == "sizeof") {
+      const TypeData* arg_type = tinf::get_type(call->args()[0]);
+      kphp_error(vk::none_of_equal(arg_type->get_real_ptype(), tp_bool, tp_int, tp_float, tp_string, tp_tmp_string),
+                 fmt_format("Cannot call {}() with non-countable type {}", function_name, arg_type->as_human_readable()));
     } else if (function_name == "register_shutdown_function") {
       check_register_shutdown_functions(call);
     } else if (function_name == "header_register_callback") {
