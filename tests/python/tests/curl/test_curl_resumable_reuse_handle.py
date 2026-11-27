@@ -22,7 +22,7 @@ class TestCurlResumableReuseHandle(CurlTestCase):
         url = "localhost:{}{}".format(self.web_server.http_port, "/echo/test_get")
         response = self.web_server.http_post(
             uri="/test_curl_resumable_timeout_sequence",
-            json={"url": url, "timeouts": [0.1, 0.9, 0.1]})
+            json={"url": url, "timeouts": [0.1, 1.2, 0.1]})
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {
